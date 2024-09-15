@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="INGAME_PARALLAX_CRANES.pvr">
+  <sprite name="PARALLAX_CRANE_1" x="209" y="1" width="145" height="194" pivotX="72" pivotY="190" />
+  <sprite name="PARALLAX_CRANE_2" x="1" y="1" width="207" height="150" pivotX="103" pivotY="146" />
+  <sprite name="PARALLAX_CRANE_3" x="113" y="196" width="157" height="114" pivotX="78" pivotY="110" />
+  <sprite name="PARALLAX_CRANE_4" x="1" y="152" width="111" height="147" pivotX="55" pivotY="143" />
+</spritesheet>

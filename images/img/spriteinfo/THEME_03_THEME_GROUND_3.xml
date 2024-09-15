@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="THEME_03_THEME_GROUND_3.pvr">
+  <sprite name="THEME_GROUND_TEXTURE_3" x="0" y="0" width="256" height="256" pivotX="0" pivotY="0" />
+</spritesheet>

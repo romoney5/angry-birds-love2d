@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="THEME_07_PARALLAX_7.pvr">
+  <sprite name="FOREGROUND_7_LAYER_2" x="225" y="163" width="269" height="20" pivotX="134" pivotY="18" />
+  <sprite name="BACKGROUND_7_LAYER_2_ITEM_1" x="1" y="1" width="480" height="97" pivotX="-2" pivotY="0" />
+  <sprite name="BACKGROUND_7_LAYER_2_ITEM_2" x="483" y="1" width="4" height="96" pivotX="-3" pivotY="-1" />
+  <sprite name="BACKGROUND_7_LAYER_2_ITEM_3" x="225" y="135" width="258" height="26" pivotX="-3" pivotY="-2" />
+  <sprite name="BACKGROUND_7_LAYER_2_ITEM_4" x="261" y="100" width="189" height="31" pivotX="-1" pivotY="-2" />
+  <sprite name="BACKGROUND_7_LAYER_2_ITEM_5" x="1" y="193" width="40" height="88" pivotX="-2" pivotY="0" />
+  <sprite name="BACKGROUND_7_LAYER_2_ITEM_6" x="91" y="171" width="47" height="27" pivotX="-5" pivotY="0" />
+  <sprite name="BACKGROUND_7_LAYER_2_ITEM_7" x="152" y="100" width="107" height="33" pivotX="-1" pivotY="-1" />
+  <sprite name="BACKGROUND_7_LAYER_2_ITEM_8" x="1" y="100" width="41" height="91" pivotX="-2" pivotY="-2" />
+  <sprite name="BACKGROUND_7_LAYER_2_ITEM_9" x="91" y="100" width="59" height="37" pivotX="-1" pivotY="2" />
+  <sprite name="BACKGROUND_7_LAYER_2_ITEM_10" x="44" y="100" width="45" height="66" pivotX="-1" pivotY="0" />
+  <sprite name="BACKGROUND_7_LAYER_3_ITEM_1" x="91" y="139" width="59" height="30" pivotX="-1" pivotY="1" />
+  <sprite name="BACKGROUND_7_LAYER_3_ITEM_2" x="1" y="283" width="31" height="39" pivotX="-2" pivotY="-1" />
+  <sprite name="BACKGROUND_7_LAYER_3_ITEM_3" x="44" y="323" width="21" height="20" pivotX="-2" pivotY="-1" />
+  <sprite name="BACKGROUND_7_LAYER_3_ITEM_4" x="1" y="324" width="38" height="38" pivotX="0" pivotY="-1" />
+  <sprite name="BACKGROUND_7_LAYER_3_ITEM_5" x="44" y="272" width="24" height="25" pivotX="-3" pivotY="1" />
+  <sprite name="BACKGROUND_7_LAYER_3_ITEM_6" x="44" y="168" width="25" height="35" pivotX="-1" pivotY="1" />
+  <sprite name="BACKGROUND_7_LAYER_3_ITEM_7" x="44" y="239" width="43" height="31" pivotX="-1" pivotY="2" />
+  <sprite name="BACKGROUND_7_LAYER_3_ITEM_8" x="44" y="205" width="43" height="32" pivotX="0" pivotY="1" />
+  <sprite name="BACKGROUND_7_LAYER_3_ITEM_9" x="44" y="299" width="28" height="22" pivotX="-1" pivotY="0" />
+  <sprite name="BACKGROUND_7_LAYER_3_ITEM_10" x="152" y="135" width="71" height="27" pivotX="-1" pivotY="1" />
+</spritesheet>

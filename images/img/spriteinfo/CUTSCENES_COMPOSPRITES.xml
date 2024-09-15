@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<composprites rvio="False" version="1">
+  <composprite name="STORY_WESTERN_BEGIN">
+    <layer sprite="STORY_BEGIN_BG_1" x="0" y="0" />
+    <layer sprite="STORY_BEGIN_BG_2" x="1" y="0" />
+    <layer sprite="STORY_WEST_PIGS_1" x="1183" y="201" />
+    <layer sprite="STORY_WEST_ROPE_1" x="1047" y="312" />
+    <layer sprite="STORY_WEST_EGGS_1" x="778" y="265" />
+    <layer sprite="STORY_WEST_HIDE_1" x="554" y="264" />
+    <layer sprite="STORY_WEST_HIDE_2" x="381" y="405" />
+  </composprite>
+  <composprite name="STORY_WESTERN_MIDDLE_1">
+    <layer sprite="STORY_BOSS_BG" x="0" y="0" />
+    <layer sprite="STORY_WEST_HELMET_PIG_1" x="403" y="234" />
+    <layer sprite="STORY_WEST_PIGS_ESCAPE_1" x="738" y="236" />
+  </composprite>
+  <composprite name="STORY_WESTERN_END">
+    <layer sprite="STORY_BOSS_BG" x="0" y="0" />
+    <layer sprite="STORY_WEST_KING_EYE_WINK" x="0" y="0" />
+    <layer sprite="STORY_WEST_KING_EYE_PEAK" x="0" y="0" />
+    <layer sprite="STORY_WEST_KING_EYE_OPEN" x="0" y="0" />
+    <layer sprite="STORY_WEST_KING_DEAD_1" x="491" y="148" />
+    <layer sprite="STORY_WEST_KING_DEAD_2" x="383" y="321" />
+    <layer sprite="STORY_WEST_EGGS_BACK" x="8" y="162" />
+  </composprite>
+  <composprite name="STORY_WESTERN_MIDDLE_2">
+    <layer sprite="STORY_BOSS_BG" x="0" y="0" />
+    <layer sprite="STORY_WEST_MOUSTACHE_PIG_1" x="411" y="183" />
+    <layer sprite="STORY_WEST_PIGS_ESCAPE_2" x="748" y="183" />
+  </composprite>
+  <composprite name="STORY_CAVE_BEGIN">
+    <layer sprite="STORY_BEGIN_BG_1" x="0" y="0" />
+    <layer sprite="STORY_BEGIN_BG_2" x="0" y="0" />
+    <layer sprite="STORY_WEST_HIDE_2" x="381" y="405" />
+    <layer sprite="STORY_CAVE_PIGHOLE_6" x="1415" y="46" />
+    <layer sprite="STORY_CAVE_PIGHOLE_5" x="1344" y="97" />
+    <layer sprite="STORY_CAVE_PIGHOLE_4" x="1310" y="152" />
+    <layer sprite="STORY_CAVE_PIGHOLE_3" x="1185" y="205" />
+    <layer sprite="STORY_CAVE_PIGHOLE_2" x="1396" y="283" />
+    <layer sprite="STORY_CAVE_PIGHOLE_1" x="1186" y="284" />
+    <layer sprite="STORY_CAVE_BIRDHOLE" x="417" y="378" />
+    <layer sprite="STORY_CAVE_HIDETRACKS_5" x="1165" y="321" />
+    <layer sprite="STORY_CAVE_HIDETRACKS_4" x="1108" y="345" />
+    <layer sprite="STORY_CAVE_HIDETRACKS_3" x="1013" y="376" />
+    <layer sprite="STORY_CAVE_HIDETRACKS_2" x="890" y="403" />
+    <layer sprite="STORY_CAVE_HIDETRACKS_1" x="785" y="425" />
+  </composprite>
+  <composprite name="STORY_CAVE_MIDDLE_1">
+    <layer sprite="STORY_BOSS_BG" x="0" y="0" />
+    <layer sprite="STORY_CAVE_KINGESCAPE_1" x="753" y="226" />
+    <layer sprite="STORY_CAVE_KINGESCAPE_2" x="824" y="129" />
+    <layer sprite="STORY_CAVE_DEADPIG_3" x="626" y="380" />
+    <layer sprite="STORY_CAVE_DEADPIG_2" x="382" y="351" />
+    <layer sprite="STORY_CAVE_DEADPIG_1" x="451" y="250" />
+  </composprite>
+  <composprite name="STORY_CAVE_MIDDLE_2">
+    <layer sprite="STORY_BOSS_BG" x="0" y="0" />
+    <layer sprite="STORY_CAVE_DEADSTACHE_2" x="624" y="336" />
+    <layer sprite="STORY_CAVE_DEADSTACHE_1" x="392" y="205" />
+    <layer sprite="STORY_CAVE_KINGESCAPE_2" x="824" y="129" />
+    <layer sprite="STORY_CAVE_KINGESCAPE_1" x="753" y="226" />
+  </composprite>
+  <composprite name="STORY_CAVE_END">
+    <layer sprite="STORY_BOSS_BG" x="0" y="0" />
+    <layer sprite="STORY_CAVE_DEADKING_3" x="797" y="355" />
+    <layer sprite="STORY_CAVE_DEADKING_2" x="794" y="422" />
+    <layer sprite="STORY_CAVE_DEADKING_1" x="478" y="96" />
+  </composprite>
+</composprites>

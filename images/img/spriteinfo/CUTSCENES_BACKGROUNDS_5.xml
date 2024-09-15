@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="CUTSCENES_BACKGROUNDS_5.pvr">
+  <sprite name="STORY_WEST_EGGS_BACK" x="4" y="309" width="208" height="185" pivotX="0" pivotY="0" />
+  <sprite name="STORY_WEST_KING_DEAD_2" x="220" y="495" width="583" height="159" pivotX="0" pivotY="0" />
+  <sprite name="STORY_WEST_KING_DEAD_1" x="446" y="309" width="210" height="173" pivotX="0" pivotY="0" />
+  <sprite name="STORY_WEST_KING_EYE_OPEN" x="114" y="502" width="57" height="92" pivotX="-640" pivotY="-254" />
+  <sprite name="STORY_WEST_KING_EYE_PEAK" x="4" y="651" width="57" height="92" pivotX="-640" pivotY="-254" />
+  <sprite name="STORY_WEST_KING_EYE_WINK" x="69" y="651" width="57" height="92" pivotX="-640" pivotY="-254" />
+  <sprite name="STORY_WEST_HELMET_PIG_1" x="338" y="4" width="332" height="244" pivotX="-2" pivotY="-2" />
+  <sprite name="STORY_WEST_PIGS_ESCAPE_1" x="220" y="662" width="228" height="128" pivotX="0" pivotY="0" />
+  <sprite name="STORY_WEST_MOUSTACHE_PIG_1" x="4" y="4" width="326" height="297" pivotX="0" pivotY="0" />
+  <sprite name="STORY_WEST_PIGS_ESCAPE_2" x="220" y="309" width="218" height="178" pivotX="0" pivotY="0" />
+  <sprite name="STORY_WEST_HIDE_2" x="456" y="662" width="398" height="54" pivotX="0" pivotY="0" />
+  <sprite name="STORY_WEST_HIDE_1" x="4" y="502" width="102" height="141" pivotX="0" pivotY="0" />
+  <sprite name="STORY_WEST_EGGS_1" x="678" y="4" width="270" height="210" pivotX="0" pivotY="0" />
+  <sprite name="STORY_WEST_ROPE_1" x="4" y="751" width="137" height="84" pivotX="0" pivotY="0" />
+  <sprite name="STORY_WEST_PIGS_1" x="664" y="309" width="268" height="142" pivotX="0" pivotY="0" />
+</spritesheet>

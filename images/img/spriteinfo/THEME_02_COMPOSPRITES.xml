@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<composprites rvio="False" version="1">
+  <composprite name="THEME_2_BG_LAYER_3">
+    <layer sprite="BACKGROUND_2_LAYER_3_ITEM_1" x="141" y="-14" />
+    <layer sprite="BACKGROUND_2_LAYER_3" x="0" y="-23" />
+    <layer sprite="BACKGROUND_2_LAYER_3_ITEM_1" x="-149" y="-14" />
+    <layer sprite="BACKGROUND_2_LAYER_3_ITEM_5" x="74" y="-55" />
+    <layer sprite="BACKGROUND_2_LAYER_3_ITEM_4" x="-10" y="-73" />
+    <layer sprite="BACKGROUND_2_LAYER_3_ITEM_3" x="265" y="-19" />
+    <layer sprite="BACKGROUND_2_LAYER_3_ITEM_2" x="204" y="-36" />
+  </composprite>
+  <composprite name="THEME_2_BG_LAYER_2">
+    <layer sprite="BACKGROUND_2_LAYER_2_ITEM_3" x="20" y="-87" />
+    <layer sprite="BACKGROUND_2_LAYER_2_ITEM_2" x="-106" y="-68" />
+    <layer sprite="BACKGROUND_2_LAYER_2_ITEM_4" x="166" y="-98" />
+    <layer sprite="BACKGROUND_2_LAYER_2_ITEM_1" x="-184" y="-104" />
+    <layer sprite="BACKGROUND_2_LAYER_2" x="0" y="0" />
+  </composprite>
+</composprites>

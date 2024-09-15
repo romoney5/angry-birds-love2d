@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="GOLDEN_EGGS_SHEET_4.png">
+  <sprite name="GOLDEN_EGG_STAR_EFFECT" x="1" y="1" width="286" height="287" pivotX="144" pivotY="149" />
+  <sprite name="GOLDEN_EGG_STAR_COLLECTED" x="288" y="181" width="149" height="146" pivotX="74" pivotY="73" />
+  <sprite name="GOLDEN_EGG_STAR" x="288" y="1" width="184" height="179" pivotX="92" pivotY="89" />
+</spritesheet>

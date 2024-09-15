@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="SPLASHES_SHEET_1.pvr">
+  <sprite name="SPLASH_ANGRY_BIRDS" x="0" y="0" width="864" height="480" pivotX="432" pivotY="240" />
+</spritesheet>

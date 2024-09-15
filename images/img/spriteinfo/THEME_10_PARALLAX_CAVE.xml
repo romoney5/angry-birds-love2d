@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="THEME_10_PARALLAX_CAVE.pvr">
+  <sprite name="THEME_CAVE_FG_1" x="0" y="1" width="1024" height="136" pivotX="512" pivotY="22" />
+  <sprite name="THEME_BG_1" x="0" y="139" width="1024" height="118" pivotX="512" pivotY="112" />
+</spritesheet>

@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="INGAME_SKIES_2.pvr">
+  <sprite name="BACKGROUND_6_LAYER_1_DUMMY" x="11" y="279" width="751" height="233" pivotX="0" pivotY="-80" />
+  <sprite name="BACKGROUND_6_LAYER_1" x="12" y="279" width="749" height="233" pivotX="374" pivotY="233" />
+  <sprite name="BACKGROUND_7_LAYER_1" x="12" y="10" width="480" height="237" pivotX="240" pivotY="302" />
+  <sprite name="BACKGROUND_7_LAYER_1_DUMMY" x="11" y="10" width="482" height="238" pivotX="0" pivotY="66" />
+  <sprite name="BACKGROUND_8_LAYER_1" x="505" y="10" width="480" height="258" pivotX="240" pivotY="297" />
+  <sprite name="BACKGROUND_8_LAYER_1_DUMMY" x="504" y="10" width="482" height="258" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_10_LAYER_1" x="0" y="531" width="1024" height="366" pivotX="512" pivotY="362" />
+</spritesheet>

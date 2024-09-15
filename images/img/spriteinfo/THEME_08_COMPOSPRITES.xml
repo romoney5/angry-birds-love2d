@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<composprites rvio="False" version="1">
+  <composprite name="THEME_8_BG_LAYER_3">
+    <layer sprite="BACKGROUND_8_LAYER_3_ITEM_5" x="99" y="-51" />
+    <layer sprite="BACKGROUND_8_LAYER_3_ITEM_4" x="31" y="-53" />
+    <layer sprite="BACKGROUND_8_LAYER_3_ITEM_3" x="-32" y="-43" />
+    <layer sprite="BACKGROUND_8_LAYER_3_ITEM_2" x="-97" y="-30" />
+    <layer sprite="BACKGROUND_8_LAYER_3_ITEM_1" x="-141" y="-64" />
+  </composprite>
+  <composprite name="THEME_8_BG_LAYER_2">
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_10" x="-170" y="-108" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_9" x="29" y="-100" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_8" x="64" y="-100" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_7" x="-137" y="-132" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_6" x="-175" y="-108" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_5" x="22" y="-132" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_4" x="79" y="-106" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_3" x="148" y="-98" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_2" x="-78" y="-100" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_1" x="-236" y="-54" />
+  </composprite>
+</composprites>

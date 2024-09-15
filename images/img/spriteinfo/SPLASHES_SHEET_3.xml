@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="SPLASHES_SHEET_3.pvr">
+  <sprite name="LITE_SPLASH" x="0" y="0" width="102" height="81" pivotX="-144" pivotY="-162" />
+  <sprite name="LOADING_EN" x="0" y="81" width="103" height="25" pivotX="105" pivotY="27" />
+</spritesheet>

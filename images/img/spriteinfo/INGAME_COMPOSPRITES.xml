@@ -1,0 +1,165 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<composprites rvio="False" version="1">
+  <composprite name="THEME_1_BG_LAYER_3">
+    <layer sprite="BACKGROUND_1_LAYER_3_ITEM_1" x="-77" y="-56" />
+    <layer sprite="BACKGROUND_1_LAYER_3" x="0" y="-24" />
+  </composprite>
+  <composprite name="THEME_2_BG_LAYER_3">
+    <layer sprite="BACKGROUND_2_LAYER_3_ITEM_1" x="141" y="-14" />
+    <layer sprite="BACKGROUND_2_LAYER_3" x="0" y="-23" />
+    <layer sprite="BACKGROUND_2_LAYER_3_ITEM_1" x="-149" y="-14" />
+    <layer sprite="BACKGROUND_2_LAYER_3_ITEM_5" x="74" y="-55" />
+    <layer sprite="BACKGROUND_2_LAYER_3_ITEM_4" x="-10" y="-73" />
+    <layer sprite="BACKGROUND_2_LAYER_3_ITEM_3" x="265" y="-19" />
+    <layer sprite="BACKGROUND_2_LAYER_3_ITEM_2" x="204" y="-36" />
+  </composprite>
+  <composprite name="THEME_3_BG_LAYER_3">
+    <layer sprite="BACKGROUND_3_LAYER_3_ITEM_1" x="490" y="-47" />
+    <layer sprite="BACKGROUND_3_LAYER_3_ITEM_2" x="476" y="-14" />
+    <layer sprite="BACKGROUND_3_LAYER_3_ITEM_3" x="-502" y="-7" />
+    <layer sprite="BACKGROUND_3_LAYER_3_ITEM_2" x="300" y="-14" />
+    <layer sprite="BACKGROUND_3_LAYER_3_ITEM_5" x="-435" y="-28" />
+    <layer sprite="BACKGROUND_3_LAYER_3_ITEM_3" x="230" y="-7" />
+    <layer sprite="BACKGROUND_3_LAYER_3" x="93" y="-25" />
+    <layer sprite="BACKGROUND_3_LAYER_3_ITEM_5" x="-85" y="-28" />
+    <layer sprite="BACKGROUND_3_LAYER_3_ITEM_4" x="-180" y="-39" />
+    <layer sprite="BACKGROUND_3_LAYER_3_ITEM_3" x="-260" y="-7" />
+    <layer sprite="BACKGROUND_3_LAYER_3_ITEM_2" x="0" y="-14" />
+    <layer sprite="BACKGROUND_3_LAYER_3_ITEM_1" x="98" y="-75" />
+    <layer sprite="BACKGROUND_3_LAYER_3_ITEM_1" x="-296" y="-75" />
+    <layer sprite="BACKGROUND_3_LAYER_3" x="-301" y="-25" />
+    <layer sprite="BACKGROUND_3_LAYER_3_ITEM_4" x="351" y="-39" />
+  </composprite>
+  <composprite name="THEME_4_BG_LAYER_3">
+    <layer sprite="BACKGROUND_4_LAYER_3_ITEM_4" x="203" y="-58" />
+    <layer sprite="BACKGROUND_4_LAYER_3_ITEM_3" x="64" y="-67" />
+    <layer sprite="BACKGROUND_4_LAYER_3_ITEM_2" x="-41" y="-43" />
+    <layer sprite="BACKGROUND_4_LAYER_3_ITEM_1" x="-196" y="-59" />
+  </composprite>
+  <composprite name="THEME_5_BG_LAYER_3">
+    <layer sprite="BACKGROUND_5_LAYER_3_ITEM_5" x="-14" y="-42" />
+    <layer sprite="BACKGROUND_5_LAYER_3_ITEM_4" x="47" y="-79" />
+    <layer sprite="BACKGROUND_5_LAYER_3_ITEM_3" x="-66" y="-47" />
+    <layer sprite="BACKGROUND_5_LAYER_3_ITEM_2" x="131" y="-60" />
+    <layer sprite="BACKGROUND_5_LAYER_3_ITEM_1" x="-183" y="-71" />
+  </composprite>
+  <composprite name="THEME_6_BG_LAYER_3">
+    <layer sprite="BACKGROUND_6_LAYER_3_ITEM_11" x="184" y="-34" />
+    <layer sprite="BACKGROUND_6_LAYER_3_ITEM_10" x="127" y="-27" />
+    <layer sprite="BACKGROUND_6_LAYER_3_ITEM_9" x="33" y="-27" />
+    <layer sprite="BACKGROUND_6_LAYER_3_ITEM_8" x="12" y="-22" />
+    <layer sprite="BACKGROUND_6_LAYER_3_ITEM_7" x="-28" y="-29" />
+    <layer sprite="BACKGROUND_6_LAYER_3_ITEM_6" x="-66" y="-25" />
+    <layer sprite="BACKGROUND_6_LAYER_3_ITEM_5" x="-140" y="-21" />
+    <layer sprite="BACKGROUND_6_LAYER_3_ITEM_4" x="-175" y="-14" />
+    <layer sprite="BACKGROUND_6_LAYER_3_ITEM_3" x="-189" y="-21" />
+    <layer sprite="BACKGROUND_6_LAYER_3_ITEM_2" x="-206" y="-15" />
+    <layer sprite="BACKGROUND_6_LAYER_3_ITEM_1" x="-238" y="-24" />
+  </composprite>
+  <composprite name="THEME_7_BG_LAYER_3">
+    <layer sprite="BACKGROUND_7_LAYER_3_ITEM_10" x="52" y="-24" />
+    <layer sprite="BACKGROUND_7_LAYER_3_ITEM_9" x="18" y="-20" />
+    <layer sprite="BACKGROUND_7_LAYER_3_ITEM_8" x="-30" y="-29" />
+    <layer sprite="BACKGROUND_7_LAYER_3_ITEM_7" x="-78" y="-27" />
+    <layer sprite="BACKGROUND_7_LAYER_3_ITEM_6" x="-108" y="-32" />
+    <layer sprite="BACKGROUND_7_LAYER_3_ITEM_5" x="-139" y="-22" />
+    <layer sprite="BACKGROUND_7_LAYER_3_ITEM_4" x="-179" y="-37" />
+    <layer sprite="BACKGROUND_7_LAYER_3_ITEM_3" x="-207" y="-19" />
+    <layer sprite="BACKGROUND_7_LAYER_3_ITEM_2" x="-275" y="-39" />
+    <layer sprite="BACKGROUND_7_LAYER_3_ITEM_1" x="-341" y="-27" />
+  </composprite>
+  <composprite name="THEME_8_BG_LAYER_3">
+    <layer sprite="BACKGROUND_8_LAYER_3_ITEM_5" x="99" y="-51" />
+    <layer sprite="BACKGROUND_8_LAYER_3_ITEM_4" x="31" y="-53" />
+    <layer sprite="BACKGROUND_8_LAYER_3_ITEM_3" x="-32" y="-43" />
+    <layer sprite="BACKGROUND_8_LAYER_3_ITEM_2" x="-97" y="-30" />
+    <layer sprite="BACKGROUND_8_LAYER_3_ITEM_1" x="-141" y="-64" />
+  </composprite>
+  <composprite name="THEME_9_BG_LAYER_2">
+    <layer sprite="BACKGROUND_10_LAYER_2_ITEM_8" x="-455" y="-223" />
+    <layer sprite="BACKGROUND_10_LAYER_2_ITEM_7" x="-458" y="-68" />
+    <layer sprite="BACKGROUND_10_LAYER_2_ITEM_6" x="311" y="-163" />
+    <layer sprite="BACKGROUND_10_LAYER_2_ITEM_5" x="291" y="-56" />
+    <layer sprite="BACKGROUND_10_LAYER_2_ITEM_4" x="515" y="-114" />
+    <layer sprite="BACKGROUND_10_LAYER_2_ITEM_3" x="-106" y="-221" />
+    <layer sprite="BACKGROUND_10_LAYER_2_ITEM_2" x="-151" y="-67" />
+    <layer sprite="BACKGROUND_10_LAYER_2_ITEM_1" x="-463" y="-36" />
+  </composprite>
+  <composprite name="THEME_1_BG_LAYER_2">
+    <layer sprite="BACKGROUND_1_LAYER_2_ITEM_8" x="-92" y="-122" />
+    <layer sprite="BACKGROUND_1_LAYER_2_ITEM_7" x="165" y="-64" />
+    <layer sprite="BACKGROUND_1_LAYER_2_ITEM_6" x="82" y="-87" />
+    <layer sprite="BACKGROUND_1_LAYER_2_ITEM_5" x="74" y="-142" />
+    <layer sprite="BACKGROUND_1_LAYER_2_ITEM_4" x="-10" y="-104" />
+    <layer sprite="BACKGROUND_1_LAYER_2_ITEM_3" x="-25" y="-160" />
+    <layer sprite="BACKGROUND_1_LAYER_2_ITEM_2" x="30" y="-95" />
+    <layer sprite="BACKGROUND_1_LAYER_2_ITEM_1" x="-120" y="-78" />
+    <layer sprite="BACKGROUND_1_LAYER_2" x="0" y="0" />
+  </composprite>
+  <composprite name="THEME_2_BG_LAYER_2">
+    <layer sprite="BACKGROUND_2_LAYER_2_ITEM_3" x="20" y="-87" />
+    <layer sprite="BACKGROUND_2_LAYER_2_ITEM_2" x="-106" y="-68" />
+    <layer sprite="BACKGROUND_2_LAYER_2_ITEM_4" x="166" y="-98" />
+    <layer sprite="BACKGROUND_2_LAYER_2_ITEM_1" x="-184" y="-104" />
+    <layer sprite="BACKGROUND_2_LAYER_2" x="0" y="0" />
+  </composprite>
+  <composprite name="THEME_3_BG_LAYER_2">
+    <layer sprite="BACKGROUND_3_LAYER_2_ITEM_2" x="-109" y="-84" />
+    <layer sprite="BACKGROUND_3_LAYER_2_ITEM_4" x="86" y="-80" />
+    <layer sprite="BACKGROUND_3_LAYER_2_ITEM_3" x="80" y="-106" />
+    <layer sprite="BACKGROUND_3_LAYER_2_ITEM_1" x="-112" y="-119" />
+    <layer sprite="BACKGROUND_3_LAYER_2" x="0" y="0" />
+  </composprite>
+  <composprite name="THEME_4_BG_LAYER_2">
+    <layer sprite="BACKGROUND_4_LAYER_2_ITEM_4" x="-72" y="-70" />
+    <layer sprite="BACKGROUND_4_LAYER_2_ITEM_3" x="-245" y="-64" />
+    <layer sprite="BACKGROUND_4_LAYER_2_ITEM_2" x="100" y="-102" />
+    <layer sprite="BACKGROUND_4_LAYER_2_ITEM_1" x="-133" y="-116" />
+  </composprite>
+  <composprite name="THEME_5_BG_LAYER_2">
+    <layer sprite="BACKGROUND_5_LAYER_2_ITEM_6" x="190" y="-58" />
+    <layer sprite="BACKGROUND_5_LAYER_2_ITEM_5" x="71" y="-65" />
+    <layer sprite="BACKGROUND_5_LAYER_2_ITEM_4" x="-50" y="-72" />
+    <layer sprite="BACKGROUND_5_LAYER_2_ITEM_3" x="-236" y="-60" />
+    <layer sprite="BACKGROUND_5_LAYER_2_ITEM_2" x="-198" y="-88" />
+    <layer sprite="BACKGROUND_5_LAYER_2_ITEM_1" x="-232" y="-44" />
+  </composprite>
+  <composprite name="THEME_6_BG_LAYER_2">
+    <layer sprite="BACKGROUND_6_LAYER_2_ITEM_12" x="337" y="-52" />
+    <layer sprite="BACKGROUND_6_LAYER_2_ITEM_11" x="279" y="-59" />
+    <layer sprite="BACKGROUND_6_LAYER_2_ITEM_10" x="230" y="-73" />
+    <layer sprite="BACKGROUND_6_LAYER_2_ITEM_9" x="177" y="-57" />
+    <layer sprite="BACKGROUND_6_LAYER_2_ITEM_8" x="140" y="-41" />
+    <layer sprite="BACKGROUND_6_LAYER_2_ITEM_7" x="14" y="-67" />
+    <layer sprite="BACKGROUND_6_LAYER_2_ITEM_6" x="-86" y="-51" />
+    <layer sprite="BACKGROUND_6_LAYER_2_ITEM_5" x="-104" y="-14" />
+    <layer sprite="BACKGROUND_6_LAYER_2_ITEM_4" x="-154" y="-74" />
+    <layer sprite="BACKGROUND_6_LAYER_2_ITEM_3" x="-260" y="-47" />
+    <layer sprite="BACKGROUND_6_LAYER_2_ITEM_2" x="-308" y="-74" />
+    <layer sprite="BACKGROUND_6_LAYER_2_ITEM_1" x="-357" y="-56" />
+  </composprite>
+  <composprite name="THEME_7_BG_LAYER_2">
+    <layer sprite="BACKGROUND_7_LAYER_2_ITEM_10" x="190" y="-192" />
+    <layer sprite="BACKGROUND_7_LAYER_2_ITEM_9" x="113" y="-161" />
+    <layer sprite="BACKGROUND_7_LAYER_2_ITEM_8" x="71" y="-219" />
+    <layer sprite="BACKGROUND_7_LAYER_2_ITEM_7" x="-61" y="-155" />
+    <layer sprite="BACKGROUND_7_LAYER_2_ITEM_6" x="-176" y="-148" />
+    <layer sprite="BACKGROUND_7_LAYER_2_ITEM_5" x="-213" y="-209" />
+    <layer sprite="BACKGROUND_7_LAYER_2_ITEM_4" x="46" y="-128" />
+    <layer sprite="BACKGROUND_7_LAYER_2_ITEM_3" x="-214" y="-123" />
+    <layer sprite="BACKGROUND_7_LAYER_2_ITEM_2" x="-247" y="-192" />
+    <layer sprite="BACKGROUND_7_LAYER_2_ITEM_1" x="-246" y="-95" />
+  </composprite>
+  <composprite name="THEME_8_BG_LAYER_2">
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_10" x="-170" y="-108" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_9" x="29" y="-100" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_8" x="64" y="-100" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_7" x="-137" y="-132" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_6" x="-175" y="-108" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_5" x="22" y="-132" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_4" x="79" y="-106" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_3" x="148" y="-98" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_2" x="-78" y="-100" />
+    <layer sprite="BACKGROUND_8_LAYER_2_ITEM_1" x="-236" y="-54" />
+  </composprite>
+</composprites>

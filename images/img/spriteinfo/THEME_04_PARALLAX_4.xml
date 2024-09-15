@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="THEME_04_PARALLAX_4.pvr">
+  <sprite name="FOREGROUND_4_LAYER_2" x="1" y="170" width="480" height="24" pivotX="240" pivotY="17" />
+  <sprite name="BACKGROUND_4_LAYER_3_ITEM_1" x="1" y="70" width="147" height="62" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_4_LAYER_3_ITEM_2" x="198" y="70" width="303" height="45" pivotX="-1" pivotY="0" />
+  <sprite name="BACKGROUND_4_LAYER_3_ITEM_3" x="43" y="134" width="59" height="24" pivotX="-8" pivotY="0" />
+  <sprite name="BACKGROUND_4_LAYER_3_ITEM_4" x="150" y="122" width="34" height="9" pivotX="-6" pivotY="-6" />
+  <sprite name="BACKGROUND_4_LAYER_2_ITEM_1" x="150" y="70" width="46" height="50" pivotX="-9" pivotY="-2" />
+  <sprite name="BACKGROUND_4_LAYER_2_ITEM_2" x="1" y="134" width="40" height="34" pivotX="-13" pivotY="-4" />
+  <sprite name="BACKGROUND_4_LAYER_2_ITEM_3" x="1" y="1" width="480" height="67" pivotX="-1" pivotY="0" />
+  <sprite name="BACKGROUND_4_LAYER_2_ITEM_4" x="198" y="117" width="30" height="4" pivotX="-1" pivotY="-3" />
+</spritesheet>

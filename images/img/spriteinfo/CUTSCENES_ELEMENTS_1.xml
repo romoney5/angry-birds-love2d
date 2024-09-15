@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="CUTSCENES_ELEMENTS_1.pvr">
+  <sprite name="STORY_BOSS_THEME_1" x="794" y="1" width="166" height="186" pivotX="-463" pivotY="-293" />
+  <sprite name="STORY_BOSS_THEME_2" x="595" y="1" width="197" height="224" pivotX="-452" pivotY="-257" />
+  <sprite name="STORY_BOSS_THEME_4" x="500" y="639" width="279" height="138" pivotX="-409" pivotY="-333" />
+  <sprite name="STORY_BOSS_KING_ESCAPING" x="155" y="758" width="91" height="120" pivotX="-830" pivotY="-258" />
+  <sprite name="STORY_BEGIN_PIG_GROUP_1" x="500" y="471" width="324" height="166" pivotX="-1170" pivotY="-194" />
+  <sprite name="STORY_BEGIN_PIG_GROUP_2" x="500" y="779" width="270" height="126" pivotX="-1210" pivotY="-221" />
+  <sprite name="STORY_BEGIN_FAKE_EGGS" x="301" y="258" width="347" height="211" pivotX="-124" pivotY="-247" />
+  <sprite name="STORY_END_KING_EYE_PEEK" x="202" y="880" width="70" height="66" pivotX="-1210" pivotY="-258" />
+  <sprite name="STORY_END_KING_EYE_NORMAL" x="889" y="258" width="70" height="66" pivotX="-1210" pivotY="-258" />
+  <sprite name="STORY_END_KING_EYE_WINK" x="650" y="258" width="237" height="184" pivotX="-1056" pivotY="-193" />
+  <sprite name="STORY_END_2_TONGUE" x="179" y="552" width="22" height="18" pivotX="-471" pivotY="-391" />
+  <sprite name="STORY_END_2_EGGS" x="301" y="471" width="197" height="176" pivotX="-296" pivotY="-269" />
+  <sprite name="STORY_END_2_HIDING_KING" x="1" y="1" width="298" height="311" pivotX="-668" pivotY="-169" />
+  <sprite name="STORY_END_2_EYE_OPEN" x="80" y="843" width="48" height="84" pivotX="-892" pivotY="-294" />
+  <sprite name="STORY_END_2_EYE_PEEK" x="248" y="758" width="48" height="81" pivotX="-892" pivotY="-296" />
+  <sprite name="STORY_END_2_EYE_WINK" x="155" y="880" width="45" height="68" pivotX="-895" pivotY="-301" />
+  <sprite name="STORY_END_2_SMILE" x="1" y="843" width="77" height="106" pivotX="-863" pivotY="-296" />
+  <sprite name="STORY_BOSS_FLATTENED_BALLOON_2" x="794" y="189" width="157" height="67" pivotX="-347" pivotY="-333" />
+  <sprite name="STORY_BOSS_FLATTENED_BALLOON" x="301" y="826" width="157" height="67" pivotX="-350" pivotY="-335" />
+  <sprite name="STORY_BOSS_KING_ESCAPING_2" x="1" y="314" width="154" height="263" pivotX="-721" pivotY="-36" />
+  <sprite name="STORY_FLYING_PIGS_1" x="301" y="1" width="292" height="255" pivotX="-397" pivotY="509" />
+  <sprite name="STORY_ANGRY_YELLOW_BIRD" x="157" y="314" width="130" height="198" pivotX="-440" pivotY="-232" />
+  <sprite name="STORY_BOSS_KING_ESCAPING_3" x="1" y="579" width="152" height="262" pivotX="-722" pivotY="-41" />
+  <sprite name="STORY_CLOUD_1" x="500" y="907" width="198" height="48" pivotX="-39" pivotY="402" />
+  <sprite name="STORY_CLOUD_2" x="301" y="755" width="192" height="69" pivotX="-763" pivotY="561" />
+  <sprite name="STORY_CLOUD_3" x="179" y="514" width="91" height="36" pivotX="-284" pivotY="223" />
+  <sprite name="STORY_CLOUD_4" x="301" y="895" width="130" height="32" pivotX="-673" pivotY="311" />
+  <sprite name="STORY_FLYING_PIGS_3" x="155" y="579" width="107" height="177" pivotX="-496" pivotY="254" />
+  <sprite name="STORY_BOSS_KING_ESCAPING_4_EYE_WINK" x="157" y="514" width="20" height="38" pivotX="-822" pivotY="-142" />
+  <sprite name="STORY_BOSS_KING_ESCAPING_4_EYE_2" x="157" y="554" width="18" height="19" pivotX="-823" pivotY="-145" />
+  <sprite name="STORY_BOSS_1_HELMET" x="301" y="649" width="183" height="104" pivotX="-467" pivotY="-257" />
+</spritesheet>

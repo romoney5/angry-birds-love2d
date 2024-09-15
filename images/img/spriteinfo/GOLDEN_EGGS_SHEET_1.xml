@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="GOLDEN_EGGS_SHEET_1.pvr">
+  <sprite name="SOUNDBOARD_2_RADIO" x="0" y="0" width="535" height="449" pivotX="249" pivotY="222" />
+  <sprite name="ACCO_LEFT" x="1" y="450" width="162" height="347" pivotX="156" pivotY="174" />
+  <sprite name="ACCO_MID" x="165" y="450" width="307" height="331" pivotX="36" pivotY="166" />
+  <sprite name="ACCO_RIGHT" x="536" y="1" width="144" height="347" pivotX="8" pivotY="174" />
+  <sprite name="ACCO_BTN_UP_1" x="499" y="450" width="71" height="75" pivotX="150" pivotY="151" />
+  <sprite name="ACCO_BTN_UP_2" x="499" y="527" width="64" height="65" pivotX="91" pivotY="87" />
+  <sprite name="ACCO_BTN_UP_3" x="536" y="350" width="79" height="75" pivotX="160" pivotY="34" />
+  <sprite name="ACCO_BTN_UP_4" x="572" y="450" width="73" height="68" pivotX="96" pivotY="-29" />
+  <sprite name="ACCO_BTN_UP_5" x="563" y="594" width="66" height="58" pivotX="152" pivotY="-87" />
+  <sprite name="ACCO_BTN_DOWN_1" x="565" y="527" width="58" height="65" pivotX="137" pivotY="146" />
+  <sprite name="ACCO_BTN_DOWN_2" x="499" y="660" width="54" height="55" pivotX="79" pivotY="84" />
+  <sprite name="ACCO_BTN_DOWN_3" x="617" y="350" width="65" height="70" pivotX="146" pivotY="33" />
+  <sprite name="ACCO_BTN_DOWN_4" x="499" y="594" width="62" height="64" pivotX="84" pivotY="-27" />
+  <sprite name="ACCO_BTN_DOWN_5" x="625" y="527" width="57" height="59" pivotX="141" pivotY="-85" />
+  <sprite name="ACCO_MID_BROKEN" x="474" y="450" width="23" height="316" pivotX="7" pivotY="159" />
+</spritesheet>

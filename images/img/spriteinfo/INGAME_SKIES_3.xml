@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="INGAME_SKIES_3.pvr">
+  <sprite name="THEME_CAVE_PARALLAX_1" x="0" y="14" width="1024" height="636" pivotX="512" pivotY="631" />
+</spritesheet>

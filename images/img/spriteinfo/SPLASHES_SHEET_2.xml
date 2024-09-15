@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="SPLASHES_SHEET_2.pvr">
+  <sprite name="SPLASH_ROVIO" x="1" y="1" width="235" height="368" pivotX="117" pivotY="184" />
+  <sprite name="SPLASH_ROVIO_DUMMY_1" x="1" y="0" width="235" height="1" pivotX="0" pivotY="0" />
+  <sprite name="SPLASH_ROVIO_DUMMY_2" x="0" y="1" width="1" height="368" pivotX="0" pivotY="0" />
+  <sprite name="SPLASH_ROVIO_DUMMY_3" x="1" y="369" width="235" height="1" pivotX="0" pivotY="-367" />
+  <sprite name="SPLASH_ROVIO_DUMMY_4" x="236" y="1" width="1" height="368" pivotX="-234" pivotY="0" />
+  <sprite name="KOREA_IMAGE_1" x="239" y="0" width="220" height="158" pivotX="110" pivotY="79" />
+  <sprite name="KOREA_IMAGE_2" x="262" y="171" width="51" height="58" pivotX="25" pivotY="29" />
+</spritesheet>

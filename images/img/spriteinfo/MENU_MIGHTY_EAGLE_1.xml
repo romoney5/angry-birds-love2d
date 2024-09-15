@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="MENU_MIGHTY_EAGLE_1.png">
+  <sprite name="UPSELL_EAGLE_BG" x="1" y="1" width="328" height="311" pivotX="327" pivotY="310" />
+  <sprite name="UPSELL_EAGLE_LOGO" x="1" y="313" width="274" height="38" pivotX="0" pivotY="0" />
+  <sprite name="BUTTON_UPSELL_OK" x="330" y="1" width="89" height="89" pivotX="44" pivotY="41" />
+  <sprite name="BUTTON_UPSELL_TRAILER" x="420" y="1" width="89" height="89" pivotX="44" pivotY="41" />
+  <sprite name="BUTTON_UPSELL_NO" x="330" y="91" width="89" height="89" pivotX="44" pivotY="41" />
+</spritesheet>

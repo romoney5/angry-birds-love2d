@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="CUTSCENES_BACKGROUNDS_3.pvr">
+  <sprite name="STORY_HIDE_BIRDS_4" x="4" y="492" width="352" height="331" pivotX="-1" pivotY="-144" />
+  <sprite name="STORY_BOSS_BG" x="4" y="4" width="966" height="480" pivotX="0" pivotY="0" />
+  <sprite name="STORY_HIDE_HOOF_1" x="474" y="492" width="385" height="78" pivotX="-378" pivotY="-394" />
+  <sprite name="STORY_HIDE_HOOF_2" x="364" y="492" width="102" height="118" pivotX="-769" pivotY="-353" />
+  <sprite name="STORY_BEGIN_FADE" x="4" y="831" width="864" height="124" pivotX="0" pivotY="123" />
+</spritesheet>

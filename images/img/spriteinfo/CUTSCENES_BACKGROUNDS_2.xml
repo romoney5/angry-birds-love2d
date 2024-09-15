@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="CUTSCENES_BACKGROUNDS_2.pvr">
+  <sprite name="STORY_HIDE_BIRDS_1" x="341" y="4" width="480" height="314" pivotX="0" pivotY="-85" />
+  <sprite name="STORY_HIDE_BIRDS_2" x="745" y="326" width="92" height="163" pivotX="-559" pivotY="-270" />
+  <sprite name="STORY_HIDE_BIRDS_3" x="829" y="4" width="110" height="178" pivotX="-781" pivotY="-287" />
+  <sprite name="STORY_CONSTRUCTION_YARD" x="341" y="326" width="396" height="275" pivotX="-1038" pivotY="-86" />
+  <sprite name="STORY_BEGIN_BG_EXTENSION" x="4" y="4" width="329" height="480" pivotX="-1493" pivotY="0" />
+  <sprite name="STORY_EP4_START_BIG_BROTHER" x="4" y="492" width="314" height="289" pivotX="-1508" pivotY="-190" />
+  <sprite name="STORY_BEGIN_FADE_2" x="341" y="609" width="470" height="124" pivotX="-1024" pivotY="123" />
+</spritesheet>

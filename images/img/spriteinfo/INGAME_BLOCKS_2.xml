@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="INGAME_BLOCKS_2.pvr">
+  <sprite name="CAVE_HAT_2" x="182" y="192" width="112" height="73" pivotX="56" pivotY="36" />
+  <sprite name="KING_CAVE_HAT_1" x="182" y="104" width="172" height="86" pivotX="86" pivotY="43" />
+  <sprite name="CAVE_HAT_3" x="280" y="1" width="110" height="91" pivotX="55" pivotY="45" />
+  <sprite name="CAVE_HAT_1" x="296" y="264" width="92" height="56" pivotX="19" pivotY="37" />
+  <sprite name="CAVE_SHOVEL_1" x="35" y="1" width="51" height="147" pivotX="25" pivotY="73" />
+  <sprite name="CAVE_PICKAXE_1" x="88" y="1" width="92" height="117" pivotX="46" pivotY="58" />
+  <sprite name="BLOCK_AMETHYST" x="88" y="120" width="80" height="95" pivotX="40" pivotY="63" />
+  <sprite name="BLOCK_RUBY" x="450" y="1" width="42" height="77" pivotX="21" pivotY="38" />
+  <sprite name="RUBY_PARTICLE_1" x="70" y="321" width="16" height="21" pivotX="8" pivotY="10" />
+  <sprite name="RUBY_PARTICLE_2" x="182" y="337" width="22" height="25" pivotX="11" pivotY="12" />
+  <sprite name="AMETHYST_PARTICLE_1" x="478" y="311" width="22" height="33" pivotX="11" pivotY="16" />
+  <sprite name="AMETHYST_PARTICLE_2" x="487" y="138" width="19" height="28" pivotX="9" pivotY="14" />
+  <sprite name="AMETHYST_PARTICLE_3" x="487" y="104" width="17" height="32" pivotX="8" pivotY="16" />
+  <sprite name="AMETHYST_PARTICLE_4" x="72" y="239" width="9" height="19" pivotX="4" pivotY="9" />
+  <sprite name="AMBER_PARTICLE_1" x="70" y="344" width="15" height="19" pivotX="7" pivotY="9" />
+  <sprite name="AMBER_PARTICLE_2" x="450" y="80" width="20" height="21" pivotX="10" pivotY="10" />
+  <sprite name="AMBER_PARTICLE_3" x="70" y="294" width="11" height="25" pivotX="5" pivotY="12" />
+  <sprite name="BLOCK_AMBER" x="443" y="192" width="55" height="59" pivotX="27" pivotY="29" />
+  <sprite name="BLOCK_STALAKTITE_1" x="182" y="1" width="96" height="101" pivotX="48" pivotY="50" />
+  <sprite name="BLOCK_STALAKTITE_2" x="414" y="192" width="27" height="60" pivotX="13" pivotY="30" />
+  <sprite name="BLOCK_STALAKTITE_3" x="238" y="267" width="31" height="64" pivotX="15" pivotY="32" />
+  <sprite name="WHITE_STALAKTITE_PARTICLE_1" x="1" y="310" width="24" height="49" pivotX="12" pivotY="24" />
+  <sprite name="WHITE_STALAKTITE_PARTICLE_2" x="335" y="322" width="32" height="36" pivotX="16" pivotY="18" />
+  <sprite name="WHITE_STALAKTITE_PARTICLE_3" x="72" y="150" width="13" height="46" pivotX="6" pivotY="23" />
+  <sprite name="STALAKTITE_PARTICLE_1" x="72" y="198" width="13" height="39" pivotX="6" pivotY="19" />
+  <sprite name="STALAKTITE_PARTICLE_2" x="238" y="333" width="30" height="31" pivotX="15" pivotY="15" />
+  <sprite name="STALAKTITE_PARTICLE_3" x="296" y="322" width="37" height="42" pivotX="18" pivotY="21" />
+  <sprite name="STALAKTITE_PARTICLE_4" x="271" y="267" width="21" height="36" pivotX="10" pivotY="18" />
+  <sprite name="RUBY_PARTICLE_3" x="70" y="262" width="14" height="30" pivotX="7" pivotY="15" />
+  <sprite name="CAVE_SHOVEL_2" x="35" y="262" width="33" height="93" pivotX="16" pivotY="46" />
+  <sprite name="CAVE_PICKAXE_2" x="182" y="267" width="54" height="68" pivotX="27" pivotY="34" />
+  <sprite name="BLOCK_STALAKTITE_TIP_2" x="148" y="217" width="25" height="87" pivotX="12" pivotY="43" />
+  <sprite name="BLOCK_STALAKTITE_TIP_1" x="35" y="150" width="35" height="110" pivotX="17" pivotY="55" />
+  <sprite name="BLOCK_STALAKTITE_TIP_3" x="1" y="186" width="26" height="122" pivotX="13" pivotY="61" />
+  <sprite name="BLOCK_STALAKTITE_TIP_4" x="1" y="1" width="32" height="183" pivotX="16" pivotY="91" />
+  <sprite name="BLOCK_PUZZLE_PIECE" x="296" y="192" width="116" height="70" pivotX="58" pivotY="35" />
+  <sprite name="BLOCK_GOLDEN_KINGPIG_1" x="88" y="217" width="58" height="94" pivotX="29" pivotY="47" />
+  <sprite name="BLOCK_GOLDEN_PICAXE" x="356" y="104" width="64" height="82" pivotX="32" pivotY="41" />
+  <sprite name="BLOCK_GOLDEN_CONSTRUCTION_HELMET" x="390" y="264" width="95" height="45" pivotX="47" pivotY="22" />
+  <sprite name="BLOCK_GOLDEN_PAN" x="390" y="311" width="86" height="41" pivotX="43" pivotY="20" />
+  <sprite name="BLOCK_GOLDEN_WESTERN_HAT" x="88" y="313" width="81" height="45" pivotX="40" pivotY="22" />
+  <sprite name="BLOCK_GOLDEN_BALLOON" x="392" y="1" width="56" height="84" pivotX="28" pivotY="42" />
+  <sprite name="BLOCK_GOLDEN_KINGPIG_2" x="422" y="104" width="63" height="76" pivotX="31" pivotY="38" />
+</spritesheet>

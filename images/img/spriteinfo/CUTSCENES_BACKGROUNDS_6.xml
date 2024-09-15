@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="CUTSCENES_BACKGROUNDS_6.pvr">
+  <sprite name="STORY_CAVE_BIRDHOLE" x="330" y="384" width="285" height="102" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_HIDETRACKS_1" x="422" y="647" width="112" height="24" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_HIDETRACKS_2" x="685" y="346" width="108" height="23" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_HIDETRACKS_3" x="575" y="168" width="91" height="29" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_HIDETRACKS_4" x="575" y="205" width="60" height="22" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_HIDETRACKS_5" x="722" y="186" width="51" height="22" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_PIGHOLE_1" x="502" y="4" width="212" height="156" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_PIGHOLE_2" x="685" y="243" width="97" height="95" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_PIGHOLE_3" x="422" y="496" width="308" height="79" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_PIGHOLE_4" x="579" y="583" width="183" height="54" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_PIGHOLE_5" x="422" y="583" width="149" height="56" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_PIGHOLE_6" x="244" y="626" width="78" height="52" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_DEADPIG_1" x="330" y="4" width="164" height="229" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_DEADPIG_2" x="244" y="397" width="55" height="120" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_DEADPIG_3" x="244" y="525" width="66" height="93" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_KINGESCAPE_1" x="330" y="243" width="213" height="133" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_KINGESCAPE_2" x="623" y="384" width="142" height="98" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_DEADSTACHE_1" x="4" y="397" width="232" height="275" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_DEADSTACHE_2" x="551" y="243" width="126" height="124" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_DEADKING_1" x="4" y="4" width="318" height="384" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_DEADKING_2" x="502" y="168" width="65" height="58" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_DEADKING_3" x="738" y="496" width="71" height="68" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_EYE_1" x="722" y="4" width="85" height="83" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_EYE_2" x="330" y="496" width="84" height="82" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_EYE_3" x="722" y="95" width="84" height="83" pivotX="0" pivotY="0" />
+  <sprite name="STORY_CAVE_EYE_4" x="330" y="586" width="84" height="82" pivotX="0" pivotY="0" />
+</spritesheet>

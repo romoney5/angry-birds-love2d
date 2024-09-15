@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="CUTSCENES_ELEMENTS_2.pvr">
+  <sprite name="STORY_EP4_KING_WINK" x="375" y="186" width="22" height="35" pivotX="-695" pivotY="-307" />
+  <sprite name="STORY_BIG_BROTHER_HELMET" x="338" y="630" width="140" height="72" pivotX="-128" pivotY="-205" />
+  <sprite name="STORY_EP4_KING_PEAK" x="349" y="186" width="23" height="35" pivotX="-695" pivotY="-307" />
+  <sprite name="STORY_EP4_END" x="2" y="441" width="472" height="186" pivotX="-451" pivotY="-251" />
+  <sprite name="STORY_EP4_EGGS" x="218" y="630" width="117" height="95" pivotX="-245" pivotY="-309" />
+  <sprite name="STORY_BOSS_CARPET" x="2" y="2" width="344" height="222" pivotX="-366" pivotY="-252" />
+  <sprite name="STORY_BOSS_2_HELMET" x="2" y="630" width="213" height="103" pivotX="-462" pivotY="-211" />
+  <sprite name="STORY_BOSS_KING_ESCAPING_4" x="349" y="2" width="84" height="181" pivotX="-768" pivotY="-32" />
+  <sprite name="STORY_BIG_BROTHER_1" x="17" y="227" width="199" height="211" pivotX="-465" pivotY="-187" />
+  <sprite name="STORY_BIG_BROTHER_2" x="17" y="227" width="200" height="211" pivotX="-75" pivotY="-220" />
+</spritesheet>

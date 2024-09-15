@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="THEME_08_PARALLAX_8.pvr">
+  <sprite name="FOREGROUND_8_LAYER_2" x="1" y="211" width="480" height="48" pivotX="240" pivotY="-13" />
+  <sprite name="FOREGROUND_8_LAYER_1" x="1" y="1" width="480" height="71" pivotX="240" pivotY="10" />
+  <sprite name="BACKGROUND_8_LAYER_3_ITEM_1" x="1" y="144" width="34" height="65" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_8_LAYER_3_ITEM_2" x="1" y="261" width="52" height="31" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_8_LAYER_3_ITEM_3" x="177" y="144" width="46" height="44" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_8_LAYER_3_ITEM_4" x="37" y="144" width="53" height="54" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_8_LAYER_3_ITEM_5" x="92" y="144" width="83" height="52" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_8_LAYER_2_ITEM_1" x="1" y="74" width="480" height="68" pivotX="-4" pivotY="12" />
+  <sprite name="BACKGROUND_8_LAYER_2_ITEM_2" x="276" y="144" width="140" height="34" pivotX="33" pivotY="0" />
+  <sprite name="BACKGROUND_8_LAYER_2_ITEM_3" x="1" y="294" width="46" height="31" pivotX="-1" pivotY="-1" />
+  <sprite name="BACKGROUND_8_LAYER_2_ITEM_4" x="225" y="144" width="49" height="39" pivotX="0" pivotY="-1" />
+  <sprite name="BACKGROUND_8_LAYER_2_ITEM_5" x="1" y="327" width="52" height="30" pivotX="-1" pivotY="-2" />
+  <sprite name="BACKGROUND_8_LAYER_2_ITEM_6" x="418" y="144" width="50" height="34" pivotX="0" pivotY="-8" />
+  <sprite name="BACKGROUND_8_LAYER_2_ITEM_7" x="225" y="185" width="37" height="24" pivotX="-1" pivotY="0" />
+  <sprite name="BACKGROUND_8_LAYER_2_ITEM_8" x="483" y="1" width="10" height="34" pivotX="-1" pivotY="0" />
+  <sprite name="BACKGROUND_8_LAYER_2_ITEM_9" x="483" y="37" width="20" height="4" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_8_LAYER_2_ITEM_10" x="92" y="198" width="70" height="8" pivotX="-1" pivotY="0" />
+</spritesheet>

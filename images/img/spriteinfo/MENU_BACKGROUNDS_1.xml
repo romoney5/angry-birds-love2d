@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="MENU_BACKGROUNDS_1.pvr">
+  <sprite name="MENU_LOGO" x="0" y="0" width="527" height="126" pivotX="263" pivotY="-21" />
+</spritesheet>

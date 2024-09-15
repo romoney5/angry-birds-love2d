@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="THEME_05_PARALLAX_5.pvr">
+  <sprite name="FOREGROUND_5_LAYER_2" x="1" y="175" width="480" height="21" pivotX="242" pivotY="14" />
+  <sprite name="BACKGROUND_5_LAYER_3_ITEM_1" x="82" y="1" width="114" height="74" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_5_LAYER_3_ITEM_2" x="198" y="1" width="78" height="63" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_5_LAYER_3_ITEM_3" x="278" y="1" width="48" height="50" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_5_LAYER_3_ITEM_4" x="1" y="1" width="79" height="82" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_5_LAYER_3_ITEM_5" x="328" y="1" width="57" height="45" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_5_LAYER_2_ITEM_1" x="0" y="85" width="482" height="43" pivotX="1" pivotY="-1" />
+  <sprite name="BACKGROUND_5_LAYER_2_ITEM_2" x="1" y="130" width="146" height="43" pivotX="-2" pivotY="-2" />
+  <sprite name="BACKGROUND_5_LAYER_2_ITEM_3" x="197" y="66" width="37" height="17" pivotX="-3" pivotY="0" />
+  <sprite name="BACKGROUND_5_LAYER_2_ITEM_4" x="149" y="130" width="121" height="28" pivotX="0" pivotY="-1" />
+  <sprite name="BACKGROUND_5_LAYER_2_ITEM_5" x="387" y="1" width="119" height="22" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_5_LAYER_2_ITEM_6" x="387" y="25" width="59" height="16" pivotX="0" pivotY="1" />
+</spritesheet>

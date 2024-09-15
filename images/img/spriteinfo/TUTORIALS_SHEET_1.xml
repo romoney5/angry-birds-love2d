@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="TUTORIALS_SHEET_1.pvr">
+  <sprite name="TUTORIAL_FINGER_CLICK" x="169" y="274" width="83" height="151" pivotX="41" pivotY="75" />
+  <sprite name="TUTORIAL_FINGER_SLIDE" x="438" y="443" width="108" height="109" pivotX="54" pivotY="54" />
+  <sprite name="TUTORIAL_BOOM" x="323" y="443" width="115" height="111" pivotX="57" pivotY="55" />
+  <sprite name="TUTORIAL_TRAIL_1" x="552" y="34" width="9" height="9" pivotX="4" pivotY="4" />
+  <sprite name="TUTORIAL_TRAIL_2" x="540" y="34" width="12" height="11" pivotX="6" pivotY="5" />
+  <sprite name="TUTORIAL_TRAIL_3" x="540" y="21" width="14" height="13" pivotX="7" pivotY="6" />
+  <sprite name="TUTORIAL_GROUND" x="97" y="585" width="440" height="71" pivotX="220" pivotY="35" />
+  <sprite name="TUTORIAL_SLINGSHOT_RED" x="199" y="443" width="124" height="122" pivotX="62" pivotY="61" />
+  <sprite name="TUTORIAL_SLINGSHOT_MOUSE" x="0" y="585" width="97" height="89" pivotX="48" pivotY="44" />
+  <sprite name="TUTORIAL_SLINGSHOT" x="513" y="0" width="27" height="82" pivotX="13" pivotY="41" />
+  <sprite name="TUTORIAL_BACKGROUND" x="252" y="274" width="255" height="142" pivotX="127" pivotY="71" />
+  <sprite name="TUTORIAL_PIG_GLASS" x="394" y="196" width="105" height="62" pivotX="52" pivotY="31" />
+  <sprite name="TUTORIAL_PIG_ROCK" x="290" y="196" width="104" height="63" pivotX="52" pivotY="31" />
+  <sprite name="TUTORIAL_PIG_WOOD" x="97" y="656" width="103" height="62" pivotX="51" pivotY="31" />
+  <sprite name="TUTORIAL_PIG_PILE" x="0" y="443" width="199" height="142" pivotX="99" pivotY="71" />
+  <sprite name="TUTORIAL_PIG_TARGET" x="0" y="274" width="169" height="169" pivotX="84" pivotY="84" />
+  <sprite name="TUTORIAL_BIRD_BOOMERANG_1" x="513" y="160" width="48" height="35" pivotX="24" pivotY="17" />
+  <sprite name="TUTORIAL_BIRD_BOOMERANG_2" x="0" y="674" width="43" height="42" pivotX="21" pivotY="21" />
+  <sprite name="TUTORIAL_BIRD_BLUE_1" x="540" y="0" width="20" height="21" pivotX="10" pivotY="10" />
+  <sprite name="TUTORIAL_BIRD_BLUE_2" x="513" y="82" width="40" height="78" pivotX="20" pivotY="39" />
+  <sprite name="TUTORIAL_BIRD_BIGBROTHER" x="191" y="196" width="76" height="76" pivotX="38" pivotY="38" />
+  <sprite name="TUTORIAL_BIRD_BLACK" x="507" y="328" width="33" height="45" pivotX="16" pivotY="22" />
+  <sprite name="TUTORIAL_BIRD_EGG_1" x="499" y="196" width="54" height="58" pivotX="27" pivotY="29" />
+  <sprite name="TUTORIAL_BIRD_EGG_2" x="507" y="274" width="40" height="54" pivotX="20" pivotY="27" />
+  <sprite name="TUTORIAL_BIRD_YELLOW_1" x="43" y="674" width="45" height="34" pivotX="22" pivotY="17" />
+  <sprite name="TUTORIAL_BIRD_YELLOW_2" x="507" y="373" width="49" height="43" pivotX="24" pivotY="21" />
+  <sprite name="TUTORIAL_DROPPING_EGG" x="267" y="196" width="23" height="74" pivotX="11" pivotY="37" />
+  <sprite name="TUTORIAL_MIGHTY_EAGLE" x="191" y="0" width="322" height="196" pivotX="161" pivotY="98" />
+  <sprite name="TUTORIAL_FINGER_BIG" x="1" y="1" width="187" height="272" pivotX="93" pivotY="136" />
+</spritesheet>

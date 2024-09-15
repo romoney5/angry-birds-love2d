@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="GOLDEN_EGGS_SHEET_3.png">
+  <sprite name="GOLDEN_EGG_STAR_EFFECT" x="1" y="1" width="286" height="287" pivotX="144" pivotY="149" />
+  <sprite name="GOLDEN_EGG_STAR_COLLECTED" x="1" y="289" width="149" height="146" pivotX="74" pivotY="73" />
+  <sprite name="GOLDEN_EGG_STAR" x="290" y="272" width="184" height="179" pivotX="92" pivotY="89" />
+  <sprite name="SOUNDBOARD_4_HIGHLIGHT" x="290" y="1" width="96" height="266" pivotX="48" pivotY="0" />
+  <sprite name="SOUNDBOARD_4_BG" x="291" y="1" width="1" height="270" pivotX="0" pivotY="0" />
+</spritesheet>

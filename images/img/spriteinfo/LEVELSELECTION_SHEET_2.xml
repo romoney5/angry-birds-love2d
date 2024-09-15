@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="LEVELSELECTION_SHEET_2.png">
+  <sprite name="UPSELL_SHOP" x="1" y="1" width="333" height="357" pivotX="166" pivotY="178" />
+  <sprite name="SIGNUP_NEWSLETTER" x="498" y="425" width="325" height="139" pivotX="162" pivotY="69" />
+  <sprite name="BING_GOLDEN_EGG" x="336" y="236" width="316" height="187" pivotX="158" pivotY="93" />
+  <sprite name="LS_COMING_SOON" x="498" y="700" width="360" height="129" pivotX="180" pivotY="104" />
+  <sprite name="ICON_BABY_BLU" x="336" y="425" width="160" height="154" pivotX="70" pivotY="77" />
+  <sprite name="FB_LIKE_BUTTON" x="1" y="360" width="315" height="240" pivotX="157" pivotY="120" />
+  <sprite name="LS_THEME_15_LEFT" x="654" y="236" width="212" height="166" pivotX="0" pivotY="165" />
+  <sprite name="LS_THEME_15_RIGHT" x="336" y="581" width="152" height="145" pivotX="151" pivotY="144" />
+  <sprite name="TW_BUTTON" x="1" y="602" width="315" height="240" pivotX="157" pivotY="120" />
+  <sprite name="UPSELL_HALLOWEEN" x="498" y="566" width="315" height="132" pivotX="157" pivotY="66" />
+  <sprite name="RENREN_BUTTON" x="336" y="1" width="315" height="233" pivotX="157" pivotY="116" />
+  <sprite name="WEIBO_BUTTON" x="653" y="1" width="314" height="231" pivotX="157" pivotY="115" />
+</spritesheet>

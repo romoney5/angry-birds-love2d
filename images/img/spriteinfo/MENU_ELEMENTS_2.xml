@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="MENU_ELEMENTS_2.pvr">
+  <sprite name="EAGLE_METER_EMPTY" x="1" y="396" width="299" height="96" pivotX="149" pivotY="48" />
+  <sprite name="EAGLE_METER_FILL" x="1" y="494" width="299" height="96" pivotX="149" pivotY="48" />
+  <sprite name="EAGLE_METER_FULL" x="1" y="223" width="370" height="171" pivotX="185" pivotY="85" />
+  <sprite name="EAGLE_METER_EFFECT" x="1" y="1" width="228" height="220" pivotX="114" pivotY="110" />
+  <sprite name="EAGLE_FEATHER_FULL" x="231" y="87" width="79" height="26" pivotX="39" pivotY="13" />
+  <sprite name="EAGLE_FEATHER_EMPTY" x="231" y="57" width="80" height="28" pivotX="40" pivotY="14" />
+  <sprite name="EAGLE_TRY_SIGN_1" x="231" y="1" width="107" height="54" pivotX="-11" pivotY="27" />
+  <sprite name="EAGLE_SELL_SIGN_1" x="340" y="1" width="106" height="50" pivotX="-11" pivotY="25" />
+  <sprite name="EPISODE_SELECTION_FEATHER" x="447" y="0" width="33" height="31" pivotX="32" pivotY="15" />
+</spritesheet>

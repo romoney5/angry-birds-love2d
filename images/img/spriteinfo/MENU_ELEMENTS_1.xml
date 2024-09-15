@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="MENU_ELEMENTS_1.pvr">
+  <sprite name="NEW_HIGHSCORE_BG" x="64" y="465" width="169" height="136" pivotX="84" pivotY="68" />
+  <sprite name="10K_RED" x="500" y="396" width="159" height="57" pivotX="79" pivotY="28" />
+  <sprite name="10K_BLUE" x="661" y="396" width="155" height="57" pivotX="77" pivotY="28" />
+  <sprite name="10K_WHITE" x="500" y="455" width="155" height="57" pivotX="77" pivotY="28" />
+  <sprite name="5K_GREEN" x="344" y="456" width="136" height="55" pivotX="68" pivotY="27" />
+  <sprite name="STARS_BIG_3" x="657" y="455" width="131" height="44" pivotX="0" pivotY="22" />
+  <sprite name="STARS_BIG_2" x="657" y="501" width="128" height="44" pivotX="0" pivotY="22" />
+  <sprite name="STARS_BIG_1" x="657" y="547" width="128" height="44" pivotX="0" pivotY="22" />
+  <sprite name="STARS_BIG_0" x="657" y="593" width="124" height="37" pivotX="0" pivotY="18" />
+  <sprite name="RESULT_STARS_3" x="64" y="603" width="68" height="25" pivotX="0" pivotY="12" />
+  <sprite name="RESULT_STARS_2" x="134" y="603" width="65" height="25" pivotX="0" pivotY="12" />
+  <sprite name="RESULT_STARS_1" x="684" y="130" width="64" height="25" pivotX="0" pivotY="12" />
+  <sprite name="RESULT_STARS_0" x="1" y="604" width="60" height="18" pivotX="0" pivotY="9" />
+  <sprite name="REWARD_2_STAR" x="497" y="1" width="99" height="136" pivotX="46" pivotY="87" />
+  <sprite name="REWARD_2" x="598" y="1" width="84" height="136" pivotX="39" pivotY="87" />
+  <sprite name="REWARD_1_STAR" x="344" y="570" width="125" height="55" pivotX="67" pivotY="35" />
+  <sprite name="REWARD_1" x="344" y="513" width="126" height="55" pivotX="67" pivotY="35" />
+  <sprite name="10K_BOOMERANG" x="344" y="396" width="154" height="58" pivotX="77" pivotY="29" />
+  <sprite name="REWARD_3_STAR" x="1" y="467" width="60" height="135" pivotX="30" pivotY="37" />
+  <sprite name="REWARD_3" x="236" y="282" width="60" height="122" pivotX="30" pivotY="37" />
+  <sprite name="REWARD_4" x="344" y="157" width="137" height="120" pivotX="68" pivotY="60" />
+  <sprite name="REWARD_4_STAR" x="483" y="157" width="137" height="120" pivotX="68" pivotY="60" />
+  <sprite name="10K_BLACK" x="500" y="573" width="155" height="56" pivotX="77" pivotY="28" />
+  <sprite name="10K_YELLOW" x="500" y="514" width="155" height="57" pivotX="77" pivotY="28" />
+  <sprite name="ABOUT_BIRDS_1" x="236" y="1" width="259" height="154" pivotX="129" pivotY="76" />
+  <sprite name="ABOUT_BIRDS_2" x="1" y="1" width="233" height="156" pivotX="116" pivotY="77" />
+  <sprite name="ABOUT_BIRDS_3" x="64" y="314" width="135" height="149" pivotX="67" pivotY="74" />
+  <sprite name="BING_SIGN" x="1" y="159" width="160" height="153" pivotX="80" pivotY="152" />
+  <sprite name="BING_EGG_BUTTON" x="344" y="279" width="276" height="115" pivotX="138" pivotY="57" />
+  <sprite name="REWARD_5" x="622" y="157" width="158" height="107" pivotX="79" pivotY="75" />
+  <sprite name="REWARD_5_STAR" x="622" y="279" width="158" height="107" pivotX="79" pivotY="75" />
+  <sprite name="REWARD_6" x="163" y="159" width="61" height="151" pivotX="30" pivotY="75" />
+  <sprite name="REWARD_6_STAR" x="1" y="314" width="61" height="151" pivotX="30" pivotY="75" />
+  <sprite name="GEM_SCORE_AMETHYST_1" x="236" y="406" width="89" height="39" pivotX="44" pivotY="19" />
+  <sprite name="GEM_SCORE_RUBY_1" x="236" y="488" width="88" height="39" pivotX="44" pivotY="19" />
+  <sprite name="GEM_SCORE_AMBER_1" x="236" y="447" width="89" height="39" pivotX="44" pivotY="19" />
+  <sprite name="BARNES_NOBLE_MIGHTY_EAGLE" x="4" y="634" width="387" height="71" pivotX="193" pivotY="35" />
+</spritesheet>

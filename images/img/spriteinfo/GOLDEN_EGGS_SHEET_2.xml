@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="GOLDEN_EGGS_SHEET_2.pvr">
+  <sprite name="SOUNDBOARD_2_LCD" x="404" y="1" width="301" height="124" pivotX="85" pivotY="108" />
+  <sprite name="SOUNDBOARD_2_BUTTON_UP_3" x="724" y="357" width="80" height="67" pivotX="-27" pivotY="-92" />
+  <sprite name="SOUNDBOARD_2_BUTTON_DOWN_3" x="831" y="331" width="72" height="75" pivotX="-27" pivotY="-92" />
+  <sprite name="SOUNDBOARD_2_BUTTON_UP_1" x="404" y="196" width="81" height="69" pivotX="176" pivotY="-95" />
+  <sprite name="SOUNDBOARD_2_BUTTON_UP_4" x="404" y="126" width="85" height="69" pivotX="-114" pivotY="-91" />
+  <sprite name="SOUNDBOARD_2_BIRD" x="724" y="255" width="106" height="101" pivotX="53" pivotY="50" />
+  <sprite name="SOUNDBOARD_2_BUTTON_UP_2" x="831" y="255" width="74" height="75" pivotX="74" pivotY="-91" />
+  <sprite name="SOUNDBOARD_2_WHEEL" x="343" y="329" width="52" height="52" pivotX="182" pivotY="50" />
+  <sprite name="SOUNDBOARD_2_BUTTON_DOWN_2" x="505" y="229" width="74" height="82" pivotX="74" pivotY="-93" />
+  <sprite name="SOUNDBOARD_2_BUTTON_DOWN_4" x="323" y="383" width="75" height="77" pivotX="-114" pivotY="-91" />
+  <sprite name="SOUNDBOARD_2_BUTTON_DOWN_1" x="505" y="312" width="73" height="79" pivotX="168" pivotY="-95" />
+  <sprite name="SOUNDBOARD_1_BIRD_BLUE" x="343" y="270" width="57" height="58" pivotX="28" pivotY="29" />
+  <sprite name="SOUNDBOARD_1_PIG_OLD" x="220" y="145" width="133" height="124" pivotX="66" pivotY="62" />
+  <sprite name="SOUNDBOARD_1_BLOCK_WOOD" x="1" y="166" width="55" height="98" pivotX="27" pivotY="49" />
+  <sprite name="SOUNDBOARD_1_BIRD_WHITE" x="77" y="162" width="131" height="151" pivotX="65" pivotY="75" />
+  <sprite name="SOUNDBOARD_1_BIRD_BLACK" x="581" y="223" width="101" height="131" pivotX="50" pivotY="65" />
+  <sprite name="SOUNDBOARD_1_PIG_SMALL" x="220" y="383" width="102" height="105" pivotX="51" pivotY="52" />
+  <sprite name="SOUNDBOARD_1_LEVEL_FAIL" x="77" y="314" width="137" height="142" pivotX="68" pivotY="71" />
+  <sprite name="SOUNDBOARD_1_TNT" x="893" y="1" width="86" height="86" pivotX="43" pivotY="43" />
+  <sprite name="SOUNDBOARD_1_PIG_KING" x="77" y="1" width="142" height="160" pivotX="71" pivotY="80" />
+  <sprite name="SOUNDBOARD_1_BLOCK_STONE" x="1" y="265" width="55" height="98" pivotX="27" pivotY="49" />
+  <sprite name="SOUNDBOARD_1_LEVEL_START" x="220" y="1" width="183" height="143" pivotX="91" pivotY="71" />
+  <sprite name="SOUNDBOARD_1_SLINGSHOT" x="1" y="1" width="75" height="164" pivotX="37" pivotY="82" />
+  <sprite name="SOUNDBOARD_1_PIG_HELMET" x="220" y="270" width="122" height="112" pivotX="61" pivotY="56" />
+  <sprite name="SOUNDBOARD_1_BLOCK_ICE" x="1" y="364" width="55" height="98" pivotX="27" pivotY="49" />
+  <sprite name="SOUNDBOARD_1_BIRD_YELLOW" x="706" y="1" width="96" height="92" pivotX="48" pivotY="46" />
+  <sprite name="SOUNDBOARD_1_BIRD_RED" x="803" y="1" width="89" height="89" pivotX="44" pivotY="44" />
+  <sprite name="SOUNDBOARD_2_INDICATOR" x="57" y="166" width="8" height="66" pivotX="4" pivotY="33" />
+  <sprite name="SOUNDBOARD_3_SHADOW" x="506" y="393" width="61" height="18" pivotX="31" pivotY="10" />
+  <sprite name="SOUNDBOARD_4_GRASS_TOP" x="490" y="126" width="145" height="32" pivotX="-1" pivotY="24" />
+  <sprite name="SOUNDBOARD_4_GRASS_BOTTOM" x="637" y="126" width="145" height="31" pivotX="-1" pivotY="1" />
+  <sprite name="SOUNDBOARD_4_PIG_1" x="657" y="355" width="63" height="65" pivotX="31" pivotY="32" />
+  <sprite name="SOUNDBOARD_4_PIG_2" x="404" y="266" width="69" height="64" pivotX="34" pivotY="32" />
+  <sprite name="SOUNDBOARD_4_PIG_3" x="581" y="355" width="75" height="70" pivotX="37" pivotY="35" />
+  <sprite name="SOUNDBOARD_4_FOOTPRINT" x="490" y="159" width="485" height="23" pivotX="242" pivotY="11" />
+  <sprite name="SOUNDBOARD_4_SHADOW" x="784" y="126" width="105" height="20" pivotX="52" pivotY="-3" />
+</spritesheet>

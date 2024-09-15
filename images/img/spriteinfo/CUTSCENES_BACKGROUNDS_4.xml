@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="CUTSCENES_BACKGROUNDS_4.pvr">
+  <sprite name="STORY_BEGIN_BG_2" x="483" y="4" width="471" height="480" pivotX="-1022" pivotY="0" />
+  <sprite name="STORY_END_1_2" x="4" y="4" width="471" height="481" pivotX="-1022" pivotY="0" />
+  <sprite name="HIDE_ALL_HOOF" x="4" y="493" width="837" height="202" pivotX="-383" pivotY="-267" />
+</spritesheet>

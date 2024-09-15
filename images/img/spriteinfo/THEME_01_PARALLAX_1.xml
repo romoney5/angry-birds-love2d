@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="THEME_01_PARALLAX_1.pvr">
+  <sprite name="BACKGROUND_1_LAYER_2" x="1" y="156" width="478" height="44" pivotX="239" pivotY="44" />
+  <sprite name="FOREGROUND_1_LAYER_2" x="1" y="202" width="332" height="35" pivotX="166" pivotY="29" />
+  <sprite name="BACKGROUND_1_LAYER_3" x="0" y="104" width="443" height="51" pivotX="221" pivotY="25" />
+  <sprite name="BACKGROUND_1_LAYER_2_ITEM_1" x="115" y="1" width="91" height="67" pivotX="45" pivotY="33" />
+  <sprite name="BACKGROUND_1_LAYER_2_ITEM_2" x="1" y="1" width="55" height="101" pivotX="27" pivotY="50" />
+  <sprite name="BACKGROUND_1_LAYER_2_ITEM_3" x="58" y="1" width="55" height="85" pivotX="27" pivotY="42" />
+  <sprite name="BACKGROUND_1_LAYER_2_ITEM_4" x="115" y="70" width="25" height="24" pivotX="12" pivotY="12" />
+  <sprite name="BACKGROUND_1_LAYER_2_ITEM_5" x="258" y="1" width="33" height="46" pivotX="16" pivotY="23" />
+  <sprite name="BACKGROUND_1_LAYER_2_ITEM_6" x="208" y="1" width="48" height="60" pivotX="24" pivotY="30" />
+  <sprite name="BACKGROUND_1_LAYER_2_ITEM_7" x="293" y="1" width="50" height="39" pivotX="25" pivotY="19" />
+  <sprite name="BACKGROUND_1_LAYER_2_ITEM_8" x="142" y="70" width="15" height="22" pivotX="7" pivotY="11" />
+  <sprite name="BACKGROUND_1_LAYER_3_ITEM_1" x="58" y="88" width="8" height="14" pivotX="4" pivotY="7" />
+</spritesheet>

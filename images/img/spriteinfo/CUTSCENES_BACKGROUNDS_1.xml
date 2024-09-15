@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="CUTSCENES_BACKGROUNDS_1.pvr">
+  <sprite name="STORY_END_1_1" x="0" y="10" width="1023" height="480" pivotX="0" pivotY="0" />
+  <sprite name="STORY_BEGIN_BG_1" x="0" y="500" width="1023" height="480" pivotX="0" pivotY="0" />
+</spritesheet>
