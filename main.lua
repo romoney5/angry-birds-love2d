@@ -49,7 +49,7 @@ timeScale = 1
 audioSpeed = 1
 debugPadding = 50
 g_registrationEnabled = true
-enableHoverScaling = true
+-- enableHoverScaling = true
 enableCursor = true
 useNewFonts = false
 
@@ -540,7 +540,7 @@ function love.load()
 	releaseCompoSprites = function()end
 
 	if deviceModel == "android" then
-		enableHoverScaling = false
+		g_enableMouseOverStates = false
 		enableCursor = false
 		setFullScreenMode(true)
 		displayScale = 1.2
@@ -577,7 +577,7 @@ function love.update(dt)
 
 		love.audio.setVolume(audiovolume)
 
-		-- displayScale = math.sin((time or 0)*3)*.7 + .9
+		-- displayScale = math.cos((time or 0)*64)*.7 + .9
 		love.graphics.scale(displayScale)
 		-- if keyHold["SHIFT"] then return end
 
@@ -610,22 +610,25 @@ function love.update(dt)
 
 		dt2 = dt*timeScale*(debugOpen and 0.2 or 1)
 
+		update(dt2,dt2)
+
 		if physicsEnabled then
+			setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0)
 			physicsWorld:update(dt2)
 			-- print(physicsWorld:getBodyCount())
 			for i,v in pairs(objects.world) do
 				local obj = objects.world[i]
 				if obj.body then
-					obj.x,obj.y = obj.body:getPosition()
-					-- obj.body:setLinearVelocity(-10,0)
+					-- print(obj.body:getY())
+					-- res.drawString("",tostring(obj.body:getY()),obj.body:getX()*20,obj.body:getY()*20)
+					-- obj.x,obj.y = obj.body:getPosition()
+					obj.body:setLinearVelocity(-10,0)
 					-- if obj.controllable then print(obj.body:getX()) end
 					obj.xVel,obj.yVel = obj.body:getLinearVelocity()
 					obj.angle = obj.body:getAngle()
 				end
 			end
 		end
-
-		update(dt2,dt2)
 
 		cursor.wheel = 0
 
@@ -932,15 +935,16 @@ function res.drawSprite(string,sprite,x,y,vanchor,hanchor,iwidth,iheight)
 
 		local wm = (iwidth and iwidth/image[2] or 1)
 		local hm = (iheight and iheight/image[3] or 1)
-		love.graphics.draw(image[4], 										--quad
-			image[1],														--spritesheet
-			(x-image[5] + image[2]/2)*drawxscale, --x
+
+		love.graphics.draw(image[4],				--quad
+			image[1],								--spritesheet
+			(x-image[5] + image[2]/2)*drawxscale,	--x
 			(y-image[6] + image[3]/2)*drawyscale,	--y
-			drawangle,														--angle
-			drawxscale*wm,										--x scale
-			drawyscale*hm,										--y scale
-			xp,																--x pivot
-			yp)																--y pivot
+			drawangle,								--angle
+			drawxscale*wm,							--x scale
+			drawyscale*hm,							--y scale
+			xp,										--x pivot
+			yp)										--y pivot
 	end
 end
 
@@ -966,7 +970,8 @@ function drawGameNative() --heavy work in progress
 		-- print(x)
 		-- setRenderState(0,0,0,0)
 		drawangle = v.angle
-		res.drawSprite("",v.sprite,(x + physicsToWorld*worldScale)*drawxscale,(y + physicsToWorld*worldScale)*drawxscale)--v.sprite,x,y)
+
+		res.drawSprite("",v.sprite,x,y)--v.sprite,x,y)
 		drawangle = 0
 	end
 end
@@ -974,10 +979,8 @@ end
 function drawBackgroundNative()
 	setRenderState(0,0,1,1)
 	-- local ctheme = blockTable.themes[currentTheme]
-	-- if screen.top == 0 then screen.top = -screenHeight end
 	local theme = blockTable.themes[currentTheme]
 	setBGColor(theme.color.r,theme.color.g,theme.color.b)
-	-- love.graphics.setBlendMode("multiply")
 	for k,v in ipairs(theme.bgLayers) do
 		local px, py = res.getSpritePivot("",v[2])
 		local w, h = res.getSpriteBounds("",v[2])
@@ -7127,7 +7130,6 @@ end
 function updateItemMouseOverState(item, dt)
 	--mouse over states for items
 
-	if not enableHoverScaling then return end --hover toggle
 	--print("\n updating item")
 	if item.mouseStateReferenceItem ~= nil then
 		if item.mouseStateReferenceItem.visible == false then
