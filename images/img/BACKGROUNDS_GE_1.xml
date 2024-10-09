@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="BACKGROUNDS_GE_1.png">
+  <sprite name="GOLDEN_EGG_BG_1" x="0" y="0" width="1920" height="1200" pivotX="960" pivotY="600" />
+  <sprite name="GOLDEN_EGG_BG_2" x="0" y="0" width="1920" height="1200" pivotX="960" pivotY="600" />
+</spritesheet>

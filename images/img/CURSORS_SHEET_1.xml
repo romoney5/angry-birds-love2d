@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="CURSORS_SHEET_1.png">
+  <sprite name="CURSOR_HAND_POINT" x="1" y="1" width="40" height="53" pivotX="8" pivotY="8" />
+  <sprite name="CURSOR_HAND_HOVER" x="43" y="1" width="40" height="53" pivotX="8" pivotY="8" />
+  <sprite name="CURSOR_HAND_GRAB" x="128" y="1" width="35" height="40" pivotX="3" pivotY="-5" />
+  <sprite name="CURSOR_HAND_CLICK" x="85" y="1" width="41" height="45" pivotX="9" pivotY="0" />
+</spritesheet>

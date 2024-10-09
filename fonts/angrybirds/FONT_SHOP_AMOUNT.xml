@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<font texture="FONT_SHOP_AMOUNT.pvr" leading="116" tracking="-1">
+  <character char="0039" x="37" y="2" width="33" height="56" pivotY="55" />
+  <character char="0036" x="180" y="2" width="32" height="55" pivotY="54" />
+  <character char="0031" x="214" y="2" width="28" height="54" pivotY="53" />
+  <character char="0078" x="2" y="61" width="29" height="46" pivotY="45" />
+  <character char="0020" x="72" y="60" width="6" height="16" pivotY="0" />
+  <character char="0035" x="37" y="60" width="29" height="53" pivotY="52" />
+  <character char="0032" x="144" y="59" width="29" height="54" pivotY="53" />
+  <character char="0033" x="72" y="2" width="31" height="56" pivotY="55" />
+  <character char="0037" x="105" y="59" width="30" height="54" pivotY="53" />
+  <character char="0034" x="144" y="2" width="34" height="55" pivotY="54" />
+  <character char="0030" x="105" y="2" width="37" height="55" pivotY="54" />
+  <character char="0038" x="2" y="2" width="33" height="57" pivotY="56" />
+</font>

@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="MENU_ELEMENTS_1.png">
+  <sprite name="REWARD_2_STAR" x="1" y="733" width="97" height="134" pivotX="46" pivotY="87" />
+  <sprite name="REWARD_2" x="100" y="733" width="83" height="134" pivotX="39" pivotY="87" />
+  <sprite name="REWARD_1_STAR" x="495" y="883" width="123" height="53" pivotX="67" pivotY="35" />
+  <sprite name="REWARD_1" x="495" y="828" width="124" height="53" pivotX="67" pivotY="35" />
+  <sprite name="STARS_BIG_3" x="235" y="704" width="179" height="61" pivotX="1" pivotY="31" />
+  <sprite name="STARS_BIG_2" x="235" y="767" width="177" height="61" pivotX="1" pivotY="31" />
+  <sprite name="STARS_BIG_1" x="235" y="830" width="177" height="61" pivotX="1" pivotY="31" />
+  <sprite name="STARS_BIG_0" x="495" y="601" width="175" height="55" pivotX="1" pivotY="28" />
+  <sprite name="RESULT_STARS_3" x="579" y="181" width="94" height="32" pivotX="1" pivotY="17" />
+  <sprite name="RESULT_STARS_2" x="675" y="181" width="94" height="32" pivotX="1" pivotY="17" />
+  <sprite name="RESULT_STARS_1" x="793" y="181" width="94" height="32" pivotX="1" pivotY="17" />
+  <sprite name="RESULT_STARS_0" x="828" y="379" width="94" height="30" pivotX="1" pivotY="16" />
+  <sprite name="10K_RED" x="672" y="601" width="157" height="55" pivotX="79" pivotY="28" />
+  <sprite name="10K_BLUE" x="831" y="601" width="153" height="55" pivotX="77" pivotY="28" />
+  <sprite name="10K_YELLOW" x="495" y="658" width="153" height="55" pivotX="77" pivotY="28" />
+  <sprite name="10K_BLACK" x="495" y="772" width="153" height="54" pivotX="77" pivotY="28" />
+  <sprite name="10K_WHITE" x="495" y="715" width="153" height="55" pivotX="77" pivotY="28" />
+  <sprite name="5K_GREEN" x="235" y="951" width="134" height="53" pivotX="68" pivotY="27" />
+  <sprite name="ABOUT_BIRDS_1" x="235" y="429" width="258" height="153" pivotX="130" pivotY="77" />
+  <sprite name="ABOUT_BIRDS_2" x="1" y="429" width="232" height="155" pivotX="117" pivotY="78" />
+  <sprite name="ABOUT_BIRDS_3" x="828" y="229" width="134" height="148" pivotX="68" pivotY="75" />
+  <sprite name="LS_MAIN_LEFT" x="392" y="1" width="185" height="201" pivotX="1" pivotY="201" />
+  <sprite name="LS_THEME_1_LEFT" x="198" y="1" width="192" height="216" pivotX="1" pivotY="216" />
+  <sprite name="LS_THEME_4_RIGHT" x="579" y="1" width="212" height="178" pivotX="212" pivotY="178" />
+  <sprite name="10K_BOOMERANG" x="235" y="893" width="152" height="56" pivotX="77" pivotY="29" />
+  <sprite name="REWARD_3_STAR" x="155" y="586" width="58" height="133" pivotX="30" pivotY="37" />
+  <sprite name="REWARD_3" x="1" y="869" width="58" height="120" pivotX="30" pivotY="37" />
+  <sprite name="REWARD_4" x="61" y="869" width="135" height="118" pivotX="68" pivotY="60" />
+  <sprite name="REWARD_4_STAR" x="235" y="584" width="135" height="118" pivotX="68" pivotY="60" />
+  <sprite name="BUTTON_EAGLE_DENIED" x="372" y="584" width="55" height="59" pivotX="26" pivotY="28" />
+  <sprite name="NEW_HIGHSCORE_BG" x="793" y="1" width="178" height="178" pivotX="90" pivotY="90" />
+  <sprite name="NEW_HIGHSCORE_TW" x="889" y="181" width="107" height="31" pivotX="54" pivotY="16" />
+  <sprite name="NEW_HIGHSCORE_CN" x="61" y="989" width="117" height="29" pivotX="59" pivotY="15" />
+  <sprite name="NEW_HIGHSCORE_EN" x="650" y="658" width="198" height="26" pivotX="100" pivotY="14" />
+  <sprite name="SELECT_LEVEL" x="495" y="429" width="404" height="85" pivotX="203" pivotY="-26" />
+  <sprite name="SELECT_EPISODE" x="495" y="516" width="459" height="83" pivotX="230" pivotY="-26" />
+  <sprite name="MENU_LOGO" x="1" y="229" width="825" height="198" pivotX="411" pivotY="-49" />
+  <sprite name="ABOUT_PIG_1" x="1" y="586" width="152" height="145" pivotX="77" pivotY="73" />
+  <sprite name="ABOUT_PIG_2" x="1" y="1" width="195" height="226" pivotX="98" pivotY="137" />
+</spritesheet>

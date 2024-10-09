@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="INGAME_GROUNDS_1.png">
+  <sprite name="FOREGROUND_2_LAYER_1" x="338" y="392" width="346" height="197" pivotX="173" pivotY="-4" />
+  <sprite name="BACKGROUND_2_LAYER_1_DUMMY" x="337" y="391" width="348" height="219" pivotX="174" pivotY="-3" />
+  <sprite name="BACKGROUND_3_LAYER_1_DUMMY" x="3" y="390" width="324" height="300" pivotX="162" pivotY="-1" />
+  <sprite name="BACKGROUND_1_LAYER_1_DUMMY" x="3" y="3" width="334" height="190" pivotX="167" pivotY="109" />
+  <sprite name="FOREGROUND_1_LAYER_1" x="4" y="4" width="332" height="187" pivotX="166" pivotY="-5" />
+  <sprite name="FOREGROUND_3_LAYER_1" x="4" y="391" width="322" height="298" pivotX="161" pivotY="-2" />
+  <sprite name="FOREGROUND_4_LAYER_1" x="346" y="4" width="480" height="201" pivotX="240" pivotY="-6" />
+  <sprite name="BACKGROUND_4_LAYER_1_DUMMY" x="345" y="3" width="482" height="202" pivotX="0" pivotY="-75" />
+  <sprite name="FOREGROUND_5_LAYER_1" x="7" y="216" width="480" height="73" pivotX="242" pivotY="-6" />
+  <sprite name="BACKGROUND_5_LAYER_1_DUMMY" x="6" y="215" width="482" height="74" pivotX="0" pivotY="-26" />
+  <sprite name="FOREGROUND_6_LAYER_1" x="5" y="299" width="588" height="81" pivotX="294" pivotY="3" />
+  <sprite name="FOREGROUND_6_LAYER_1_DUMMY" x="4" y="298" width="590" height="82" pivotX="0" pivotY="-33" />
+  <sprite name="FOREGROUND_7_LAYER_1" x="499" y="217" width="269" height="68" pivotX="134" pivotY="-1" />
+  <sprite name="FOREGROUND_7_LAYER_1_DUMMY" x="498" y="216" width="271" height="69" pivotX="0" pivotY="-19" />
+</spritesheet>

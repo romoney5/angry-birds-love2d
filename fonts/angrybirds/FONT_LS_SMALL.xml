@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<font texture="FONT_LS_SMALL.pvr" leading="25" tracking="-1">
+  <character char="0039" x="48" y="2" width="13" height="21" pivotY="11" />
+  <character char="0033" x="18" y="25" width="12" height="20" pivotY="11" />
+  <character char="0030" x="2" y="2" width="14" height="21" pivotY="11" />
+  <character char="0020" x="88" y="24" width="7" height="10" pivotY="6" />
+  <character char="0037" x="33" y="25" width="12" height="20" pivotY="11" />
+  <character char="0032" x="75" y="24" width="11" height="20" pivotY="11" />
+  <character char="0038" x="33" y="2" width="13" height="21" pivotY="12" />
+  <character char="003a" x="63" y="25" width="7" height="14" pivotY="5" />
+  <character char="0034" x="2" y="25" width="14" height="20" pivotY="11" />
+  <character char="0031" x="48" y="25" width="11" height="20" pivotY="11" />
+  <character char="007c" x="75" y="2" width="22" height="20" pivotY="12" />
+  <character char="002f" x="63" y="2" width="10" height="21" pivotY="11" />
+  <character char="0035" x="99" y="2" width="11" height="20" pivotY="11" />
+  <character char="0036" x="18" y="2" width="13" height="21" pivotY="11" />
+</font>

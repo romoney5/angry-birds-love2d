@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<font texture="FONT_LS_SMALL_IPAD.png" leading="37" tracking="-3">
+  <character char="0032" x="48" y="23" width="13" height="19" pivotY="3" />
+  <character char="0030" x="48" y="2" width="13" height="19" pivotY="3" />
+  <character char="002f" x="93" y="2" width="10" height="19" pivotY="3" />
+  <character char="0039" x="18" y="2" width="14" height="20" pivotY="3" />
+  <character char="0035" x="78" y="2" width="13" height="19" pivotY="3" />
+  <character char="003a" x="2" y="24" width="7" height="13" pivotY="-3" />
+  <character char="0037" x="78" y="23" width="12" height="19" pivotY="3" />
+  <character char="0034" x="63" y="23" width="13" height="19" pivotY="3" />
+  <character char="0031" x="93" y="23" width="9" height="19" pivotY="3" />
+  <character char="0038" x="2" y="2" width="14" height="20" pivotY="3" />
+  <character char="0036" x="34" y="2" width="12" height="20" pivotY="3" />
+  <character char="0033" x="63" y="2" width="13" height="19" pivotY="3" />
+  <character char="0020" x="18" y="24" width="7" height="10" pivotY="6" />
+</font>

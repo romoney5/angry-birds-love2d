@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="CUTSCENES_BACKGROUNDS_1.png">
+  <sprite name="STORY_END_1_1" x="0" y="679" width="2048" height="659" pivotX="0" pivotY="0" />
+  <sprite name="STORY_BEGIN_BG_1" x="0" y="10" width="2048" height="659" pivotX="0" pivotY="0" />
+  <sprite name="STORY_BOSS_BG" x="0" y="1348" width="1324" height="659" pivotX="0" pivotY="0" />
+</spritesheet>

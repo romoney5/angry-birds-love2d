@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<font texture="FONT_INGAME_SCORE.png" leading="80" tracking="-1">
+  <character char="0025" x="38" y="2" width="48" height="65" pivotY="49" />
+  <character char="0032" x="209" y="68" width="38" height="62" pivotY="46" />
+  <character char="002c" x="167" y="196" width="20" height="25" pivotY="3" />
+  <character char="003a" x="193" y="132" width="18" height="42" pivotY="26" />
+  <character char="0030" x="167" y="68" width="40" height="62" pivotY="46" />
+  <character char="0021" x="2" y="80" width="23" height="66" pivotY="49" />
+  <character char="0035" x="88" y="133" width="39" height="63" pivotY="47" />
+  <character char="0038" x="38" y="69" width="43" height="64" pivotY="47" />
+  <character char="0026" x="88" y="2" width="54" height="64" pivotY="47" />
+  <character char="002f" x="2" y="148" width="31" height="63" pivotY="47" />
+  <character char="002b" x="213" y="132" width="32" height="35" pivotY="33" />
+  <character char="0023" x="144" y="2" width="56" height="63" pivotY="47" />
+  <character char="0024" x="2" y="2" width="34" height="76" pivotY="53" />
+  <character char="0036" x="129" y="68" width="36" height="63" pivotY="46" />
+  <character char="002e" x="69" y="201" width="17" height="16" pivotY="0" />
+  <character char="0020" x="221" y="176" width="14" height="26" pivotY="24" />
+  <character char="0039" x="202" y="2" width="41" height="63" pivotY="46" />
+  <character char="0022" x="193" y="176" width="26" height="28" pivotY="47" />
+  <character char="0031" x="167" y="132" width="24" height="62" pivotY="46" />
+  <character char="002d" x="38" y="201" width="29" height="16" pivotY="23" />
+  <character char="0034" x="88" y="68" width="39" height="63" pivotY="47" />
+  <character char="0033" x="38" y="135" width="38" height="64" pivotY="47" />
+  <character char="0037" x="129" y="133" width="36" height="63" pivotY="47" />
+</font>

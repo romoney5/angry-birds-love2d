@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="INGAME_BIRDS_2.png">
+  <sprite name="BIRD_MIGHTY_EAGLE_MOTION" x="1" y="309" width="375" height="155" pivotX="167" pivotY="107" />
+  <sprite name="BAIT_SARDINE" x="327" y="1" width="75" height="53" pivotX="38" pivotY="27" />
+  <sprite name="BIRD_MIGHTY_EAGLE_RADIAL" x="1" y="1" width="324" height="306" pivotX="151" pivotY="155" />
+</spritesheet>

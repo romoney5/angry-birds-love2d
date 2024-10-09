@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="INGAME_SKIES_1.png">
+  <sprite name="BACKGROUND_1_LAYER_1" x="2" y="2" width="478" height="318" pivotX="239" pivotY="317" />
+  <sprite name="BACKGROUND_2_LAYER_3_DUMMY" x="1" y="335" width="480" height="320" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_2_LAYER_1" x="2" y="336" width="478" height="318" pivotX="239" pivotY="317" />
+  <sprite name="BACKGROUND_1_LAYER_3_DUMMY" x="1" y="1" width="480" height="320" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_3_LAYER_1" x="2" y="670" width="478" height="318" pivotX="239" pivotY="317" />
+  <sprite name="BACKGROUND_3_LAYER_3_DUMMY" x="1" y="669" width="480" height="320" pivotX="0" pivotY="0" />
+  <sprite name="BACKGROUND_4_LAYER_1" x="496" y="2" width="480" height="268" pivotX="240" pivotY="310" />
+  <sprite name="BACKGROUND_4_LAYER_3_DUMMY" x="495" y="1" width="482" height="269" pivotX="241" pivotY="311" />
+  <sprite name="BACKGROUND_5_LAYER_1" x="496" y="297" width="480" height="274" pivotX="240" pivotY="301" />
+  <sprite name="BACKGROUND_5_LAYER_3_DUMMY" x="495" y="296" width="482" height="276" pivotX="0" pivotY="57" />
+</spritesheet>

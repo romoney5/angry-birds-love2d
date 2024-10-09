@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="BUTTONS_SHEET_1.png">
+  <sprite name="BUTTON_RESTART" x="579" y="296" width="106" height="111" pivotX="54" pivotY="48" />
+  <sprite name="BUTTON_SFX" x="466" y="816" width="77" height="81" pivotX="40" pivotY="37" />
+  <sprite name="MENU_YES" x="579" y="409" width="101" height="103" pivotX="51" pivotY="44" />
+  <sprite name="MENU_SFX" x="580" y="625" width="77" height="81" pivotX="40" pivotY="37" />
+  <sprite name="BUTTON_OFF" x="580" y="782" width="72" height="70" pivotX="37" pivotY="36" />
+  <sprite name="TUTORIAL_OK" x="687" y="409" width="101" height="103" pivotX="51" pivotY="44" />
+  <sprite name="BUTTON_NEXTLEVEL" x="358" y="626" width="105" height="110" pivotX="54" pivotY="48" />
+  <sprite name="BUTTON_RESUME" x="899" y="296" width="77" height="82" pivotX="40" pivotY="36" />
+  <sprite name="MENU_CUTSCENE" x="358" y="514" width="106" height="110" pivotX="54" pivotY="47" />
+  <sprite name="MENU_TUTORIALS" x="466" y="732" width="77" height="82" pivotX="40" pivotY="35" />
+  <sprite name="BUTTON_OFF_SMALL" x="580" y="854" width="72" height="70" pivotX="37" pivotY="36" />
+  <sprite name="LS_BACK_BUTTON" x="466" y="625" width="112" height="105" pivotX="49" pivotY="60" />
+  <sprite name="ARROW_LEFT" x="358" y="849" width="97" height="97" pivotX="49" pivotY="42" />
+  <sprite name="BUTTON_EMPTY" x="687" y="296" width="104" height="111" pivotX="53" pivotY="49" />
+  <sprite name="BUTTON_SOUNDS_OFF_SMALL" x="860" y="625" width="58" height="57" pivotX="29" pivotY="28" />
+  <sprite name="BUTTON_SOUNDS_SMALL" x="580" y="708" width="67" height="72" pivotX="34" pivotY="30" />
+  <sprite name="BUTTON_ABOUT_SMALL" x="923" y="514" width="66" height="73" pivotX="34" pivotY="30" />
+  <sprite name="BUTTON_FACEBOOK_SMALL" x="659" y="625" width="68" height="69" pivotX="35" pivotY="29" />
+  <sprite name="BUTTON_TWITTER_SMALL" x="729" y="625" width="68" height="69" pivotX="35" pivotY="29" />
+  <sprite name="BUTTON_TRAILER_SMALL" x="799" y="625" width="59" height="68" pivotX="30" pivotY="25" />
+  <sprite name="BUTTON_OPTIONS" x="466" y="899" width="66" height="64" pivotX="34" pivotY="32" />
+  <sprite name="BUTTON_SLIDER" x="450" y="256" width="45" height="25" pivotX="24" pivotY="13" />
+  <sprite name="BUTTON_LEADERBOARDS" x="793" y="296" width="104" height="111" pivotX="53" pivotY="49" />
+  <sprite name="BUTTON_ACHIEVEMENTS" x="252" y="514" width="104" height="111" pivotX="53" pivotY="49" />
+  <sprite name="BUTTON_ARROW_LEFT" x="889" y="409" width="94" height="99" pivotX="48" pivotY="43" />
+  <sprite name="BUTTON_ARROW_RIGHT" x="793" y="409" width="94" height="100" pivotX="48" pivotY="43" />
+  <sprite name="MENU_PLAY_EN" x="1" y="1" width="447" height="293" pivotX="224" pivotY="129" />
+  <sprite name="MENU_QUIT_EN" x="252" y="627" width="104" height="111" pivotX="53" pivotY="68" />
+  <sprite name="MENU_NO" x="358" y="738" width="103" height="109" pivotX="52" pivotY="47" />
+  <sprite name="MENU_MENU_EN" x="1" y="806" width="114" height="119" pivotX="58" pivotY="48" />
+  <sprite name="BUTTON_MENU" x="117" y="806" width="114" height="119" pivotX="58" pivotY="48" />
+  <sprite name="MENU_BUTTON" x="252" y="740" width="104" height="111" pivotX="53" pivotY="48" />
+  <sprite name="BUTTON_INGAME_RESTART" x="252" y="853" width="104" height="111" pivotX="53" pivotY="48" />
+  <sprite name="MENU_PLAY_SMALL_EN" x="252" y="296" width="325" height="216" pivotX="163" pivotY="109" />
+  <sprite name="BUTTON_EP_1" x="1" y="551" width="247" height="253" pivotX="124" pivotY="124" />
+  <sprite name="BUTTON_EP_2" x="702" y="1" width="249" height="253" pivotX="125" pivotY="124" />
+  <sprite name="BUTTON_EP_3" x="1" y="296" width="249" height="253" pivotX="125" pivotY="124" />
+  <sprite name="BUTTON_EP_4" x="450" y="1" width="250" height="253" pivotX="126" pivotY="124" />
+  <sprite name="BUTTON_EP_G" x="466" y="514" width="455" height="109" pivotX="228" pivotY="49" />
+</spritesheet>

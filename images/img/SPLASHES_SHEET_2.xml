@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="SPLASHES_SHEET_2.png">
+  <sprite name="SPLASH_ROVIO" x="0" y="0" width="311" height="487" pivotX="155" pivotY="243" />
+</spritesheet>

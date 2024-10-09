@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="BACKGROUNDS_MAIN_1.png">
+  <sprite name="MENU_BACKGROUND_TOP" x="0" y="0" width="960" height="1092" pivotX="959" pivotY="0" />
+</spritesheet>

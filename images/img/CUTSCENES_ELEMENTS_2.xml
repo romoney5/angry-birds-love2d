@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="CUTSCENES_ELEMENTS_2.png">
+  <sprite name="STORY_BOSS_FLATTENED_BALLOON_2" x="307" y="811" width="243" height="103" pivotX="-476" pivotY="-488" />
+  <sprite name="STORY_BOSS_FLATTENED_BALLOON" x="408" y="407" width="243" height="103" pivotX="-476" pivotY="-488" />
+  <sprite name="STORY_BOSS_KING_ESCAPING_2" x="169" y="404" width="239" height="407" pivotX="-973" pivotY="-61" />
+  <sprite name="STORY_FLYING_PIGS_1" x="0" y="0" width="461" height="404" pivotX="-423" pivotY="907" />
+  <sprite name="STORY_FLYING_PIGS_3" x="0" y="404" width="169" height="278" pivotX="-580" pivotY="503" />
+  <sprite name="STORY_ANGRY_YELLOW_BIRD" x="550" y="615" width="202" height="308" pivotX="-589" pivotY="-293" />
+  <sprite name="STORY_BOSS_KING_ESCAPING_3" x="461" y="0" width="235" height="407" pivotX="-985" pivotY="-67" />
+  <sprite name="STORY_CLOUD_1" x="0" y="860" width="307" height="74" pivotX="-745" pivotY="351" />
+  <sprite name="STORY_CLOUD_2" x="408" y="510" width="296" height="105" pivotX="-906" pivotY="745" />
+  <sprite name="STORY_CLOUD_3" x="0" y="682" width="139" height="56" pivotX="-68" pivotY="596" />
+  <sprite name="STORY_CLOUD_4" x="0" y="811" width="200" height="49" pivotX="-226" pivotY="202" />
+  <sprite name="STORY_BIG_BROTHER_1" x="696" y="0" width="264" height="286" pivotX="-747" pivotY="-266" />
+  <sprite name="STORY_BIG_BROTHER_2" x="696" y="0" width="264" height="286" pivotX="-111" pivotY="-296" />
+  <sprite name="STORY_BIG_BROTHER_HELMET" x="701" y="290" width="168" height="85" pivotX="-195" pivotY="-277" />
+</spritesheet>

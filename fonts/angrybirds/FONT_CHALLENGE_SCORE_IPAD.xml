@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<font texture="FONT_CHALLENGE_SCORE_IPAD.pvr" leading="43" tracking="-4">
+  <character char="0036" x="124" y="2" width="25" height="40" pivotY="36" />
+  <character char="0034" x="180" y="43" width="26" height="39" pivotY="35" />
+  <character char="0032" x="180" y="2" width="26" height="39" pivotY="36" />
+  <character char="0025" x="2" y="2" width="32" height="41" pivotY="36" />
+  <character char="0037" x="208" y="2" width="25" height="39" pivotY="36" />
+  <character char="0030" x="151" y="2" width="27" height="39" pivotY="36" />
+  <character char="0039" x="95" y="2" width="27" height="40" pivotY="36" />
+  <character char="0035" x="151" y="43" width="27" height="39" pivotY="36" />
+  <character char="0033" x="67" y="2" width="26" height="41" pivotY="36" />
+  <character char="0038" x="36" y="2" width="29" height="41" pivotY="37" />
+  <character char="0031" x="235" y="2" width="19" height="39" pivotY="36" />
+</font>

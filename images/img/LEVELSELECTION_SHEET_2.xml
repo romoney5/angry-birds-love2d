@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="LEVELSELECTION_SHEET_2.png">
+  <sprite name="LS_PACK_GE_THUMB_01" x="1132" y="70" width="95" height="63" pivotX="48" pivotY="32" />
+  <sprite name="LS_PACK_GE_STAR" x="1132" y="1" width="69" height="67" pivotX="35" pivotY="34" />
+  <sprite name="LS_CLIP_AREA" x="1" y="1" width="1129" height="494" pivotX="565" pivotY="248" />
+</spritesheet>

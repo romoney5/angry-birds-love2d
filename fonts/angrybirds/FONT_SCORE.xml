@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<font texture="FONT_SCORE.pvr" leading="97" tracking="1">
+  <character char="0029" x="40" y="89" width="31" height="84" pivotY="68" />
+  <character char="0025" x="2" y="2" width="74" height="85" pivotY="69" />
+  <character char="0039" x="157" y="85" width="50" height="81" pivotY="69" />
+  <character char="003e" x="209" y="85" width="37" height="81" pivotY="68" />
+  <character char="0028" x="78" y="2" width="29" height="83" pivotY="67" />
+  <character char="0036" x="253" y="84" width="48" height="80" pivotY="68" />
+  <character char="003d" x="157" y="168" width="31" height="40" pivotY="44" />
+  <character char="0023" x="442" y="83" width="48" height="71" pivotY="60" />
+  <character char="0022" x="109" y="170" width="39" height="39" pivotY="67" />
+  <character char="003c" x="109" y="86" width="36" height="82" pivotY="67" />
+  <character char="002c" x="40" y="175" width="23" height="33" pivotY="16" />
+  <character char="002f" x="2" y="89" width="36" height="84" pivotY="71" />
+  <character char="0038" x="157" y="2" width="50" height="81" pivotY="69" />
+  <character char="0032" x="408" y="2" width="44" height="79" pivotY="67" />
+  <character char="0030" x="353" y="2" width="53" height="79" pivotY="66" />
+  <character char="002e" x="253" y="166" width="21" height="23" pivotY="13" />
+  <character char="0027" x="2" y="175" width="29" height="33" pivotY="65" />
+  <character char="003a" x="78" y="152" width="23" height="55" pivotY="44" />
+  <character char="002a" x="442" y="156" width="44" height="47" pivotY="69" />
+  <character char="003f" x="306" y="2" width="45" height="80" pivotY="68" />
+  <character char="0035" x="353" y="83" width="42" height="78" pivotY="66" />
+  <character char="0024" x="397" y="83" width="43" height="75" pivotY="64" />
+  <character char="0034" x="253" y="2" width="51" height="80" pivotY="66" />
+  <character char="0031" x="209" y="2" width="42" height="81" pivotY="68" />
+  <character char="003b" x="78" y="87" width="24" height="63" pivotY="45" />
+  <character char="0037" x="454" y="2" width="44" height="79" pivotY="67" />
+  <character char="0033" x="109" y="2" width="46" height="82" pivotY="67" />
+  <character char="0021" x="306" y="84" width="35" height="80" pivotY="67" />
+  <character char="002b" x="397" y="160" width="41" height="49" pivotY="52" />
+  <character char="002d" x="209" y="168" width="26" height="23" pivotY="37" />
+  <character char="0020" x="353" y="163" width="22" height="45" pivotY="32" />
+</font>

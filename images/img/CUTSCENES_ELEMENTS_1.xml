@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="CUTSCENES_ELEMENTS_1.png">
+  <sprite name="STORY_BEGIN_PIG_GROUP_1" x="0" y="715" width="445" height="228" pivotX="-1603" pivotY="-252" />
+  <sprite name="STORY_BEGIN_PIG_GROUP_2" x="0" y="0" width="371" height="174" pivotX="-1630" pivotY="-306" />
+  <sprite name="STORY_BEGIN_FAKE_EGGS" x="0" y="427" width="467" height="288" pivotX="-177" pivotY="-340" />
+  <sprite name="STORY_BOSS_KING_ESCAPING" x="780" y="256" width="126" height="165" pivotX="-1130" pivotY="-350" />
+  <sprite name="STORY_END_2_EGGS" x="445" y="735" width="271" height="242" pivotX="-405" pivotY="-368" />
+  <sprite name="STORY_BOSS_THEME_1" x="780" y="0" width="215" height="256" pivotX="-623" pivotY="-403" />
+  <sprite name="STORY_BOSS_THEME_2" x="716" y="710" width="271" height="308" pivotX="-618" pivotY="-351" />
+  <sprite name="STORY_BOSS_THEME_4" x="467" y="427" width="384" height="190" pivotX="-559" pivotY="-457" />
+  <sprite name="STORY_END_2_TONGUE" x="659" y="708" width="31" height="26" pivotX="-645" pivotY="-536" />
+  <sprite name="STORY_END_2_HIDING_KING" x="371" y="0" width="409" height="427" pivotX="-916" pivotY="-232" />
+  <sprite name="STORY_END_KING_EYE_WINK" x="0" y="174" width="326" height="253" pivotX="-1447" pivotY="-264" />
+  <sprite name="STORY_END_KING_EYE_PEEK" x="630" y="617" width="97" height="91" pivotX="-1658" pivotY="-354" />
+  <sprite name="STORY_END_KING_EYE_NORMAL" x="533" y="617" width="97" height="92" pivotX="-1658" pivotY="-354" />
+  <sprite name="STORY_END_2_EYE_OPEN" x="851" y="421" width="65" height="115" pivotX="-1224" pivotY="-407" />
+  <sprite name="STORY_END_2_EYE_PEEK" x="467" y="617" width="66" height="110" pivotX="-1224" pivotY="-408" />
+  <sprite name="STORY_END_2_EYE_WINK" x="727" y="617" width="61" height="92" pivotX="-1226" pivotY="-418" />
+  <sprite name="STORY_END_2_SMILE" x="906" y="256" width="106" height="146" pivotX="-1183" pivotY="-407" />
+  <sprite name="STORY_BOSS_CARPET" x="0" y="943" width="430" height="278" pivotX="-489" pivotY="-377" />
+  <sprite name="STORY_BOSS_KING_ESCAPING_4" x="781" y="1223" width="104" height="224" pivotX="-1073" pivotY="-48" />
+  <sprite name="STORY_BOSS_KING_ESCAPING_4_EYE_WINK" x="854" y="631" width="25" height="47" pivotX="-1139" pivotY="-184" />
+  <sprite name="STORY_BOSS_KING_ESCAPING_4_EYE_2" x="889" y="631" width="22" height="23" pivotX="-1141" pivotY="-188" />
+  <sprite name="STORY_BOSS_1_HELMET" x="433" y="1011" width="240" height="133" pivotX="-634" pivotY="-364" />
+  <sprite name="STORY_BOSS_2_HELMET" x="675" y="1024" width="288" height="140" pivotX="-631" pivotY="-307" />
+  <sprite name="STORY_EP4_EGGS" x="0" y="1221" width="154" height="125" pivotX="-335" pivotY="-418" />
+  <sprite name="STORY_EP4_END" x="154" y="1221" width="620" height="245" pivotX="-609" pivotY="-356" />
+  <sprite name="STORY_EP4_KING_PEAK" x="898" y="556" width="29" height="46" pivotX="-930" pivotY="-430" />
+  <sprite name="STORY_EP4_KING_WINK" x="937" y="556" width="28" height="46" pivotX="-930" pivotY="-430" />
+</spritesheet>

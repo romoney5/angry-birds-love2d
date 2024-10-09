@@ -1,0 +1,163 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<composprites rvio="False" version="1">
+  <composprite name="TUTORIAL_RED">
+    <layer sprite="TUTORIAL_TRAIL_1" x="47" y="-30" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="35" y="-40" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="20" y="-49" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="4" y="-54" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-13" y="-58" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-31" y="-59" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-47" y="-58" />
+    <layer sprite="TUTORIAL_BACKGROUND" x="68" y="0" />
+    <layer sprite="TUTORIAL_SLINGSHOT_RED" x="-151" y="10" />
+    <layer sprite="TUTORIAL_GROUND" x="0" y="66" />
+    <layer sprite="TUTORIAL_PIG_TARGET" x="105" y="27" />
+    <layer sprite="TUTORIAL_FINGER_SLIDE" x="-184" y="78" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-64" y="-56" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-80" y="-51" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-95" y="-45" />
+  </composprite>
+  <composprite name="TUTORIAL_BLUE">
+    <layer sprite="TUTORIAL_TRAIL_3" x="6" y="-42" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="11" y="-62" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="11" y="-82" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-12" y="-52" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-8" y="-66" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-7" y="-80" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-26" y="-61" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-24" y="-69" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-23" y="-76" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-65" y="-63" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-84" y="-58" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-100" y="-53" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-116" y="-46" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-132" y="-39" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-147" y="-32" />
+    <layer sprite="TUTORIAL_BACKGROUND" x="68" y="0" />
+    <layer sprite="TUTORIAL_BIRD_BLUE_2" x="39" y="-61" />
+    <layer sprite="TUTORIAL_BIRD_BLUE_1" x="-42" y="-72" />
+    <layer sprite="TUTORIAL_SLINGSHOT" x="-166" y="16" />
+    <layer sprite="TUTORIAL_PIG_GLASS" x="111" y="29" />
+    <layer sprite="TUTORIAL_GROUND" x="0" y="66" />
+    <layer sprite="TUTORIAL_FINGER_CLICK" x="-51" y="53" />
+  </composprite>
+  <composprite name="TUTORIAL_YELLOW">
+    <layer sprite="TUTORIAL_TRAIL_3" x="27" y="-46" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="10" y="-52" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-5" y="-56" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-68" y="-57" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-86" y="-54" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-101" y="-50" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-116" y="-45" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-132" y="-38" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-145" y="-30" />
+    <layer sprite="TUTORIAL_BACKGROUND" x="68" y="0" />
+    <layer sprite="TUTORIAL_SLINGSHOT" x="-166" y="16" />
+    <layer sprite="TUTORIAL_PIG_WOOD" x="112" y="31" />
+    <layer sprite="TUTORIAL_GROUND" x="0" y="66" />
+    <layer sprite="TUTORIAL_BIRD_YELLOW_2" x="57" y="-39" />
+    <layer sprite="TUTORIAL_BIRD_YELLOW_1" x="-37" y="-67" />
+    <layer sprite="TUTORIAL_FINGER_CLICK" x="-51" y="53" />
+  </composprite>
+  <composprite name="TUTORIAL_BLACK">
+    <layer sprite="TUTORIAL_TRAIL_3" x="19" y="-40" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="2" y="-48" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-13" y="-53" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-71" y="-54" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-91" y="-51" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-107" y="-47" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-124" y="-41" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-139" y="-33" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-153" y="-24" />
+    <layer sprite="TUTORIAL_SLINGSHOT" x="-166" y="16" />
+    <layer sprite="TUTORIAL_BACKGROUND" x="68" y="0" />
+    <layer sprite="TUTORIAL_PIG_ROCK" x="90" y="28" />
+    <layer sprite="TUTORIAL_GROUND" x="0" y="66" />
+    <layer sprite="TUTORIAL_BOOM" x="73" y="-12" />
+    <layer sprite="TUTORIAL_BIRD_BLACK" x="-39" y="-68" />
+    <layer sprite="TUTORIAL_FINGER_CLICK" x="-51" y="53" />
+  </composprite>
+  <composprite name="TUTORIAL_WHITE">
+    <layer sprite="TUTORIAL_TRAIL_3" x="111" y="-87" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="96" y="-75" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="83" y="-62" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="73" y="-48" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="54" y="-53" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="35" y="-58" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="15" y="-61" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-1" y="-62" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-67" y="-53" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-84" y="-49" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-100" y="-44" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-115" y="-37" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-130" y="-29" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-143" y="-21" />
+    <layer sprite="TUTORIAL_BACKGROUND" x="68" y="0" />
+    <layer sprite="TUTORIAL_SLINGSHOT" x="-166" y="16" />
+    <layer sprite="TUTORIAL_PIG_WOOD" x="76" y="28" />
+    <layer sprite="TUTORIAL_GROUND" x="0" y="66" />
+    <layer sprite="TUTORIAL_DROPPING_EGG" x="77" y="-40" />
+    <layer sprite="TUTORIAL_BIRD_EGG_2" x="138" y="-107" />
+    <layer sprite="TUTORIAL_BIRD_EGG_1" x="-36" y="-68" />
+    <layer sprite="TUTORIAL_FINGER_CLICK" x="-51" y="53" />
+  </composprite>
+  <composprite name="TUTORIAL_BOOMERANG">
+    <layer sprite="TUTORIAL_BACKGROUND" x="69" y="-1" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="171" y="-2" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="182" y="-11" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="192" y="-23" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="186" y="-39" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="174" y="-50" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="127" y="-78" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="109" y="-85" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="93" y="-88" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="78" y="-90" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="60" y="-92" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="43" y="-92" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="25" y="-92" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="7" y="-90" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-11" y="-88" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-27" y="-84" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-45" y="-80" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-61" y="-75" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-77" y="-70" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-94" y="-64" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-110" y="-58" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-128" y="-50" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-144" y="-40" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-156" y="-30" />
+    <layer sprite="TUTORIAL_PIG_WOOD" x="55" y="29" />
+    <layer sprite="TUTORIAL_SLINGSHOT" x="-166" y="16" />
+    <layer sprite="TUTORIAL_PIG_GLASS" x="56" y="-32" />
+    <layer sprite="TUTORIAL_GROUND" x="0" y="66" />
+    <layer sprite="TUTORIAL_BIRD_BOOMERANG_1" x="160" y="-69" />
+    <layer sprite="TUTORIAL_BIRD_BOOMERANG_2" x="142" y="14" />
+    <layer sprite="TUTORIAL_FINGER_CLICK" x="-51" y="53" />
+  </composprite>
+  <composprite name="TUTORIAL_MIGHTYEAGLE">
+    <layer sprite="TUTORIAL_MIGHTY_EAGLE" x="100" y="-34" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="26" y="-11" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="14" y="-20" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-3" y="-29" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-20" y="-35" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-39" y="-39" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-59" y="-41" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-76" y="-39" />
+    <layer sprite="TUTORIAL_TRAIL_3" x="-94" y="-36" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-112" y="-30" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-127" y="-23" />
+    <layer sprite="TUTORIAL_SLINGSHOT_MOUSE" x="-174" y="18" />
+    <layer sprite="TUTORIAL_GROUND" x="0" y="66" />
+    <layer sprite="TUTORIAL_FINGER_SLIDE" x="-192" y="74" />
+  </composprite>
+  <composprite name="TUTORIAL_BIG_BROTHER">
+    <layer sprite="TUTORIAL_TRAIL_3" x="-115" y="-38" />
+    <layer sprite="TUTORIAL_TRAIL_2" x="-133" y="-32" />
+    <layer sprite="TUTORIAL_TRAIL_1" x="-148" y="-25" />
+    <layer sprite="TUTORIAL_SLINGSHOT" x="-166" y="16" />
+    <layer sprite="TUTORIAL_BACKGROUND" x="67" y="-1" />
+    <layer sprite="TUTORIAL_PIG_PILE" x="96" y="-8" />
+    <layer sprite="TUTORIAL_GROUND" x="0" y="66" />
+    <layer sprite="TUTORIAL_BIRD_BIGBROTHER" x="-63" y="-57" />
+  </composprite>
+</composprites>

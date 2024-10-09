@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="INGAME_PARALLAX_2.png">
+  <sprite name="BACKGROUND_2_LAYER_2" x="2" y="1" width="478" height="152" pivotX="239" pivotY="147" />
+  <sprite name="BACKGROUND_2_LAYER_2_DUMMY" x="1" y="1" width="480" height="153" pivotX="0" pivotY="-2" />
+  <sprite name="BACKGROUND_2_LAYER_GRASS_DUMMY" x="1" y="155" width="348" height="38" pivotX="174" pivotY="33" />
+  <sprite name="FOREGROUND_2_LAYER_2" x="2" y="156" width="346" height="36" pivotX="173" pivotY="32" />
+  <sprite name="BACKGROUND_2_LAYER_3" x="1" y="194" width="461" height="99" pivotX="221" pivotY="95" />
+</spritesheet>

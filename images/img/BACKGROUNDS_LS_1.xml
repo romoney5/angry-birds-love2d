@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="BACKGROUNDS_LS_1.png">
+  <sprite name="LS_BACKGROUND" x="0" y="0" width="960" height="1200" pivotX="960" pivotY="0" />
+  <sprite name="LS_BACKGROUND_DUMMY" x="960" y="0" width="9" height="1200" pivotX="-142" pivotY="0" />
+</spritesheet>

@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="CUTSCENES_ELEMENTS_3.png">
+  <sprite name="CUTSCENE_BG" x="0" y="0" width="1024" height="1024" pivotX="512" pivotY="512" />
+  <sprite name="CUTSCENE_FILMSTRIP_BOTTOM" x="0" y="1078" width="1024" height="47" pivotX="512" pivotY="0" />
+  <sprite name="CUTSCENE_FILMSTRIP_LEFT" x="1026" y="0" width="6" height="659" pivotX="0" pivotY="0" />
+  <sprite name="CUTSCENE_FILMSTRIP_TOP" x="0" y="1026" width="1024" height="47" pivotX="512" pivotY="40" />
+  <sprite name="CUTSCENE_FILMSTRIP_RIGHT" x="1026" y="0" width="6" height="659" pivotX="5" pivotY="0" />
+</spritesheet>
