@@ -1,6 +1,4 @@
 io.stdout:setvbuf('no')
-love.setDeprecationOutput(false) --love.filesystem.exists will no longer be deprecated in 12
-love.graphics.setBlendMode("alpha","premultiplied")
 
 local scriptPath = "/scripts"
 local audioPath = "/audio"
@@ -11,16 +9,17 @@ local this = ""
 
 settings = {}
 highscores = {}
-local screenWidth = love.graphics.getWidth()
-local screenHeight = love.graphics.getHeight()
-local keyPressed = {}
-local keyReleased = {}
-local keyHold = {}
-local keyHoldTime = {}
-local doubleClickTimer = 0
-local splashTimer
-local assetLoadList = {}
-local clippedText = {lines={},widestLine=1}
+screenWidth = love.graphics.getWidth()
+screenHeight = love.graphics.getHeight()
+keyPressed = {}
+keyReleased = {}
+keyHold = {}
+keyHoldTime = {}
+doubleClickTimer = 0
+splashTimer = nil
+assetLoadList = {}
+
+clippedText = {lines={},widestLine=1}
 g_cameraProfileList = {"iphone,ipad"}
 objects = {}
 loadedObjects = {}
@@ -41,7 +40,6 @@ physicsWorld = nil
 zoomLevel = 1
 oldZoomLevel = 1
 
--- print(love._os)
 --options
 deviceModel = love._os == "Android" and "android" or "windows"--"android"--"windows"
 displayScale = 1
@@ -61,12 +59,11 @@ local drawyscale = 1
 local drawangle = 0
 local drawfont = ""
 local audiovolume = 1
-local loveinitialized = false
 
 local audios = {}
-fonts = {}
-cachedspshs = {} --spritesheets
-cachedimgs = {} --individual sprites
+local fonts = {}
+local cachedspshs = {} --spritesheets
+local cachedimgs = {} --individual sprites
 -- local cachedcsprs = {} --individual composprites
 local cachedaudios = {}
 local playingaudio = {}
@@ -524,7 +521,7 @@ end
 oprint = print
 
 function print(...)
-	local prints = ""
+	local prints = (... == nil and "nil") or ""
 	for i,v in ipairs({...}) do
 		prints = prints..tostring(v).."\t"
 	end
@@ -534,6 +531,9 @@ end
 
 function love.load()
 	-- love.graphics.setDefaultFilter("nearest", "nearest")
+	love.setDeprecationOutput(false) --love.filesystem.exists will no longer be deprecated in 12
+	love.graphics.setBlendMode("alpha","premultiplied")
+
 	releaseImages = function()end
 	loadImages = function()end
 	loadCompoSprites = function()end
@@ -591,9 +591,11 @@ function love.update(dt)
 
 		if keyHold["LBUTTON"] then
 			touches[1] = {x=cursor.x,y=cursor.y} --sorry link, i can't give multitouch support.. yet
+		else
+			touches[1] = nil
 		end
 
-		if (keyHold["SHIFT"] and keyPressed["D"]) or (keyPressed["LBUTTON"] and cursor.x >= screenWidth-20 and cursor.y >= screenHeight-20) then
+		if (keyHold["SHIFT"] and keyPressed["D"]) or (keyPressed["LBUTTON"] and cursor.x >= screenWidth-20 and cursor.y >= screenHeight-20) or (debugOpen and keyReleased["ESCAPE"]) then
 			debugOpen = not debugOpen
 			debugText = ""
 			debugCursorPosition = 0
@@ -608,9 +610,13 @@ function love.update(dt)
 			setFullScreenMode(not isInFullScreenMode())
 		end
 
+		local kp,kr,kh = keyPressed,keyReleased,keyHold
+		if debugOpen then keyPressed,keyReleased,keyHold = {},{},{} end
+
 		dt2 = dt*timeScale*(debugOpen and 0.2 or 1)
 
 		update(dt2,dt2)
+		keyPressed,keyReleased,keyHold = kp,kr,kh
 
 		if physicsEnabled then
 			setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0)
@@ -619,6 +625,9 @@ function love.update(dt)
 			for i,v in pairs(objects.world) do
 				local obj = objects.world[i]
 				if obj.body then
+					if not obj.controllable then
+						obj.x = 0
+					end
 					-- print(obj.body:getY())
 					-- res.drawString("",tostring(obj.body:getY()),obj.body:getX()*20,obj.body:getY()*20)
 					-- obj.x,obj.y = obj.body:getPosition()
@@ -633,100 +642,7 @@ function love.update(dt)
 		cursor.wheel = 0
 
 		if debugOpen then
-			debugCursorBlink = debugCursorBlink + dt
-			local font = love.graphics.getFont()
-			
-			if keyPressed["BACKSPACE"] or (keyHoldTime["BACKSPACE"]and keyHoldTime["BACKSPACE"] >= .5 and keyHoldTime["BACKSPACE"]%.04 <= dt) then
-				res.playAudio("menu_back", 1, false)
-				debugText = string.back(debugText,debugCursorPosition)
-				debugCursorPosition = math.max(debugCursorPosition - 1, 0)
-				debugCursorBlink = 0
-			end
-			if keyPressed["DELETE"] or (keyHoldTime["DELETE"]and keyHoldTime["DELETE"] >= .5 and keyHoldTime["DELETE"]%.04 <= dt) then
-				res.playAudio("menu_back", 1, false)
-				debugText = string.back(debugText,debugCursorPosition + 1)
-				-- debugCursorPosition = math.max(debugCursorPosition, 0)
-				debugCursorBlink = 0
-			end
-			if keyPressed["RETURN"] then
-				res.playAudio("menu_confirm", 1, false)
-				debugCursorBlink = 0
-				if keyHold["SHIFT"] then
-					debugText = debugText.."\n"
-					debugCursorPosition = math.min(debugCursorPosition + 1, string.len(debugText))
-				else
-					if debugText ~= debugPrevious[debugPreviousIndex + 1] and debugText ~= "" then --prevent duplicate indexes
-						table.insert(debugPrevious, 1, debugText)
-					end
-
-					if debugText == "clear" then
-						debugPrints = ""
-						res.playAudio("menu_select", 1, false)
-					else
-						local su,re = pcall(loadstring(debugText))
-						if not su then
-							print("Error while running command: "..re)
-						else
-							if re then
-								print(re)--"Ran command successfully with result: "..re)
-							else
-								-- print()--"Ran command successfully")
-							end
-						end
-					end
-					debugText = ""--debugText:sub(1,-2)
-					debugCursorPosition = 0
-					debugPreviousIndex = 0
-				end
-			end
-			if keyPressed["LEFT"] or (keyHoldTime["LEFT"]and keyHoldTime["LEFT"] >= .5 and keyHoldTime["LEFT"]%.03 <= dt) then
-				res.playAudio("menu_select", 1, false)
-				debugCursorPosition = math.max(debugCursorPosition - 1, 0)
-				debugCursorBlink = 0
-			end
-			if keyPressed["RIGHT"] or (keyHoldTime["RIGHT"]and keyHoldTime["RIGHT"] >= .5 and keyHoldTime["RIGHT"]%.03 <= dt) then
-				res.playAudio("menu_select", 1, false)
-				debugCursorPosition = math.min(debugCursorPosition + 1, string.len(debugText))
-				debugCursorBlink = 0
-			end
-
-			if keyPressed["UP"] and debugPreviousIndex < #debugPrevious then
-				res.playAudio("menu_select", 1, false)
-				if debugPreviousIndex == 0 then debugPrevious[0] = debugText end
-				debugPreviousIndex = debugPreviousIndex + 1
-				debugText = debugPrevious[debugPreviousIndex]
-				debugCursorPosition = #debugText
-			end
-			if keyPressed["DOWN"] and debugPreviousIndex > 0 then
-				res.playAudio("menu_select", 1, false)
-				debugPreviousIndex = debugPreviousIndex - 1
-				debugText = debugPrevious[debugPreviousIndex]
-				debugCursorPosition = #debugText
-			end
-
-			
-			-- local textLength,textLines = 0,-1
-			-- local maxLength,lines = font:getWrap(debugText:sub(1, debugCursorPosition),screenWidth - debugPadding * 2)
-			-- local _,linesTotal = font:getWrap(debugText,screenWidth - debugPadding * 2)
-			
-			-- for i,v in pairs(lines) do
-			-- 	textLines = textLines + 1
-			-- 	textLength = font:getWidth(v)
-			-- end
-
-			love.graphics.setColor(0, 0, 0, .5)
-			love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
-			love.graphics.rectangle("fill", 0, 0, screenWidth, debugPadding * 2 + 30)-- + (#linesTotal * font:getHeight()))
-			love.graphics.setColor(1, 1, 1, 1)
-
-			-- love.graphics.printf(debugText, debugPadding, debugPadding, screenWidth - debugPadding * 2)
-			res.useFont("FONT_BASIC")
-			res.drawString("",debugText,debugPadding,debugPadding)
-			-- love.graphics.printf((debugCursorBlink%.5 <= .25 and "|" or ""), res.getStringWidth(debugText:sub(1, debugCursorPosition)) + debugPadding - 3, (debugPadding + 0.5), screenWidth)-- + (textLines * font:getHeight()), screenWidth)
-			res.drawString("",(debugCursorBlink%.5 <= .25 and "|" or ""), res.getStringWidth(debugText:sub(1, debugCursorPosition)) + debugPadding, (debugPadding+3))
-
-			-- love.graphics.printf(debugPrints, debugPadding, debugPadding * 2 + 70, screenWidth - debugPadding*2)-- + (#linesTotal * font:getHeight()), screenWidth - debugPadding * 2)
-			res.drawString("",debugPrints, debugPadding, debugPadding * 2 + 70)
+			updateDebug(dt)
 		end
 	end
 
@@ -740,6 +656,102 @@ function love.update(dt)
 	end
 end
 
+function updateDebug(dt)
+	debugCursorBlink = debugCursorBlink + dt
+	local font = love.graphics.getFont()
+	
+	if keyPressed["BACKSPACE"] or (keyHoldTime["BACKSPACE"]and keyHoldTime["BACKSPACE"] >= .5 and keyHoldTime["BACKSPACE"]%.04 <= dt) then
+		res.playAudio("menu_back", 1, false)
+		debugText = string.back(debugText,debugCursorPosition)
+		debugCursorPosition = math.max(debugCursorPosition - 1, 0)
+		debugCursorBlink = 0
+	end
+	if keyPressed["DELETE"] or (keyHoldTime["DELETE"]and keyHoldTime["DELETE"] >= .5 and keyHoldTime["DELETE"]%.04 <= dt) then
+		res.playAudio("menu_back", 1, false)
+		debugText = string.back(debugText,debugCursorPosition + 1)
+		-- debugCursorPosition = math.max(debugCursorPosition, 0)
+		debugCursorBlink = 0
+	end
+	if keyPressed["RETURN"] then
+		res.playAudio("menu_confirm", 1, false)
+		debugCursorBlink = 0
+		if keyHold["SHIFT"] then
+			debugText = debugText.."\n"
+			debugCursorPosition = math.min(debugCursorPosition + 1, string.len(debugText))
+		else
+			if debugText ~= debugPrevious[debugPreviousIndex + 1] and debugText ~= "" then --prevent duplicate indexes
+				table.insert(debugPrevious, 1, debugText)
+			end
+
+			if debugText == "clear" then
+				debugPrints = ""
+				res.playAudio("menu_select", 1, false)
+			else
+				local su,re = pcall(loadstring(debugText))
+				if not su then
+					print("Error while running command: "..re)
+				else
+					if re then
+						print(re)--"Ran command successfully with result: "..re)
+					else
+						-- print()--"Ran command successfully")
+					end
+				end
+			end
+			debugText = ""--debugText:sub(1,-2)
+			debugCursorPosition = 0
+			debugPreviousIndex = 0
+		end
+	end
+	if keyPressed["LEFT"] or (keyHoldTime["LEFT"]and keyHoldTime["LEFT"] >= .5 and keyHoldTime["LEFT"]%.03 <= dt) then
+		res.playAudio("menu_select", 1, false)
+		debugCursorPosition = math.max(debugCursorPosition - 1, 0)
+		debugCursorBlink = 0
+	end
+	if keyPressed["RIGHT"] or (keyHoldTime["RIGHT"]and keyHoldTime["RIGHT"] >= .5 and keyHoldTime["RIGHT"]%.03 <= dt) then
+		res.playAudio("menu_select", 1, false)
+		debugCursorPosition = math.min(debugCursorPosition + 1, string.len(debugText))
+		debugCursorBlink = 0
+	end
+
+	if keyPressed["UP"] and debugPreviousIndex < #debugPrevious then
+		res.playAudio("menu_select", 1, false)
+		if debugPreviousIndex == 0 then debugPrevious[0] = debugText end
+		debugPreviousIndex = debugPreviousIndex + 1
+		debugText = debugPrevious[debugPreviousIndex]
+		debugCursorPosition = #debugText
+	end
+	if keyPressed["DOWN"] and debugPreviousIndex > 0 then
+		res.playAudio("menu_select", 1, false)
+		debugPreviousIndex = debugPreviousIndex - 1
+		debugText = debugPrevious[debugPreviousIndex]
+		debugCursorPosition = #debugText
+	end
+
+	
+	-- local textLength,textLines = 0,-1
+	-- local maxLength,lines = font:getWrap(debugText:sub(1, debugCursorPosition),screenWidth - debugPadding * 2)
+	-- local _,linesTotal = font:getWrap(debugText,screenWidth - debugPadding * 2)
+	
+	-- for i,v in pairs(lines) do
+	-- 	textLines = textLines + 1
+	-- 	textLength = font:getWidth(v)
+	-- end
+
+	love.graphics.setColor(0, 0, 0, .5)
+	love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
+	love.graphics.rectangle("fill", 0, 0, screenWidth, debugPadding * 2 + 30)-- + (#linesTotal * font:getHeight()))
+	love.graphics.setColor(1, 1, 1, 1)
+
+	-- love.graphics.printf(debugText, debugPadding, debugPadding, screenWidth - debugPadding * 2)
+	res.useFont("FONT_BASIC")
+	res.drawString("",debugText,debugPadding,debugPadding)
+	-- love.graphics.printf((debugCursorBlink%.5 <= .25 and "|" or ""), res.getStringWidth(debugText:sub(1, debugCursorPosition)) + debugPadding - 3, (debugPadding + 0.5), screenWidth)-- + (textLines * font:getHeight()), screenWidth)
+	res.drawString("",(debugCursorBlink%.5 <= .25 and "|" or ""), res.getStringWidth(debugText:sub(1, debugCursorPosition)) + debugPadding, (debugPadding+3))
+
+	-- love.graphics.printf(debugPrints, debugPadding, debugPadding * 2 + 70, screenWidth - debugPadding*2)-- + (#linesTotal * font:getHeight()), screenWidth - debugPadding * 2)
+	res.drawString("",debugPrints, debugPadding, debugPadding * 2 + 70)
+end
 
 function love.textinput(key)
 	-- print(key)
@@ -915,36 +927,44 @@ function checkAndLoadSprite(sprite)
 	if cachedimgs[sprite]==0 then return nil end
 	return cachedimgs[sprite]
 end
+	
+	-- setRenderState(0, 0, -1, 1, 0)
+	-- _G.res.drawSprite("", "LS_BACKGROUND", -screenWidth, 0, "LEFT", "TOP", _G.math.ceil(screenWidth / 2), screenHeight)
+	-- setRenderState(0, 0, 1, 1, 0)
+	-- _G.res.drawSprite("", "LS_BACKGROUND", 0, 0, "LEFT", "TOP", _G.math.floor(screenWidth / 2), screenHeight)
+	-- setRenderState(0, 0, 1, 1, 0)	
 
 function res.drawSprite(string,sprite,x,y,vanchor,hanchor,iwidth,iheight)
 	local image = checkAndLoadSprite(sprite)
 
 	if image then
+		local wm = (iwidth and iwidth/image[2] or 1)
+		local hm = (iheight and iheight/image[3] or 1)
+
 		x = (x + drawxo)
 		y = (y + drawyo)
 		
 		local xp = image[2]/2
-		if hanchor == "LEFT" or vanchor == "LEFT" then xp = 0 end
+		local yp = image[3]/2
+		local xpr = image[2]/2
+		local ypr = image[3]/2
+		if hanchor == "LEFT" or vanchor == "LEFT" then xp = image[5] xpr = 0 end
 		if hanchor == "RIGHT" or vanchor == "RIGHT" then xp = image[2] end
 		
-		local yp = image[3]/2
-		if vanchor == "TOP" or hanchor == "TOP" then yp = 0 end
+		if vanchor == "TOP" or hanchor == "TOP" then yp = image[6] ypr = 0 end
 		if vanchor == "BOTTOM" or hanchor == "BOTTOM" then yp = image[3] end
 		-- local w = image[2]
 		-- local h = image[3]
 
-		local wm = (iwidth and iwidth/image[2] or 1)
-		local hm = (iheight and iheight/image[3] or 1)
-
 		love.graphics.draw(image[4],				--quad
 			image[1],								--spritesheet
-			(x-image[5] + image[2]/2)*drawxscale,	--x
-			(y-image[6] + image[3]/2)*drawyscale,	--y
+			(x-image[5] + xp)*drawxscale,	--x
+			(y-image[6] + yp)*drawyscale,	--y
 			drawangle,								--angle
 			drawxscale*wm,							--x scale
 			drawyscale*hm,							--y scale
-			xp,										--x pivot
-			yp)										--y pivot
+			xpr,										--x pivot
+			ypr)										--y pivot
 	end
 end
 
@@ -986,7 +1006,7 @@ function drawBackgroundNative()
 		local w, h = res.getSpriteBounds("",v[2])
 		local s = worldScale or 1
 		
-		for x = -1,math.floor(screenWidth/w/s)-1 do
+		for x = -1,math.floor(screenWidth/w/s) do
 			-- local i = #theme.bgLayers - k
 			local xp = w * x
 			local left = (-screen.left * v[3] / v[4] - cameraShakeX) % w
@@ -1018,7 +1038,7 @@ function drawForegroundNative()
 		local s = worldScale or 1
 		v[3],v[4] = 1,1.5
 		
-		for x = -1,math.floor(screenWidth/w/s)-1 do
+		for x = -1,math.floor(screenWidth/w/s) do
 			-- local i = #theme.fgLayers - k
 			local xp = w * x
 			local left = (-screen.left * v[3] / v[4] - cameraShakeX) % w
@@ -1064,32 +1084,34 @@ function setPhysicsSimulationScale(scale)
 	return
 end
 
-function drawLine2D(x1,y1,x2,y2,lz,r,g,b,a)
+function drawLine2D(lx1,ly1,lx2,ly2,lz,r,g,b,a)
 	local r2,y2,b2,a2 = love.graphics.getColor()
 	love.graphics.setColor(r/255, g/255, b/255, a/255)
 	love.graphics.setLineWidth(lz)
 	-- print(x1,y1,x2,y2)
-	-- love.graphics.line(x1+drawxo, y1+drawyo, x2+drawxo, y2+drawyo)
+	love.graphics.line((lx1+drawxo)*drawxscale, (ly1+drawyo)*drawyscale, (lx2+drawxo)*drawxscale, (ly2+drawyo)*drawyscale)
 	love.graphics.setColor(r2,y2,b2,a2)
 end
 
-function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
+function createBox(obj_name, obj_sprite, obj_xpos, obj_ypos, obj_w, obj_h, obj_density, obj_friction, obj_restitution, obj_collision, obj_controllable, obj_z_order)
 	-- density = density or 1
-	objects.world[name] = {name = name, sprite = sprite, y = ypos, x = xpos, width = w, height = h or w, density = density, friction = friction, restitution = restitution, collision = collision, controllable = controllable, z_order = z_order, mass = 1}
-	local obj = objects.world[name]
+	objects.world[obj_name] = {name = obj_name, sprite = obj_sprite, y = obj_ypos, x = obj_xpos, width = obj_w, height = obj_h or obj_w, density = obj_density,
+		friction = obj_friction, restitution = obj_restitution, collision = obj_collision, controllable = obj_controllable or false, z_order = obj_z_order, mass = 1}
+	local obj = objects.world[obj_name]
 
-	obj.body = love.physics.newBody(physicsWorld, xpos, ypos)
-	obj.shape = love.physics.newRectangleShape(w, h)
-	obj.fixture = love.physics.newFixture(objects.world[name].body, objects.world[name].shape)--, density)
+	obj.body = love.physics.newBody(physicsWorld, obj_xpos, obj_ypos)
+	obj.shape = love.physics.newRectangleShape(obj_w, obj_h)
+	obj.fixture = love.physics.newFixture(objects.world[obj_name].body, objects.world[obj_name].shape)--, density)
 end
 
-function createCircle(name, sprite, xpos, ypos, w, density, friction, restitution, controllable, z_order)
-	objects.world[name] = {name = name, sprite = sprite, y = ypos, x = xpos, width = w, height = h or w, density = density, friction = friction, restitution = restitution, controllable = controllable, z_order = z_order, mass = 1}
-	local obj = objects.world[name]
+function createCircle(obj_name, obj_sprite, obj_xpos, obj_ypos, obj_w, obj_density, obj_friction, obj_restitution, obj_controllable, obj_z_order)
+	objects.world[obj_name] = {name = obj_name, sprite = obj_sprite, y = obj_ypos, x = obj_xpos, width = obj_w, height = obj_h or obj_w, density = obj_density,
+		friction = obj_friction, restitution = obj_restitution, controllable = obj_controllable, z_order = obj_z_order, mass = 1}
+	local obj = objects.world[obj_name]
 
-	obj.body = love.physics.newBody(physicsWorld, xpos, ypos)
-	obj.shape = love.physics.newCircleShape(w)
-	obj.fixture = love.physics.newFixture(objects.world[name].body, objects.world[name].shape)--, density)
+	obj.body = love.physics.newBody(physicsWorld, obj_xpos, obj_ypos)
+	obj.shape = love.physics.newCircleShape(obj_w)
+	obj.fixture = love.physics.newFixture(objects.world[obj_name].body, objects.world[obj_name].shape)--, density)
 end
 
 function setRotation(object,rotation)
@@ -14895,7 +14917,6 @@ function setMusicVolume(volume)
 end
 
 function changeAudio()
-	if debugOpen then return end --if debug menu is open
 	if settings.audioEnabled ~= false then
 		audioRampVolume = _G.res.getTrackVolume(7)
 		audioRampLength = -0.5
