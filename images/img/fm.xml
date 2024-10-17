@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="fm.png">
+  <sprite name="ICON_FM_FOLDER" x="0" y="0" width="144" height="144" pivotX="0" pivotY="0" />
+  <sprite name="ICON_FM_FILE" x="144" y="0" width="144" height="144" pivotX="0" pivotY="0" />
+</spritesheet>
