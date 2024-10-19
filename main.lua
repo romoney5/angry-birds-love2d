@@ -53,6 +53,7 @@ enableCursor = true
 useNewFonts = false
 autoScale = 0 --0 to disable, anything else as a multiplier
 editorPages = 50 --amount of pages shown in the editor, default 50
+gravity = {x = 0, y = 20}
 
 fontPath = "/fonts"..(useNewFonts and "/angrybirds" or "/onomatoshark")
 local drawxo = 0
@@ -798,7 +799,7 @@ function love.update(dt)
 					-- obj.body:setX(10)
 					-- if obj.controllable then print(obj.body:getX()) end
 					obj.xVel,obj.yVel = obj.body:getLinearVelocity()
-					obj.angle = obj.body:getAngle()
+					obj.angle = ((obj.body:getAngle()+math.pi)%(math.pi*2))-math.pi
 
 					if not hasMovingObjects and (math.abs(obj.xVel) >= .2 or math.abs(obj.yVel) >= .2) then hasMovingObjects = true end
 
@@ -1321,10 +1322,11 @@ function drawGameNative() --work in progress
 		local x,y = physicsToWorldTransform(v.x,v.y)--v.x,v.y--worldToScreenTransform(v.x,v.y)
 		-- print(x)
 		-- setRenderState(0,0,0,0)
-		drawangle = v.angle
+		drawangle = v.angle--body:getAngle()
 
 		res.drawSprite("",v.sprite,x,y)--v.sprite,x,y)
 		drawangle = 0
+		-- res.drawString("",v.angle,v.x*20,v.y*20)
 	end
 	-- debugWorldDraw(physicsWorld,0,-500,screenWidth*20,screenHeight*20)
 end
@@ -1345,7 +1347,7 @@ function loadLevel(filename)
 	print("Loading level: "..filename..".lua")
 	if physicsWorld then physicsWorld:destroy() end --clear all the objects before continuing
 
-	physicsWorld = love.physics.newWorld(-5*0, 20, true)
+	physicsWorld = love.physics.newWorld(gravity.x, gravity.y, true)
 	physicsWorld:setCallbacks(nil,nil,physicsStartContact,nil)
 	loadedObjects = {}
 	loadLuaFileToObject(filename..".lua",this,loadedObjects)
@@ -1431,9 +1433,23 @@ function addVertex(x, y)
 	-- return
 end
 
+function createJoint(name, end1, end2, type, coordType, x1, y1, x2, y2)
+	-- objects.world[name] = {name = name, sprite = sprite, y = ypos, x = xpos, width = w, height = h or w, density = density,
+	-- 	friction = friction, restitution = restitution, collision = collision, controllable = controllable or false, z_order = z_order, mass = 1, xVel = 0, yVel = 0}
+	-- local obj = objects.world[name]
+
+	-- obj.body = love.physics.newBody(physicsWorld, xpos, ypos, density == 0 and "static" or "dynamic") --dynamic is very important!!
+	-- obj.shape = love.physics.newPolygonShape(polyverts)
+	-- obj.fixture = love.physics.newFixture(obj.body, obj.shape, density)
+
+	-- obj.fixture:setRestitution(restitution)
+	-- obj.fixture:setFriction(friction)
+	-- obj.fixture:setUserData(obj)
+end
+
 function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
 	objects.world[name] = {name = name, sprite = sprite, y = ypos, x = xpos, width = w, height = h or w, density = density,
-		friction = friction, restitution = restitution, collision = collision, controllable = controllable or false, z_order = z_order, mass = 1, xVel = 0, yVel = 0}
+		friction = friction, restitution = restitution, collision = collision, controllable = controllable or false, z_order = z_order, mass = 1, xVel = 0, yVel = 0, angle = 0}
 	local obj = objects.world[name]
 
 	obj.body = love.physics.newBody(physicsWorld, xpos, ypos, density == 0 and "static" or "dynamic") --dynamic is very important!!
@@ -1448,7 +1464,7 @@ end
 function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
 	-- density = density or 1
 	objects.world[name] = {name = name, sprite = sprite, y = ypos, x = xpos, width = w, height = h or w, density = density,
-		friction = friction, restitution = restitution, collision = collision, controllable = controllable or false, z_order = z_order, mass = 1, xVel = 0, yVel = 0}
+		friction = friction, restitution = restitution, collision = collision, controllable = controllable or false, z_order = z_order, mass = 1, xVel = 0, yVel = 0, angle = 0}
 	local obj = objects.world[name]
 
 	obj.body = love.physics.newBody(physicsWorld, xpos, ypos, density == 0 and "static" or "dynamic") --dynamic is very important!!
@@ -1464,7 +1480,7 @@ end
 
 function createCircle(name, sprite, xpos, ypos, w, density, friction, restitution, controllable, z_order)
 	objects.world[name] = {name = name, sprite = sprite, y = ypos, x = xpos, radius = w, height = w, density = density,
-		friction = friction, restitution = restitution, controllable = controllable, z_order = z_order, mass = 1, xVel = 0, yVel = 0}
+		friction = friction, restitution = restitution, controllable = controllable, z_order = z_order, mass = 1, xVel = 0, yVel = 0, angle = 0}
 	local obj = objects.world[name]
 
 	-- if controllable then obj.density = obj.density * 100 end
@@ -1493,7 +1509,7 @@ function removeObject(name)
 end
 
 function setRotation(object,rotation)
-	objects.world[object].angle = rotation
+	objects.world[object].angle = (rotation%(math.pi*2))
 	if objects.world[object].body then
 		objects.world[object].body:setAngle(rotation)
 		objects.world[object].body:setAngularVelocity(0)
@@ -1528,6 +1544,24 @@ function applyImpulse(object,x,y,xp,yp)
 	-- objects.world[object].yVel = objects.world[object].yVel + y
 	if obj.body then
 		obj.body:applyLinearImpulse(x,y,xp,yp)--objects.world[object].width)
+	end
+end
+
+function applyForce(object,x,y,xp,yp)
+	local obj = objects.world[object]
+	-- objects.world[object].xVel = objects.world[object].xVel + x
+	-- objects.world[object].yVel = objects.world[object].yVel + y
+	if obj.body then
+		obj.body:applyForce(x,y)--objects.world[object].width)
+	end
+end
+
+function setAngularVelocity(object,a)
+	local obj = objects.world[object]
+	-- objects.world[object].xVel = objects.world[object].xVel + x
+	-- objects.world[object].yVel = objects.world[object].yVel + y
+	if obj.body then
+		obj.body:setAngularVelocity(a)--objects.world[object].width)
 	end
 end
 
