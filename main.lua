@@ -62,8 +62,10 @@ local drawxscale = 1
 local drawyscale = 1
 local drawangle = 0
 local drawfont = ""
+local drawxp,drawyp = 0,0
 local audiovolume = 1
 local polyverts = {}
+local hasfocus = true
 
 local audios = {}
 local fonts = {}
@@ -421,11 +423,11 @@ function res.createBitmapFont(font)
 		local leading = tonumber(xml:match('leading="(.-)"')) or 0
 		local tracking = tonumber(xml:match('tracking="(.-)"')) or 0
 		local spritesheet = xml:match('texture="(.-)"') or ""
+		local fheight = 0
 		if endswith(spritesheet,".pvr") then spritesheet = spritesheet..".png" end
 		spritesheet = love.graphics.newImage(fontPath.."/"..spritesheet)
 
 		font = font:sub(string.len(fontPath)+2)
-		fonts[font] = {leading = leading, tracking = tracking, spritesheet = spritesheet, chars = {}}
 
 		for tag in xml:gmatch("<character.-/>") do
 			local char = tag:match('char="(.-)"') or ""
@@ -434,9 +436,11 @@ function res.createBitmapFont(font)
 			local width = tonumber(tag:match('width="(.-)"')) or 0
 			local height = tonumber(tag:match('height="(.-)"')) or 0
 			local pivotY = tonumber(tag:match('pivotY="(.-)"')) or 0
+			fheight = math.max(fheight,height)
 			
 			table.insert(chars, { char = char, x = x, y = y, width = width, height = height, pivotY = pivotY })
 		end
+		fonts[font] = {leading = leading, tracking = tracking, spritesheet = spritesheet, chars = {}, height = fheight}
 
 		--for each character, also construct a quad
 		for _, char in ipairs(chars) do
@@ -464,8 +468,9 @@ function res.drawString(group, text, x, y, aligny, alignx)
 		local ax,ay = 0,0
 		if alignx=="HCENTER" or aligny=="HCENTER" then ax=-res.getStringWidth(text)/2 end
 		if alignx=="RIGHT" or aligny=="RIGHT" then ax=-res.getStringWidth(text) end
-		if alignx=="BOTTOM" or aligny=="BOTTOM" then ay=-res.getFontLeading()/2 end
-		if alignx=="TOP" or aligny=="TOP" then ay=res.getFontLeading() end
+		-- if alignx=="VCENTER" or aligny=="VCENTER" then ay=-res.getFontHeight()/2 end
+		if alignx=="BOTTOM" or aligny=="BOTTOM" then ay=-res.getFontHeight()/2 end
+		if alignx=="TOP" or aligny=="TOP" then ay=res.getFontHeight() end
 		
 		local i = 0
 		local line = 0
@@ -524,7 +529,7 @@ end
 
 function res.getFontHeight()
 	local font = fonts[drawfont]
-	if font then return font.leading end
+	if font then return font.height end
 	return 0
 end
 
@@ -684,6 +689,7 @@ end
 --every frame
 function love.update(dt)
 	if love.window.hasFocus() then
+		hasfocus = true
 		if love.graphics and love.graphics.isActive() then
 			love.graphics.origin()
 			love.graphics.clear(love.graphics.getBackgroundColor())
@@ -870,6 +876,9 @@ function love.update(dt)
 		if debugOpen then
 			updateDebug(dt)
 		end
+	elseif hasfocus then
+		hasfocus = false
+		gamePaused()
 	end
 
 	keyPressed = {}
@@ -1188,23 +1197,31 @@ function res.drawSprite(string,sprite,x,y,vanchor,hanchor,iwidth,iheight)
 		
 		local xp = image[2]/2
 		local yp = image[3]/2
-		local xpr = image[2]/2
-		local ypr = image[3]/2
-		if hanchor == "LEFT" or vanchor == "LEFT" then xp = image[5] xpr = 0 end
-		if hanchor == "RIGHT" or vanchor == "RIGHT" then xp = image[2] end
+		local xpr,ypr = image[2]/2,image[3]/2
+		-- local xpr = image[2]/2
+		-- local ypr = image[3]/2
+		-- if hanchor == "LEFT" or vanchor == "LEFT" then xp = image[5] xpr = 0 end
+		-- if hanchor == "RIGHT" or vanchor == "RIGHT" then xp = image[2] end
 		
-		if vanchor == "TOP" or hanchor == "TOP" then yp = image[6] ypr = 0 end
-		if vanchor == "BOTTOM" or hanchor == "BOTTOM" then yp = image[3] end
+		-- if vanchor == "TOP" or hanchor == "TOP" then yp = image[6] ypr = 0 end
+		-- if vanchor == "BOTTOM" or hanchor == "BOTTOM" then yp = image[3] end
+		if hanchor == "LEFT" then xpr = image[5] end
+		if hanchor == "RIGHT" then xpr = image[2] end
+		if hanchor == "VCENTER" then xpr = image[2]/2 end
+		
+		if vanchor == "TOP" then ypr = image[6] end
+		if vanchor == "BOTTOM" then ypr = image[3] end
+		if vanchor == "HCENTER" then ypr = image[3]/2 end
 
 		love.graphics.draw(image[4],		--quad
 			image[1],						--spritesheet
-			(x-image[5] + xp)*drawxscale,	--x
-			(y-image[6] + yp)*drawyscale,	--y
+			(x-image[5] + xpr + drawxp)*drawxscale,	--x
+			(y-image[6] + ypr + drawyp)*drawyscale,	--y
 			drawangle,						--angle
 			drawxscale*wm,					--x scale
 			drawyscale*hm,					--y scale
-			xpr,							--x pivot
-			ypr)							--y pivot
+			xpr+drawxp,							--x pivot
+			ypr+drawyp)							--y pivot
 	end
 end
 
@@ -1217,12 +1234,14 @@ end
 function setBGColor(r,g,b) --set the background color
 	love.graphics.setBackgroundColor(r/255,g/255,b/255)
 end
-function setRenderState(xp,yp,xs,ys,angle)
+function setRenderState(xp,yp,xs,ys,angle,xpi,ypi)
 	drawxo = xp
 	drawyo = yp
 	drawxscale = xs
 	drawyscale = ys
 	drawangle = angle or 0
+	drawxp = xpi or 0
+	drawyp = ypi or 0
 end
 
 function drawBackgroundNative()
@@ -1383,44 +1402,34 @@ function physicsStartContact(obj1,obj2,contact)
 	local o1,o2 = obj1:getUserData(),obj2:getUserData() --to get the angry birds world object, rather than the physics world object
 	if o1.deleted or o2.deleted then return end
 
-	-- if math.abs((math.abs(vx1)+math.abs(vy1))-(math.abs(vx2)+math.abs(vy2))) >= 5 then --math.abs
-		-- print(o1.name)
-		-- if o1.controllable then
-		-- 	print("controllable "..o2.name)
-		-- 	birdCollision(o1.name,o2.name,10,10)
-		-- elseif o2.controllable then
-		-- 	print("controllable "..o1.name)
-		-- 	birdCollision(o2.name,o1.name,10,10)
-		-- else
-			if veloc >= 5 then
+	if veloc >= 5 then
 
-			end
-			if o1.controllable and o1.damageFactors and o2.material then veloc = veloc * (blockTable.damageFactors[o1.damageFactors].damageMultiplier[o2.material] or 0) end
+	end
+	if o1.controllable and o1.damageFactors and o2.material then veloc = veloc * (blockTable.damageFactors[o1.damageFactors].damageMultiplier[o2.material] or 0) end
 
-			-- if o1.strength and not o1.controllable and o1.defence and o1.defence < veloc then
-			-- 	o1.strength = o1.strength - veloc + o1.defence
-			-- end
-				-- print(o1.name,o2.name)
-			-- if o1.name == "RedBird_1" then
-			-- 	res.drawString("",o1.name,o2.x*20,o2.y*20)
-			-- end
-			local damaged = false
-			if o2.strength and not o2.controllable and o2.defence and o2.defence < veloc then
-				-- contact:setEnabled(false)
-				damaged = true
-				o2.strength = o2.strength - veloc + o2.defence
-				-- print(veloc)
-				if o2.strength <= 0 then
-					contact:setEnabled(false)
-				end
-			end
+	
+	local damaged = false
+	if o2.strength and o2.defence and o2.defence < veloc then
+		-- contact:setEnabled(false)
+		damaged = true
+		o2.strength = o2.strength - veloc * (o1.defence or 1) * o1.mass
+		if not o1.controllable then
+			o1.strength = o1.strength - veloc * (o2.defence or 1) * o2.mass
+		end
+		-- print(veloc)
+		if o2.strength <= 0 then
+			contact:setEnabled(false) --make object 1 go through object 2
+		end
+	end
 
-			if objects.world[o1.name].body and objects.world[o2.name].body then
-				blockCollision(o1.name,o2.name,veloc/10,damaged)
-			end
-			removeBlocks()
-		-- end
-	-- end
+	if objects.world[o1.name].body and objects.world[o2.name].body then
+		if o1.controllable then
+			birdCollision(o1.name,o2.name,veloc*o1.mass,veloc*o1.mass)
+		else
+			blockCollision(o1.name,o2.name,veloc*o1.mass,damaged)
+		end
+	end
+	removeBlocks()
 end
 
 function clearVertices()
@@ -1548,12 +1557,11 @@ function applyImpulse(object,x,y,xp,yp)
 end
 
 function applyForce(object,x,y,xp,yp)
-	local obj = objects.world[object]
-	-- objects.world[object].xVel = objects.world[object].xVel + x
-	-- objects.world[object].yVel = objects.world[object].yVel + y
-	if obj.body then
-		obj.body:applyForce(x,y)--objects.world[object].width)
-	end
+    local obj = objects.world[object]
+    if obj.body then
+        local mass = obj.mass / 20
+        obj.body:applyForce(x, y*mass, xp, yp)
+    end
 end
 
 function setAngularVelocity(object,a)
