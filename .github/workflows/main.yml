@@ -6,14 +6,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       # You may pin to the exact commit or the version.
       # uses: nhartland/love-build@4780ffd2dfebed3245407af82fc59be04dd72796
     - uses: nhartland/love-build@master
       id: love-build
       with:
         # Name of the application to be built
-        app_name: angry-birds # default is love-build-app
+        app_name: angrybirds_love2d # default is love-build-app
         # Version of LÖVE to be used in building the application
         love_version: 11.5 # default is 11.3
         # Path to dependencies rockspec relative to GitHub workspace
@@ -23,20 +23,20 @@ jobs:
         # Directory in the GitHub workspace where the built distributables should be located
         #result_dir: # default is release
     
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: macos-build
+        name: mac.zip
         path: ${{ steps.love-build.outputs.macos-filename }}
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: win32-build
+        name: win32.zip
         path: ${{ steps.love-build.outputs.win32-filename }}
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: win64-build
+        name: win64.zip
         path: ${{ steps.love-build.outputs.win64-filename }}
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: love-build
+        name: love.zip
         path: ${{ steps.love-build.outputs.love-filename }}
               
