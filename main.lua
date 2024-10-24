@@ -1604,67 +1604,67 @@ loadLuaFileToObject("debug.lua", this)--, settings)
 --and now start the actual game
 loadLuaFileToObject(scriptPath .. "/gamelogic.lua", this)--, settings)
 
-function drawLevelSelectionBackground(page)
-	-- draw main menu theme according to the last theme played, halloween theme is an exception see above
-	animateBirds(love.timer.getDelta())
-	episode4BGCranes = { startX = 64 }
-	local bW, bH = _G.res.getSpriteBounds("","BUTTON_EMPTY")
-	local worldScale = 0.5 * screenHeight / 320
-	--if worldScale > 0.75 then
-		--worldScale = 0.75
-	--end
-	local worldScale = (0.5 * screenHeight / 400) / (currentZoomLevelMainMenu * 0.66)
-	local topCamera = (-2*screenHeight) / (screenHeight / (450 * currentZoomLevelMainMenu * 0.585)) + ((bH * 1.6  )/ (screenHeight / (450 * currentZoomLevelMainMenu * 0.5)))
-	setTopLeft(50*time,topCamera )
-	setWorldScale(worldScale)
+-- function drawLevelSelectionBackground(page)
+-- 	-- draw main menu theme according to the last theme played, halloween theme is an exception see above
+-- 	animateBirds(love.timer.getDelta())
+-- 	episode4BGCranes = { startX = 64 }
+-- 	local bW, bH = _G.res.getSpriteBounds("","BUTTON_EMPTY")
+-- 	local worldScale = 0.5 * screenHeight / 320
+-- 	--if worldScale > 0.75 then
+-- 		--worldScale = 0.75
+-- 	--end
+-- 	local worldScale = (0.5 * screenHeight / 400) / (currentZoomLevelMainMenu * 0.66)
+-- 	local topCamera = (-2*screenHeight) / (screenHeight / (450 * currentZoomLevelMainMenu * 0.585)) + ((bH * 1.6  )/ (screenHeight / (450 * currentZoomLevelMainMenu * 0.5)))
+-- 	setTopLeft(50*time,topCamera )
+-- 	setWorldScale(worldScale)
 	
-	setTheme(currentMainMenuTheme)
-	if not g_gfxLowQuality then
-		drawBackgroundNative()	
-	end
-	-- setWorldScale(0.5)
-	-- setTopLeft(50*time,-2*screenHeight + bH * 1.6 )
-	-- end of main menu draw for every theme but halloween
+-- 	setTheme(currentMainMenuTheme)
+-- 	if not g_gfxLowQuality then
+-- 		drawBackgroundNative()	
+-- 	end
+-- 	-- setWorldScale(0.5)
+-- 	-- setTopLeft(50*time,-2*screenHeight + bH * 1.6 )
+-- 	-- end of main menu draw for every theme but halloween
 	
-	--the birds were too small, so we added those multipliers for the scaling factors, indexed by the layer numbers
-	if g_birdAnimationScaleMultipliers == nil then
-		g_birdAnimationScaleMultipliers = {}
-		g_birdAnimationScaleMultipliers[3] = 1.5
-		g_birdAnimationScaleMultipliers[4] = 1.3
-		g_birdAnimationScaleMultipliers[5] = 1
-	end
+-- 	--the birds were too small, so we added those multipliers for the scaling factors, indexed by the layer numbers
+-- 	if g_birdAnimationScaleMultipliers == nil then
+-- 		g_birdAnimationScaleMultipliers = {}
+-- 		g_birdAnimationScaleMultipliers[3] = 1.5
+-- 		g_birdAnimationScaleMultipliers[4] = 1.3
+-- 		g_birdAnimationScaleMultipliers[5] = 1
+-- 	end
 	
 		
-	-- draw birds, rewards..
-		for k, v in _G.pairs(birdAnimations) do
-			if v.layer == 3  then
-				local scale = v.scale * g_birdAnimationScaleMultipliers[v.layer]
-				setRenderState(0, 0, scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
-				_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale - screenHeight * 0.2 / scale))
-			end
-		end	
+-- 	-- draw birds, rewards..
+-- 		for k, v in _G.pairs(birdAnimations) do
+-- 			if v.layer == 3  then
+-- 				local scale = v.scale * g_birdAnimationScaleMultipliers[v.layer]
+-- 				setRenderState(0, 0, scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
+-- 				_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale - screenHeight * 0.2 / scale))
+-- 			end
+-- 		end	
 		
 	
-		for k, v in _G.pairs(birdAnimations) do
-			if v.layer == 4 then
-				local scale = v.scale  * g_birdAnimationScaleMultipliers[v.layer]
-				setRenderState(0, 0, scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
-				_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale - screenHeight * 0.125 / scale))
-			end
-		end		
+-- 		for k, v in _G.pairs(birdAnimations) do
+-- 			if v.layer == 4 then
+-- 				local scale = v.scale  * g_birdAnimationScaleMultipliers[v.layer]
+-- 				setRenderState(0, 0, scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
+-- 				_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale - screenHeight * 0.125 / scale))
+-- 			end
+-- 		end		
 		
 		
-		for k, v in _G.pairs(birdAnimations) do
-			if v.layer == 5 then
-				local scale = v.scale  * g_birdAnimationScaleMultipliers[v.layer]
-				setRenderState(0, 0,scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
-				_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale))
-			end
-		end		
+-- 		for k, v in _G.pairs(birdAnimations) do
+-- 			if v.layer == 5 then
+-- 				local scale = v.scale  * g_birdAnimationScaleMultipliers[v.layer]
+-- 				setRenderState(0, 0,scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
+-- 				_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale))
+-- 			end
+-- 		end		
 		
-	drawForegroundNative()				
-	xs = 1
-	ys = 1
+-- 	drawForegroundNative()				
+-- 	xs = 1
+-- 	ys = 1
 	
-	setRenderState(0, 0, 1, 1, 0, 0, 0)
-end
+-- 	setRenderState(0, 0, 1, 1, 0, 0, 0)
+-- end
