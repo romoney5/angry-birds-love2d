@@ -52,7 +52,7 @@ enableHoverScaling = true
 enableCursor = true
 useNewFonts = false
 autoScale = 0 --0 to disable, anything else as a multiplier
-editorPages = 50 --amount of pages shown in the editor, default 50
+--editorPages = 50 --amount of pages shown in the editor, default 50 (disabled for parity, line 3824)
 gravity = {x = 0, y = 20}
 
 fontPath = "/fonts"..(useNewFonts and "/angrybirds" or "/onomatoshark")
@@ -67,6 +67,9 @@ local audiovolume = 1
 local polyverts = {}
 local hasfocus = true
 
+local joystick = nil
+local gpcx,gpcy,gpc = 0,0,0 --gamepad cursor x/y, gamepad cooldown
+
 local audios = {}
 local fonts = {}
 local cachedspshs = {} --spritesheets
@@ -74,19 +77,13 @@ local cachedimgs = {} --individual sprites
 -- local cachedcsprs = {} --individual composprites
 local cachedaudios = {}
 local playingaudio = {}
---debug menu
-local debugOpen = false
-local debugText = ""
-local debugCursorPosition = 0
-local debugCursorBlink = 0
-local debugPrevious = {}
-local debugPreviousIndex = 1
-local debugPrints = ""
 --file manager
 local fmOpen = false
 local fmPath = nil
 local fmItems = {}
 local fmPrevDir = ""
+
+local hasLove12 = love._version_major == 12
 res = {}
 
 local function endswith(str,ending)
@@ -131,143 +128,6 @@ function love.run()
 
 		if love.timer then love.timer.sleep(0.001) end
 	end
-end
-
-
-function love.errorhandler(msg)
-	local utf8 = require("utf8")
-	msg = tostring(msg)
-
-	print((debug.traceback("Error: " .. tostring(msg), 1+(layer or 1)):gsub("\n[^\n]+$", "")))
-
-	if not love.window or not love.graphics or not love.event then
-		return
-	end
-
-	if not love.graphics.isCreated() or not love.window.isOpen() then
-		local success, status = pcall(love.window.setMode, 800, 600)
-		if not success or not status then
-			return
-		end
-	end
-
-	-- Reset state.
-	if love.mouse then
-		love.mouse.setVisible(true)
-		love.mouse.setGrabbed(false)
-		love.mouse.setRelativeMode(false)
-		if love.mouse.isCursorSupported() then
-			love.mouse.setCursor()
-		end
-	end
-	if love.joystick then
-		-- Stop all joystick vibrations.
-		for i,v in ipairs(love.joystick.getJoysticks()) do
-			v:setVibration()
-		end
-	end
-	-- if love.audio then love.audio.stop() end
-
-	love.graphics.reset()
-	love.graphics.setBlendMode("alpha","premultiplied")
-	-- local font = love.graphics.setNewFont(24)
-
-	love.graphics.setColor(1, 1, 1)
-
-	local trace = debug.traceback()
-
-	love.graphics.origin()
-
-	local sanitizedmsg = {}
-	for char in msg:gmatch(utf8.charpattern) do
-		table.insert(sanitizedmsg, char)
-	end
-	sanitizedmsg = table.concat(sanitizedmsg)
-
-	local err = {}
-
-	table.insert(err, sanitizedmsg)
-
-	if #sanitizedmsg ~= #msg then
-		table.insert(err, "Invalid UTF-8 string in error message.")
-	end
-
-	table.insert(err, "\n")
-
-	for l in trace:gmatch("(.-)\n") do
-		if not l:match("boot.lua") then
-			l = l:gsub("stack traceback:", "Traceback\n")
-			table.insert(err, l)
-		end
-	end
-
-	local exited = false
-
-	local p = table.concat(err, "\n")
-
-	p = p:gsub("\t", "")
-	p = p:gsub("%[string \"(.-)\"%]", "%1")
-
-	setTheme("theme"..math.random(1,15))
-
-	local function draw()
-		if not love.graphics.isActive() then return end
-		local pos = 70
-		love.graphics.clear(love.graphics.getBackgroundColor())
-		screenHeight = love.graphics.getHeight()
-		local topCamera = (-2*screenHeight) / (screenHeight / (450 * currentZoomLevelMainMenu * 0.585)) + ((111 * 1.6  )/ (screenHeight / (450 * currentZoomLevelMainMenu * 0.5)))
-		screen.top = topCamera
-		setWorldScale((0.5 * screenHeight / 400) / (currentZoomLevelMainMenu * 0.66))
-		drawBackgroundNative()
-		drawForegroundNative()
-
-		screen.left = screen.left + 1
-		-- love.graphics.printf(p, pos, pos, love.graphics.getWidth() - pos)
-		setRenderState(pos*2,pos*2,worldScale*.6,worldScale*.6)
-		res.useFont("FONT_MENU")
-		love.graphics.setColor(0, 0, 0,.2)
-		res.drawString("",p,pos+(worldScale*16),pos+(worldScale*16))
-		love.graphics.setColor(1, 1, 1,1)
-		res.drawString("",p,pos,pos)
-		love.graphics.present()
-	end
-
-	local fullErrorText = p
-
-	return function()
-		love.event.pump()
-
-		for e, a, b, c in love.event.poll() do
-			if e == "quit" then
-				return 1
-			elseif e == "keypressed" and a == "escape" then
-				return 1
-				-- love.event.quit("restart")
-			elseif e == "keypressed" and a == "c" and love.keyboard.isDown("lctrl", "rctrl") then
-				-- copyToClipboard()
-			elseif e == "touchpressed" then
-				local name = love.window.getTitle()
-				if #name == 0 or name == "Untitled" then name = "Game" end
-				local buttons = {"OK", "Cancel"}
-				if love.system then
-					buttons[3] = "Copy to clipboard"
-				end
-				local pressed = love.window.showMessageBox("Quit "..name.."?", "", buttons)
-				if pressed == 1 then
-					return 1
-				elseif pressed == 3 then
-					-- copyToClipboard()
-				end
-			end
-		end
-
-		draw()
-
-		if love.timer then
-			love.timer.sleep(0.01)
-		end
-	end
-
 end
 
 function loadLuaFileToObject(filename,currentscript,table)
@@ -663,6 +523,7 @@ function love.load()
 	-- love.graphics.setDefaultFilter("nearest", "nearest")
 	love.setDeprecationOutput(false) --love.filesystem.exists will no longer be deprecated in 12
 	love.graphics.setBlendMode("alpha","premultiplied")
+	setBGColor(255,255,255)
 
 	releaseImages = function()end
 	loadImages = function()end
@@ -682,13 +543,51 @@ function love.load()
 	createStartUpAssets()
 	makeImages()
 
+	gpcx,gpcy = love.mouse.getPosition()
+
+	-- if hasLove12 then
+	-- 	if love.restart then
+	-- 		time = love.restart
+	-- 		splashTimer = time
+	-- 		print(time)
+	-- 		-- updateSplashes(time,time)
+	-- 	end
+	-- end
+
+	releaseBuild = false
+	showEditor = true
+
+	if arg then
+		for i,v in pairs(arg) do
+			if v == "--skipintro" then
+				repeat
+					update(1,1)
+				until currentGameMode ~= updateSplashes
+			end
+		end
+	end
+	local uimos = updateItemMouseOverState
+	if uimos then updateItemMouseOverState = function(item,dt) if not enableHoverScaling then return end uimos(item,dt) end end
+
 	-- loveinitialized = true
 end
--- local function u()update(love.timer.getDelta())end
+-- local function u()update(love.timer.getDelta())
+
+local function registerGamepadKey(joystick,key,button) --bind a gamepad button to a key, run every frame
+	local hold = keyHold[key]
+	if button == false then keyHold[key] = nil else
+	keyHold[key] = button == true and true or joystick:isGamepadDown(button) end
+
+	if keyHold[key] and not hold then keyPressed[key] = true end
+	if not keyHold[key] and hold then keyReleased[key] = true end
+end
 
 --every frame
 function love.update(dt)
 	if love.window.hasFocus() then
+		local joysticks = love.joystick.getJoysticks()
+		joystick = joysticks[1]
+
 		hasfocus = true
 		if love.graphics and love.graphics.isActive() then
 			love.graphics.origin()
@@ -709,15 +608,72 @@ function love.update(dt)
 		screenHeight = math.floor(love.graphics.getHeight()/displayScale)
 		love.window.setTitle("Angry Birds ("..screenWidth.."x"..screenHeight..")")
 
-		cursor.x, cursor.y = love.mouse.getPosition()
-		cursor.x = cursor.x / displayScale
-		cursor.y = cursor.y / displayScale
+		if not joystick then
+			cursor.x, cursor.y = love.mouse.getPosition()
+			cursor.x = cursor.x / displayScale
+			cursor.y = cursor.y / displayScale
+		else --gamepad logic
+			--move cursor
+			gpcx = math.max(20,math.min(gpcx + (joystick:getAxis(3)*800*dt),screenWidth - 20))
+			gpcy = math.max(20,math.min(gpcy + (joystick:getAxis(4)*800*dt),screenHeight - 20))
 
-		if keyHold["LBUTTON"] then
-			touches[1] = {x=cursor.x,y=cursor.y} --sorry link, i can't give multitouch support.. yet
-		else
-			touches[1] = nil
+
+			if physicsEnabled and not levelCompleted and (joystick:getAxis(1) ~= 0 or joystick:getAxis(2) ~= 0) and not cameraTargetObject then
+				if currentBirdName ~= nil then
+					local obj = objects.world[currentBirdName]
+					panToBirdCamera()
+					local t_slingshotHitAreaRange = 1.2
+					local distanceLimit = t_slingshotHitAreaRange/worldScale * screenWidth/480
+					selectedBird = obj
+				end
+				registerGamepadKey(joystick,"LBUTTON",true)
+
+				local sx,sy = physicsToWorldTransform(levelStartPosition.x,levelStartPosition.y)
+				cursor.x, cursor.y = (sx-screen.left)*drawxscale + (joystick:getAxis(1) * rubberBandMaximumLength()*20*worldScale),
+				(sy-screen.top)*drawyscale + (joystick:getAxis(2) * rubberBandMaximumLength()*20*worldScale)
+				if joystick:isGamepadDown("a") then registerGamepadKey(joystick,"LBUTTON",false) end
+				gpc = .01
+
+				enableCursor = false
+			else
+				if gpc > 0 then
+					local sx,sy = physicsToWorldTransform(levelStartPosition.x,levelStartPosition.y)
+					cursor.x, cursor.y = (sx-screen.left)*drawxscale + (joystick:getAxis(1) * rubberBandMaximumLength()*20*worldScale),
+					(sy-screen.top)*drawyscale + (joystick:getAxis(2) * rubberBandMaximumLength()*20*worldScale)
+					if not joystick:isGamepadDown("a") then
+						gpc = gpc - dt
+						if currentBirdName then
+							gpc = 0
+							cancelBirdDrag()
+						end
+					end
+				end if gpc <= 0 then
+					registerGamepadKey(joystick,"LBUTTON","a")
+					enableCursor = true
+					cursor.x = gpcx
+					cursor.y = gpcy
+				end
+			end
+			registerGamepadKey(joystick,"ESCAPE","b")
+			registerGamepadKey(joystick,"R","x")
+			registerGamepadKey(joystick,"RIGHT","rightshoulder")
+			registerGamepadKey(joystick,"LEFT","leftshoulder")
+			registerGamepadKey(joystick,"RBUTTON","rightstick")
+			
+	        -- for k = 1,joystick:getButtonCount() do
+	        	-- res.drawString("","Button "..k..": "..joystick:isGamepadDown(GamepadButton[k]), 10, k*30)
+	        -- end
+		    -- for i, joystick in ipairs(joysticks) do
+		    --     res.drawString("",joystick:getName(), 10, i * 60)
+		    --     -- res.drawString("",joystick:getAxis(1), 10, i * 60 + 50)
+		    -- end
 		end
+
+		-- if keyHold["LBUTTON"] then
+		-- 	touches[1] = {x=cursor.x,y=cursor.y} --sorry link, i can't give multitouch support.. yet
+		-- else
+		-- 	touches[1] = nil
+		-- end
 
 		if (keyHold["SHIFT"] and keyPressed["D"]) or (keyPressed["LBUTTON"] and cursor.x >= screenWidth-20 and cursor.y >= screenHeight-20) or (debugOpen and keyPressed["ESCAPE"]) then
 			keyPressed["ESCAPE"] = nil
@@ -731,14 +687,23 @@ function love.update(dt)
 			end
 		end
 
-		if keyHold["LALT"] and keyPressed["RETURN"] then
-			setFullScreenMode(not isInFullScreenMode())
-		end
+		if keyHold["LALT"] and keyPressed["RETURN"] then setFullScreenMode(not isInFullScreenMode()) end
 
 		if not particles.addParticles then
 			particles.addParticles = function(type, amount, x, y, w, h, angle)
 				return --add to particles table?
 			end
+		end
+
+		if mainMenu and not menuItemsEdited then
+			menuItemsEdited = true
+			local credits = getItemByName(mainMenu.items,"credits")
+
+			if hasLove12 then
+				-- love.event.restart(time)
+				credits.callFunction = function()love.event.restart(time)end
+			end
+			-- credits.callFunction = function()love.event.quit("restart")end
 		end
 
 		love.graphics.setScissor()
@@ -811,7 +776,7 @@ function love.update(dt)
 
 					if checkObjectBounds(obj.x,obj.y,(obj.width or obj.radius)+5, (obj.height or obj.radius)+5, obj.angle,cx,cy) then
 						if keyHold["RBUTTON"] then
-							res.drawString("",obj.name,obj.body:getX()*20,obj.body:getY()*20+50)
+							res.drawString("",obj.name,obj.x*20,obj.y*20+50)
 							obj.body:setLinearVelocity((cx-obj.x)*4,(cy-obj.y)*4)
 						end
 					end
@@ -908,112 +873,6 @@ function updateFm()
 	end end)
 end
 
-function updateDebug(dt)
-	debugCursorBlink = debugCursorBlink + dt
-	-- local font = love.graphics.getFont()
-	
-	if keyPressed["BACKSPACE"] or (keyHoldTime["BACKSPACE"]and keyHoldTime["BACKSPACE"] >= .5 and keyHoldTime["BACKSPACE"]%.04 <= dt) then
-		res.playAudio("menu_back", 1, false)
-		debugText = string.back(debugText,debugCursorPosition)
-		debugCursorPosition = math.max(debugCursorPosition - 1, 0)
-		debugCursorBlink = 0
-	end
-	if keyPressed["DELETE"] or (keyHoldTime["DELETE"]and keyHoldTime["DELETE"] >= .5 and keyHoldTime["DELETE"]%.04 <= dt) then
-		res.playAudio("menu_back", 1, false)
-		debugText = string.back(debugText,debugCursorPosition + 1)
-		-- debugCursorPosition = math.max(debugCursorPosition, 0)
-		debugCursorBlink = 0
-	end
-	if keyPressed["RETURN"] then
-		res.playAudio("menu_confirm", 1, false)
-		debugCursorBlink = 0
-		if keyHold["SHIFT"] then
-			debugText = debugText.."\n"
-			debugCursorPosition = math.min(debugCursorPosition + 1, string.len(debugText))
-		else
-			if debugText ~= debugPrevious[debugPreviousIndex + 1] and debugText ~= "" then --prevent duplicate indexes
-				table.insert(debugPrevious, 1, debugText)
-			end
-
-			if debugText == "clear" then
-				debugPrints = ""
-				res.playAudio("menu_select", 1, false)
-			else
-				local su,re = pcall(loadstring(debugText))
-				if not su then
-					print("Error while running command: "..re)
-				else
-					if re then
-						print(re)--"Ran command successfully with result: "..re)
-					else
-						-- print()--"Ran command successfully")
-					end
-				end
-			end
-			debugText = ""--debugText:sub(1,-2)
-			debugCursorPosition = 0
-			debugPreviousIndex = 0
-		end
-	end
-	if keyPressed["LEFT"] or (keyHoldTime["LEFT"]and keyHoldTime["LEFT"] >= .5 and keyHoldTime["LEFT"]%.03 <= dt) then
-		res.playAudio("menu_select", 1, false)
-		debugCursorPosition = math.max(debugCursorPosition - 1, 0)
-		debugCursorBlink = 0
-	end
-	if keyPressed["RIGHT"] or (keyHoldTime["RIGHT"]and keyHoldTime["RIGHT"] >= .5 and keyHoldTime["RIGHT"]%.03 <= dt) then
-		res.playAudio("menu_select", 1, false)
-		debugCursorPosition = math.min(debugCursorPosition + 1, string.len(debugText))
-		debugCursorBlink = 0
-	end
-
-	if keyPressed["UP"] and debugPreviousIndex < #debugPrevious then
-		res.playAudio("menu_select", 1, false)
-		if debugPreviousIndex == 0 then debugPrevious[0] = debugText end
-		debugPreviousIndex = debugPreviousIndex + 1
-		debugText = debugPrevious[debugPreviousIndex]
-		debugCursorPosition = #debugText
-	end
-	if keyPressed["DOWN"] and debugPreviousIndex > 0 then
-		res.playAudio("menu_select", 1, false)
-		debugPreviousIndex = debugPreviousIndex - 1
-		debugText = debugPrevious[debugPreviousIndex]
-		debugCursorPosition = #debugText
-	end
-
-	
-	-- local textLength,textLines = 0,-1
-	-- local maxLength,lines = font:getWrap(debugText:sub(1, debugCursorPosition),screenWidth - debugPadding * 2)
-	-- local _,linesTotal = font:getWrap(debugText,screenWidth - debugPadding * 2)
-	
-	-- for i,v in pairs(lines) do
-	-- 	textLines = textLines + 1
-	-- 	textLength = font:getWidth(v)
-	-- end
-
-	love.graphics.setColor(0, 0, 0, .5)
-	love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
-	love.graphics.rectangle("fill", 0, 0, screenWidth, debugPadding * 2 + 30)-- + (#linesTotal * font:getHeight()))
-	love.graphics.setColor(1, 1, 1, 1)
-
-	-- love.graphics.printf(debugText, debugPadding, debugPadding, screenWidth - debugPadding * 2)
-	res.useFont("FONT_BASIC")
-	res.drawString("",debugText,debugPadding,debugPadding)
-	-- love.graphics.printf((debugCursorBlink%.5 <= .25 and "|" or ""), res.getStringWidth(debugText:sub(1, debugCursorPosition)) + debugPadding - 3, (debugPadding + 0.5), screenWidth)-- + (textLines * font:getHeight()), screenWidth)
-	res.drawString("",(debugCursorBlink%.5 <= .25 and "|" or ""), res.getStringWidth(debugText:sub(1, debugCursorPosition)) + debugPadding, (debugPadding+3))
-
-	-- love.graphics.printf(debugPrints, debugPadding, debugPadding * 2 + 70, screenWidth - debugPadding*2)-- + (#linesTotal * font:getHeight()), screenWidth - debugPadding * 2)
-	res.drawString("",debugPrints, debugPadding, debugPadding * 2 + 70)
-end
-
-function love.textinput(key)
-	-- print(key)
-	if debugOpen then
-		res.playAudio("menu_confirm", 1, false)
-		debugText = string.insert(debugText,key,debugCursorPosition)
-		debugCursorPosition = debugCursorPosition + 1
-		debugCursorBlink = 0
-	end
-end
 function love.keypressed(key)
 	if key == "lshift" then key = "shift" end
 	if key == "lctrl" then key = "control" end
@@ -1186,6 +1045,8 @@ function checkAndLoadSprite(sprite)
 end
 
 function res.drawSprite(string,sprite,x,y,vanchor,hanchor,iwidth,iheight)
+	if sprite == g_currentCursorName and not enableCursor then return end
+
 	local image = checkAndLoadSprite(sprite)
 
 	if image then
@@ -1195,9 +1056,10 @@ function res.drawSprite(string,sprite,x,y,vanchor,hanchor,iwidth,iheight)
 		x = (x + drawxo)
 		y = (y + drawyo)
 		
-		local xp = image[2]/2
-		local yp = image[3]/2
-		local xpr,ypr = image[2]/2,image[3]/2
+		-- local xp = image[2]/2
+		-- local yp = image[3]/2
+		local xpr,ypr = image[5],image[6]
+		-- local drawxp,drawyp = drawxp or .5, drawyp or .5
 		-- local xpr = image[2]/2
 		-- local ypr = image[3]/2
 		-- if hanchor == "LEFT" or vanchor == "LEFT" then xp = image[5] xpr = 0 end
@@ -1205,23 +1067,24 @@ function res.drawSprite(string,sprite,x,y,vanchor,hanchor,iwidth,iheight)
 		
 		-- if vanchor == "TOP" or hanchor == "TOP" then yp = image[6] ypr = 0 end
 		-- if vanchor == "BOTTOM" or hanchor == "BOTTOM" then yp = image[3] end
-		if hanchor == "LEFT" then xpr = image[5] end
+		if hanchor == "LEFT" then xpr = 0 end
 		if hanchor == "RIGHT" then xpr = image[2] end
-		if hanchor == "VCENTER" then xpr = image[2]/2 end
+		if hanchor == "HCENTER" then xpr = image[2]/2 end
 		
-		if vanchor == "TOP" then ypr = image[6] end
+		if vanchor == "TOP" then ypr = 0 end
 		if vanchor == "BOTTOM" then ypr = image[3] end
-		if vanchor == "HCENTER" then ypr = image[3]/2 end
+		if vanchor == "VCENTER" then ypr = image[3]/2 end
+		-- print(drawxp)
 
 		love.graphics.draw(image[4],		--quad
 			image[1],						--spritesheet
-			(x-image[5] + xpr + drawxp)*drawxscale,	--x
-			(y-image[6] + ypr + drawyp)*drawyscale,	--y
+			(x)*drawxscale,	--x
+			(y)*drawyscale,	--y
 			drawangle,						--angle
 			drawxscale*wm,					--x scale
 			drawyscale*hm,					--y scale
-			xpr+drawxp,							--x pivot
-			ypr+drawyp)							--y pivot
+			xpr,							--x pivot
+			ypr)							--y pivot
 	end
 end
 
@@ -1395,11 +1258,15 @@ end
 function physicsStartContact(obj1,obj2,contact)
 	local vx1,vy1 = obj1:getBody():getLinearVelocity()
 	local vx2,vy2 = obj2:getBody():getLinearVelocity()
-	local veloc = (math.abs(vx1)+math.abs(vy1)-(math.abs(vx2)+math.abs(vy2)))
+	local veloc = math.abs((math.abs(vx1)+math.abs(vy1))-(math.abs(vx2)+math.abs(vy2)))
+	local o1,o2
 
-	if math.abs(vx1)+math.abs(vy1) < math.abs(vx2)+math.abs(vy2) then obj1,obj2 = obj2,obj1 end
+	if math.abs(vx1)+math.abs(vy1) < math.abs(vx2)+math.abs(vy2) then
+		o1,o2 = obj2:getUserData(),obj1:getUserData()
+	else
+		o1,o2 = obj1:getUserData(),obj2:getUserData() --to get the angry birds world object, rather than the physics world object
+	end
 
-	local o1,o2 = obj1:getUserData(),obj2:getUserData() --to get the angry birds world object, rather than the physics world object
 	if o1.deleted or o2.deleted then return end
 
 	if veloc >= 5 then
@@ -1409,6 +1276,10 @@ function physicsStartContact(obj1,obj2,contact)
 
 	
 	local damaged = false
+	-- if o1.controllable or o2.controllable then
+	-- 	print(o1.name,o2.name,o2.strength,veloc,vx1,vy1)
+	-- end
+	
 	if o2.strength and o2.defence and o2.defence < veloc then
 		-- contact:setEnabled(false)
 		damaged = true
@@ -1424,9 +1295,12 @@ function physicsStartContact(obj1,obj2,contact)
 
 	if objects.world[o1.name].body and objects.world[o2.name].body then
 		if o1.controllable then
-			birdCollision(o1.name,o2.name,veloc*o1.mass,veloc*o1.mass)
+			birdCollision(o1.name,o2.name,veloc*2,math.floor(veloc*o1.mass))
+			if joystick and veloc >= 12 then
+				joystick:setVibration(.9,.9,.1)
+			end
 		else
-			blockCollision(o1.name,o2.name,veloc*o1.mass,damaged)
+			blockCollision(o1.name,o2.name,math.floor(veloc*o1.mass),damaged)
 		end
 	end
 	removeBlocks()
@@ -1561,6 +1435,10 @@ function applyForce(object,x,y,xp,yp)
     if obj.body then
         local mass = obj.mass / 20
         obj.body:applyForce(x, y*mass, xp, yp)
+        drawfont = "FONT_BASIC"
+        res.drawString("",y,obj.x*20,obj.y*20)
+		-- res.drawString("",obj.name,obj.x*20,obj.y*20+50)
+        -- print(y)
     end
 end
 
@@ -1719,8 +1597,74 @@ loadLuaFileToObject(scriptPath .. "/starLimits.lua", this, starTable)--, "starLi
 loadLuaFileToObject(scriptPath .. "/blocks.lua", this, blockTable)
 loadLuaFileToObject("settings.lua", this)--, settings)
 loadLuaFileToObject("highscores.lua", this)--, settings)
-setBGColor(255,255,255)
+--load debug code
+loadLuaFileToObject("debug.lua", this)--, settings)
 -- love.graphics.setDefaultFilter("nearest","linear")
 
 --and now start the actual game
 loadLuaFileToObject(scriptPath .. "/gamelogic.lua", this)--, settings)
+
+function drawLevelSelectionBackground(page)
+	-- draw main menu theme according to the last theme played, halloween theme is an exception see above
+	animateBirds(love.timer.getDelta())
+	episode4BGCranes = { startX = 64 }
+	local bW, bH = _G.res.getSpriteBounds("","BUTTON_EMPTY")
+	local worldScale = 0.5 * screenHeight / 320
+	--if worldScale > 0.75 then
+		--worldScale = 0.75
+	--end
+	local worldScale = (0.5 * screenHeight / 400) / (currentZoomLevelMainMenu * 0.66)
+	local topCamera = (-2*screenHeight) / (screenHeight / (450 * currentZoomLevelMainMenu * 0.585)) + ((bH * 1.6  )/ (screenHeight / (450 * currentZoomLevelMainMenu * 0.5)))
+	setTopLeft(50*time,topCamera )
+	setWorldScale(worldScale)
+	
+	setTheme(currentMainMenuTheme)
+	if not g_gfxLowQuality then
+		drawBackgroundNative()	
+	end
+	-- setWorldScale(0.5)
+	-- setTopLeft(50*time,-2*screenHeight + bH * 1.6 )
+	-- end of main menu draw for every theme but halloween
+	
+	--the birds were too small, so we added those multipliers for the scaling factors, indexed by the layer numbers
+	if g_birdAnimationScaleMultipliers == nil then
+		g_birdAnimationScaleMultipliers = {}
+		g_birdAnimationScaleMultipliers[3] = 1.5
+		g_birdAnimationScaleMultipliers[4] = 1.3
+		g_birdAnimationScaleMultipliers[5] = 1
+	end
+	
+		
+	-- draw birds, rewards..
+		for k, v in _G.pairs(birdAnimations) do
+			if v.layer == 3  then
+				local scale = v.scale * g_birdAnimationScaleMultipliers[v.layer]
+				setRenderState(0, 0, scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
+				_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale - screenHeight * 0.2 / scale))
+			end
+		end	
+		
+	
+		for k, v in _G.pairs(birdAnimations) do
+			if v.layer == 4 then
+				local scale = v.scale  * g_birdAnimationScaleMultipliers[v.layer]
+				setRenderState(0, 0, scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
+				_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale - screenHeight * 0.125 / scale))
+			end
+		end		
+		
+		
+		for k, v in _G.pairs(birdAnimations) do
+			if v.layer == 5 then
+				local scale = v.scale  * g_birdAnimationScaleMultipliers[v.layer]
+				setRenderState(0, 0,scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
+				_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale))
+			end
+		end		
+		
+	drawForegroundNative()				
+	xs = 1
+	ys = 1
+	
+	setRenderState(0, 0, 1, 1, 0, 0, 0)
+end
