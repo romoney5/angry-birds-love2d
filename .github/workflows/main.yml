@@ -22,11 +22,21 @@ jobs:
         #source_dir: / # default is ./
         # Directory in the GitHub workspace where the built distributables should be located
         #result_dir: # default is release
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v4.4.3
+    
+    - uses: actions/upload-artifact@v1
       with:
-        # Artifact name
-        name: angrybirds_love2d # optional, default is artifact
-        # A file, directory or wildcard pattern that describes what to upload
-        path: release
+        name: macos-build
+        path: ${{ steps.love-build.outputs.macos-filename }}
+    - uses: actions/upload-artifact@v1
+      with:
+        name: win32-build
+        path: ${{ steps.love-build.outputs.win32-filename }}
+    - uses: actions/upload-artifact@v1
+      with:
+        name: win64-build
+        path: ${{ steps.love-build.outputs.win64-filename }}
+    - uses: actions/upload-artifact@v1
+      with:
+        name: love-build
+        path: ${{ steps.love-build.outputs.love-filename }}
               
