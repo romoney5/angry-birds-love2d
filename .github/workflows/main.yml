@@ -1,0 +1,31 @@
+name: Build .love File
+on:
+  push:
+    branches: [ pc1.0.0 ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # You may pin to the exact commit or the version.
+      # uses: nhartland/love-build@4780ffd2dfebed3245407af82fc59be04dd72796
+    - uses: nhartland/love-build@v1-beta4
+      id: love-build
+      with:
+        # Name of the application to be built
+        app_name: angry-birds # default is love-build-app
+        # Version of LÖVE to be used in building the application
+        love_version: 11.5 # default is 11.3
+        # Path to dependencies rockspec relative to GitHub workspace
+        #dependencies: # optional
+        # Path in the repository to the subdirectory containing `main.lua`. By default the repo root
+        #source_dir: # default is ./
+        # Directory in the GitHub workspace where the built distributables should be located
+        #result_dir: # default is release
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v4.4.3
+      with:
+        # Artifact name
+        name: angrybirds_love2d # optional, default is artifact
+        # A file, directory or wildcard pattern that describes what to upload
+        path: ${{ steps.love-build.outputs.love-filename }}
+              
