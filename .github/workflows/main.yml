@@ -18,7 +18,7 @@ jobs:
         # Path to dependencies rockspec relative to GitHub workspace
         #dependencies: # optional
         # Path in the repository to the subdirectory containing `main.lua`. By default the repo root
-        #source_dir: # default is ./
+        source_dir: / # default is ./
         # Directory in the GitHub workspace where the built distributables should be located
         #result_dir: # default is release
     - name: Upload a Build Artifact
