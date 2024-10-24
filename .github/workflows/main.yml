@@ -1,4 +1,4 @@
-name: Build .love File
+name: Build
 on:
   push:
     branches: [ pc1.0.0 ]
@@ -23,19 +23,19 @@ jobs:
         # Directory in the GitHub workspace where the built distributables should be located
         #result_dir: # default is release
     
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v3
       with:
         name: macos-build
         path: ${{ steps.love-build.outputs.macos-filename }}
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v3
       with:
         name: win32-build
         path: ${{ steps.love-build.outputs.win32-filename }}
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v3
       with:
         name: win64-build
         path: ${{ steps.love-build.outputs.win64-filename }}
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v3
       with:
         name: love-build
         path: ${{ steps.love-build.outputs.love-filename }}
