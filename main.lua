@@ -85,7 +85,7 @@ end
 
 --very important in later versions of the game
 --pro-tip from halo: this is similar to require
-function loadLuaFileToObject(filename,ctx,envKey)
+function loadLuaFileToObject(filename,ctx,envKey,lenient)
 	local lua = loadstring(love.filesystem.read(filename) or "")
 	if lua then
 		ctx = ctx or _G
@@ -105,7 +105,7 @@ function loadLuaFileToObject(filename,ctx,envKey)
 	    setfenv(lua, env)
 	    -- print("loading lua:"..filename.." env:"..tostring(env).." (is _G? "..tostring(env==_G)..")".." ctx:"..tostring(ctx).." (is _G? "..tostring(ctx==_G)..")")
 		lua()
-	else
+	elseif not lenient then
 		error("Could not load Lua file: "..filename)
 	end
 end
@@ -1886,8 +1886,8 @@ end
 
 -- load global options from separate file
 -- loadLuaFileToObject(scriptPath .. "/options.lua", this)--, "options")
-loadLuaFileToObject("settings.lua", this)--, settings)
-loadLuaFileToObject("highscores.lua", this)--, settings)
+loadLuaFileToObject("settings.lua", this,nil,true)--, settings)
+loadLuaFileToObject("highscores.lua", this,nil,true)--, settings)
 --load debug code
 loadLuaFileToObject("debug.lua", this)--, settings)
 
