@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="HUD_INGAME_1.png">
+  <sprite name="INGAME_BUTTON_EAGLE" x="274" y="134" width="103" height="109" pivotX="51" pivotY="47" />
+  <sprite name="INGAME_BUTTON_POWERUPANIM" x="165" y="471" width="38" height="67" pivotX="19" pivotY="33" />
+  <sprite name="INGAME_BUTTON_EMPTY" x="381" y="134" width="103" height="109" pivotX="51" pivotY="47" />
+  <sprite name="INGAME_BUTTON_POWERUP" x="441" y="2" width="103" height="113" pivotX="51" pivotY="47" />
+  <sprite name="INGAME_BUTTON_PAUSE" x="166" y="249" width="103" height="109" pivotX="51" pivotY="47" />
+  <sprite name="INGAME_BUTTON_PAUSETRANSP" x="166" y="362" width="101" height="106" pivotX="50" pivotY="47" />
+  <sprite name="INGAME_BUTTON_EAGLETRANSP" x="273" y="249" width="101" height="106" pivotX="50" pivotY="47" />
+  <sprite name="UI_POWERUPS_BIRDQUAKE" x="287" y="1" width="151" height="129" pivotX="75" pivotY="64" />
+  <sprite name="UI_POWERUPS_SUPERSEEDS" x="1" y="1" width="162" height="161" pivotX="81" pivotY="80" />
+  <sprite name="UI_POWERUPS_KINGSLING" x="1" y="318" width="126" height="152" pivotX="63" pivotY="76" />
+  <sprite name="UI_POWERUPS_SLINGSCOPE" x="1" y="164" width="152" height="152" pivotX="76" pivotY="76" />
+  <sprite name="INGAME_POWERUP_OVERLAYEND" x="376" y="358" width="50" height="103" pivotX="26" pivotY="48" />
+  <sprite name="INGAME_POWERUP_OVERLAYMIDDLE" x="130" y="318" width="7" height="103" pivotX="3" pivotY="48" />
+  <sprite name="INGAME_BUTTON_SCOREBAR" x="480" y="309" width="63" height="37" pivotX="31" pivotY="-6" />
+  <sprite name="INGAME_POWERUP_SLING" x="74" y="472" width="60" height="71" pivotX="30" pivotY="41" />
+  <sprite name="INGAME_POWERUP_SCOPE" x="474" y="358" width="73" height="73" pivotX="36" pivotY="42" />
+  <sprite name="INGAME_POWERUP_EARTHQ" x="450" y="453" width="67" height="57" pivotX="33" pivotY="34" />
+  <sprite name="INGAME_POWERUP_SEED" x="1" y="472" width="71" height="71" pivotX="35" pivotY="41" />
+  <sprite name="UI_POWERUPS_BUNDLE" x="165" y="1" width="120" height="130" pivotX="60" pivotY="65" />
+  <sprite name="INGAME_POWERUP_SEED_INACTIVE" x="376" y="454" width="71" height="71" pivotX="35" pivotY="41" />
+  <sprite name="INGAME_POWERUP_SLING_INACTIVE" x="488" y="134" width="60" height="71" pivotX="30" pivotY="41" />
+  <sprite name="INGAME_POWERUP_SCOPE_INACTIVE" x="273" y="467" width="73" height="73" pivotX="36" pivotY="42" />
+  <sprite name="INGAME_POWERUP_EARTHQ_INACTIVE" x="481" y="249" width="67" height="57" pivotX="33" pivotY="34" />
+  <sprite name="INGAME_BUTTON_DISABLED" x="377" y="248" width="101" height="106" pivotX="50" pivotY="53" />
+  <sprite name="BUTTON_USE_EAGLE_DISABLED" x="166" y="134" width="104" height="111" pivotX="51" pivotY="47" />
+  <sprite name="INGAME_BUTTON_POWERUPANIM_DISABLED" x="205" y="471" width="38" height="67" pivotX="19" pivotY="33" />
+  <sprite name="INGAME_BUTTON_POWERUP_DISABLED_TRANSP" x="272" y="358" width="101" height="106" pivotX="52" pivotY="51" />
+  <sprite name="INGAME_BUTTON_RESTART" x="0" y="544" width="106" height="113" pivotX="53" pivotY="48" />
+</spritesheet>

@@ -16,46 +16,37 @@ keyPressed = {}
 keyReleased = {}
 keyHold = {}
 keyHoldTime = {}
-doubleClickTimer = 0
-splashTimer = nil
-assetLoadList = {}
 
--- clippedText = {lines={},widestLine=1}
--- g_cameraProfileList = {"iphone,ipad"}
--- loadedObjects = {}
 objects = {}
 blockTable = {}
 starTable = {}
 particleTable = {}
-particles = {}
+
+
 cursor = {x=0,y=0,wheel=0,wheelTriggered=false}
-touches = {}
--- g_mouseOrTouchStates = {}
 multitouchZoom = {zoomCoolingTime = 0}
 multitouchSweep = {isSweepping = false} --minor grammar mistake
-assetLoadList = {}
+maxWorldScale = 0
 physicsEnabled = false
-
 physicsWorld = nil
+
+textGroups = {}
 
 -- zoomLevel = 1
 -- oldZoomLevel = 1
 
 --options
-deviceModel = love._os == "Android" and "android" or "windows"--"android"--"windows"
+deviceModel = love._os == "Android" and "android" or "windows"
 displayScale = 1
 timeScale = 1
 audioSpeed = 1
 debugPadding = 50
--- g_registrationEnabled = true
-enableHoverScaling = true
-enableCursor = true
-useNewFonts = false
+--g_registrationEnabled = true
+-- enableHoverScaling = true
+gameOptions = {}
 autoScale = 0 --0 to disable, anything else as a multiplier
---editorPages = 50 --amount of pages shown in the editor, default 50 (disabled for parity, line 3824)
 gravity = {x = 0, y = 20}
 
-fontPath = "/fonts"..(useNewFonts and "/angrybirds" or "/onomatoshark")
 local drawxo = 0
 local drawyo = 0
 local drawxscale = 1
@@ -66,81 +57,56 @@ local drawxp,drawyp = 0,0
 local audiovolume = 1
 local polyverts = {}
 local hasfocus = true
+local wantedZoomLevel = 0
 
 local joystick = nil
 local gpcx,gpcy,gpc = 0,0,0 --gamepad cursor x/y, gamepad cooldown
 
 local audios = {}
-local fonts = {}
+fonts = {}
 local cachedspshs = {} --spritesheets
-local cachedimgs = {} --individual sprites
--- local cachedcsprs = {} --individual composprites
+cachedimgs = {} --individual sprites
+local cachedcs = {} --individual composprites
 local cachedaudios = {}
-local playingaudio = {}
+local pausedaudios = {} --thanks love 11
 --file manager
 local fmOpen = false
 local fmPath = nil
 local fmItems = {}
 local fmPrevDir = ""
 
-local hasLove12 = love._version_major == 12
+local hasLove12 = love._version_major >= 12
+local drawSpriteSheetParameter = false
 res = {}
 
 local function endswith(str,ending)
 	return string.sub(str,-string.len(ending)) == ending
 end
 
---override run function to allow drawing in the update hook
-function love.run()
-	if love.load then love.load(love.arg.parseGameArguments(arg), arg) end
+--very important in later versions of the game
+--pro-tip from halo: this is similar to require
+function loadLuaFileToObject(filename,ctx,envKey)
+	local lua = loadstring(love.filesystem.read(filename) or "")
+	if lua then
+		ctx = ctx or _G
 
-	-- We don't want the first frame's dt to include time taken by love.load.
-	if love.timer then love.timer.step() end
+	    local env = nil
+	    if type(envKey) == "table" then
+	        env = envKey
+	    elseif type(envKey) == "string" then
+	        ctx[envKey] = ctx[envKey] or {}
+	        env = ctx[envKey]
+	    else
+	        env = ctx
+	    end
 
-	local dt = 0
-
-	-- Main loop time.
-	return function()
-		-- Process events.
-		if love.event then
-			love.event.pump()
-			for name, a,b,c,d,e,f in love.event.poll() do
-				if name == "quit" then
-					if not love.quit or not love.quit() then
-						return a or 0
-					end
-				end
-				love.handlers[name](a,b,c,d,e,f)
-			end
-		end
-
-		-- Update dt, as we'll be passing it to update
-		if love.timer then dt = love.timer.step() end
-
-		-- Call update and draw
-		if love.update then love.update(dt) end -- will pass 0 if love.timer is disabled
-
-		if love.graphics and love.graphics.isActive() then
-			if love.draw then love.draw() end
-
-			love.graphics.present()
-		end
-
-		if love.timer then love.timer.sleep(0.001) end
-	end
-end
-
-function loadLuaFileToObject(filename,currentscript,table)
-	if table then
-		local lua = loadstring(love.filesystem.read(filename) or "")
-		if lua then
-			setfenv(lua,table)
-			lua()
-		else
-			print("Could not load Lua file: "..filename)
-		end
+	    env._G = _G
+	    env.gamelua = _G
+	    setfenv(lua, env)
+	    -- print("loading lua:"..filename.." env:"..tostring(env).." (is _G? "..tostring(env==_G)..")".." ctx:"..tostring(ctx).." (is _G? "..tostring(ctx==_G)..")")
+		lua()
 	else
-		loadstring(love.filesystem.read(filename) or "")()
+		error("Could not load Lua file: "..filename)
 	end
 end
 
@@ -182,19 +148,18 @@ function res.playAudio(audio, volume, loop, _number)
 	cachedaudios[audio]:setPitch(audioSpeed)
 	cachedaudios[audio]:setVolume(volume)
 	love.audio.stop(cachedaudios[audio])
-	love.audio.play(cachedaudios[audio])
+	cachedaudios[audio]:play()
 end
 
 function res.stopAudio(audio)
 	if not cachedaudios[audio] then
 		return
-		-- cachedaudios[audio] = love.audio.newSource(audios[audio], "stream")
 	end
 	love.audio.stop(cachedaudios[audio])
 end
 
 function res.stopAllAudio()
-	playingaudio = {}
+	-- playingaudio = {}
 	love.audio.stop()
 end
 
@@ -202,50 +167,30 @@ function res.openURL(url)
 	love.system.openURL(url)
 end
 
-function loadLocalizationFile(filePath) --load localization
-	local localizationTable = {}
-
-	-- Open the file
-	-- local file = love.filesystem.lines(filePath)
-	if not checkDirectory(filePath) then
-		error("Localization file not found: " .. filePath)
-	end
-
-	for line in love.filesystem.lines(filePath) do
-		line = line:match("^%s*(.-)%s*$")
-
-		if line ~= "" and not line:match("^#") then
-			local key, value = line:match("^(.+)%=(.+)$")
-
-			if key and value then
-				local category = "TEXTS_BASIC"
-				local subkey = key
-				if category and subkey then
-					localizationTable[category] = localizationTable[category] or {}
-					localizationTable[category][subkey] = value
-				else
-					error("Invalid key format in localization file: " .. key)
-				end
-			end
-		end
-	end
-	localizationData = localizationTable
+function checkForUpdates()
+	print("Checking for updates..")
 end
--- Load the localization file
 
-function _G.res.getString(category, key) --return a string from localization
-	if localizationData and localizationData[category] then
-		return localizationData[category][key] and localizationData[category][key]:gsub("%\\0A","\n") or key
+
+function res.getString(category, key) --return a string from localization
+	local group = textGroups[category]
+	if group and group.en_EN then
+		return group.en_EN[key] and group.en_EN[key]:gsub("%\\0A","\n") or key
 	else
-		return "Category not found"
+		return "nil"
 	end
 end
 
 function res.createTextGroupSet(texts)
-	loadLocalizationFile("localization/english.txt")
+	-- loadLocalizationFile("localization/english.txt")
+	print("Loading text group.. "..texts)
+	local info = getDatInfo(love.filesystem.read(texts))
+	local filename = "" for i,v in texts:gmatch("([^/]+)")do filename = i end
+
+	textGroups[filename:sub(1,#filename-4)] = info.langs
 end
 
-function res.createAudioOutput(channels,_,samplerate)
+function res.createAudioOutput(channels,bitrate,samplerate)
 	print("Audio output \"created\" with "..channels.." channels and "..samplerate.."Hz")
 end
 
@@ -269,44 +214,23 @@ end
 function getDeviceID() return "00-00-00-00-00-00;00-00-00-00-00-00" end
 function areDeviceIDsEqual(id1,id2) return id1==id2 end
 
--- love.window.updateMode(love.graphics.getWidth(), love.graphics.getHeight(), {resizable=true})
-love.window.setTitle("Loading..")
--- love.window.updateMode(864, 480, {resizable=true})
-love.window.setIcon(love.image.newImageData(imagePath.."/icon.png"))
 
 function res.createBitmapFont(font)
-	font = font:sub(1,-5) --originally specified with .dat format, i can't use it right now
-	print("Loading font file: "..font..".xml")
-	if checkDirectory(font..".xml") then
-		local xml = love.filesystem.read(font..".xml")
-		local chars = {}
-		local leading = tonumber(xml:match('leading="(.-)"')) or 0
-		local tracking = tonumber(xml:match('tracking="(.-)"')) or 0
-		local spritesheet = xml:match('texture="(.-)"') or ""
-		local fheight = 0
+	print("Loading font file: "..font)
+	if checkDirectory(font) then
+		local data = getDatInfo(love.filesystem.read(font))
+		local spritesheet = data.filename
 		if endswith(spritesheet,".pvr") then spritesheet = spritesheet..".png" end
-		spritesheet = love.graphics.newImage(fontPath.."/"..spritesheet)
+		spritesheet = love.graphics.newImage(font:match("(.+)/[^/]+$").."/"..spritesheet)
 
-		font = font:sub(string.len(fontPath)+2)
+		font = font:match("([^/]+)$")
 
-		for tag in xml:gmatch("<character.-/>") do
-			local char = tag:match('char="(.-)"') or ""
-			local x = tonumber(tag:match('x="(.-)"')) or 0
-			local y = tonumber(tag:match('y="(.-)"')) or 0
-			local width = tonumber(tag:match('width="(.-)"')) or 0
-			local height = tonumber(tag:match('height="(.-)"')) or 0
-			local pivotY = tonumber(tag:match('pivotY="(.-)"')) or 0
-			fheight = math.max(fheight,height)
-			
-			table.insert(chars, { char = char, x = x, y = y, width = width, height = height, pivotY = pivotY })
-		end
-		fonts[font] = {leading = leading, tracking = tracking, spritesheet = spritesheet, chars = {}, height = fheight}
+		
+		fonts[font:sub(1,-5)] = {leading = data.leading, tracking = data.tracking, spritesheet = spritesheet, chars = {}, height = data.height}
 
 		--for each character, also construct a quad
-		for _, char in ipairs(chars) do
-			-- fonts[font] = {}
-			-- cachedimgs[spr.name] = quad
-			fonts[font].chars[char.char] = {quad = love.graphics.newQuad(char.x, char.y, char.width, char.height,spritesheet:getWidth(),spritesheet:getHeight()),
+		for _, char in pairs(data.chars) do
+			fonts[font:sub(1,-5)].chars[_] = {quad = love.graphics.newQuad(char.x, char.y, char.width, char.height,spritesheet:getWidth(),spritesheet:getHeight()),
 				width = char.width,height = char.height,pivoty = char.pivotY}
 		end
 
@@ -316,7 +240,9 @@ function res.createBitmapFont(font)
 end
 
 function res.useFont(font)
-	drawfont = font
+	if fonts[font] then
+		drawfont = font
+	end
 end
 
 function res.drawString(group, text, x, y, aligny, alignx)
@@ -328,10 +254,9 @@ function res.drawString(group, text, x, y, aligny, alignx)
 		local ax,ay = 0,0
 		if alignx=="HCENTER" or aligny=="HCENTER" then ax=-res.getStringWidth(text)/2 end
 		if alignx=="RIGHT" or aligny=="RIGHT" then ax=-res.getStringWidth(text) end
-		-- if alignx=="VCENTER" or aligny=="VCENTER" then ay=-res.getFontHeight()/2 end
-		if alignx=="BOTTOM" or aligny=="BOTTOM" then ay=-res.getFontHeight()/2 end
+		if alignx=="VCENTER" or aligny=="VCENTER" then ay=res.getFontHeight()/4 end
+		if alignx=="BOTTOM" or aligny=="BOTTOM" then ay=-res.getFontHeight() end
 		if alignx=="TOP" or aligny=="TOP" then ay=res.getFontHeight() end
-		
 		local i = 0
 		local line = 0
 		for c in text:gmatch(".") do
@@ -341,8 +266,8 @@ function res.drawString(group, text, x, y, aligny, alignx)
 			else
 				local char = font.chars[string.format("%04x", string.byte(c))]
 				if char then
-					local charX = (x + drawxo + i + ax) * drawxscale
-					local charY = (y + drawyo + ay - char.pivoty + (line * font.leading)) * drawyscale
+					local charX = (x + i + ax)
+					local charY = (y + ay - char.pivoty + (line * font.leading))
 					
 					love.graphics.draw(font.spritesheet, char.quad, math.floor(charX), math.floor(charY), drawangle, drawxscale, drawyscale)
 					i = i + (char.width + font.tracking) --math.floor for crisp text
@@ -387,6 +312,20 @@ function res.getStringWidth(text)
 	-- return screenWidth*.75
 end
 
+-- function res.getStringBounds(text)
+-- 	text = text or ""
+-- 	local font = fonts[drawfont]
+-- 	if font then
+-- 		local w,h = 0,0
+-- 		for c in text:gmatch(".") do
+-- 			local char = font.chars[string.format("%04x", string.byte(c))]
+-- 			if char then i = i + char.width + font.tracking h = math.max(char.height,h) end
+-- 		end
+-- 		return w,h
+-- 	end
+-- 	return 0,0
+-- end
+
 function res.getFontHeight()
 	local font = fonts[drawfont]
 	if font then return font.height end
@@ -395,11 +334,11 @@ end
 
 function clipText(group,text,size)
 	local font = fonts[drawfont]
+	clippedText = { lines = {}, widestLine = 0 }
 	if font then
 		local cline = ""
 		local clinewidth = 0
 		local widestLine = 0
-		clippedText = { lines = {}, widestLine = 0 }
 		if group and group~="" then text = res.getString(group,text) end
 
 		local function getWordWidth(word)
@@ -463,48 +402,229 @@ function clipText(group,text,size)
 	end
 end
 
-function makeImages()
-	if love.keyboard.isDown("lctrl") then
+--read 16-bit signed int in big-endian, which is what ka3d uses
+local function readInt16(data, index)
+	local b1, b2 = data:byte(index, index + 1)
+	local unsigned = b1 * 256 + b2
+	if unsigned >= 0x8000 then
+		return unsigned - 0x10000
+	else
+		return unsigned
+	end
+end
+
+--this reads a string
+--crazy right?
+local function readString(data, index, length)
+	return data:sub(index, index + length - 1)
+end
+
+--extract data from a ka3d file, it supports sprites, fonts, localizations, and composprites at the moment
+--which is basically everything
+function getDatInfo(fileData)
+	assert(fileData~=nil, "")
+
+	local data = {sprites = {}}
+	local pos = 1
+	local function skip(length)pos = pos + length end
+	--it's important that all the values are in the right place,
+	--or else numbers will become huge and strings will become invalid
+	assert(readString(fileData,pos,4) == "KA3D", "Wrong DAT format")
+	local version = readInt16(fileData,17)
+
+	--skip over KA3D (4), filesize (4), format (4), version (2), and more filesize (4)
+	skip(4+4)
+	local format = readString(fileData,pos,4)
+	skip(4+2+4)
+	if format == "SPRT" then --spritesheet
+		--length of filename
+		local filenameLength = readInt16(fileData, pos)
+		data.filename = readString(fileData, pos+2, filenameLength)
+		skip(filenameLength+4)
+
+		while pos <= #fileData do
+			local spritenameLength = readInt16(fileData, pos)
+			skip(2)
+
+			local spritename = readString(fileData, pos, spritenameLength)
+			-- print(spritenameLength)
+			data.sprites[spritename] = {}
+			skip(spritenameLength)
+
+			data.sprites[spritename].x = readInt16(fileData, pos)
+			data.sprites[spritename].y = readInt16(fileData, pos + 2)
+			data.sprites[spritename].width = readInt16(fileData, pos + 4)
+			data.sprites[spritename].height = readInt16(fileData, pos + 6)
+			skip(8)
+
+			data.sprites[spritename].pivotX = readInt16(fileData, pos)
+			data.sprites[spritename].pivotY = readInt16(fileData, pos+2)
+
+			skip(4)
+
+			-- print(pos,#fileData)
+		end
+	elseif format == "COMP" then --composprites
+		data = {compos = {}}
+		skip(2)
+		for i=1,readInt16(fileData,pos-2),1 do --each composprite
+			local csnameLength = readInt16(fileData,pos)
+			local csname = readString(fileData,pos+2,csnameLength)
+			data.compos[csname] = {}
+			skip(csnameLength+2+2)
+
+			for ii=1,readInt16(fileData,pos-2),1 do --each sprite
+				local spritenameLength = readInt16(fileData,pos)
+				local spritename = readString(fileData,pos+2,spritenameLength)
+				pos = pos + spritenameLength + 2
+				data.compos[csname][ii] = {x = readInt16(fileData,pos),
+											y = readInt16(fileData,pos+2), n = spritename}
+				skip(4)
+			end
+			if version == 2 then skip(2) end --odd..
+		end
+	elseif format == "FONT" then --font
+		local function bytesToHex(data, index)
+			local b1, b2 = data:byte(index, index + 1)
+			return string.format("%02x%02x", b1, b2)
+		end
+
+		--length of filename
+		local filenameLength = readInt16(fileData, pos)
+		data.filename = readString(fileData, pos+2, filenameLength)
+		skip(filenameLength+4)
+
+		data = {filename = data.filename, chars = {}, height = 0}
+		data.leading = readInt16(fileData,pos-2)
+		data.tracking = readInt16(fileData,pos)
+		skip(4)
+
+		--loop through all the characters
+		while pos <= #fileData do
+			local char = bytesToHex(readString(fileData,pos,2),1)
+			data.chars[char] = {}
+			skip(2)
+
+			data.chars[char].x = readInt16(fileData,pos)
+			data.chars[char].y = readInt16(fileData,pos+2)
+			data.chars[char].width = readInt16(fileData,pos+4)
+			data.chars[char].height = readInt16(fileData,pos+6)
+			data.chars[char].pivotY = readInt16(fileData,pos+8)
+			data.height = math.max(data.chars[char].height,data.height)
+
+			skip(10)
+		end
+	elseif format == "TEXT" then --localization (by far the hardest one)
+		data = {langs = {}}
+		local langs = {}
+		local texts = {}
+
+		--we landed on a 2nd format value
+		assert(readString(fileData,pos,4)=="LDAT","Not localization data..")
+		skip(4+4) --skip over format and unknown data
+		--now we land on languages amount
+		local languagesAmount = readInt16(fileData,pos)
+		skip(2)
+
+		for i=1,languagesAmount do
+			local langLength = readInt16(fileData,pos)
+			if langLength > 64 then error("Language length too long: "..langLength) end
+			local lang = readString(fileData,pos+2,langLength)
+
+			-- data.langs[lang] = {}
+			langs[i] = lang
+			skip(langLength+2)
+		end
+
+		assert(readString(fileData,pos,4)=="LIDS","Language IDs in localization file not found.")
+		skip(4 + 4) --skip over lids, empty 2 bytes, and 1949 for some reason
+
+		local textsAmount = readInt16(fileData,pos)
+		skip(2)
+
+		for i=1,textsAmount do
+			local textLength = readInt16(fileData,pos)
+			if textLength > 64 then error("Text length too long: "..textLength) end
+			local text = readString(fileData,pos+2,textLength)
+
+			table.insert(texts,i,text)
+			skip(textLength+2)
+		end
+
+		for i,v in ipairs(langs)do
+			-- print(readInt16(fileData,pos))
+			assert(readString(fileData,pos,4)=="TXGP","TXGP in localization file not found.") --what are these cryptic names
+			skip(4 + 4)
+			data.langs[v] = {}
+
+			for ii,vv in ipairs(texts) do
+				local textLength = readInt16(fileData,pos)
+				-- if textLength > 1024 then error("Text length a bit long: "..textLength) end
+				local text = readString(fileData,pos+2,textLength)
+
+				data.langs[v][vv] = text
+				skip(textLength+2)
+			end
+		end
+	end
+
+	return data
+end
+
+function makeImages(force)
+	local path = imagePath.."/"..(selectAssetProfile and selectAssetProfile() or "img")
+	if love.keyboard.isDown("lctrl") or not checkDirectory("spriteinfo.lua") or force then
 		--load all the spritesheets
-		love.graphics.print("Remaking spritesheet list..", 0, 0)
-		for i,sprite in pairs(love.filesystem.getDirectoryItems(imagePath.."/img")) do
-			if endswith(sprite,".png") then
-				cachedspshs[sprite] = love.graphics.newImage(imagePath.."/img/"..sprite)
-			elseif endswith(sprite,".xml") then
-				if not sprite:find("COMPOSPRITES") then
-					local spritesheet = cachedspshs[sprite:sub(1,-5)..".png"]
-					if checkDirectory(imagePath.."/img/"..sprite:sub(1,-5)..".png") then--imagePath.."/img/spritesheets/"..v..".png")
-						local xml = love.filesystem.read(imagePath.."/img/"..sprite)
-						local sprites = {}
 
-						for spriteTag in xml:gmatch("<sprite.-/>") do
-							local name = spriteTag:match('name="(.-)"') or ""
-							local x = tonumber(spriteTag:match('x="(.-)"')) or 0
-							local y = tonumber(spriteTag:match('y="(.-)"')) or 0
-							local width = tonumber(spriteTag:match('width="(.-)"')) or 0
-							local height = tonumber(spriteTag:match('height="(.-)"')) or 0
-							local pivotX = tonumber(spriteTag:match('pivotX="(.-)"')) or 0
-							local pivotY = tonumber(spriteTag:match('pivotY="(.-)"')) or 0
-							
-							table.insert(sprites, { name = name, x = x, y = y, width = width, height = height, pivotX = pivotX, pivotY = pivotY })
-						end
-
-						--for each sprite construct a quad
-						for _, spr in ipairs(sprites) do
-							local quad = {love.graphics.newQuad(spr.x, spr.y, spr.width, spr.height,spritesheet:getWidth(),spritesheet:getHeight()),
-								spr.width,spr.height,spritesheet,spr.pivotX,spr.pivotY,sprite:sub(1,-5)..".png"}--imagePath.."/img/"..sprite:sub(1,-5)..".png"}--, spritesheetImage:getDimensions())
-							cachedimgs[spr.name] = quad
-						end
-					else
-						print("WARNING: Spritesheet "..sprite..".png not found")
+	    	print("remaking spritesheets..")
+		love.graphics.print("Remaking spritesheet and composprite list..", screenWidth/16, screenHeight/16)
+		love.graphics.present()
+		love.graphics.setBlendMode("alpha","premultiplied")
+		cachedimgs = {csprites = {}}
+		for i,sprite in pairs(love.filesystem.getDirectoryItems(path)) do
+			if endswith(sprite,".dat") then
+				local data = love.filesystem.read(path.."/"..sprite)
+				local info = getDatInfo(data)
+				if info.compos then
+					for i,v in pairs(info.compos)do
+						cachedimgs.csprites[i] = v
+					end
+				else
+					local spritesheet = love.graphics.newImage(path.."/"..info.filename)
+					for i,spr in pairs(info.sprites) do
+						cachedimgs[i] = {q=love.graphics.newQuad(spr.x, spr.y, spr.width, spr.height,spritesheet:getWidth(),spritesheet:getHeight()),
+							spsh=spritesheet,px=spr.pivotX,py=spr.pivotY,src=path.."/"..sprite:sub(1,-5)..".png"}--imagePath.."/img/"..sprite:sub(1,-5)..".png"}
 					end
 				end
 			end
 		end
-		saveLuaFileLocal("spriteinfo.lua",cachedimgs,"cachedimgs2",true)
+		
+		for i,v in pairs(cachedimgs.csprites)do
+			local x0,x1,y0,y1 = 0,0,0,0
+			
+			for ii,vv in pairs(v)do
+				local sprite = cachedimgs[vv.n]
+				local _,_,w,h = sprite.q:getViewport()
+				x0,x1 = math.min(x0,vv.x - w),math.max(x1,vv.x + w)
+				y0,y1 = math.min(y0,vv.y - h),math.max(y1,vv.y + h)
+			end
+			v.bounds = {x=x1,x0=x0,y=y1,y0=y0}
+			cachedimgs.csprites[i] = v
+		end
+		
+		saveLuaFileLocal("spriteinfo.lua",cachedimgs,"cachedimgs2",true,"local q = love.graphics.newQuad\n")
+		for i,image in pairs(cachedimgs) do
+			if image.q then
+				local _,_,w,h = image.q:getViewport()
+				cachedimgs[i].w,cachedimgs[i].h = w,h
+			end
+		end
 		cachedimgs2 = cachedimgs
 	else
+		love.graphics.setBlendMode("alpha","premultiplied")
 		loadLuaFileToObject("spriteinfo.lua")
+		-- local cursors = love.filesystem.read(imagePath.."/img/".."CURSORS_SHEET_1.dat")
+		-- getDatInfo(cursors)
 	end
 end
 
@@ -515,15 +635,27 @@ function print(...)
 	for i,v in ipairs({...}) do
 		prints = prints..tostring(v).."\t"
 	end
-	debugPrints = prints.."\n"..debugPrints
+	if debugPrints then
+		debugPrints = prints.."\n"..debugPrints
+	end
 	oprint(prints)
 end
 
 function love.load()
 	-- love.graphics.setDefaultFilter("nearest", "nearest")
 	love.setDeprecationOutput(false) --love.filesystem.exists will no longer be deprecated in 12
-	love.graphics.setBlendMode("alpha","premultiplied")
 	setBGColor(255,255,255)
+	fontPath = "/fonts"--..(gameOptions.ui.useNewFonts and "/angrybirds" or "/onomatoshark")
+	-- love.window.updateMode(love.graphics.getWidth(), love.graphics.getHeight(), {resizable=true})
+	love.window.setTitle("Loading..")
+	-- love.window.updateMode(864, 480, {resizable=true})
+	if checkDirectory("icon.png") then
+		love.window.setIcon(love.image.newImageData("/icon.png"))
+	end
+
+	--fixes editor's bad coding practices
+	keyHold["CONTROL"] = false
+	keyHold["SHIFT"] = false
 
 	releaseImages = function()end
 	loadImages = function()end
@@ -532,9 +664,11 @@ function love.load()
 	res.createSpriteSheet = function()end
 	res.createCompoSpriteSet = function()end
 
+	selectFontProfile = function()return "1024x768" end
+
 	if deviceModel == "android" then
-		enableHoverScaling = false
-		enableCursor = false
+		gameOptions.ui.enableHoverScaling = false
+		gameOptions.ui.enableCursor = false
 		setFullScreenMode(true)
 		displayScale = 1.5
 	end
@@ -567,7 +701,7 @@ function love.load()
 		end
 	end
 	local uimos = updateItemMouseOverState
-	if uimos then updateItemMouseOverState = function(item,dt) if not enableHoverScaling then return end uimos(item,dt) end end
+	if uimos then updateItemMouseOverState = function(item,dt) if not gameOptions.ui.enableHoverScaling then return end uimos(item,dt) end end
 
 	-- loveinitialized = true
 end
@@ -584,9 +718,18 @@ end
 
 --every frame
 function love.update(dt)
+	-- if not gameOptions.enableAngryBirds then drawRect(0,0,0,.01,0,0,screenWidth,screenHeight) love.audio.stop() return end
+
 	if love.window.hasFocus() then
 		local joysticks = love.joystick.getJoysticks()
 		joystick = joysticks[1]
+
+		if not hasfocus then
+			for i,v in pairs(pausedaudios)do
+				v:play()
+			end
+			pausedaudios = {}
+		end
 
 		hasfocus = true
 		if love.graphics and love.graphics.isActive() then
@@ -608,48 +751,58 @@ function love.update(dt)
 		screenHeight = math.floor(love.graphics.getHeight()/displayScale)
 		love.window.setTitle("Angry Birds ("..screenWidth.."x"..screenHeight..")")
 
+		if particles and not getmetatable(particles) then
+			setmetatable(particles,getAddParticles)
+		end
+
 		if not joystick then
 			cursor.x, cursor.y = love.mouse.getPosition()
 			cursor.x = cursor.x / displayScale
 			cursor.y = cursor.y / displayScale
 		else --gamepad logic
-			--move cursor
-			gpcx = math.max(20,math.min(gpcx + (joystick:getAxis(3)*800*dt),screenWidth - 20))
-			gpcy = math.max(20,math.min(gpcy + (joystick:getAxis(4)*800*dt),screenHeight - 20))
 
 
-			if physicsEnabled and not levelCompleted and (joystick:getAxis(1) ~= 0 or joystick:getAxis(2) ~= 0) and not cameraTargetObject then
-				if currentBirdName ~= nil then
-					local obj = objects.world[currentBirdName]
-					panToBirdCamera()
-					local t_slingshotHitAreaRange = 1.2
-					local distanceLimit = t_slingshotHitAreaRange/worldScale * screenWidth/480
-					selectedBird = obj
-				end
-				registerGamepadKey(joystick,"LBUTTON",true)
-
-				local sx,sy = physicsToWorldTransform(levelStartPosition.x,levelStartPosition.y)
-				cursor.x, cursor.y = (sx-screen.left)*drawxscale + (joystick:getAxis(1) * rubberBandMaximumLength()*20*worldScale),
-				(sy-screen.top)*drawyscale + (joystick:getAxis(2) * rubberBandMaximumLength()*20*worldScale)
-				if joystick:isGamepadDown("a") then registerGamepadKey(joystick,"LBUTTON",false) end
-				gpc = .01
-
-				enableCursor = false
-			else
-				if gpc > 0 then
-					local sx,sy = physicsToWorldTransform(levelStartPosition.x,levelStartPosition.y)
-					cursor.x, cursor.y = (sx-screen.left)*drawxscale + (joystick:getAxis(1) * rubberBandMaximumLength()*20*worldScale),
-					(sy-screen.top)*drawyscale + (joystick:getAxis(2) * rubberBandMaximumLength()*20*worldScale)
-					if not joystick:isGamepadDown("a") then
-						gpc = gpc - dt
-						if currentBirdName then
-							gpc = 0
-							cancelBirdDrag()
-						end
+			if physicsEnabled then
+				if not levelCompleted and (joystick:getAxis(1) ~= 0 or joystick:getAxis(2) ~= 0) and not cameraTargetObject then
+					if currentBirdName ~= nil then
+						local obj = objects.world[currentBirdName]
+						panToBirdCamera()
+						local t_slingshotHitAreaRange = 1.2
+						local distanceLimit = t_slingshotHitAreaRange/worldScale * screenWidth/480
+						selectedBird = obj
 					end
-				end if gpc <= 0 then
+					registerGamepadKey(joystick,"LBUTTON",true)
+
+					local sx,sy = physicsToWorldTransform(levelStartPosition.x,levelStartPosition.y)
+					cursor.x, cursor.y = (sx-screen.left)*worldScale + (joystick:getAxis(1) * rubberBandMaximumLength()*20*worldScale),
+					(sy-screen.top)*worldScale + (joystick:getAxis(2) * rubberBandMaximumLength()*20*worldScale)
+					if joystick:isGamepadDown("a") then registerGamepadKey(joystick,"LBUTTON",false) end
+					gpc = .01
+				else
+					if gpc > 0 then
+						-- local sx,sy = physicsToWorldTransform(levelStartPosition.x,levelStartPosition.y)
+						-- cursor.x, cursor.y = (sx-screen.left)*drawxscale + (joystick:getAxis(1) * rubberBandMaximumLength()*20*worldScale),
+						-- (sy-screen.top)*drawyscale + (joystick:getAxis(2) * rubberBandMaximumLength()*20*worldScale)
+						if not joystick:isGamepadDown("a") then
+							gpc = gpc - dt
+							if currentBirdName then
+								gpc = 0
+								cancelBirdDrag()
+							end
+						end
+					else
+						registerGamepadKey(joystick,"LBUTTON","a")
+					end
+				end
+
+				gameOptions.ui.enableCursor = false
+			else
+				--move cursor
+				gpcx = math.max(20,math.min(gpcx + (joystick:getAxis(3-2)*800*dt),screenWidth - 20))
+				gpcy = math.max(20,math.min(gpcy + (joystick:getAxis(4-2)*800*dt),screenHeight - 20))
+				if gpc <= 0 then
 					registerGamepadKey(joystick,"LBUTTON","a")
-					enableCursor = true
+					gameOptions.ui.enableCursor = true
 					cursor.x = gpcx
 					cursor.y = gpcy
 				end
@@ -660,13 +813,13 @@ function love.update(dt)
 			registerGamepadKey(joystick,"LEFT","leftshoulder")
 			registerGamepadKey(joystick,"RBUTTON","rightstick")
 			
-	        -- for k = 1,joystick:getButtonCount() do
-	        	-- res.drawString("","Button "..k..": "..joystick:isGamepadDown(GamepadButton[k]), 10, k*30)
-	        -- end
-		    -- for i, joystick in ipairs(joysticks) do
-		    --     res.drawString("",joystick:getName(), 10, i * 60)
-		    --     -- res.drawString("",joystick:getAxis(1), 10, i * 60 + 50)
-		    -- end
+			-- for k = 1,joystick:getButtonCount() do
+				-- res.drawString("","Button "..k..": "..joystick:isGamepadDown(GamepadButton[k]), 10, k*30)
+			-- end
+			-- for i, joystick in ipairs(joysticks) do
+			--	 res.drawString("",joystick:getName(), 10, i * 60)
+			--	 -- res.drawString("",joystick:getAxis(1), 10, i * 60 + 50)
+			-- end
 		end
 
 		-- if keyHold["LBUTTON"] then
@@ -689,57 +842,79 @@ function love.update(dt)
 
 		if keyHold["LALT"] and keyPressed["RETURN"] then setFullScreenMode(not isInFullScreenMode()) end
 
-		if not particles.addParticles then
-			particles.addParticles = function(type, amount, x, y, w, h, angle)
-				return --add to particles table?
-			end
-		end
+		-- if not particles.addParticles then
+			-- particles.addParticles = 
+		-- end
 
 		if mainMenu and not menuItemsEdited then
 			menuItemsEdited = true
 			local credits = getItemByName(mainMenu.items,"credits")
 
-			if hasLove12 then
+			-- if hasLove12 then
 				-- love.event.restart(time)
-				credits.callFunction = function()love.event.restart(time)end
-			end
+				-- credits.callFunction = function()love.event.restart(time)end
+			-- end
 			-- credits.callFunction = function()love.event.quit("restart")end
 		end
 
 		love.graphics.setScissor()
 
-		if keyHold["SHIFT"] and keyPressed["F"] then --file manager
-			keyPressed["F"] = nil
-			fmOpen = not fmOpen
-			fmPath = nil
-			fmPrevDir = ""
+		-- if keyHold["SHIFT"] and keyPressed["F"] then --file manager
+		-- 	keyPressed["F"] = nil
+		-- 	fmOpen = not fmOpen
+		-- 	fmPath = nil
+		-- 	fmPrevDir = ""
 
-			res.playAudio("menu_select", 1, false)
-		end
+		-- 	res.playAudio("menu_select", 1, false)
+		-- end
 
 		local kp,kr,kh = keyPressed,keyReleased,keyHold
-		if debugOpen or fmOpen then keyPressed,keyReleased,keyHold = {},{},{} end
+		if debugOpen or fmOpen or optionsOpen then keyPressed,keyReleased,keyHold = {},{},{} end
 
-		dt2 = dt*timeScale*(debugOpen and 0.2 or 1)
+		dt2 = dt*timeScale*((debugOpen or optionsOpen) and 0.2 or 1)
 
 		update(dt2,dt2)
+
+		if toremove then
+			for i,v in pairs(toremove) do
+				v:destroy()
+			end
+			toremove = nil
+		end
 		
 		keyPressed,keyReleased,keyHold = kp,kr,kh
 
+
 		if physicsEnabled then
-			-- if not objects.world["c"] then
-			-- 	print("making the c")
-			-- 	objects.world["c"] = {name = "c", sprite = "BIRD_YELLOW", y = -200, x = 50, width = 50, height = 50, density = 1,
-			-- 		friction = .5, restitution = .5, controllable = false, z_order = 1, mass = 1}
-			-- 	local obj = objects.world["c"]
-
-			-- 	obj.body = love.physics.newBody(physicsWorld, 50, -20, "dynamic")
-			-- 	obj.shape = love.physics.newRectangleShape(50, 50)
-			-- 	obj.fixture = love.physics.newFixture(objects.world["c"].body, objects.world["c"].shape)--, density)
-			-- 	obj.body:setLinearVelocity(10,0)
-
-			-- 	res.playAudio("special_group",1,false,0)
-			-- end
+			for k, v in _G.pairs(particles) do
+				if v ~= particles.addParticles then
+					local p = v
+					p.time = p.time + dt
+					if p.time > p.lifeTime then
+						_G.table.remove(particles, k)
+						particleAmount = particleAmount - 1
+					else
+						pt = particleTable.particles[p.type]
+						p.xVel = p.xVel + pt.gravityX * dt
+						p.yVel = p.yVel + pt.gravityY * dt
+						p.x = p.x + p.xVel * dt
+						p.y = p.y + p.yVel * dt
+						p.angle = p.angle + p.angleVel * dt
+						p.scale = p.scaleBegin + (p.scaleEnd - p.scaleBegin) * (p.time / p.lifeTime)
+						
+						if p.lifeTimeAnimation then
+							index = _G.math.ceil(#pt.sprites * (p.time / p.lifeTime))
+							if index < 1 then index = 1 end
+							if index > #pt.sprites then index = #pt.sprites end
+							p.sprite = pt.sprites[index]
+							if p.oldSprite ~= p.sprite then
+								p.spritePivotX, p.spritePivotY = _G.res.getSpritePivot(p.sheet, p.sprite)
+								p.oldSprite = p.sprite
+							end
+						end
+					end
+				end
+			end
 
 			setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0)
 			physicsWorld:update(dt2)
@@ -750,16 +925,6 @@ function love.update(dt)
 			for i,v in pairs(objects.world) do
 				local obj = objects.world[i]
 				if obj.body then
-					-- if not obj.controllable then
-					-- 	-- obj.x = 0
-					-- end
-					-- if obj.name == "c" then
-					-- 	-- print(obj.body:getY())
-					-- 	-- obj.body:setLinearVelocity(10,0)
-					-- 	res.drawString("",obj.body:getLinearVelocity(),obj.body:getX()*20,obj.body:getY()*20+50)
-					-- end
-					-- print(obj.body:getY())
-					-- res.drawString("",tostring(obj.body:getY()),obj.body:getX()*20,obj.body:getY()*20)
 					obj.x,obj.y = obj.body:getPosition()
 					if obj.x < objects.limits.mix then obj.body:setX(objects.limits.mix)
 					elseif obj.x > objects.limits.max then obj.body:setX(objects.limits.max) end
@@ -784,67 +949,26 @@ function love.update(dt)
 			end
 		end
 
-		-- if not cursor.wheelTriggered then
-			cursor.wheel = 0
-		-- end
 
-		if fmOpen then
-			local fmPadding = 75
-			drawBox(tutorialBoxSprites or {},"",fmPadding,fmPadding,screenWidth-fmPadding*2,screenHeight-fmPadding*2)
-
-			res.useFont("FONT_MENU")
-			res.drawString("","File Manager",screenWidth/2,fmPadding*1.25,"HCENTER")
-
-			res.useFont("FONT_BASIC")
-			-- love.graphics.setColor(0, 0, 0, .6)
-			-- love.graphics.rectangle("fill", 25, 25, screenWidth-50, screenHeight-50, 16)
-			-- love.graphics.setColor(1, 1, 1, 1)
-			-- drawBox(page.backgroundBox.sprites, sheet, _G.math.floor(x), _G.math.floor(y), _G.math.floor(page.backgroundBox.width), _G.math.floor(page.backgroundBox.height), page.backgroundBox.hanchor, page.backgroundBox.vanchor, nil)
-			if not fmPath then
-				fmPath = ""
-				updateFm()
-			end
-
-			res.setClipRect(fmPadding,fmPadding,screenWidth-fmPadding*2,screenHeight-fmPadding*2)
-			local folder = checkAndLoadSprite("ICON_FM_FOLDER")
-			local file = checkAndLoadSprite("ICON_FM_FILE")
-			for i,v in pairs(fmItems)do
-				-- print(i,v)
-				local x = fmPadding
-				local y = fmPadding+(i*res.getFontHeight())
-				if checkBounds(x,y-fmPadding/3,screenWidth-fmPadding*2,res.getFontHeight(),cursor.x,cursor.y)then
-					x = x + 15
-					if keyPressed["LBUTTON"] then
-						res.playAudio("menu_confirm", 1, false)
-						if v[2].type == "directory" then
-							fmPrevDir = fmPath
-							fmPath = fmPath..v[1].."/"
-							updateFm()
-						end
-						break
-					end
-				end
-
-				love.graphics.draw(folder[4],	--quad
-					v[2].type == "directory" and folder[1] or file[1],					--spritesheet
-					x,							--x
-					y-24,							--y
-					drawangle,					--angle
-					.25,						--x scale
-					.25)						--y scale
-				res.drawString("",v[1],x+144/4,y)
-			end
-
-			love.graphics.setScissor()
-		end
+		zoomLevel = (zoomLevel * 16 + wantedZoomLevel) / 17
+		if currentGameMode ~= updateGame and currentGameMode ~= updateEditor then wantedZoomLevel = 0 end
 
 		if debugOpen then
 			updateDebug(dt)
 		end
+
+		if optionsOpen then
+			updateOptions(dt)
+		end
 	elseif hasfocus then
 		hasfocus = false
+		pausedaudios = love.audio.pause()
+
 		gamePaused()
 	end
+	-- if not cursor.wheelTriggered then
+		cursor.wheel = 0
+	-- end
 
 	keyPressed = {}
 	keyReleased = {}
@@ -855,6 +979,47 @@ function love.update(dt)
 		end
 	end
 end
+
+getAddParticles = {__index = function(self,i)
+	if i == "addParticles" then
+		return function(type, amount, x, y, w, h, angle)
+				local pt = particleTable.particles[type]
+				if softLimitSimultaneousParticles < particleAmount + amount then
+					amount = amount * 0.5
+				end
+				
+				for i = 1, amount, 1 do
+					if particleAmount < hardLimitSimultaneousParticles then
+						particleAmount = particleAmount + 1
+						local p = { }
+						p.x = x + (_G.math.random(0, w) - 0.5*w ) -- * cos(angle)
+						p.y = y + (_G.math.random(0, h) - 0.5*h ) -- * sin(angle)
+						p.xVel = _G.math.random(pt.minVel, pt.maxVel)
+						p.yVel = _G.math.random(pt.minVel, pt.maxVel)
+						p.angle = _G.math.random(1, 3.14)
+						p.angleVel = _G.math.random(pt.minAngleVel, pt.maxAngleVel)
+						p.scaleBegin = _G.math.random(pt.minScaleBegin, pt.maxScaleBegin)
+						p.scaleEnd = _G.math.random(pt.minScaleEnd, pt.maxScaleEnd)
+						p.scale = p.scaleBegin
+						p.type = type
+						p.sprite = pt.sprites[_G.math.random(1, #pt.sprites)]
+						p.sheet = pt.sheet
+						p.time = 0
+						p.lifeTime = pt.lifeTime
+						p.lifeTimeAnimation = pt.animation == "lifeTime"
+
+						if p.lifeTimeAnimation then
+							p.sprite = pt.sprites[1]
+						end
+						p.oldSprite = p.sprite
+						p.spritePivotX, p.spritePivotY = _G.res.getSpritePivot(p.sheet, p.sprite)
+
+						_G.table.insert(particles, p)
+					end
+				end
+			end
+	end
+end}
 
 function updateFm()
 	local items = love.filesystem.getDirectoryItems(fmPath)
@@ -922,14 +1087,30 @@ end
 
 
 function love.wheelmoved(x, y)
-	cursor.wheelTriggered = true
+	cursor.wheelTriggered = y~=0--true
 	-- cursor.wheelTriggered = -y ~= 0
-	cursor.wheel = -y
+	cursor.wheel = y
 
-	zoomLevel = zoomLevel + y/16
+	if not optionsOpen then
+		-- zoomLevel = zoomLevel + y/16
+		wantedZoomLevel = wantedZoomLevel + y/8
+
+		-- if zoomLevel > 1.5 then zoomLevel = 1.5 end
+		if wantedZoomLevel > 1.5 then wantedZoomLevel = 1.5 end
+		if wantedZoomLevel < maxWorldScale then wantedZoomLevel = maxWorldScale end
+		-- if zoomLevel < -1.1 then zoomLevel = -1.1 end
+	end
+end
+
+function setMaxWorldScale(s)
+	maxWorldScale = s
 end
 
 function doesMouseClickSetsTouchCount() --probably returns if on windows
+	return true
+end
+
+function setIsMultitouchMouseWheelSimulationEnabled()
 	return true
 end
 
@@ -963,6 +1144,7 @@ function res.getTrackVolume(track)
 end
 
 function res.setClipRect(x1,y1,x2,y2)
+	x1,y1,x2,y2 = math.max(x1,0),math.max(y1,0),math.max(x2,0),math.max(y2,0)
 	love.graphics.setScissor(x1 * displayScale, y1 * displayScale, x2 * displayScale, y2 * displayScale)
 end
 
@@ -1003,37 +1185,54 @@ function avoidCrystalBackgroundActivity(avoid)
 	return
 end
 
-function res.getSpriteBounds(string,sprite)
+function res.getSpriteBounds(sheet,sprite)
+	if not sprite then sprite = sheet end
 	sprite = checkAndLoadSprite(sprite)
 	if sprite then
-		return sprite[2],sprite[3]
+		return sprite.w,sprite.h
+	else
+		-- return 150,150
 	end
 	return 0,0
 end
 
-function res.getCompoSpriteBounds(string,composprite)
-	return 0,0,0,0
+function res.getCompoSpriteBounds(composprite)--string,composprite) --not used in 1.6.3.1
+	-- return 0,0,150,150
 end
 
 function res.getSpritePivot(sheet,sprite)
+	if not sprite then sprite = sheet end
 	sprite = checkAndLoadSprite(sprite)
 	if sprite then
-		return sprite[5],sprite[6]
+		return sprite.px or 0,sprite.py or 0
 	end
 	return 0,0
 end
 
 function checkAndLoadSprite(sprite)
-	if not cachedimgs[sprite] and sprite then
-		if cachedimgs2["index_"..sprite] then
-			-- print("Debug: Creating image "..sprite.." from "..cachedimgs2["index_"..sprite][7])
-			local image2 = cachedimgs2["index_"..sprite]
-			if not cachedspshs[image2[7]] then
-				cachedspshs[image2[7]] = love.graphics.newImage(imagePath.."/img/"..image2[7])
+	if not cachedimgs[sprite] and not cachedcs[sprite] and sprite then
+		if cachedimgs2[sprite] then
+			-- print("Debug: Creating image "..sprite.." from "..cachedimgs2[sprite][7])
+			local image = cachedimgs2[sprite]
+			if not cachedspshs[image.src] then
+				cachedspshs[image.src] = love.graphics.newImage(image.src)
 			end
-			image2[4] = cachedspshs[image2[7]]
-			cachedimgs[sprite] = image2
-			return image2
+			image.spsh = cachedspshs[image.src]
+			local _,_,w,h = image.q:getViewport()
+			image.w,image.h = w,h
+			cachedimgs[sprite] = image
+			return image
+		elseif cachedimgs2.csprites[sprite] then
+			local image = cachedimgs2.csprites[sprite]
+			local newimage = {w=image.bounds.x,px=image.bounds.x0,h=image.bounds.y,py=image.bounds.y0,sprites={}}
+
+			for i,v in pairs(image)do
+				if i ~= "bounds" then
+					newimage.sprites[tonumber(i)] = v
+				end
+			end
+			cachedcs[sprite] = newimage
+			return newimage
 		else
 			cachedimgs[sprite] = 0
 			print("Warning: Sprite "..sprite.." not found")
@@ -1041,55 +1240,49 @@ function checkAndLoadSprite(sprite)
 		end
 	end
 	if cachedimgs[sprite]==0 then return nil end
-	return cachedimgs[sprite]
+	-- if not cachedimgs[sprite].w then
+	-- 	local _,_,w,h = cachedimgs[sprite].q:getViewport()
+	-- 	cachedimgs[sprite].w,cachedimgs[sprite].h = w,h
+	-- end
+	return cachedcs[sprite] or cachedimgs[sprite]
 end
 
-function res.drawSprite(string,sprite,x,y,vanchor,hanchor,iwidth,iheight)
-	if sprite == g_currentCursorName and not enableCursor then return end
-
+function res.drawSprite(sprite,x,y,vanchor,hanchor,iwidth,iheight)--string,sprite,x,y,vanchor,hanchor,iwidth,iheight)
+	if sprite == g_currentCursorName and not gameOptions.ui.enableCursor then return end
 	local image = checkAndLoadSprite(sprite)
 
 	if image then
-		local wm = (iwidth and iwidth/image[2] or 1)
-		local hm = (iheight and iheight/image[3] or 1)
+		local wm = (iwidth and iwidth/image.w or 1)
+		local hm = (iheight and iheight/image.h or 1)
 
-		x = (x + drawxo)
-		y = (y + drawyo)
-		
-		-- local xp = image[2]/2
-		-- local yp = image[3]/2
-		local xpr,ypr = image[5],image[6]
-		-- local drawxp,drawyp = drawxp or .5, drawyp or .5
-		-- local xpr = image[2]/2
-		-- local ypr = image[3]/2
-		-- if hanchor == "LEFT" or vanchor == "LEFT" then xp = image[5] xpr = 0 end
-		-- if hanchor == "RIGHT" or vanchor == "RIGHT" then xp = image[2] end
-		
-		-- if vanchor == "TOP" or hanchor == "TOP" then yp = image[6] ypr = 0 end
-		-- if vanchor == "BOTTOM" or hanchor == "BOTTOM" then yp = image[3] end
-		if hanchor == "LEFT" then xpr = 0 end
-		if hanchor == "RIGHT" then xpr = image[2] end
-		if hanchor == "HCENTER" then xpr = image[2]/2 end
-		
-		if vanchor == "TOP" then ypr = 0 end
-		if vanchor == "BOTTOM" then ypr = image[3] end
-		if vanchor == "VCENTER" then ypr = image[3]/2 end
-		-- print(drawxp)
+		local xpr,ypr = drawxp or image.px,drawyp or image.py--image[5],image[6]
 
-		love.graphics.draw(image[4],		--quad
-			image[1],						--spritesheet
-			(x)*drawxscale,	--x
-			(y)*drawyscale,	--y
-			drawangle,						--angle
-			drawxscale*wm,					--x scale
-			drawyscale*hm,					--y scale
-			xpr,							--x pivot
-			ypr)							--y pivot
+		if hanchor == "LEFT" or vanchor == "LEFT" then xpr = 0 end
+		if hanchor == "RIGHT" or vanchor == "RIGHT" then xpr = image.w end
+		
+		if vanchor == "TOP" or hanchor == "TOP" then ypr = 0 end
+		if vanchor == "BOTTOM" or hanchor == "BOTTOM" then ypr = image.h end
+
+		love.graphics.draw(image.spsh,	--quad
+			image.q,		--spritesheet
+			x,			--x
+			y,			--y
+			drawangle,		--angle
+			drawxscale*wm,		--x scale
+			drawyscale*hm,		--y scale
+			xpr,			--x pivot
+			ypr)			--y pivot
 	end
 end
 
-function res.drawCompoSprite(string,sprite,x,y,ypivot,xpivot,iwidth,iheight)
-	return
+function res.drawCompoSprite(sprite,x,y)
+	local image = checkAndLoadSprite(sprite)
+
+	if image then
+		for i,v in ipairs(image.sprites)do
+			res.drawSprite(v.n,math.floor(x+v.x),math.floor(y+v.y))
+		end						--y pivot
+	end
 end
 function getBGColor(r,g,b) --not used, but i found it in ghidra
 	return love.graphics.getBackgroundColor()
@@ -1098,13 +1291,65 @@ function setBGColor(r,g,b) --set the background color
 	love.graphics.setBackgroundColor(r/255,g/255,b/255)
 end
 function setRenderState(xp,yp,xs,ys,angle,xpi,ypi)
-	drawxo = xp
-	drawyo = yp
-	drawxscale = xs
-	drawyscale = ys
+	angle = angle or 0
+	love.graphics.origin()
+	-- love.graphics.shear((-cursor.x/screenWidth)+.5, 0)
+	love.graphics.scale(xs, ys)
+	love.graphics.scale(displayScale)
+	love.graphics.translate(xp, yp)
+	-- love.graphics.rotate(angle)
+	-- drawxo = xp
+	-- drawyo = yp
+	-- drawxscale = xs
+	-- drawyscale = ys
 	drawangle = angle or 0
-	drawxp = xpi or 0
-	drawyp = ypi or 0
+	drawxp = xpi ~= 0 and xpi
+	drawyp = ypi ~= 0 and ypi
+end
+
+
+function drawThemeLayer(k,v)
+	local px, py = res.getSpritePivot("",v[2])
+	local w, h = res.getSpriteBounds("",v[2])
+	local s = worldScale or 1
+	local ext = v[7] or {}
+	local scroll = (v.v or 0) * time
+	ext.color = ext.color or {1,1,1,1}
+	local color = {ext.color[1]*ext.color[4],ext.color[2]*ext.color[4],ext.color[3]*ext.color[4],ext.color[4]} --for premultiply alpha
+	local bcolor
+	if ext.bcolor then
+		bcolor = {ext.bcolor[1]*ext.bcolor[4],ext.bcolor[2]*ext.bcolor[4],ext.bcolor[3]*ext.bcolor[4],ext.bcolor[4]} --for premultiply alpha
+	end
+	ext.y = ext.y or 0
+	
+	if w > 0 then
+		local cr,cg,cb,ca = love.graphics.getColor()
+		love.graphics.setColor(color)
+		for x = -1,math.floor(screenWidth/w/s) do
+			-- local i = #theme.bgLayers - k
+			local xp = w * x + (v[6] or 0)
+			local left = (-screen.left * v[3] / v[4] + scroll - cameraShakeX) % w
+
+			setRenderState(xp+left, -screen.top / v[4] - cameraShakeY, s * v[4], s*v[4], 0, px, py)
+
+			if not (x ~= 0 and v[5] == false) then
+				if drawSpriteSheetParameter then
+					res.drawSprite("",v[2],0,ext.y)
+				else
+					res.drawSprite(v[2],0,ext.y)
+				end
+			end
+		end
+		love.graphics.setColor(cr,cg,cb,ca)
+	end
+
+	if ext.bcolor then
+		setRenderState(0,-screen.top / v[4] - cameraShakeY,1,s*v[4],0,px,py)
+		drawRect2(bcolor[1],bcolor[2],bcolor[3],bcolor[4],0,ext.y + (h-py-1),screenWidth,(screenHeight/s)+screen.top)
+		-- extendShader:send("imageHeight",checkAndLoadSprite(v[2]).h)
+		-- love.graphics.setShader(extendShader)
+	end
+	-- love.graphics.setShader()
 end
 
 function drawBackgroundNative()
@@ -1112,26 +1357,7 @@ function drawBackgroundNative()
 	local theme = blockTable.themes[currentTheme]
 	setBGColor(theme.color.r,theme.color.g,theme.color.b)
 	for k,v in ipairs(theme.bgLayers) do
-		local px, py = res.getSpritePivot("",v[2])
-		local w, h = res.getSpriteBounds("",v[2])
-		local s = worldScale or 1
-		
-		if w > 0 then
-			for x = -1,math.floor(screenWidth/w/s) do
-				-- local i = #theme.bgLayers - k
-				local xp = w * x
-				local left = (-screen.left * v[3] / v[4] - cameraShakeX) % w
-
-				if v.v then
-					left = left + time * v.v
-				end
-				setRenderState(xp+left, -screen.top / v[4] - cameraShakeY, s * v[4], s*v[4], 0, px, py)
-
-				if not (x ~= 0 and v[5] == false) then
-					res.drawSprite("",v[2],0,0)
-				end
-			end
-		end
+		drawThemeLayer(k,v)
 	end
 end
 
@@ -1140,45 +1366,44 @@ function drawForegroundNative()
 	-- res.drawSprite("",ctheme.fgLayers[1][2],0,0)
 	local theme = blockTable.themes[currentTheme]
 	local s = worldScale or 1
-	drawRect(theme.groundColor.r/255,theme.groundColor.g/255,theme.groundColor.b/255,1,0,(-screen.top/1.5-cameraShakeY)*s*1.5,screenWidth,screenHeight)
+	setRenderState(0,0,1,1)
+	drawRect2(theme.groundColor.r/255,theme.groundColor.g/255,theme.groundColor.b/255,1,0,-screen.top*s,screenWidth,screenHeight+screen.top*s)
 	for k,v in ipairs(theme.fgLayers) do
-		local px, py = res.getSpritePivot("",v[2])
-		local w, h = res.getSpriteBounds("",v[2])
-		v[3],v[4] = 1,1.5
-
-		if w > 0 then
-			for x = -1,math.floor(screenWidth/w/s) do
-				-- local i = #theme.fgLayers - k
-				local xp = w * x
-				local left = (-screen.left * v[3] / v[4] - cameraShakeX) % w
-
-				if v.v then
-					left = left + time * v.v
-				end
-				setRenderState(xp+left, -screen.top / v[4] - cameraShakeY, s * v[4], s*v[4], 0, px, py)
-
-				if not (x ~= 0 and v[5] == false) then
-					res.drawSprite("",v[2],0,0)
-				end
-			end
-		end
+		v[3],v[4] = v[3] or 1,v[4] or 1.5
+		drawThemeLayer(k,v)
 	end
 end
 
 function drawRect(r, g, b, a, x, y, xs, ys, _)
 	local r2,y2,b2,a2 = love.graphics.getColor()
 	love.graphics.setColor(r, g, b, a)
+	xs = xs - x
+	ys = ys - y
 	love.graphics.rectangle("fill", x, y, xs, ys)
 	love.graphics.setColor(r2,y2,b2,a2)
 end
 
-function drawLine2D(lx1,ly1,lx2,ly2,lz,r,g,b,a)
+function drawRect2(r, g, b, a, x, y, xs, ys)
 	local r2,y2,b2,a2 = love.graphics.getColor()
-	love.graphics.setColor(r/255, g/255, b/255, a/255)
-	love.graphics.setLineWidth(lz*drawxscale)
-	-- print(x1,y1,x2,y2)
-	love.graphics.line((lx1+drawxo)*drawxscale, (ly1+drawyo)*drawyscale, (lx2+drawxo)*drawxscale, (ly2+drawyo)*drawyscale)
+	love.graphics.setColor(r, g, b, a)
+	love.graphics.rectangle("fill", x, y, xs, ys)
 	love.graphics.setColor(r2,y2,b2,a2)
+end
+
+function drawLine2D(lx1,ly1,lx2,ly2,lz,r,g,b,a) --unfinished
+	local r2,y2,b2,a2 = love.graphics.getColor()
+	love.graphics.push()
+	-- love.graphics.origin()
+	love.graphics.setColor(r/255, g/255, b/255, a/255)
+	love.graphics.setLineWidth(lz)
+	-- setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0)
+	-- love.graphics.scale(worldScale)
+	-- love.graphics.translate(-screen.left - cameraShakeX, -screen.top - cameraShakeY)
+	-- love.graphics.rotate(drawangle)
+	-- print(x1,y1,x2,y2)
+	love.graphics.line((lx1+drawxo), (ly1+drawyo), (lx2+drawxo), (ly2+drawyo))
+	love.graphics.setColor(r2,y2,b2,a2)
+	love.graphics.pop()
 end
 
 --physics
@@ -1199,16 +1424,50 @@ function drawGameNative() --work in progress
 		end
 	end
 
-	for i,v in pairs(objects.world) do
-		-- if v.controllable then print(v.body:getX()) end
-		local x,y = physicsToWorldTransform(v.x,v.y)--v.x,v.y--worldToScreenTransform(v.x,v.y)
-		-- print(x)
-		-- setRenderState(0,0,0,0)
-		drawangle = v.angle--body:getAngle()
+	love.graphics.push()
+	-- love.graphics.origin()
+	local texture = blockTable.themes[currentTheme].texture
 
-		res.drawSprite("",v.sprite,x,y)--v.sprite,x,y)
-		drawangle = 0
-		-- res.drawString("",v.angle,v.x*20,v.y*20)
+	love.graphics.stencil(function()
+		for i,v in pairs(objects.world) do
+			if v.texture then drawangle = v.angle local x,y = physicsToWorldTransform(v.x,v.y) res.drawSprite(v.sprite,x,y) end
+		end end, "replace", 1)
+	love.graphics.setStencilTest("greater", 0)
+	-- love.graphics.scale(2)
+	-- drawangle = 0
+	setRenderState(0,0,worldScale,worldScale)
+	local w,h = res.getSpriteBounds("",texture)
+	if w > 0 then
+		for i=-1,(screenWidth/worldScale)/w do
+			for ii=-1,(screenHeight/worldScale)/h do
+				local x = (w - screen.left)%(w) + (i*w)
+				local y = (h - screen.top)%(h) + (ii*h)
+				res.drawSprite(texture,x,y)
+			end
+		end
+	end
+	love.graphics.setStencilTest()
+	love.graphics.pop()
+
+	for i,v in pairs(objects.world) do
+		if not v.texture then
+			-- if v.controllable then print(v.body:getX()) end
+			local x,y = physicsToWorldTransform(v.x,v.y)--v.x,v.y--worldToScreenTransform(v.x,v.y)
+			-- print(x)
+			-- setRenderState(0,0,0,0)
+			drawangle = v.angle--body:getAngle()
+			-- res.drawSprite("",v.sprite,x,y)--v.sprite,x,y)
+			res.drawSprite(v.sprite,x,y)--v.sprite,x,y)
+			drawangle = 0
+			-- res.drawString("",v.angle,v.x*20,v.y*20)
+		end
+	end
+
+	for k, p in _G.pairs(particles) do
+		if p ~= particles.addParticles then
+			setRenderState(-screen.left/p.scale, -screen.top/p.scale, worldScale*p.scale, worldScale*p.scale, p.angle, p.spritePivotX, p.spritePivotY)
+			_G.res.drawSprite(p.sprite, p.x/p.scale, p.y/p.scale)--p.sheet, p.sprite, p.x/p.scale, p.y/p.scale)
+		end
 	end
 	-- debugWorldDraw(physicsWorld,0,-500,screenWidth*20,screenHeight*20)
 end
@@ -1227,75 +1486,83 @@ end
 
 function loadLevel(filename)
 	print("Loading level: "..filename..".lua")
+	toremove = nil
 	if physicsWorld then physicsWorld:destroy() end --clear all the objects before continuing
 
 	physicsWorld = love.physics.newWorld(gravity.x, gravity.y, true)
-	physicsWorld:setCallbacks(nil,nil,physicsStartContact,nil)
+	physicsWorld:setCallbacks(nil,nil,physicsPostSolve,nil)
 	loadedObjects = {}
 	loadLuaFileToObject(filename..".lua",this,loadedObjects)
 end
 
 function saveLevel(filename)
 	print("Saving level: "..filename..".lua")
-	saveLuaFile(filename,"objects")
+	saveLuaFile(filename..".lua","objects",nil,nil,true)
 end
 
 function addToTrajectory(index, x, y)
-	return
+	-- return
+	-- table.insert(birdTrajectory[index],{x=x,y=y})
 end
 
 function addPuffToTrajectory(index, x, y)
-	return
+	-- return
+	-- table.insert(birdTrajectory[index],{x=x,y=y,p=1})
 end
 function startNewTrajectory()
-	return
+	-- return
+	
 end
 
 function setPhysicsSimulationScale(scale)
 	love.physics.setMeter(scale*.5)
 end
 
-function physicsStartContact(obj1,obj2,contact)
+function physicsPostSolve(obj1,obj2,contact) --most work in progress thing ever
+	local nx,ny = contact:getNormal()
 	local vx1,vy1 = obj1:getBody():getLinearVelocity()
 	local vx2,vy2 = obj2:getBody():getLinearVelocity()
-	local veloc = math.abs((math.abs(vx1)+math.abs(vy1))-(math.abs(vx2)+math.abs(vy2)))
+	-- local veloc = math.abs((math.abs(vx1)+math.abs(vy1))-(math.abs(vx2)+math.abs(vy2)))
+	-- local veloc = normali*20
 	local o1,o2
 
 	if math.abs(vx1)+math.abs(vy1) < math.abs(vx2)+math.abs(vy2) then
 		o1,o2 = obj2:getUserData(),obj1:getUserData()
 	else
-		o1,o2 = obj1:getUserData(),obj2:getUserData() --to get the angry birds world object, rather than the physics world object
+		o1,o2 = obj1:getUserData(),obj2:getUserData() --to get the physics.world object
 	end
+    -- if veloc > .1 then
+    -- 	print(veloc,o1.name,o2.name)
+    -- end
+    local relVelX = vx2 - vx1
+    local relVelY = vy2 - vy1
+    local veloc = ((relVelX * nx) + (relVelY * ny))*.5--0
 
 	if o1.deleted or o2.deleted then return end
 
-	if veloc >= 5 then
-
-	end
-	if o1.controllable and o1.damageFactors and o2.material then veloc = veloc * (blockTable.damageFactors[o1.damageFactors].damageMultiplier[o2.material] or 0) end
+	if o1.controllable and o1.damageFactors and o2.material then veloc = veloc * (blockTable.damageFactors[o1.damageFactors].damageMultiplier[o2.material] or 1) end
 
 	
 	local damaged = false
-	-- if o1.controllable or o2.controllable then
-	-- 	print(o1.name,o2.name,o2.strength,veloc,vx1,vy1)
-	-- end
-	
+
 	if o2.strength and o2.defence and o2.defence < veloc then
 		-- contact:setEnabled(false)
 		damaged = true
-		o2.strength = o2.strength - veloc * (o1.defence or 1) * o1.mass
+		if not o2.controllable then
+			o2.strength = o2.strength - veloc * (o1.defence or 1) * o1.mass
+		end
 		if not o1.controllable then
 			o1.strength = o1.strength - veloc * (o2.defence or 1) * o2.mass
 		end
-		-- print(veloc)
-		if o2.strength <= 0 then
+		
+		if o2.strength <= 0 and o1.controllable then
 			contact:setEnabled(false) --make object 1 go through object 2
 		end
 	end
-
-	if objects.world[o1.name].body and objects.world[o2.name].body then
+	
+	if objects.world[o1.name] and objects.world[o2.name] then
 		if o1.controllable then
-			birdCollision(o1.name,o2.name,veloc*2,math.floor(veloc*o1.mass))
+			birdCollision(o1.name,o2.name,veloc,math.floor(veloc*o1.mass))
 			if joystick and veloc >= 12 then
 				joystick:setVibration(.9,.9,.1)
 			end
@@ -1342,6 +1609,9 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 	obj.fixture:setRestitution(restitution)
 	obj.fixture:setFriction(friction)
 	obj.fixture:setUserData(obj)
+
+	_,_,obj.mass,_ = obj.shape:computeMass(density)
+	obj.mass = obj.mass*100
 end
 
 function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
@@ -1359,6 +1629,7 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 	obj.fixture:setUserData(obj)
 
 	_,_,obj.mass,_ = obj.shape:computeMass(density)
+	obj.mass = obj.mass*100
 end
 
 function createCircle(name, sprite, xpos, ypos, w, density, friction, restitution, controllable, z_order)
@@ -1379,13 +1650,25 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	obj.body:setAngularDamping(1)
 
 	_,_,obj.mass,_ = obj.shape:computeMass(obj.density)
+	obj.mass = obj.mass*100
 end
 
 function removeObject(name)
 	local obj = objects.world[name]
+	if not toremove and obj then toremove = {obj.body} elseif obj then table.insert(toremove, obj.body) end
+	--i gotta try to see what a metatable is
 
-	obj.body:destroy()
-	objects.world[name].deleted = true --boo, lazy
+	-- local removedi = 0
+	-- for i,v in pairs(objects.world)do
+	-- 	if i == name then objs[i] = v end
+	-- end
+	objects.world[name] = nil
+	-- for i,v in pairs(objects.world)do
+	-- 	if i ~= name then objs[i] = v end
+	-- end
+	-- objects.world = objs
+	-- objects.world[name].deleted = true --boo, lazy
+	-- table.remove(objects.world, name)
 	-- obj.shape:release()
 	-- obj.fixture:destroy()
 	-- objects.world[name] = nil
@@ -1406,10 +1689,15 @@ end
 function setPosition(object,x,y)
 	objects.world[object].x = x
 	objects.world[object].y = y
-	-- if object == "RedBird_1" then print(x..time) end
 	if objects.world[object].body then
 		objects.world[object].body:setPosition(x,y)
 		setVelocity(object,0,0)
+	end
+end
+
+function setSleeping(object,dozing)
+	if objects.world[object].body then
+		objects.world[object].body:setAwake(not dozing)
 	end
 end
 
@@ -1426,20 +1714,20 @@ function applyImpulse(object,x,y,xp,yp)
 	-- objects.world[object].xVel = objects.world[object].xVel + x
 	-- objects.world[object].yVel = objects.world[object].yVel + y
 	if obj.body then
-		obj.body:applyLinearImpulse(x,y,xp,yp)--objects.world[object].width)
+		obj.body:applyLinearImpulse(x/100,y/100,xp,yp)--objects.world[object].width)
 	end
 end
 
 function applyForce(object,x,y,xp,yp)
-    local obj = objects.world[object]
-    if obj.body then
-        local mass = obj.mass / 20
-        obj.body:applyForce(x, y*mass, xp, yp)
-        drawfont = "FONT_BASIC"
-        res.drawString("",y,obj.x*20,obj.y*20)
+	local obj = objects.world[object]
+	if obj.body then
+		local mass = obj.mass-- / 20
+		obj.body:applyForce(x/100, y/100, xp, yp)
+		-- drawfont = "FONT_BASIC"
+		-- res.drawString("",y,obj.x*20,obj.y*20)
 		-- res.drawString("",obj.name,obj.x*20,obj.y*20+50)
-        -- print(y)
-    end
+		-- print(y)
+	end
 end
 
 function setAngularVelocity(object,a)
@@ -1471,17 +1759,19 @@ end
 -- 		if i==name then table.remove(table, pos)
 -- end
 
-local function serializeTable(t, indent, noIndexes)
+function serializeTable(t, indent, noIndexes)
+	-- table.sort(t)
+
 	local serialized = ""
 	indent = indent or ""
 
 	for key, value in pairs(t) do
 		local formattedKey = tostring(key).." = "
-		if noIndexes and tonumber(tostring(key)) then formattedKey = ""
-		elseif noIndexes then formattedKey = "index_"..tostring(key).." = " end
+		if noIndexes and type(value) ~= "table" then formattedKey = key.."="
+		elseif noIndexes then formattedKey = "[\""..tostring(key).."\"] = " end
 
 		if type(value) == "table" then
-			serialized = serialized .. indent .. formattedKey .. "{\n" .. serializeTable(value, indent .. "\t", noIndexes) .. indent .. "},\n"
+			serialized = serialized .. indent .. formattedKey .. "{\n" .. serializeTable(value, indent .. "\t", noIndexes) .. indent .. "}"..(indent==""and""or",").."\n"
 		else
 			local formattedValue = tostring(value)
 			if type(value) == "string" then
@@ -1492,12 +1782,12 @@ local function serializeTable(t, indent, noIndexes)
 				if value:type() == "Quad" then
 					local x, y, w, h = value:getViewport()
 					local rw, rh = value:getTextureDimensions()
-					serialized = serialized..indent..formattedKey.."love.graphics.newQuad("..x..","..y..","..w..","..h..","..rw..","..rh.."),\n"
+					serialized = serialized..indent..formattedKey.."q("..x..","..y..", "..w..","..h..", "..rw..","..rh.."),\n"
 				else--if value:type() == "Image" then
-					serialized = serialized..indent..formattedKey.."nil,\n"
+					-- serialized = serialized..indent..formattedKey.."nil,\n"
 				end
 			else
-				serialized = serialized .. indent .. formattedKey .. formattedValue .. ",\n"
+				serialized = serialized .. indent .. (tonumber(key)and "" or formattedKey) .. formattedValue .. ""..(indent==""and""or",").."\n"
 			end
 		end
 	end
@@ -1505,14 +1795,19 @@ local function serializeTable(t, indent, noIndexes)
 	return serialized
 end
 
-function saveLuaFile(fileName, tableName, appData, noIndexes)
+function saveLuaFile(fileName, tableName, appData, noIndexes, noWrap)
 	local tableToSave = _G[tableName]
 	
 	if not tableToSave or type(tableToSave) ~= "table" then
 		error("Table "..tableName.." does not exist")
 	end
 
-	local serializedData = tableName.." = {\n" .. serializeTable(tableToSave,"\t",noIndexes) .. "}"
+	local serializedData
+	if not noWrap then
+		serializedData = tableName.." = {\n" .. serializeTable(tableToSave,"\t",noIndexes) .. "}"
+	else
+		serializedData = serializeTable(tableToSave,"",noIndexes)
+	end
 
 	-- local file = io.open(fileName, "w")
 	-- if not file then
@@ -1526,20 +1821,14 @@ function saveLuaFile(fileName, tableName, appData, noIndexes)
 	print("Table "..tableName.." saved to "..fileName)
 end
 
-function saveLuaFileLocal(fileName, table, tableName, noIndexes)
+function saveLuaFileLocal(fileName, table, tableName, noIndexes, prefix)
 	if not table or type(table) ~= "table" then
 		error("Table "..tableName.." does not exist")
 	end
 
 	local serializedData = tableName.." = {\n" .. serializeTable(table,"\t",noIndexes) .. "}"
 
-	local file = io.open(fileName, "w")
-	if not file then
-		error("Could not open file: " .. fileName)
-	end
-
-	file:write(serializedData)
-	file:close()
+	love.filesystem.write(fileName, (prefix or "")..serializedData)
 	print("Table "..tableName.." saved to "..fileName)
 end
 
@@ -1581,6 +1870,12 @@ function setFullScreenMode(mode)
 	love.window.setFullscreen(mode)
 end
 
+function setResolution(w,h)
+	screenWidth = w
+	screenHeight = h
+	love.window.updateMode(w, h)
+end
+
 function isMouseCaptured()
 	return true
 end
@@ -1591,80 +1886,121 @@ end
 
 -- load global options from separate file
 -- loadLuaFileToObject(scriptPath .. "/options.lua", this)--, "options")
-loadLuaFileToObject(scriptPath .. "/animations.lua", this)--, "animations")
-loadLuaFileToObject(scriptPath .. "/particles.lua", this, particleTable)--, "particles")
-loadLuaFileToObject(scriptPath .. "/starLimits.lua", this, starTable)--, "starLimits")
-loadLuaFileToObject(scriptPath .. "/blocks.lua", this, blockTable)
 loadLuaFileToObject("settings.lua", this)--, settings)
 loadLuaFileToObject("highscores.lua", this)--, settings)
 --load debug code
 loadLuaFileToObject("debug.lua", this)--, settings)
--- love.graphics.setDefaultFilter("nearest","linear")
 
 --and now start the actual game
 loadLuaFileToObject(scriptPath .. "/gamelogic.lua", this)--, settings)
 
--- function drawLevelSelectionBackground(page)
--- 	-- draw main menu theme according to the last theme played, halloween theme is an exception see above
--- 	animateBirds(love.timer.getDelta())
--- 	episode4BGCranes = { startX = 64 }
--- 	local bW, bH = _G.res.getSpriteBounds("","BUTTON_EMPTY")
--- 	local worldScale = 0.5 * screenHeight / 320
--- 	--if worldScale > 0.75 then
--- 		--worldScale = 0.75
--- 	--end
--- 	local worldScale = (0.5 * screenHeight / 400) / (currentZoomLevelMainMenu * 0.66)
--- 	local topCamera = (-2*screenHeight) / (screenHeight / (450 * currentZoomLevelMainMenu * 0.585)) + ((bH * 1.6  )/ (screenHeight / (450 * currentZoomLevelMainMenu * 0.5)))
--- 	setTopLeft(50*time,topCamera )
--- 	setWorldScale(worldScale)
+loadLuaFileToObject(scriptPath .. "/animations.lua", this)--, "animations")
+loadLuaFileToObject(scriptPath .. "/particles.lua", this, particleTable)--, "particles")
+loadLuaFileToObject(scriptPath .. "/starLimits.lua", this, starTable)--, "starLimits")
+loadLuaFileToObject(scriptPath .. "/blocks.lua", this, blockTable)
+
+--override run function to allow drawing in the update hook
+function love.run()
+	if love.load then love.load(love.arg.parseGameArguments(arg), arg) end
+
+	-- We don't want the first frame's dt to include time taken by love.load.
+	if love.timer then love.timer.step() end
+
+	local dt = 0
+
+	-- Main loop time.
+	return function()
+		-- Process events.
+		if love.event then
+			love.event.pump()
+			for name, a,b,c,d,e,f in love.event.poll() do
+				if name == "quit" then
+					if not love.quit or not love.quit() then
+						return a or 0
+					end
+				end
+				love.handlers[name](a,b,c,d,e,f)
+			end
+		end
+
+		-- Update dt, as we'll be passing it to update
+		if love.timer then dt = love.timer.step() end
+
+		-- Call update and draw
+		if love.update then love.update(dt) end -- will pass 0 if love.timer is disabled
+
+		if love.graphics and love.graphics.isActive() then
+			if love.draw then love.draw() end
+
+			love.graphics.present()
+		end
+
+		if love.timer then love.timer.sleep(0.001) end
+	end
+end
+
+
+function drawLevelSelectionMenuBackground(page)
+	-- draw main menu theme according to the last theme played, halloween theme is an exception see above
+	animateBirds(love.timer.getDelta())
+	episode4BGCranes = { startX = 64 }
+	local bW, bH = _G.res.getSpriteBounds("","BUTTON_EMPTY")
+	local worldScale = 0.5 * screenHeight / 320
+	--if worldScale > 0.75 then
+		--worldScale = 0.75
+	--end
+	local worldScale = (0.5 * screenHeight / 400) / (currentZoomLevelMainMenu * 0.66)
+	local topCamera = (-2*screenHeight) / (screenHeight / (450 * currentZoomLevelMainMenu * 0.585)) + ((bH * 1.6  )/ (screenHeight / (450 * currentZoomLevelMainMenu * 0.5)))
+	setTopLeft(50*time,topCamera )
+	setWorldScale(worldScale)
 	
--- 	setTheme(currentMainMenuTheme)
--- 	if not g_gfxLowQuality then
--- 		drawBackgroundNative()	
--- 	end
--- 	-- setWorldScale(0.5)
--- 	-- setTopLeft(50*time,-2*screenHeight + bH * 1.6 )
--- 	-- end of main menu draw for every theme but halloween
+	setTheme(currentMainMenuTheme)
+	if not g_gfxLowQuality then
+		drawBackgroundNative()	
+	end
+	-- setWorldScale(0.5)
+	-- setTopLeft(50*time,-2*screenHeight + bH * 1.6 )
+	-- end of main menu draw for every theme but halloween
 	
--- 	--the birds were too small, so we added those multipliers for the scaling factors, indexed by the layer numbers
--- 	if g_birdAnimationScaleMultipliers == nil then
--- 		g_birdAnimationScaleMultipliers = {}
--- 		g_birdAnimationScaleMultipliers[3] = 1.5
--- 		g_birdAnimationScaleMultipliers[4] = 1.3
--- 		g_birdAnimationScaleMultipliers[5] = 1
--- 	end
+	--the birds were too small, so we added those multipliers for the scaling factors, indexed by the layer numbers
+	if g_birdAnimationScaleMultipliers == nil then
+		g_birdAnimationScaleMultipliers = {}
+		g_birdAnimationScaleMultipliers[3] = 1.5
+		g_birdAnimationScaleMultipliers[4] = 1.3
+		g_birdAnimationScaleMultipliers[5] = 1
+	end
 	
 		
--- 	-- draw birds, rewards..
--- 		for k, v in _G.pairs(birdAnimations) do
--- 			if v.layer == 3  then
--- 				local scale = v.scale * g_birdAnimationScaleMultipliers[v.layer]
--- 				setRenderState(0, 0, scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
--- 				_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale - screenHeight * 0.2 / scale))
--- 			end
--- 		end	
+	-- draw birds, rewards..
+		for k, v in _G.pairs(birdAnimations) do
+			if v.layer == 3  then
+				local scale = v.scale * g_birdAnimationScaleMultipliers[v.layer]
+				setRenderState(0, 0, scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
+				_G.res.drawSprite(v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale - screenHeight * 0.2 / scale))
+			end
+		end	
 		
 	
--- 		for k, v in _G.pairs(birdAnimations) do
--- 			if v.layer == 4 then
--- 				local scale = v.scale  * g_birdAnimationScaleMultipliers[v.layer]
--- 				setRenderState(0, 0, scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
--- 				_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale - screenHeight * 0.125 / scale))
--- 			end
--- 		end		
+		for k, v in _G.pairs(birdAnimations) do
+			if v.layer == 4 then
+				local scale = v.scale  * g_birdAnimationScaleMultipliers[v.layer]
+				setRenderState(0, 0, scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
+				_G.res.drawSprite(v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale - screenHeight * 0.125 / scale))
+			end
+		end		
 		
 		
--- 		for k, v in _G.pairs(birdAnimations) do
--- 			if v.layer == 5 then
--- 				local scale = v.scale  * g_birdAnimationScaleMultipliers[v.layer]
--- 				setRenderState(0, 0,scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
--- 				_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale))
--- 			end
--- 		end		
+		for k, v in _G.pairs(birdAnimations) do
+			if v.layer == 5 then
+				local scale = v.scale  * g_birdAnimationScaleMultipliers[v.layer]
+				setRenderState(0, 0,scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
+				_G.res.drawSprite(v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale))
+			end
+		end		
 		
--- 	drawForegroundNative()				
--- 	xs = 1
--- 	ys = 1
+	drawForegroundNative()				
+	xs = 1
+	ys = 1
 	
--- 	setRenderState(0, 0, 1, 1, 0, 0, 0)
--- end
+	setRenderState(0, 0, 1, 1, 0, 0, 0)
+end

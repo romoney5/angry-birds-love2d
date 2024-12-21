@@ -7,6 +7,7 @@ function love.conf(love)
     love.window.resizable = true
 
     love.window.usedpiscale = false
+    love.accelerometerjoystick = false
     -- love.window.fullscreen = true
     love.window.msaa = 8
 end

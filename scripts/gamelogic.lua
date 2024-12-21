@@ -1,10 +1,19 @@
-releaseBuild = true
-showEditor = true
+-- load global options from separate file
+loadLuaFileToObject(scriptPath .. "/options.lua", this, "options")
+loadLuaFileToObject(scriptPath .. "/episodes.lua", this, "episodes")
+
 postHighscores = true
+g_forceFunctions = {}
 
 
 
 
+-- pink bird values
+pigDefenceBoost = 50
+bubbleAntiGravity = 1.8
+bubbleAntiGravityTime = 2
+bubbleAntiGravityFloat = { -3,3 }
+antiGravityMaxVelocity = 10
 
 g_enableMouseOverStates = true
 
@@ -27,9 +36,15 @@ g_birdDragOnTouchAttributes = {	enabled = true, dragging = false, lastCursorX = 
 
 --g_gesturePausePage = {enabled = true, cursorReferenceX = nil, cursorReferenceY = nil, dragLength = 0, currentButtonSelected = nil,   }
 
-g_gesturePausePageEnablingFlags = {enablePage=false, simulateTouchOnWindows=false}
+g_gesturePausePageEnablingFlags = {enablePage=true, simulateTouchOnWindows=false}
 
 g_enableDebugTextField = false
+
+g_newEpisodeScreen = {enabled= true, lastSetEnabled = true}
+scrollingEpisodes = false
+
+LP6_PAGE2_LOCKED = false
+LP6_PAGE3_LOCKED = false
 
 if releaseBuild then
 	showEditor = false
@@ -82,7 +97,12 @@ g_updateCheckFlags = {enabled = false, updateAvailable = false, updateCheckCalle
 
 g_updateCheckFlags.enabled = g_updateCheckEnabled
 
-
+	g_sound_next_bird = "bird_next_military" --sound played when a new bird is loaded to the slinghsot
+	g_sound_level_clear = "level_clear_military" --sound played when level is completed (bird cheer)
+	g_sound_level_start = "level_start_military" --sound played at level start
+	g_sound_level_failed = "level_failed_piglets" --sound played on level fail (pig laugh)
+	g_sound_birds = "bird_misc" --bird idle sounds
+	g_sound_pigs = "piglette" --pig idle sounds
 
 if releaseBuild then
 	g_registrationURLs.validationURL = "http://drm-pc.angrybirdsgame.com/validateKey/?"
@@ -127,7 +147,7 @@ function createStartUpAssets()
 	FACEBOOK_URL = "http://facebook.angrybirds.com/"
 	TWITTER_URL = "http://twitter.angrybirds.com/"
 	RIO_CONTEST_URL = "http://www.angrybirds.com/redirect.php?device=" .. deviceModel .. "&product=angrybirds&type=riocontest"
-	ABSHOP_URL = "http://www.angrybirds.com/redirect.php?device=" .. deviceModel .. "&product=angrybirds&type=shop&variant=" .. variant
+	BOTO_URL = "https://youtube.com/playlist?list=PLRkf1bnaZwrcJtNA1i-GT_3VGrTqaHVMP&si=9AwL8FiYgemUI4YL"
 	
 	
 	_G.res.createTextGroupSet(localizationPath .. "/TEXTS_BASIC.dat")
@@ -143,7 +163,7 @@ function createStartUpAssets()
 		else
 			--the game already starts in full screen mode by default, so if it is in full screen, we don't make an extra call
 			if settings.fullScreen == false then
-				--setFullScreenMode(settings.fullScreen)
+				setFullScreenMode(settings.fullScreen)
 				
 				local t_minimumScreenWidth = 1024
 				local t_minimumScreenHeight = 600						
@@ -159,7 +179,7 @@ function createStartUpAssets()
 				local t_width = _G.math.max(t_minimumScreenWidth, settings.screenWidth)
 				local t_height = _G.math.max(t_minimumScreenHeight, settings.screenHeight)
 				
-				--setResolution(t_width, t_height)
+				setResolution(t_width, t_height)
 			end
 		end
 	end
@@ -179,13 +199,13 @@ function createStartUpAssets()
 		end							
 	end
 	
-	--settings.platform = {}
-	--settings.platform.device = deviceModel
-	--settings.platform.hardwareID = getDeviceID()
+	settings.platform = {}
+	settings.platform.device = deviceModel
+	settings.platform.hardwareID = getDeviceID()
 	
-	--highscores.platform = {}
-	--highscores.platform.device = deviceModel
-	--highscores.platform.hardwareID = getDeviceID()
+	highscores.platform = {}
+	highscores.platform.device = deviceModel
+	highscores.platform.hardwareID = getDeviceID()
 	
 	if deviceModel == "windows" and g_updateCheckFlags.enabled == true then
 		
@@ -236,7 +256,7 @@ function selectAssetProfile()
 		end
 		
 	elseif deviceModel == "ipad" then
-		profileName = "1024X768"
+		profileName = "1024x768"
 		if isLiteVersion then
 			profileName = profileName .. "_lite"
 		end
@@ -261,9 +281,7 @@ function selectAssetProfile()
 		-- end
 		
 	elseif deviceModel == "windows" or deviceModel == "osx" then
-		local i, j = _G.string.find(imagePath, "/")
-		profileName = _G.string.sub(imagePath, i+1, _G.string.len(imagePath))
-		--print(profileName)
+		profileName = "1024x768_pc"
 		if isLiteVersion then
 			profileName = profileName .. "_lite"
 		end
@@ -318,52 +336,67 @@ function selectAssetProfile()
 	return profileName
 end
 
-function getRokuImagePath(sheetName)
-	if screenHeight <= 576 and (sheetName == "BUTTONS_SHEET_1.dat" or sheetName == "MENU_SHEET_1.dat" or sheetName == "LEVELSELECTION_SHEET_1.dat"
-		or sheetName == "GOLDEN_EGGS_SHEET_1.dat" or sheetName == "GOLDEN_EGGS_SHEET_2.dat" or sheetName == "GOLDEN_EGGS_SHEET_3.dat") then
-		return imagePath .. "/low/" .. sheetName
-	else
-		return imagePath .. "/" .. sheetName
+function selectFontProfile()
+	-- Default profile is iPhone because it's probably the most up to date
+	local profileName = "480x320"
+	
+	if deviceModel == "iphone" or deviceModel == "iphone4" then
+		profileName = "480x320"
+	
+	elseif deviceModel == "palm" then
+		if screenWidth > 480 then
+			profileName = "1024x768"
+		elseif screenWidth == 480 then
+			profileName = "480x320"
+			if isLiteVersion then
+				profileName = profileName .. "_lite_palm"
+			end
+			
+		-- Palm Pixi
+		else
+			profileName = "400x320"
+			if isLiteVersion then
+				profileName = profileName .. "_lite"
+			end
+		end
+		
+	elseif deviceModel == "ipad" then
+		profileName = "1024x768"
+		
+	elseif deviceModel == "n900" then
+		profileName = "864x480"
+		
+	elseif deviceModel == "bada" then
+		profileName = "864x480"
+		
+	elseif deviceModel == "s60" then
+		profileName = "640x360"
+		
+	elseif deviceModel == "windows" then
+		profileName = "1024x768"
+		
+	elseif deviceModel == "android" then
+		if screenHeight < 320 then
+			profileName = "320x240"
+		elseif screenHeight < 480 then
+			profileName = "480x320"
+		else
+			profileName = "864x480"
+		end
 	end
-
-end
-
-function getRokuLowLevelAssets(assets)
-	if assets["LEVELSELECTION"] ~= nil then
-		assets["LEVELSELECTION"] = assetLoadList["roku_low"]["LEVELSELECTION"]
-		_G.table.insert(assets["LEVELSELECTION"], "BACKGROUNDS_LS_1.dat")
-	end
-	if assets["OTHER"] ~= nil then
-		assets["OTHER"] = assetLoadList["roku_low"]["OTHER"]
-		_G.table.insert(assets["OTHER"], "CURSORS_SHEET_1.dat")
-		_G.table.insert(assets["OTHER"], "POPUPS_SHEET_1.dat")
-		_G.table.insert(assets["OTHER"], "TUTORIALS_SHEET_1.dat")
-		_G.table.insert(assets["OTHER"], "INGAME_PARALLAX_CRANES.dat")
-	end
-	if assets["GOLDEN_EGGS"] ~= nil then
-		assets["GOLDEN_EGGS"] = assetLoadList["roku_low"]["GOLDEN_EGGS"]
-		_G.table.insert(assets["GOLDEN_EGGS"], "BACKGROUNDS_GE_1.dat")
-	end
-	return assets
+	
+	return profileName
 end
 
 function loadImages(groups)
-	local profileName = selectAssetProfile()
-	local assets = assetLoadList[profileName]
-	
-	if profileName == "roku" and screenHeight <= 576 then
-		assets = getRokuLowLevelAssets(assets)
-	end
-	
-	for k,v in _G.pairs(assets) do
-		for g=1,#groups do
-			if k == groups[g] then
-				for i=1,#v do
-					local path = imagePath .. "/" .. v[i]
-					if deviceModel == "roku" then
-						path = getRokuImagePath(v[i])
-					end
-					_G.res.createSpriteSheet(path)
+
+	for g = 1, #groups do
+		local profileName = selectAssetProfile( groups[g] )
+		if assetLoadList[profileName] ~= nil then
+			local files = assetLoadList[profileName][groups[g]]
+			if files ~= nil then
+				for i=1, #files do
+					_G.res.createSpriteSheet(imagePath .. "/" .. profileName .. "/" .. files[i])
 				end
 			end
 		end
@@ -371,14 +404,13 @@ function loadImages(groups)
 end
 
 function loadCompoSprites(groups)
-	local profileName = selectAssetProfile()
-	local assets = assetLoadList[profileName]
-	
-	for k,v in _G.pairs(assets) do
-		for g=1,#groups do
-			if k == groups[g] then
-				for i=1,#v do
-					_G.res.createCompoSpriteSet(imagePath .. "/" .. v[i])	
+	for g = 1, #groups do
+		local profileName = selectAssetProfile( groups[g] )
+		if assetLoadList[profileName] ~= nil then
+			local files = assetLoadList[profileName][groups[g]]
+			if files ~= nil then
+				for i=1, #files do
+					_G.res.createCompoSpriteSet(imagePath .. "/" .. profileName .. "/" .. files[i])
 				end
 			end
 		end
@@ -386,23 +418,14 @@ function loadCompoSprites(groups)
 end
 
 function releaseImages(groups)
-	
-	local profileName = selectAssetProfile()
-	local assets = assetLoadList[profileName]
-	
-	if profileName == "roku" and screenHeight <= 576 then
-		assets = getRokuLowLevelAssets(assets)
-	end
-	
-	for k,v in _G.pairs(assets) do
-		for g=1,#groups do
-			if k == groups[g] then
-				for i=1,#v do
-					local path = imagePath .. "/" .. v[i]
-					if deviceModel == "roku" then
-						path = getRokuImagePath(v[i])
-					end
-					_G.res.releaseSpriteSheet(path)
+
+	for g = 1, #groups do
+		local profileName = selectAssetProfile( groups[g] )
+		if assetLoadList[profileName] ~= nil then
+			local files = assetLoadList[profileName][groups[g]]
+			if files ~= nil then
+				for i=1, #files do
+					_G.res.releaseSpriteSheet(imagePath .. "/" .. profileName .. "/" .. files[i])
 				end
 			end
 		end
@@ -410,14 +433,13 @@ function releaseImages(groups)
 end
 
 function releaseCompoSprites(groups)
-	local profileName = selectAssetProfile()
-	local assets = assetLoadList[profileName]
-	
-	for k,v in _G.pairs(assets) do
-		for g=1,#groups do
-			if k == groups[g] then
-				for i=1,#v do
-					_G.res.releaseCompoSpriteSet(imagePath .. "/" .. v[i])
+	for g = 1, #groups do
+		local profileName = selectAssetProfile( groups[g] )
+		if assetLoadList[profileName] ~= nil then
+			local files = assetLoadList[profileName][groups[g]]
+			if files ~= nil then
+				for i=1, #files do
+					_G.res.releaseCompoSpriteSet(imagePath .. "/" .. profileName .. "/" .. files[i])
 				end
 			end
 		end
@@ -425,23 +447,16 @@ function releaseCompoSprites(groups)
 end
 
 function loadFonts()
+	local profileName = selectFontProfile()
 	fontBasic = _G.res.getString("TEXTS_BASIC", "FONT_BASIC")
 	fontMenu = _G.res.getString("TEXTS_BASIC", "FONT_MENU")
 	
-	_G.res.createBitmapFont(fontPath .. "/" .. fontBasic .. ".dat")
-	_G.res.createBitmapFont(fontPath .. "/" .. fontMenu .. ".dat")
-	_G.res.createBitmapFont(fontPath .. "/FONT_SCORE.dat")
-	_G.res.createBitmapFont(fontPath .. "/FONT_BIG_NUMBERS.dat")
-	_G.res.createBitmapFont(fontPath .. "/FONT_LS_SMALL.dat")
-	if deviceModel == "roku" then
-		_G.res.createBitmapFont(fontPath .. "/FONT_INGAME_SCORE.dat")
-		_G.res.createBitmapFont(fontPath .. "/FONT_LS_SMALLER.dat")
-	end
-	
-	if gameCenterSupported then
-		_G.res.createBitmapFont(fontPath .. "/FONT_GAMECENTER_BASIC.dat")
-		_G.res.createBitmapFont(fontPath .. "/FONT_GAMECENTER_NUMBERS.dat")
-	end
+	_G.res.createBitmapFont(fontPath .. "/" .. profileName .. "/" .. fontBasic .. ".dat")
+	_G.res.createBitmapFont(fontPath .. "/" .. profileName .. "/" .. fontMenu .. ".dat")
+	_G.res.createBitmapFont(fontPath .. "/" .. profileName .. "/FONT_SCORE.dat")
+	_G.res.createBitmapFont(fontPath .. "/" .. profileName .. "/FONT_BASIC.dat")
+	_G.res.createBitmapFont(fontPath .. "/" .. profileName .. "/FONT_BIG_NUMBERS.dat")
+	_G.res.createBitmapFont(fontPath .. "/" .. profileName .. "/FONT_LS_SMALL.dat")
 	
 end
 
@@ -501,8 +516,8 @@ function createAssets()
 		loadImages( { "INGAME", "OTHER", "OTHER_2", "CURSORS", "LEVELSELECTION", "GOLDEN_EGGS", "THEME_1", "THEME_2", "THEME_3", "THEME_4", "THEME_5", "THEME_6", "THEME_7", "THEME_8", "THEME_9", "THEME_10" } )
 	end
 	
-	loadCompoSprites( { "COMPOSPRITES" } )
-	--loadCompoSprites( { "TUTORIALS_COMPOSPRITES" } )
+	--loadCompoSprites( { "COMPOSPRITES" } )
+	loadCompoSprites( { "TUTORIALS_COMPOSPRITES" } )
 	
 	loadFonts()
 	
@@ -532,7 +547,7 @@ function createAssets()
 	
 	_G.res.createAudio(audioPath .. "/sfx/bird 01 select.wav", "bird_01_select")
 	_G.res.createAudio(audioPath .. "/sfx/bigbrother_select.wav", "big_brother_select")
-	--_G.res.createAudio(audioPath .. "/sfx/bird 01 unselect.wav", "bird_01_unselect")
+--	_G.res.createAudio(audioPath .. "/sfx/bird 01 unselect.wav", "bird_01_unselect")
 	_G.res.createAudio(audioPath .. "/sfx/bird 02 collision a1.wav", "bird 02 collision a1")
 	_G.res.createAudio(audioPath .. "/sfx/bird 02 collision a2.wav", "bird 02 collision a2")
 	_G.res.createAudio(audioPath .. "/sfx/bird 02 collision a3.wav", "bird 02 collision a3")
@@ -540,7 +555,7 @@ function createAssets()
 	_G.res.createAudio(audioPath .. "/sfx/bird 02 collision a5.wav", "bird 02 collision a5")
 	_G.res.createAudio(audioPath .. "/sfx/bird 02 flying.wav", "bird_02_flying")
 	_G.res.createAudio(audioPath .. "/sfx/bird 02 select.wav", "bird_02_select")
-	--_G.res.createAudio(audioPath .. "/sfx/bird 02 unselect.wav", "bird_02_unselect")
+--	_G.res.createAudio(audioPath .. "/sfx/bird 02 unselect.wav", "bird_02_unselect")
 	_G.res.createAudio(audioPath .. "/sfx/bird 03 collision a1.wav", "bird 03 collision a1")
 	_G.res.createAudio(audioPath .. "/sfx/bird 03 collision a2.wav", "bird 03 collision a2")
 	_G.res.createAudio(audioPath .. "/sfx/bird 03 collision a3.wav", "bird 03 collision a3")
@@ -548,9 +563,10 @@ function createAssets()
 	_G.res.createAudio(audioPath .. "/sfx/bird 03 collision a5.wav", "bird 03 collision a5")
 	_G.res.createAudio(audioPath .. "/sfx/bird 03 flying.wav", "bird_03_flying")
 	_G.res.createAudio(audioPath .. "/sfx/bird 03 select.wav", "bird_03_select")
-	--_G.res.createAudio(audioPath .. "/sfx/bird 03 unselect.wav", "bird_03_unselect")
+--	_G.res.createAudio(audioPath .. "/sfx/bird 03 unselect.wav", "bird_03_unselect")
 	_G.res.createAudio(audioPath .. "/sfx/bird 04 flying.wav", "bird_04_flying")
 	_G.res.createAudio(audioPath .. "/sfx/bird 04 select.wav", "bird_04_select")
+--	_G.res.createAudio(audioPath .. "/sfx/bird 04 unselect.wav", "bird_04_unselect")
 	_G.res.createAudio(audioPath .. "/sfx/bird 04 collision a1.wav", "bird 04 collision a1")
 	_G.res.createAudio(audioPath .. "/sfx/bird 04 collision a2.wav", "bird 04 collision a2")
 	_G.res.createAudio(audioPath .. "/sfx/bird 04 collision a3.wav", "bird 04 collision a3")
@@ -564,8 +580,8 @@ function createAssets()
 	_G.res.createAudio(audioPath .. "/sfx/bird 05 select.wav", "bird_05_select")
 	_G.res.createAudio(audioPath .. "/sfx/bird_06_flying.wav", "bird_06_flying")
 	_G.res.createAudio(audioPath .. "/sfx/boomerang_select.wav", "boomerang_select")
-	--_G.res.createAudio(audioPath .. "/sfx/bird 05 unselect.wav", "bird_05_unselect")
-	-- _G.res.createAudio(audioPath .. "/sfx/bird 06 flying.wav", "bird_06_flying")
+--	_G.res.createAudio(audioPath .. "/sfx/bird 05 unselect.wav", "bird_05_unselect")
+    --_G.res.createAudio(audioPath .. "/sfx/bird 06 flying.wav", "bird_06_flying")
 	-- _G.res.createAudio(audioPath .. "/sfx/bird 07 flying.wav", "bird_07_flying")
 	-- _G.res.createAudio(audioPath .. "/sfx/bird 08 flying.wav", "bird_08_flying")
 	-- _G.res.createAudio(audioPath .. "/sfx/bird 09 flying.wav", "bird_09_flying")
@@ -595,9 +611,9 @@ function createAssets()
 	_G.res.createAudio(audioPath .. "/sfx/bird next military a2.wav", "bird next military a2")
 	_G.res.createAudio(audioPath .. "/sfx/bird next military a3.wav", "bird next military a3")
 	--_G.res.createAudio(audioPath .. "/sfx/bird shot.wav", "bird_shot")
-	-- _G.res.createAudio(audioPath .. "/sfx/good shot a1.wav", "good shot a1")
-	-- _G.res.createAudio(audioPath .. "/sfx/good shot a2.wav", "good shot a2")
-	-- _G.res.createAudio(audioPath .. "/sfx/good shot a3.wav", "good shot a3")
+--	_G.res.createAudio(audioPath .. "/sfx/good_shot_a1.wav", "good shot a1")
+--	_G.res.createAudio(audioPath .. "/sfx/good_shot_a2.wav", "good shot a2")
+--	_G.res.createAudio(audioPath .. "/sfx/good_shot_a3.wav", "good shot a3")
 	_G.res.createAudio(audioPath .. "/sfx/bird shot-a1.wav", "bird shot a1")
 	_G.res.createAudio(audioPath .. "/sfx/bird shot-a2.wav", "bird shot a2")
 	_G.res.createAudio(audioPath .. "/sfx/bird shot-a3.wav", "bird shot a3")
@@ -648,6 +664,8 @@ function createAssets()
 	_G.res.createAudio(audioPath .. "/sfx/piglette damage a7.wav", "piglette damage a7")
 	_G.res.createAudio(audioPath .. "/sfx/piglette damage a8.wav", "piglette damage a8")
 	_G.res.createAudio(audioPath .. "/sfx/piglette destroyed.wav", "piglette_destroyed")
+	_G.res.createAudio(audioPath .. "/sfx/pillar_break_1.mp3", "pillar_break_1")
+	_G.res.createAudio(audioPath .. "/sfx/pillar_break_1.mp3", "pillar_break_2")
 	_G.res.createAudio(audioPath .. "/sfx/rock collision a1.wav", "rock collision a1")
 	_G.res.createAudio(audioPath .. "/sfx/rock collision a2.wav", "rock collision a2")
 	_G.res.createAudio(audioPath .. "/sfx/rock collision a3.wav", "rock collision a3")
@@ -662,6 +680,7 @@ function createAssets()
 	_G.res.createAudio(audioPath .. "/sfx/rock rolling.wav", "rock_rolling")
 	_G.res.createAudio(audioPath .. "/sfx/special boost.wav", "special_boost")
 	_G.res.createAudio(audioPath .. "/sfx/special egg explosion.wav", "special_explosion")
+--	_G.res.createAudio(audioPath .. "/sfx/cannon_shot_02.mp3", "cannon_shot_02")
 	_G.res.createAudio(audioPath .. "/sfx/special group.wav", "special_egg")
 	_G.res.createAudio(audioPath .. "/sfx/special egg.wav", "special_group")
 	_G.res.createAudio(audioPath .. "/sfx/wood collision a1.wav", "wood collision a1")
@@ -708,7 +727,16 @@ function createAssets()
 	--_G.res.createAudio(audioPath .. "/sfx/mightymouse.wav", "bait_mouse_fly")
 	--_G.res.createAudio(audioPath .. "/sfx/mightymouse_select.wav", "bait_mouse_select")
 	_G.res.createAudio(audioPath .. "/sfx/mightyeagle.wav", "mighty_eagle_yell")
-	_G.res.createAudio(audioPath .. "/sfx/mightyeagle_thump.wav", "mighty_eagle_thump")
+	_G.res.createAudio(audioPath .. "/sfx/mighty_eagle_fly.mp3", "mighty_eagle_fly")
+	_G.res.createAudio(audioPath .. "/sfx/mighty_eagle_bounce.mp3", "mighty_eagle_bounce")
+--	_G.res.createAudio(audioPath .. "/sfx/mightyeagle_thump.wav", "mighty_eagle_thump")
+	_G.res.createAudio(audioPath .. "/sfx/sardine_can_physics_a1.wav", "sardine_can_physics_a1")
+	_G.res.createAudio(audioPath .. "/sfx/sardine_can_physics_a2.wav", "sardine_can_physics_a2")
+	_G.res.createAudio(audioPath .. "/sfx/sardine_can_physics_a3.wav", "sardine_can_physics_a3")
+	_G.res.createAudio(audioPath .. "/sfx/sardine_can_physics_a4.wav", "sardine_can_physics_a4")
+	_G.res.createAudio(audioPath .. "/sfx/sardine_can_physics_a5.wav", "sardine_can_physics_a5")
+	_G.res.createAudio(audioPath .. "/sfx/sardine_can_physics_a6.wav", "sardine_can_physics_a6")
+	_G.res.createAudio(audioPath .. "/sfx/sardine_can_shot.wav", "sardine_can_shot")
 		
 	_G.res.createAudio(audioPath .. "/sfx/piglette oink a1.wav", "piglette_a1")
 	_G.res.createAudio(audioPath .. "/sfx/piglette oink a2.wav", "piglette_a2")
@@ -741,6 +769,7 @@ function createAssets()
 	_G.res.createAudio(audioPath .. "/music/ambient_green_jungleish.mp3", "ambient_theme2")
 	_G.res.createAudio(audioPath .. "/music/ambient_red_savannah.mp3", "ambient_theme3")
 	_G.res.createAudio(audioPath .. "/music/ambient_city.mp3", "ambient_theme7")
+--	_G.res.createAudio(audioPath .. "/music/ambient_theme12.mp3", "ambient_theme12")
 	_G.res.createAudio(audioPath .. "/music/birds_outro.mp3", "birds_outro")
 	_G.res.createAudio(audioPath .. "/music/birds_intro.mp3", "birds_intro")
 	_G.res.createAudio(audioPath .. "/music/birds_boss.mp3", "birds_boss")
@@ -760,6 +789,69 @@ function createAssets()
 	_G.res.createAudio(audioPath .. "/sfx/pig_hi-hat_1.wav", "pig_hi-hat_1")
 	_G.res.createAudio(audioPath .. "/sfx/pig_hi-hat_2.wav", "pig_hi-hat_2")
 	
+	-- accordion
+	_G.res.createAudio(audioPath .. "/sfx/cminor_left.wav", "cminor_left")
+	_G.res.createAudio(audioPath .. "/sfx/dismajor_left.wav", "dismajor_left")
+	_G.res.createAudio(audioPath .. "/sfx/fmajor_left.wav", "fmajor_left")
+	_G.res.createAudio(audioPath .. "/sfx/gminor_left.wav", "gminor_left")
+	_G.res.createAudio(audioPath .. "/sfx/bmajor_left.wav", "bmajor_left")
+	
+	_G.res.createAudio(audioPath .. "/sfx/cminor_right.wav", "cminor_right")
+	_G.res.createAudio(audioPath .. "/sfx/dismajor_right.wav", "dismajor_right")
+	_G.res.createAudio(audioPath .. "/sfx/fmajor_right.wav", "fmajor_right")
+	_G.res.createAudio(audioPath .. "/sfx/gminor_right.wav", "gminor_right")
+	_G.res.createAudio(audioPath .. "/sfx/bmajor_right.wav", "bmajor_right")
+	
+	_G.res.createAudio(audioPath .. "/sfx/accordion_empty_pull.wav", "empty_accordion_left")
+	_G.res.createAudio(audioPath .. "/sfx/accordion_empty_push.wav", "empty_accordion_right")
+	_G.res.createAudio(audioPath .. "/sfx/accordion_break.wav", "accordion_break")
+
+	_G.res.createAudio(audioPath .. "/sfx/pig_singing_1.wav", "pig_singing_1")
+	_G.res.createAudio(audioPath .. "/sfx/pig_singing_2.wav", "pig_singing_2")
+	_G.res.createAudio(audioPath .. "/sfx/pig_singing_3.wav", "pig_singing_3")
+	_G.res.createAudio(audioPath .. "/sfx/pig_singing_4.wav", "pig_singing_4")
+	_G.res.createAudio(audioPath .. "/sfx/pig_singing_5.wav", "pig_singing_5")
+	_G.res.createAudio(audioPath .. "/sfx/pig_singing_6.wav", "pig_singing_6")
+	_G.res.createAudio(audioPath .. "/sfx/pig_singing_7.wav", "pig_singing_7")
+	_G.res.createAudio(audioPath .. "/sfx/pig_singing_8.wav", "pig_singing_8")
+	
+	_G.res.createAudio(audioPath .. "/music/ab_cave_ambient.mp3", "ambient_cave")
+	_G.res.createAudio(audioPath .. "/sfx/jewel_break_01b.wav", "jewel_break_1")
+	_G.res.createAudio(audioPath .. "/sfx/jewel_break_02b.wav", "jewel_break_2")
+	_G.res.createAudio(audioPath .. "/sfx/jewel_break_03b.wav", "jewel_break_3")
+	_G.res.createAudio(audioPath .. "/sfx/stalaktite_break_01.wav", "stalaktite_break_1")
+	_G.res.createAudio(audioPath .. "/sfx/stalaktite_break_02.wav", "stalaktite_break_2")
+	_G.res.createAudio(audioPath .. "/sfx/stalaktite_break_03.wav", "stalaktite_break_3")
+	
+    -- Bubbles
+	_G.res.createAudio(audioPath .. "/sfx/Globe_Bird_Death_remove_1.wav", "bubbles_deflating")
+	_G.res.createAudio(audioPath .. "/sfx/Globe_Bird_Hit_1.wav", "bubbles collision a1")
+	_G.res.createAudio(audioPath .. "/sfx/Globe_Bird_Hit_2.wav", "bubbles collision a2")
+	_G.res.createAudio(audioPath .. "/sfx/Globe_Bird_Hit_3.wav", "bubbles collision a3")
+	_G.res.createAudio(audioPath .. "/sfx/Globe_Bird_Hit_4.wav", "bubbles collision a4")
+	_G.res.createAudio(audioPath .. "/sfx/Globe_Bird_idle_01.wav", "bubbles_idle_a1")
+	_G.res.createAudio(audioPath .. "/sfx/Globe_Bird_idle_02.wav", "bubbles_idle_a2")
+	_G.res.createAudio(audioPath .. "/sfx/Globe_Bird_idle_03.wav", "bubbles_idle_a3")
+	_G.res.createAudio(audioPath .. "/sfx/Globe_Bird_Launch_3.wav", "bubbles_flying")
+	_G.res.createAudio(audioPath .. "/sfx/Globe_Bird_Selection_1.wav", "bubbles_select")
+	_G.res.createAudio(audioPath .. "/sfx/Globe_Bird_Special_Activation_1.wav", "bubbles_activation_1")
+	_G.res.createAudio(audioPath .. "/sfx/Globe_Bird_Special_Activation_2.wav", "bubbles_activation_2")
+	_G.res.createAudio(audioPath .. "/sfx/Globe_Bird_Special_Activation_3.wav", "bubbles_activation_3")
+	_G.res.createAudio(audioPath .. "/sfx/pink_activate_01.mp3", "pink_activate_01")
+    _G.res.createAudio(audioPath .. "/sfx/pink_activate_02.mp3", "pink_activate_02")
+    _G.res.createAudio(audioPath .. "/sfx/pink_activate_03.mp3", "pink_activate_03")
+    _G.res.createAudio(audioPath .. "/sfx/pink_launch_01.mp3", "pink_launch_01")
+    _G.res.createAudio(audioPath .. "/sfx/pink_launch_02.mp3", "pink_launch_02")
+    _G.res.createAudio(audioPath .. "/sfx/pink_launch_03.mp3", "pink_launch_03")
+    _G.res.createAudio(audioPath .. "/sfx/pink_special_01.mp3", "pink_special_01")
+    _G.res.createAudio(audioPath .. "/sfx/pink_special_02.mp3", "pink_special_02")
+    _G.res.createAudio(audioPath .. "/sfx/pink_special_03.mp3", "pink_special_03")
+    _G.res.createAudio(audioPath .. "/sfx/pink_collision_01.mp3", "pink_collision_01")
+    _G.res.createAudio(audioPath .. "/sfx/pink_collision_02.mp3", "pink_collision_02")
+    _G.res.createAudio(audioPath .. "/sfx/pink_collision_03.mp3", "pink_collision_03")
+    _G.res.createAudio(audioPath .. "/sfx/pink_collision_04.mp3", "pink_collision_04")
+    _G.res.createAudio(audioPath .. "/sfx/pink_collision_05.mp3", "pink_collision_05")
+	
 	audioGroups = {
 		--bad_shot = { "bad shot a1", "bad shot a2" },
 		bird_01_collision = { "bird 01 collision a1", "bird 01 collision a2", "bird 01 collision a3", "bird 01 collision a4" },
@@ -768,10 +860,12 @@ function createAssets()
 		bird_04_collision = { "bird 04 collision a1", "bird 04 collision a2", "bird 04 collision a3", "bird 04 collision a4" },
 		bird_05_collision = { "bird 05 collision a1", "bird 05 collision a2", "bird 05 collision a3", "bird 05 collision a4", "bird 05 collision a5" },
 		big_brother_collision = { "bird 01 collision a1_low", "bird 01 collision a2_low", "bird 01 collision a3_low", "bird 01 collision a4_low" },
+		bird_pink_collision = { "pink_collision_01", "pink_collision_02", "pink_collision_03" },
 		bird_next = { "bird next a1", "bird next a2", "bird next a3" },
 		bird_next_military = { "bird next military a1", "bird next military a2", "bird next military a3" },
 		bird_shot = { "bird shot a1", "bird shot a2", "bird shot a3"},
-		--good_shot = { "good shot a1", "good shot a2", "good shot a3"},
+		good_shot = { "good shot a1", "good shot a2", "good shot a3"},
+		sardine_can_physics = {"sardine_can_physics_a1","sardine_can_physics_a2","sardine_can_physics_a3","sardine_can_physics_a4","sardine_can_physics_a5","sardine_can_physics_a6"},
 		--level_clear = { "level clear a1", "level clear a2" },
 		level_clear_military = { "level clear military a1", "level clear military a2" },
 		--level_failed = { "level failed a1", "level failed a2" },
@@ -796,6 +890,13 @@ function createAssets()
 		red_special = { "red_special_1", "red_special_2", "red_special_3" },
 		--big_brother_special = { "big_brother_special_1", "big_brother_special_2", "big_brother_special_3" },
 		big_brother_special = { "big_brother_special_1", },
+		pig_accordion = {"pig_singing_1", "pig_singing_2", "pig_singing_3", "pig_singing_4", "pig_singing_5", "pig_singing_6", "pig_singing_7", "pig_singing_8" },
+		stalaktite_break = {"stalaktite_break_1", "stalaktite_break_2", "stalaktite_break_3" },
+		jewel_break = {"jewel_break_1", "jewel_break_2", "jewel_break_3" },
+		pillar_break = { "pillar_break_1", "pillar_break_2" },
+		bubbles_collision = { "bubbles collision a1", "bubbles collision a2", "bubbles collision a3", "bubbles collision a4" },
+		bubbles_idle = { "bubbles_idle_a1", "bubbles_idle_a2", "bubbles_idle_a3" },
+		bubbles_activation = { "bubbles_activation_1", "bubbles_activation_2", "bubbles_activation_3" },
 	}
 
 		musics = {  "ambient_theme1", -- 1
@@ -806,15 +907,15 @@ function createAssets()
 					"ambient_theme3", -- 6
 					"ambient_theme7", -- 7
 					"ambient_theme2", -- 8
-					"construction_theme1", -- 9
+					"construction_theme1", -- 9 
 					"construction_theme1", -- 10
 					"construction_theme1", -- 11
-					"construction_theme1", -- 12
-					"construction_theme1", -- 13
-					"construction_theme1", -- 14
-					"construction_theme1", -- 15
-					"atmosphere_halloween", --16
-					"ambient_theme3", -- 17
+					"ambient_theme3", -- 12
+					"ambient_theme3", -- 13
+					"ambient_theme3", -- 14
+					"ambient_cave", -- 15
+					"ambient_cave", -- 16
+					"ambient_cave", -- 17
 				}
 
 	if settings.audioEnabled == false then
@@ -864,6 +965,42 @@ function getAudioName(name)
 	end
 
 	return name
+end
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- Game main function, this is called every frame by the engine
+--void GameLua::drawLine2D(float x0, float y0, float x1, float y1, float w, float r, float g, float b, float a)
+-- XXX: ADD TO OTHERS
+function drawLine(r,g,b,a,x1,y1,x2,y2,inWorld, lineSize)
+	local lz = lineSize or 1
+	
+	if(inWorld == false) then
+		setRenderState(0,0,1,1)
+	end
+	
+		drawLine2D(x1,y1,x2,y2,lz,r,g,b,a)
+end
+
+-- XXX: ADD TO OTHERS
+function drawString(text, scale,x,y, anchorX, anchorY, inWorld)
+	local ax = anchorX or "HCENTER"
+	local ay = anchorY or "VCENTER"
+	
+	--void GameLua::drawRect( float r, float g, float b, float a, float x1, float y1, float x2, float y2, bool inWorld)
+	--drawRect(1.0,1.0,1.0,1.0, 0,screenHeight / 2 + 1, screenWidth, screenHeight / 2 , false)
+	--drawLine(255,255,255,255,0,0, screenWidth, screenHeight, false, 12)
+	setFont(fontBasic);
+	--setRenderState(x * scale, y * scale, scale,scale)
+	if(inWorld ~= true) then
+		setRenderState(0, 0 , scale,scale)	
+		_G.res.drawString("", text, x * ((screenWidth / scale) / screenWidth), y * ((screenHeight / scale) / screenHeight), ay, ax)
+	else
+		local xp,yp = worldToScreenTransform(x,y)
+		scale = scale * worldScale
+		setRenderState(0,0,scale,scale,0,0)	
+		_G.res.drawString("", text, xp * ((screenWidth / scale) / screenWidth), yp * ((screenHeight / scale) / screenHeight), ay, ax)
+	end
+	setRenderState(0,0,1,1)
 end
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1038,7 +1175,7 @@ function update(dt, realDt)
 	
 	-- show fps
 	if showFps and assetsCreated == true then
-		if fpsTimer >= 1 then
+		if fpsTimer >= 1/4 then
 			fps = fpsFrames / fpsTimer
 			fpsTimer = 0
 			fpsFrames = 0
@@ -1114,22 +1251,21 @@ function update(dt, realDt)
 		
 		if currentGameMode == updateGame and deviceModel ~= "roku" then 
 			if birdTutorialPopups ~= nil and #birdTutorialPopups > 0 then
-				_G.res.drawSprite("", g_currentCursorName, cursor.x, cursor.y)
+				_G.res.drawSprite(g_currentCursorName, cursor.x, cursor.y)
 			else
 				if g_currentCursorName ~= nil and g_mouseOrTouchStates.isUsingMouse then
-					_G.res.drawSprite("", g_currentCursorName, cursor.x, cursor.y)
+					_G.res.drawSprite(g_currentCursorName, cursor.x, cursor.y)
 				end
 			end
 			
-			--Native-side function don't exist on earliest version
-			--setIsMultitouchMouseWheelSimulationEnabled(false)
+			setIsMultitouchMouseWheelSimulationEnabled(false)
 		elseif currentGameMode ~= updateGame then
 		
 			local isEpisodeEndMenu =
 				function(menuPage)
 					return menuPage == gameFinishedThreeStars or menuPage == gameFinishedThreeStarsLP2 or menuPage == gameFinishedThreeStarsLP3 or
 						menuPage == gameFinishedThreeStarsLP4 or menuPage == gameFinishedThreeStarsLP5 or menuPage == gameFinished or
-						menuPage == gameFinishedLP2 or menuPage == gameFinishedLP3 or menuPage == gameFinishedLP4 or menuPage == gameFinishedLP5
+						menuPage == gameFinishedLP2 or menuPage == gameFinishedLP3 or menuPage == gameFinishedLP4 or menuPage == gameFinishedLP5 or menuPage == gameFinishedLP6 or menuPage == gameFinishedThreeStarsLP6
 				end
 		
 			local inCutScene = currentMenuPage and currentMenuPage.isCutScene
@@ -1137,12 +1273,12 @@ function update(dt, realDt)
 			if deviceModel ~= "roku" or not disableCursor then
 				if g_gesturePausePageEnablingFlags.enablePage == true then
 					if currentMenuPage ~= g_gesturePausePage and newMenuPage ~= g_gesturePausePage then
-						_G.res.drawSprite("", g_currentCursorName, cursor.x, cursor.y)
+						_G.res.drawSprite(g_currentCursorName, cursor.x, cursor.y)
 						setIsMultitouchMouseWheelSimulationEnabled(true)
 					end
 				else
-					_G.res.drawSprite("", g_currentCursorName, cursor.x, cursor.y)
-					--setIsMultitouchMouseWheelSimulationEnabled(true)
+					_G.res.drawSprite(g_currentCursorName, cursor.x, cursor.y)
+					setIsMultitouchMouseWheelSimulationEnabled(true)
 				end
 			end
 
@@ -1181,7 +1317,7 @@ function update(dt, realDt)
 	drawLine2D(screenWidth / 2 + (492) / 2 + 24, 0, screenWidth / 2 + (492) / 2 + 24, screenHeight, 2,255,0,0,255)	
 	drawLine2D(screenWidth / 2 - (492) / 2 - 24, 0, screenWidth / 2 - (492) / 2 - 24, screenHeight, 2,255,0,0,255)	
 	
-	_G.res.drawSprite("", "POPUP_TOP_LEFT", 50, 50)
+	_G.res.drawSprite("POPUP_TOP_LEFT", 50, 50)
 	drawLine2D(50, 0, 50, screenHeight, 2,255,0,0,255)	
 	drawLine2D(50-34, 0, 50-34, screenHeight, 2,255,0,0,255)	
 	]]--
@@ -1208,8 +1344,7 @@ function update(dt, realDt)
 			local t_returnedKey = openRegistrationDialog("Activate the full game!", g_registrationURLs.validationURL, g_registrationURLs.registrationURL, g_registrationKeys.fullGame)
 			-- local t_isOnGameScene = (sm~= nil) and (sm.currentScene ~= nil) and (sm.currentScene == sm.scenes.game)
 			-- local t_isOnPauseScene = (sm~= nil) and (sm.currentScene ~= nil) and (sm.currentScene == pause)
-			local t_isLevelSelection = currentMenuPage == levelSelectionPagesBasic or currentMenuPage == levelSelectionPagesExtra or currentMenuPage == levelSelectionPagesPack3
-			                           or currentMenuPage == levelSelectionPagesPack4 or currentMenuPage == levelSelectionPagesPack5 or currentMenuPage == levelSelectionPagesPack6
+			local t_isLevelSelection = isLevelSelection(currentMenuPage)
 			                           or currentMenuPage == levelSelectionPagesGoldenEggs
 								
 			-- local t_isDuringGame = not t_isLevelSelection
@@ -1256,6 +1391,7 @@ function gameResumed()
 end
 
 function gamePaused()
+	if startedFromEditor then return end
 	calculatePlaytime()
 	saveLuaFileWrapper("settings.lua", "settings", true)
 	if currentGameMode == updateGame then	
@@ -1319,7 +1455,7 @@ function scrollLevelSelectionLeft(page)
 	if page.currentPage > 1 then
 		levelSelectionDragSpeed = 1000
 		page.currentPage = page.currentPage - 1
-		_G.res.playAudio("menu_confirm", 1, false)
+		--_G.res.playAudio("menu_select", 1, false)
 	end
 end
 
@@ -1327,7 +1463,7 @@ function scrollLevelSelectionRight(page)
 	if page.currentPage < page.pageCount then
 		levelSelectionDragSpeed = 1000
 		page.currentPage = page.currentPage + 1
-		_G.res.playAudio("menu_confirm", 1, false)
+		--_G.res.playAudio("menu_select", 1, false)
 	end
 end
 
@@ -1356,7 +1492,8 @@ function setActiveMenuPageDelayed(menuPage, prepare)
 									 menuPage == gameFinishedLP2 or menuPage == gameFinishedThreeStarsLP2 or
 									 menuPage == gameFinishedLP3 or menuPage == gameFinishedThreeStarsLP3 or
 									 menuPage == gameFinishedLP4 or menuPage == gameFinishedThreeStarsLP4 or
-									 menuPage == gameFinishedLP5 or menuPage == gameFinishedThreeStarsLP5) then
+									 menuPage == gameFinishedLP5 or menuPage == gameFinishedThreeStarsLP5
+									 or  page == gameFinishedLP6 or page == gameFinishedThreeStarsLP6) then
 		resetCameras()
 	end
 	
@@ -1455,6 +1592,7 @@ function goldenEggStarAchieved(level)
 	if settings.openGoldenEggLevels[level] == 2 then
 		goldenEggStarAchievedPage.items[1].sprite = "GOLDEN_EGG_STAR_COLLECTED"
 		goldenEggStarAchievedPage.items[2].visible = false
+		_G.res.playAudio("star_collect", 1, false)
 	else
 		goldenEggStarAchievedPage.items[1].sprite = "GOLDEN_EGG_STAR"
 		goldenEggStarAchievedPage.items[2].visible = true
@@ -1485,7 +1623,7 @@ function aboutGoldenEggAchieved()
 end
 
 function episode3LevelSelectionEggAchieved()
-	getItemByName(levelSelectionPagesPack3.items, "goldenEgg").visible = false
+	getItemByName(episodes[3].items, "goldenEgg").visible = false
 	goldenEggAchieved("Level11")
 end
 
@@ -1552,14 +1690,14 @@ function updateSplashes(dt, time)
 			
 	if scale then
 		setRenderState(0, 0, xs, ys)
-		_G.res.drawSprite("", splashes[current].sprite, _G.math.floor(xCoord / xs), _G.math.floor(yCoord / ys))
+		_G.res.drawSprite(splashes[current].sprite, _G.math.floor(xCoord / xs), _G.math.floor(yCoord / ys))
 		if splashes[current].sprite == "SPLASH_ANGRY_BIRDS" then
 			if isBetaVersion and deviceModel == "android" then
-				_G.res.drawSprite("", "LITE_SPLASH", _G.math.floor(xCoord) / xs, _G.math.floor(yCoord) / ys)
+				_G.res.drawSprite("LITE_SPLASH", _G.math.floor(xCoord) / xs, _G.math.floor(yCoord) / ys)
 			end
 			--setRenderState(0, 0, 1, 1)
 			if isBetaVersion and deviceModel == "android" then
-				_G.res.drawSprite("", "SPLASH_LOADING", screenWidth, screenHeight)
+				_G.res.drawSprite("SPLASH_LOADING", screenWidth, screenHeight)
 			else
 				if deviceModel == "roku" then
 					local sw, sh = _G.res.getSpriteBounds("LOADING_EN")
@@ -1569,22 +1707,22 @@ function updateSplashes(dt, time)
 						loadingScale = 1.2
 					end
 					setRenderState(0, 0, loadingScale, loadingScale)
-					_G.res.drawSprite("", "LOADING_EN", _G.math.floor(xC / loadingScale), _G.math.floor(yC / loadingScale))
+					_G.res.drawSprite("LOADING_EN", _G.math.floor(xC / loadingScale), _G.math.floor(yC / loadingScale))
 					setRenderState(0, 0, xs, ys)
 				else
-					_G.res.drawSprite("", _G.res.getString("TEXTS_BASIC", "TEXT_SPLASH_LOADING_SPRITE"), screenWidth / xs, screenHeight / ys)
+					_G.res.drawSprite(_G.res.getString("TEXTS_BASIC", "TEXT_SPLASH_LOADING_SPRITE"), screenWidth / xs, screenHeight / ys)
 				end
 			end
 		end
 		setRenderState(0, 0, 1, 1)
 	else
-		_G.res.drawSprite("", splashes[current].sprite, screenWidth/2, screenHeight/2)
+		_G.res.drawSprite(splashes[current].sprite, screenWidth/2, screenHeight/2)
 		-- loading text in different languages
 		if splashes[current].sprite == "SPLASH_ANGRY_BIRDS" then
-			_G.res.drawSprite("", _G.res.getString("TEXTS_BASIC", "TEXT_SPLASH_LOADING_SPRITE"), screenWidth, screenHeight)
+			_G.res.drawSprite(_G.res.getString("TEXTS_BASIC", "TEXT_SPLASH_LOADING_SPRITE"), screenWidth, screenHeight)
 			if isBetaVersion and deviceModel == "android" then
-				_G.res.drawSprite("", "LITE_SPLASH", screenWidth / 2, screenHeight / 2)
-				_G.res.drawSprite("", "SPLASH_LOADING", screenWidth, screenHeight)
+				_G.res.drawSprite("LITE_SPLASH", screenWidth / 2, screenHeight / 2)
+				_G.res.drawSprite("SPLASH_LOADING", screenWidth, screenHeight)
 			end
 		end
 	end
@@ -1638,33 +1776,445 @@ function updateValues()
 	softLimitSimultaneousParticles = 75
 end
 
+------------
+--Page-class
+------------
+Page = {}
+    
+function Page:new(o)
+	o = o or {}
+	o.items = {}
+	o.order = {}
+	_G.setmetatable(o, self)
+	self.__index = self
+	o:init()
+	return o
+end
+
+function Page:init()
+-- Overridden in classes that inherit this but needs to be declared here.
+end
+
+function Page:insertItem(key, item, pushback)
+	
+	self:setItemDefaults(item)
+	
+	if not pushback then
+		_G.table.insert(self.order, key)
+		self.items[key] = item
+	else
+		local index = self:getIndexOfItem(pushback)
+		if index then
+			_G.table.insert(self.order, index, key)
+			self.items[key] = item
+		end
+	end	
+end
+
+function Page:removeItem(key)
+	local index = self:getIndexOfItem(key)
+	if index then
+		_G.table.remove(self.order, index)
+		for i, v in _G.ipairs(self.items) do
+			if v == self.items.key then
+				_G.table.remove(self.items, i)
+				return
+			end
+		end
+	end
+end
+
+function Page:setItemDefaults(item)
+	
+	item.x, item.y = item.x or 0, item.y or 0
+	
+	if item.sprite then
+		item.sheet = item.sheet or self.sheet
+	elseif item.text then
+		item.font = item.font or self.font or defaultMenuFont
+	end
+	
+	if item.renderState then
+		item.xs = item.xs or 1
+		item.ys = item.ys or 1
+		item.angle = item.angle or 0
+		if item.useSpritePivot and item.sprite then
+			item.pivotX, item.pivotY = _G.res.getSpritePivot(item.sheet, item.sprite)
+		else
+			item.pivotX, item.pivotY = item.pivotX or 0, item.pivotY or 0
+		end
+	end
+end
+
+function Page:getIndexOfItem(name)
+	for i = 1, #self.order do
+		if self.order[i] == name then
+			return i
+		end
+	end
+	return false
+end
+
+function Page:getActivatedItems()
+	local activatedItems = {}
+	local activatedItemsTouchData = {}
+	for k, v in _G.pairs(touches) do
+		for key, value in _G.pairs(self.items) do
+			if value.visible ~= false and value.selectable ~= false 
+			  and value:checkBounds(v.x, v.y) then
+				if #activatedItems == 0 or #activatedItems >= 1 and activatedItems[1] ~= key then
+					_G.table.insert(activatedItems, key)
+					activatedItemsTouchData[key] = k
+				end
+			end
+		end
+	end
+	if #activatedItems >= 1 then
+		return activatedItems, activatedItemsTouchData
+	else
+		return false
+	end
+end
+
+function Page:getHoveredItems()
+	local hoveredItems = {}
+	for key, value in _G.pairs(self.items) do
+		if value.visible ~= false and value.selectable ~= false 
+		  and value:checkBounds(cursor.x, cursor.y) then
+			if #hoveredItems == 0 or #hoveredItems >= 1 and hoveredItems[1] ~= key then
+				_G.table.insert(hoveredItems, key)
+			end
+		end
+	end
+
+	if #hoveredItems >= 1 then
+		return hoveredItems
+	else
+		return false
+	end
+end	
+
+
+function Page:checkClicks()
+	-- TODO: selectionCandidate functionality for overlapping sprites, texts and/or touch areas.
+	-- Needs to take pivot and anchor into account.
+
+	for k, v in _G.pairs(self.items) do
+		if v.visible ~= false and v.selectable ~= false 
+		 and (v.activateOnRelease ~= true and keyPressed["LBUTTON"] or v.activateOnRelease and keyReleased["LBUTTON"])
+		 and v:checkBounds(cursor.x, cursor.y) then 
+			if v.action then
+				for key, value in _G.pairs(v.action) do
+					key(value)
+				end
+			end
+			return v
+		end
+	end
+	return false
+end
+
+function Page:getHoveredItemKey()
+	-- TODO: selectionCandidate functionality for overlapping sprites, texts and/or touch areas.
+	-- Needs to take pivot and anchor into account.
+
+	for k, v in _G.pairs(self.items) do
+		if v.visible ~= false and v.selectable ~= false 
+		 and v:checkBounds(cursor.x, cursor.y) then 
+			return {k}
+		end
+	end
+	return false
+end
+
+
+function Page:getClickedItem()
+	-- TODO: selectionCandidate functionality for overlapping sprites, texts and/or touch areas.
+	-- Needs to take pivot and anchor into account.
+
+	for k, v in _G.pairs(self.items) do
+		if v.visible ~= false and v.selectable ~= false 
+		 and (v.activateOnRelease ~= true and keyPressed["LBUTTON"] or v.activateOnRelease and keyReleased["LBUTTON"])
+		 and v:checkBounds(cursor.x, cursor.y) then 
+			return v
+		end
+	end
+	return false
+end
+
+function Page:draw()
+	for i = 1, #self.order do
+		local item = self.items[self.order[i]]
+		if item.visible ~= false then
+			item:draw()
+		end
+	end
+end
+
+------------
+--Item-class
+------------
+Item = {}
+    
+function Item:new(o)
+	o = o or {}
+	o.x, o.y = o.x or 0, o.y or 0
+	_G.setmetatable(o, self)
+	self.__index = self
+	o:init()
+	return o
+end
+
+function Item:init()
+end
+
+function Item:checkBounds(xCoord, yCoord)
+	if self.h == nil or self.w == nil then
+		return false -- Height and width for click area must be set.
+	else
+		return yCoord >= self.y and yCoord <= self.y + self.h and
+			xCoord >= self.x and xCoord <= self.x + self.w
+	end
+end
+
+
+
+----------------------------------
+--RectItem-class, inherits Item
+----------------------------------
+
+RectItem = Item:new()
+
+function RectItem:init()
+	self.red = self.red or 0
+	self.green = self.green or 0
+	self.blue = self.blue or 0
+	self.alpha = self.alpha or 0
+	self.x1 = self.x1 or 0
+	self.x2 = self.x2 or screenWidth
+	self.y1 = self.y1 or 0
+	self.y2 = self.y2 or screenHeight
+	self.inWorld = self.inWorld or false
+end
+					  
+function RectItem:draw()
+	if self.renderState then
+		setRenderState(-screen.left, -screen.top, worldScale, worldScale, 0, 0, 0)
+	end
+	drawRect(self.red, self.green, self.blue, self.alpha, self.x1, self.y1, self.x2, self.y2, self.inWorld)
+	setRenderState(0, 0, 1, 1, 0, 0, 0)
+end
+
+----------------------------------
+--SpriteItem-class, inherits Item
+----------------------------------
+
+SpriteItem = Item:new()
+
+function SpriteItem:checkBounds(xCoord, yCoord)
+
+	if self.clickArea ~= nil then	   
+		return xCoord >= self.clickArea.xLeft and xCoord <= self.clickArea.xRight and
+			   yCoord >= self.clickArea.yTop and yCoord <= self.clickArea.yBot
+	end
+	self.sheet = self.sheet or ""
+	local width, height = _G.res.getSpriteBounds(self.sheet, self.sprite)
+	local pivotX, pivotY = _G.res.getSpritePivot(self.sheet, self.sprite)
+	
+	if self.renderState then
+		local scaleCorrectionX, scaleCorrectionY = 0, 0
+		local xs, ys = self.xs or 1, self.ys or 1
+		if self.scale ~= nil then
+			xs, ys = self.scale, self.scale
+		end
+		if xs ~= 1 then
+			scaleCorrectionX = ((width * xs) - width) / 2
+		end
+		if ys ~= 1 then
+			scaleCorrectionY = ((height * ys) - height) / 2
+		end
+
+		return yCoord >= (self.y - pivotY - scaleCorrectionY) and yCoord <= (self.y - pivotY + height + scaleCorrectionY)
+			and xCoord >= (self.x - pivotX - scaleCorrectionX) and xCoord <= (self.x - pivotX + width + scaleCorrectionX)
+	elseif self.inWorld then
+		local scaleCorrectionX, scaleCorrectionY = 0, 0
+		local xs, ys = self.xs or 1, self.ys or 1
+		if self.scale ~= nil then
+			xs, ys = self.scale, self.scale
+		end
+		worldScale = worldScale or 1
+		--if xs > 1 then
+			scaleCorrectionX = ((width * xs * worldScale) - width) / 2
+		--end
+		--if ys > 1 then
+			scaleCorrectionY = ((height * ys * worldScale) - height) / 2
+		--end
+	
+		local tmpx, tmpy = physicsToScreenTransform(self.x, self.y)	
+		return yCoord >= (tmpy - pivotY - scaleCorrectionY) and yCoord <= (tmpy - pivotY + height + scaleCorrectionY)
+			and xCoord >= (tmpx - pivotX - scaleCorrectionX) and xCoord <= (tmpx - pivotX + width + scaleCorrectionX)
+	end
+	
+	return yCoord >= (self.y - pivotY) and yCoord <= (self.y - pivotY + height) and
+		xCoord >= (self.x - pivotX) and xCoord <= (self.x - pivotX + width)
+end
+
+function SpriteItem:draw()
+	if self.renderState then
+
+		local xCoord, yCoord = self.x, self.y
+		local xs, ys = self.xs or 1, self.ys or 1
+		local angle = self.angle or 0
+		local px, py = self.pivotX or 0, self.pivotY or 0
+		if xs ~= 1 then
+			xCoord =  xCoord / xs
+		end
+		if ys ~= 1 then
+			yCoord = yCoord / ys
+		end
+		setRenderState(0, 0, xs, ys, angle, px, py)
+		if self.drawToScreenSize then
+			--local hAnchor = self.hAnchor or "HCENTER"
+			--local vAnchor = self.vAnchor or "TOP"
+			local sw, sh = _G.res.getSpriteBounds(self.sheet, self.sprite)
+			local aspect = sw / sh
+			local width = screenHeight * aspect
+			local px, py = _G.res.getSpritePivot(self.sheet, self.sprite)
+			
+		
+		--	if screenHeight > sh and screenWidth <= sw then
+		--		_G.res.drawSprite(self.sheet, self.sprite, (sw - width) / 2, 0, "LEFT", "TOP", width, screenHeight)
+		--	else
+				_G.res.drawSprite(self.sheet, self.sprite, 0, 0, "LEFT", "TOP", screenWidth, screenHeight)
+		--	end
+			
+			
+			--_G.res.drawSprite(self.sheet, self.sprite, _G.math.floor(xCoord), _G.math.floor(yCoord) - screenHeight / 2, hAnchor, vAnchor, sw * screenHeight / sh, screenHeight)
+		else
+			_G.res.drawSprite(self.sheet, self.sprite, _G.math.floor(xCoord), _G.math.floor(yCoord))
+		end
+		setRenderState(0, 0, 1, 1, 0, 0, 0)
+	else
+		_G.res.drawSprite(self.sheet, self.sprite, self.x, self.y)
+	end
+end
+
+-------------------------------
+--TextItem-class, inherits Item
+-------------------------------
+
+TextItem = Item:new({text = "", group = "TEXTS_BASIC", textBoxSize = screenWidth, hanchor = "HCENTER", vanchor = "VCENTER"})
+
+-- function TextItem:draw()
+	-- _G.res.drawString(self.group, self.text, self.x, self.y, self.hanchor, self.vanchor )
+-- end
+
+function TextItem:init()
+	self.text = self.text or ""
+	self.group = self.group or "TEXTS_BASIC"
+	self.textBoxSize = self.textBoxSize or screenWidth
+	self.hanchor = self.hanchor or "HCENTER"
+	self.vanchor = self.vanchor or "VCENTER"
+
+	self.width = _G.res.getStringWidth(_G.res.getString(self.group, self.text))
+end
+
+function TextItem:clip()
+	setFont(self.font)
+	clipText(self.group, self.text, self.textBoxSize)
+	local fl = _G.res.getFontLeading()
+	self.textBlockHeight = #clippedText.lines * fl
+	self.widestLine = clippedText.widestLine
+	self.lines = {}
+	
+	local k = 1
+	local yCorrection = 0
+	if self.vanchor == "VCENTER" then
+		yCorrection = (-self.textBlockHeight / 2) + (fl / 2)
+	elseif self.vanchor == "BOTTOM" then
+		yCorrection = -self.textBlockHeight + fl
+	end
+	while  k <= #clippedText.lines do
+		local l = clippedText.lines[k]
+		local tmpItm = TextItem:new({font = self.font, text = l, x = self.x, y = self.y + yCorrection, hanchor = self.hanchor, vanchor = self.vanchor})
+		_G.table.insert(self.lines, tmpItm)
+		k = k + 1
+		yCorrection = yCorrection + fl
+	end
+	self.clipped = true
+end
+
+function TextItem:checkBounds(xCoord, yCoord)
+	local w = _G.res.getStringWidth(_G.res.getString(self.group, self.text))
+	if w > self.width then
+		self.width = w
+	end
+	
+	if self.clipped then
+		for i = 1, #self.lines do
+			if self.lines[i]:checkBounds(xCoord, yCoord) then
+				return true
+			end
+		end
+	else	
+		local fl = _G.res.getFontLeading()
+		local xCorrection, yCorrection = 0, 0
+		if self.hanchor == "HCENTER" then
+			xCorrection = -self.width / 2
+		elseif self.hanchor == "RIGHT" then
+			xCorrection = -self.width
+		elseif self.hanchor == "LEFT" then
+			xCorrection = 0
+		end
+
+		if self.vanchor == "VCENTER" then
+			yCorrection = -fl / 2
+		elseif self.vanchor == "BOTTOM" then
+			yCorrection = -fl
+		elseif self.vanchor == "TOP" then
+			yCorrection = 0
+		end
+	
+		return yCoord >= self.y + yCorrection and yCoord <= self.y + yCorrection + fl and
+			xCoord >= self.x + xCorrection and xCoord <= self.x + xCorrection + self.width
+	end
+end
+
+function TextItem:draw()
+	if self.visible ~= false then
+
+		setFont(self.font)
+		if self.clipped then
+			for i = 1, #self.lines do
+				self.lines[i]:draw()
+			end
+		else
+			_G.res.drawString(self.group, self.text, self.x, self.y, self.hanchor, self.vanchor )
+		end
+	end
+end
+
 function initialize()
 	_G.math.randomseed(_G.os.time())
 	
 	--[[
 	defaultLanguage = "en_EN"
-	currentLanguage = defaultLanguage
+	currentLanguage = "en_EN"
 	-- IF you add languages remember to add short language name, language sprite (flag) and about sprite as well
-	languageNames = {"en_EN", "fr_FR", "it_IT", "de_DE", "es_ES" } --, "jp_JP", "cn_TC"}
-	shortLanguageNames = {"en", "fr", "it", "de", "es" } --, "jp", "cn" }
+	languageNames = {"en_EN"}
+	shortLanguageNames = {"en"}
 	currentLanguageId = 1
 	languageSprites = { 
-		en_EN = "SETTINGS_FLAG_EN",
-		fr_FR = "SETTINGS_FLAG_FR",
-		it_IT = "SETTINGS_FLAG_IT",
-		de_DE = "SETTINGS_FLAG_DE",
-		es_ES = "SETTINGS_FLAG_ES",
-		--jp_JP = "SETTINGS_FLAG_JP",
-		--cn_TC = "SETTINGS_FLAG_CN",
+		en_EN = "SETTINGS_FLAG_EN"
 	}
 
 	if settings.currentLanguage == nil then
 		settings.currentLanguage = "en_EN"
 	end
 	
-	currentLanguage = settings.currentLanguage
-	_G.res.loadLocale("TEXTS_BASIC", settings.currentLanguage)
-	_G.res.useLocale(settings.currentLanguage)
+	currentLanguage = "en_EN"
+	_G.res.loadLocale("TEXTS_BASIC", "en_EN")
+	_G.res.useLocale("en_EN")
 	--]]
 	
 	numberKeys = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" }
@@ -1742,6 +2292,7 @@ function initialize()
 	zoomLevel = 0
 	
 	defaultForce = -800.0
+	
 	blockDestroyedScoreIncrement = 100
 
 	physicsToWorld = 20
@@ -1874,10 +2425,9 @@ function initializeMenu()
 				"LevelLite7",
 				"LevelLite12",
 				"LevelLite11", 
-				
-				"LevelLite13", 
 				"LevelLite14", 
 				"LevelLite15", 
+				"Tutorial_matilda_lite"
 			}
 		}
 	else
@@ -1894,7 +2444,14 @@ function initializeMenu()
 				"pack9",
 				"pack10",
 				"pack11",
+				"pack12",
+				"pack13",
+				"pack14",
+				"pack15",
+				"pack16",
+				"pack17",
 				"goldeneggs1",
+				"bonus",
 			},
 			
 			pack1 = {
@@ -2047,7 +2604,20 @@ function initializeMenu()
 				"LevelGE_11",
 				"LevelGE_14",
 				"LevelGE_14",
-				"LevelGE_15"
+				"LevelGE_15",
+				"LevelGE_16",
+				"LevelGE_17",
+				"LevelGE_19",
+				"LevelGE_18",
+				"LevelGE_20",
+				"LevelGE_21",
+				"LevelGE_22",
+				"LevelGE_23",
+				"LevelIntel_1",
+				"LevelIntel_2",
+				"LevelIntel_3",
+				"LevelIntel_4",
+				"LevelIntel_5",
 			},
 			pack6 = {			
 				"LevelP3_212",
@@ -2158,7 +2728,126 @@ function initializeMenu()
 				"LevelP4_477",
 				"LevelP4_478",
 
-			}
+			},
+			pack12 = {			
+				"LevelP5_610",
+				--"LevelP5_356",
+				"LevelP5_356",
+				"LevelP5_615",
+				"LevelP5_616",
+				"LevelP5_620",
+				"LevelP5_341",
+				"LevelP5_339",
+				"LevelP5_628",
+				"LevelP5_634",
+				"LevelP5_640",
+				"LevelP5_347",
+				"LevelP5_357",
+				"LevelP5_343",
+				"LevelP5_352",
+				"LevelP5_350",
+			},
+			pack13 = {			
+				"LevelP5_345",
+				"LevelP5_363",
+				"LevelP5_631",
+				"LevelP5_355",
+				"LevelP5_348",
+				"LevelP5_366",
+				"LevelP5_635",
+				"LevelP5_669",
+				"LevelP5_623",
+				"LevelP5_650",
+				"LevelP5_664",
+				"LevelP5_354",
+				"LevelP5_360",
+				"LevelP5_672",
+				"LevelP5_361",
+			},
+			pack14 = {			
+				"LevelP5_367",
+				"LevelP5_671",
+				"LevelP5_342",
+				"LevelP5_364",
+				"LevelP5_340",
+				"LevelP5_362",
+				"LevelP5_627",
+				"LevelP5_648",
+				"LevelP5_656",
+				"LevelP5_351",
+				"LevelP5_662",
+				"LevelP5_668",
+				"LevelP5_651",
+				"LevelP5_663",
+				"LevelP5_359",
+				"LevelFB_1",
+				"LevelFB_2",
+				"LevelFB_3",
+			},
+			pack15 = {
+				"LevelP6_8",
+				"Level711",
+				"LevelP6_1",
+				"Level702",
+				"LevelP6_2",
+				"Level707",
+				"LevelP6_28",
+				"Level708",
+				"Level709",
+				"LevelP6_16",
+				"LevelP6_22",
+				"Level695",
+				"LevelP6_12",
+				"LevelP6_26",
+				"LevelP6_20",
+				
+			},
+			
+			pack16 = {
+				"LevelP6_4",
+				"LevelP6_15",
+				"Level703",
+				"LevelP6_3",
+				"Level704",
+				"Level705",
+				"LevelP6_23",
+				"LevelP6_25",
+				"Level697",
+				"LevelP6_29",
+				"LevelP6_5",
+				"LevelP6_13",
+				"LevelP6_19",
+				"LevelP6_11",
+				"Level701",
+				
+			},
+			pack17 = {
+		
+				"LevelP6_27",
+				"LevelP6_21",
+				"LevelP6_18",
+				"Level713_1",
+				"LevelP6_24",
+				"LevelP6_9",
+				"Level707_1",
+				"LevelP6_30",
+				"LevelP6_10",
+				"Level698_1",
+				"LevelP6_14",
+				"LevelP6_7",
+				"LevelP6_17",
+				"LevelP6_6",
+				"Level711_1",
+				
+			},
+			bonus = {
+		
+				"LevelTBS_bonus1",
+				"LevelFB_1",
+				"LevelFB_2",
+				"LevelFB_3",
+				
+			},
 		}
 	end
 	if isLiteVersion then
@@ -2169,14 +2858,47 @@ function initializeMenu()
 	levelOrder_packOne = { levelOrder["pack4"], levelOrder["pack5"] }
 	levelOrder_packThree = { levelOrder["pack6"], levelOrder["pack7"], levelOrder["pack8"] }
 	levelOrder_packFour = { levelOrder["pack9"], levelOrder["pack10"], levelOrder["pack11"] }
+	levelOrder_packFive = { levelOrder["pack12"], levelOrder["pack13"], levelOrder["pack14"] }
+	levelOrder_packSix = { levelOrder["pack15"], levelOrder["pack16"], levelOrder["pack17"]  }
 	levelOrder_goldenEggs = levelOrder["goldeneggs1"]
+
+	
+	if g_newEpisodeScreen.enabled == true then
+		levelOrder_allLevels = { 	levelOrder["pack1"], levelOrder["pack2"], levelOrder["pack3"],
+								levelOrder["pack4"], levelOrder["pack5"], 
+								levelOrder["pack6"], levelOrder["pack7"], levelOrder["pack8"],
+								levelOrder["pack9"], levelOrder["pack10"], levelOrder["pack11"],
+								levelOrder["pack12"], levelOrder["pack13"], levelOrder["pack14"],
+								levelOrder["pack15"], levelOrder["pack16"], levelOrder["pack17"] }
+	else
+		levelOrder_allLevels = { 	levelOrder["pack1"], levelOrder["pack2"], levelOrder["pack3"],
+									levelOrder["pack4"], levelOrder["pack5"], 
+									levelOrder["pack6"], levelOrder["pack7"], levelOrder["pack8"],
+									levelOrder["pack9"], levelOrder["pack10"], levelOrder["pack11"] }
+	end
 	
 	goldenEggLevelMapping = { Level1 = "LevelGE_4", Level2 = "LevelGE_3", Level3 = "LevelGE_2",
 		--Level4 = "SOUNDBOARD1", Level5 = "MIGHTY_EAGLE", Level6 = "PIGGY", Level7 = "RADIO",
 		Level4 = "SOUNDBOARD1", Level5 = "LevelGE_14", Level6 = "LevelGE_15", Level7 = "RADIO",
 		Level8 = "LevelGE_1", Level9 = "LevelGE_5", Level10 = "LevelGE_6", Level11 = "LevelGE_7",
 		Level12 = "KEYBOARD", Level13 = "LevelGE_8", Level14 = "LevelGE_9", Level15 = "LevelGE_10",
-		Level16 = "LevelGE_11",Level17 = "SEQUENCER"}
+		Level16 = "LevelGE_11",Level17 = "SEQUENCER", Level18 = "LevelGE_16", Level19 = "LevelGE_17", 
+		Level20 = "LevelGE_19", Level21 = "ACCORDION", Level22 = "LevelGE_18", Level23 = "LevelGE_20", 
+		Level24 = "LevelGE_21", Level25 = "LevelGE_22", Level26 = "LevelGE_23", Level27 = "LevelIntel_1", }
+	
+	
+	
+	if(customer == "Intel") then
+		goldenEggLevelMapping = { Level1 = "LevelGE_4", Level2 = "LevelGE_3", Level3 = "LevelGE_2",
+			--Level4 = "SOUNDBOARD1", Level5 = "MIGHTY_EAGLE", Level6 = "PIGGY", Level7 = "RADIO",
+			Level4 = "SOUNDBOARD1", Level5 = "LevelGE_14", Level6 = "LevelGE_15", Level7 = "RADIO",
+			Level8 = "LevelGE_1", Level9 = "LevelGE_5", Level10 = "LevelGE_6", Level11 = "LevelGE_7",
+			Level12 = "KEYBOARD", Level13 = "LevelGE_8", Level14 = "LevelGE_9", Level15 = "LevelGE_10",
+			Level16 = "LevelGE_11",Level17 = "SEQUENCER", Level18 = "LevelGE_16", Level19 = "LevelGE_17", 
+			Level20 = "LevelGE_19", Level21 = "bubblesTestLevel", Level22 = "LevelGE_18", Level23 = "LevelGE_20", 
+			Level24 = "LevelGE_21", Level25 = "LevelGE_22", Level26 = "LevelGE_23", 
+			Level27 = "LevelIntel_1", Level28 = "LevelIntel_2", Level29 = "LevelIntel_3", Level30 = "LevelIntel_4", Level31 = "LevelIntel_5"}	
+	end
 	
 	
 	resetSettings()
@@ -2284,6 +3006,14 @@ function resetSettings()
 		settings.lastOpenLevelLP4 = 1
 	end
 	
+	if settings.lastOpenLevelLP5 == nil then
+		settings.lastOpenLevelLP5 = 1
+	end
+	
+	if settings.lastOpenLevelLP6 == nil then
+		settings.lastOpenLevelLP6 = 1
+	end
+	
 	
 	if not isLiteVersion then
 		if settings.theme1Completed ~= true then
@@ -2377,6 +3107,54 @@ function resetSettings()
 			end
 		end
 		
+		if settings.theme12Completed ~= true then
+			local episode5firstPack = levelOrder_packFive[1]
+			if highscores[episode5firstPack[#episode5firstPack]] ~= nil
+			  and highscores[episode5firstPack[#episode5firstPack]].completed then
+				settings.theme12Completed = true
+			end
+		end
+		
+		if settings.theme13Completed ~= true then
+			local episode5secondPack = levelOrder_packFive[2]
+			if highscores[episode5secondPack[#episode5secondPack]] ~= nil
+			  and highscores[episode5secondPack[#episode5secondPack]].completed then
+				settings.theme13Completed = true
+			end
+		end
+		
+		if settings.theme14Completed ~= true then
+			local episode5lastPack = levelOrder_packFive[3]
+			if highscores[episode5lastPack[#episode5lastPack]] ~= nil
+			  and highscores[episode5lastPack[#episode5lastPack]].completed then
+				settings.theme14Completed = true
+			end
+		end
+		
+		if settings.theme15Completed ~= true then
+			local episode6firstPack = levelOrder_packSix[1]
+			if highscores[episode6firstPack[#episode6firstPack]] ~= nil
+			  and highscores[episode6firstPack[#episode6firstPack]].completed then
+				settings.theme15Completed = true
+			end
+		end
+		
+		if settings.theme16Completed ~= true then
+			local episode6secondPack = levelOrder_packSix[2]
+			if highscores[episode6secondPack[#episode6secondPack]] ~= nil
+			  and highscores[episode6secondPack[#episode6secondPack]].completed then
+				settings.theme16Completed = true
+			end
+		end
+		
+		if settings.theme17Completed ~= true then
+			local episode6lastPack = levelOrder_packSix[3]
+			if highscores[episode6lastPack[#episode6lastPack]] ~= nil
+			  and highscores[episode6lastPack[#episode6lastPack]].completed then
+				settings.theme17Completed = true
+			end
+		end
+		
 		if settings.threeStars ~= true then
 			local episode1TotalScore, episode1Stars, episode1TotalStars = calculateTotalScoreAndStars(levelOrder_packBasic)
 			if episode1Stars >= episode1TotalStars then
@@ -2405,6 +3183,20 @@ function resetSettings()
 			end
 		end
 		
+		if settings.threeStarsLP5 ~= true then
+			local episode5TotalScore, episode5Stars, episode5TotalStars = calculateTotalScoreAndStars(levelOrder_packFive)
+			if episode5Stars >= episode5TotalStars then
+				settings.threeStarsLP5 = true
+			end
+		end
+		
+		if settings.threeStarsLP6 ~= true then
+			local episode6TotalScore, episode6Stars, episode6TotalStars = calculateTotalScoreAndStars(levelOrder_packSix)
+			if episode6Stars >= episode6TotalStars then
+				settings.threeStarsLP6 = true
+			end
+		end
+		
 	end
 
 	if settings.currentLevelSelectionPages == nil then
@@ -2413,6 +3205,8 @@ function resetSettings()
 		settings.currentLevelSelectionPages.extra = 1
 		settings.currentLevelSelectionPages.pack3 = 1
 		settings.currentLevelSelectionPages.pack4 = 1
+		settings.currentLevelSelectionPages.pack5 = 1
+		settings.currentLevelSelectionPages.pack6 = 1
 		settings.currentLevelSelectionPages.goldeneggs = 1
 	end
 	
@@ -2495,6 +3289,13 @@ function resetSettings()
 		settings.lastOpenLevelLP2 = 200
 		settings.lastOpenLevelLP3 = 200
 		settings.lastOpenLevelLP4 = 200
+		settings.lastOpenLevelLP5 = 200
+		settings.lastOpenLevelLP6 = 200
+		
+		if g_newEpisodeScreen.lastSetEnabled == false then
+			settings.lastOpenLevelLP5 = 30
+		end
+		
 		settings.gameCompleted    = true
 		settings.theme5Completed  = true
 		settings.theme8Completed  = true
@@ -2798,6 +3599,560 @@ end
 
 -- GameCenter stuff ends.
 
+function createCutscenes()
+	cutscenes = {}	
+		
+	cutscenes.gameStart = {
+		name = "gameStart",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", updateFunction = gotoFirstLevel, dontOffset = true},
+			{name = "storyBegin1", sprite = "STORY_BEGIN_BG_1", updateFunction = gotoFirstLevel, isBackground = true },					
+			{name = "storyBeginGroup", sprite = "STORY_BEGIN_PIG_GROUP_1", selectable = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}
+	
+	cutscenes.world1_complete = {
+		name = "world1_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
+			{name = "storyBoss", sprite = "STORY_BOSS_THEME_1", selectable = false },
+			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}
+
+	cutscenes.world2_complete = {
+		name = "world2_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
+			{name = "storyBoss", sprite = "STORY_BOSS_THEME_2", selectable = false },
+			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}
+	
+
+	cutscenes.world3_complete = {
+		name = "world3_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyEnd1", sprite = "STORY_END_1_1", selectable = false, isBackground = true },
+			{name = "storyEnd2", sprite = "STORY_END_1_2", selectable = false, isBackground = true },
+			{name = "storyEndEyeNormal", sprite = "STORY_END_KING_EYE_NORMAL",selectable = false, visible = false },
+			{name = "storyEndEyePeek", sprite = "STORY_END_KING_EYE_PEEK", selectable = false, visible = false },
+			{name = "storyEndEyeWink", sprite = "STORY_END_KING_EYE_WINK", selectable = false, visible = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}	
+
+	cutscenes.pack2_intro = {
+		name = "pack2_intro",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG",  updateFunction = gotoFirstLevelLP2, dontOffset = true},
+			{name = "storyBg", sprite = "STORY_BEGIN_BG_1", updateFunction = gotoFirstLevelLP2, isBackground = true },
+			{name = "storyBegin1", sprite = "STORY_BEGIN_BG_2", updateFunction = gotoFirstLevelLP2, isBackground = true },
+			{name = "storyFakeEggs", sprite = "STORY_BEGIN_FAKE_EGGS", selectable = false },
+			{name = "storyGroup", sprite = "STORY_BEGIN_PIG_GROUP_2", selectable = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}	
+	
+	cutscenes.world4_complete = {
+		name = "world4_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
+			{name = "storyBoss", sprite = "STORY_BOSS_THEME_4", selectable = false },
+			{name = "storyTongue", sprite = "STORY_END_2_TONGUE", selectable = false },
+			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}
+	
+	cutscenes.world5_complete = {
+		name = "world5_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
+			--{name = "storyHoof", sprite = "STORY_HIDE_HOOF_2", selectable = false },
+			{name = "storyBoss", sprite = "STORY_BOSS_THEME_4", selectable = false, visible = false },
+			{name = "storyTongue", sprite = "STORY_END_2_TONGUE", selectable = false, visible = false },
+			{name = "storyEggs", sprite = "STORY_END_2_EGGS", selectable = false, visible = false },
+			{name = "storyKing", sprite = "STORY_END_2_HIDING_KING", selectable = false, visible = false },
+			{name = "storyEyeOpen", sprite = "STORY_END_2_EYE_OPEN", selectable = false, visible = false },
+			{name = "storyEyePeek", sprite = "STORY_END_2_EYE_PEEK", selectable = false, visible = false },
+			{name = "storyEyeWink", sprite = "STORY_END_2_EYE_WINK", selectable = false, visible = false },
+			{name = "storySmile", sprite = "STORY_END_2_SMILE", selectable = false, visible = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}	
+	
+	cutscenes.pack3_intro = {
+		name = "pack3_intro",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", updateFunction = gotoFirstLevelLP3, dontOffset = true},
+			{name = "blueRect", sprite = "", selectable = false, rectangle = true, color = { red = 59 / 255, green = 161 / 255, blue = 203 / 255 }, dontOffset = true},
+			{name = "storyBg", sprite = "STORY_BEGIN_BG_1", updateFunction = gotoFirstLevelLP3 },
+			{name = "storyHideHoof", sprite = "STORY_HIDE_HOOF_1", selectable = false },
+			{name = "storyFade", sprite = "STORY_BEGIN_FADE", selectable = false },
+			{name = "storyFade2", sprite = "STORY_BEGIN_FADE_2", selectable = false },
+			{name = "storyCloud4", sprite = "STORY_CLOUD_4", selectable = false },
+			{name = "storyCloud3", sprite = "STORY_CLOUD_3", selectable = false },
+			{name = "storyCloud2", sprite = "STORY_CLOUD_2", selectable = false },
+			{name = "storyCloud1", sprite = "STORY_CLOUD_1", selectable = false },
+			{name = "storyHideBirds2", sprite = "STORY_HIDE_BIRDS_2", selectable = false },
+			{name = "storyYellow", sprite = "STORY_ANGRY_YELLOW_BIRD", selectable = false },
+			{name = "storyPigs3", sprite = "STORY_FLYING_PIGS_3", selectable = false },
+			{name = "storyPigs2", sprite = "STORY_FLYING_PIGS_2", selectable = false },
+			{name = "storyPigs1", sprite = "STORY_FLYING_PIGS_1", selectable = false },
+			{name = "storyHideBirds", sprite = "STORY_HIDE_BIRDS_3", selectable = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}	
+
+	
+	cutscenes.world6_complete = {
+		name = "world6_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
+			{name = "storyHoof", sprite = "STORY_HIDE_HOOF_2", selectable = false },
+			{name = "storyBalloon", sprite = "STORY_BOSS_FLATTENED_BALLOON",  selectable = false },
+			{name = "storyBoss", sprite = "STORY_BOSS_THEME_1", selectable = false },
+			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING_2",  selectable = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}	
+	
+	cutscenes.world7_complete = {
+		name = "world7_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
+			{name = "storyHoof", sprite = "STORY_HIDE_HOOF_2", selectable = false },
+			{name = "storyBalloon", sprite = "STORY_BOSS_FLATTENED_BALLOON_2", selectable = false },
+			{name = "storyBoss", sprite = "STORY_BOSS_THEME_2", selectable = false },
+			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING_3", selectable = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}	
+	
+	cutscenes.world8_complete = {
+		name = "world8_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
+			{name = "storyHoof", sprite = "STORY_HIDE_HOOF_2", selectable = false },
+			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING_4", selectable = false },
+			{name = "storyCarpet", sprite = "STORY_BOSS_CARPET", selectable = false },
+			{name = "storyEye", sprite = "STORY_BOSS_KING_ESCAPING_4_EYE_2", selectable = false, visible = false },
+			{name = "storyWink", sprite = "STORY_BOSS_KING_ESCAPING_4_EYE_WINK", selectable = false, visible = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}
+
+	cutscenes.pack4_intro = {
+		name = "pack4_intro",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", updateFunction = gotoFirstLevelLP4, dontOffset = true},
+			{name = "storyBg1", sprite = "STORY_BEGIN_BG_1", updateFunction = gotoFirstLevelLP4, isBackground = true  },
+			{name = "storyBg2", sprite = "STORY_BEGIN_BG_2", updateFunction = gotoFirstLevelLP4, isBackground = true  },
+			{name = "storyHideBirds1", sprite = "STORY_HIDE_BIRDS_1", selectable = false },
+			{name = "storyHideBirds2", sprite = "STORY_HIDE_BIRDS_2", selectable = false },
+			{name = "storyHideBirds3", sprite = "STORY_HIDE_BIRDS_3", selectable = false },
+			{name = "storyYard", sprite = "STORY_CONSTRUCTION_YARD", selectable = false },
+			{name = "bg_extension", sprite = "STORY_BEGIN_BG_EXTENSION", selectable = false },
+			{name = "storyBigBrother", sprite = "STORY_EP4_START_BIG_BROTHER", selectable = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}	
+	}	
+		
+	cutscenes.world9_complete = {
+		name = "world9_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
+			{name = "storyBoss", sprite = "STORY_BOSS_THEME_1", selectable = false },
+			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
+			{name = "storyHideBirds", sprite = "STORY_HIDE_BIRDS_4", selectable = false },
+			{name = "storyBigBrother", sprite = "STORY_BIG_BROTHER_2", selectable = false },
+			{name = "storyHelmet", sprite = "STORY_BOSS_1_HELMET", selectable = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}	
+	
+	cutscenes.world10_complete = {
+		name = "world10_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
+			{name = "storyBoss", sprite = "STORY_BOSS_THEME_2", selectable = false },
+			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
+			{name = "storyHideBirds", sprite = "STORY_HIDE_BIRDS_4", selectable = false },
+			{name = "storyBigBrother", sprite = "STORY_BIG_BROTHER_2", selectable = false },
+			{name = "storyHelmet", sprite = "STORY_BOSS_2_HELMET", selectable = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}
+	
+	cutscenes.world11_complete = {
+		name = "world11_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
+			{name = "storyHoof", sprite = "STORY_HIDE_HOOF_2", selectable = false },
+			{name = "storyHideBirds", sprite = "STORY_HIDE_BIRDS_4", selectable = false },
+			{name = "storyEnd", sprite = "STORY_EP4_END", selectable = false },
+			{name = "storyBigBrother", sprite = "STORY_BIG_BROTHER_2", selectable = false },
+			{name = "storyHelmet", sprite = "STORY_BIG_BROTHER_HELMET", selectable = false },
+			{name = "storyKingPeak", sprite = "STORY_EP4_KING_PEAK", selectable = false, visible = false },
+			{name = "storyKingWink", sprite = "STORY_EP4_KING_WINK", selectable = false, visible = true },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}
+	
+	cutscenes.pack5_intro = {
+		name = "pack5_intro",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", updateFunction = gotoFirstLevelLP5, dontOffset = true},
+			{name = "storyBg1", sprite = "STORY_WESTERN_BEGIN", updateFunction = gotoFirstLevelLP5, isBackground = true, isCompoSprite=true, dontOffset = false },
+			--{name = "storyBg1", sprite = "STORY_BEGIN_BG_1", updateFunction = gotoFirstLevelLP5, isBackground = true, isCompoSprite=false },
+			--{name = "storyBg2", sprite = "STORY_BEGIN_BG_2", updateFunction = gotoFirstLevelLP5, isBackground = true  },
+			--{name = "storyHideBirds1", sprite = "STORY_HIDE_BIRDS_1", selectable = false },
+			--{name = "storyHideBirds2", sprite = "STORY_HIDE_BIRDS_2", selectable = false },
+            {name = "storyHideHoof", sprite = "STORY_HIDE_HOOF_1", selectable = false },
+			--{name = "storyHideBirds3", sprite = "STORY_HIDE_BIRDS_3", selectable = false },
+			--{name = "storyYard", sprite = "STORY_CONSTRUCTION_YARD", selectable = false },
+			--{name = "storyBg2", sprite = "STORY_WESTERN_BEGIN", updateFunction = gotoFirstLevelLP5, isBackground = false, isCompoSprite=true },
+			{name = "bg_extension", sprite = "STORY_BEGIN_BG_EXTENSION", selectable = false },
+			--{name = "storyBigBrother", sprite = "STORY_EP4_START_BIG_BROTHER", selectable = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}	
+	}	
+		
+	cutscenes.world12_complete = {
+		name = "world12_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			--{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
+			{name = "storyBg", sprite = "STORY_WESTERN_MIDDLE_1", isCompoSprite=true, selectable=false},
+			--{name = "storyBoss", sprite = "STORY_BOSS_THEME_2", selectable = false },
+			--{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
+			--{name = "storyHideBirds", sprite = "STORY_HIDE_BIRDS_4", selectable = false },
+			--{name = "storyBigBrother", sprite = "STORY_BIG_BROTHER_2", selectable = false },
+			--{name = "storyHelmet", sprite = "STORY_BOSS_2_HELMET", selectable = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}
+	
+	cutscenes.world13_complete = {
+		name = "world13_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_WESTERN_MIDDLE_2", isCompoSprite=true, selectable=false},
+			--{name = "storyBoss", sprite = "STORY_BOSS_THEME_2", selectable = false },
+			--{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
+			--{name = "storyHideBirds", sprite = "STORY_HIDE_BIRDS_4", selectable = false },
+			--{name = "storyBigBrother", sprite = "STORY_BIG_BROTHER_2", selectable = false },
+			--{name = "storyHelmet", sprite = "STORY_BOSS_2_HELMET", selectable = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}
+	
+	cutscenes.world14_complete = {
+		name = "world14_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_WESTERN_MIDDLE_2", isCompoSprite=true, selectable=false},
+			--{name = "storyBoss", sprite = "STORY_BOSS_THEME_2", selectable = false },
+			--{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
+			--{name = "storyHideBirds", sprite = "STORY_HIDE_BIRDS_4", selectable = false },
+			--{name = "storyBigBrother", sprite = "STORY_BIG_BROTHER_2", selectable = false },
+			--{name = "storyHelmet", sprite = "STORY_BOSS_2_HELMET", selectable = false },
+			{name = "storyWesternEndFinal", sprite = "STORY_WESTERN_END", isCompoSprite = true, selectable = false},
+			{name = "kingEyeOpen", sprite = "STORY_WEST_KING_EYE_OPEN", visible = false },
+			{name = "kingEyePeak", sprite = "STORY_WEST_KING_EYE_PEAK", visible = false },
+			{name = "kingEyeBlink", sprite = "STORY_WEST_KING_EYE_WINK", visible = false },
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}
+
+	
+	
+	cutscenes.pack6_intro = {
+		name = "pack6_intro",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_CAVE_BEGIN", isCompoSprite = true, selectable = false},
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}	
+	
+	cutscenes.world15_complete = {
+		name = "world15_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_CAVE_MIDDLE_1", isCompoSprite = true, selectable = false},
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}
+	
+	-- ADDED
+	cutscenes.world16_complete = {
+		name = "world16_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_CAVE_MIDDLE_2", isCompoSprite = true, selectable = false},
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+		}
+	}
+
+	-- ADDED
+	cutscenes.world17_complete = {
+		name = "world17_complete",
+		back = nil,
+		sound = "",		
+		state = "READY",
+		animationState = "SCROLL",
+		timer = 0,
+		bgColor = { red = 0, green = 0, blue = 0 },
+		isCutScene = true,
+		items = {
+			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
+			{name = "storyBg", sprite = "STORY_CAVE_END", isCompoSprite = true, selectable = false},
+			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
+			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
+			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
+			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
+			{name = "storyKingOpen", sprite = "STORY_CAVE_EYE_3", visible = false },
+			{name = "storyKingPeak", sprite = "STORY_CAVE_EYE_4", visible = false },
+			{name = "storyKingWink", sprite = "STORY_CAVE_EYE_2", visible = false },
+		}
+	}
+end
+
 function createMenuPages()
 
 	createPopupBoxSpriteTables()
@@ -2805,12 +4160,12 @@ function createMenuPages()
 	
 	mainMenu = {}
 	episodeSelectionPage = {}
-	gameStart = {}
-	theme4Start = {}
-	theme6Start = {}
-	theme9Start = {}
-	theme12Start = {}
-	theme15Start = {}
+--	gameStart = {}
+--	theme4Start = {}
+--	theme6Start = {}
+--	theme9Start = {}
+--	theme12Start = {}
+--	theme15Start = {}
 	upsellPage = {}
 	
 	if gameCenterSupported then
@@ -2903,7 +4258,7 @@ function createMenuPages()
 		state = "READY",
 		backgroundOverlay = { sprite = "DIM_BLOCK", visible = true },
 		items = {
-			{sprite = "BIRD_BOOMERANG_STILL", selectable = false},
+			{sprite = "GOLDEN_EGGS_BIRD_GREEN", selectable = false},
 		}
 	}
 	
@@ -2957,7 +4312,12 @@ function createMenuPages()
 			back = nil,
 			state = "READY",
 			backgroundOverlay = { sprite = "DIM_BLOCK", visible = true },
-			backgroundBox = { name = "backgroundDisclaimer", sprites = whiteBoxSprites, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER"},
+			backgroundBox = { name = "backgroundAreYouSure", 
+							  sprites = {topLeft = "POPUP_TOP_LEFT", left = "POPUP_LEFT", 
+										 bottomLeft = "POPUP_BOTTOM_LEFT", bottomMiddle = "POPUP_BOTTOM_MIDDLE", 
+										 bottomRight = "POPUP_BOTTOM_RIGHT", right = "POPUP_RIGHT", topRight = "POPUP_TOP_RIGHT", 
+										 topMiddle = "POPUP_TOP_MIDDLE", center = "POPUP_CENTER"}, 
+							  sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER"},
 			items = {
 				{name = "disclaimerText", text = "Angry Birds Lite Beta is an unfinished version of the application and may not reflect the final gameplay. Please report any issues you might encounter by using the bug button in the main menu. \n\n", font = fontBasic, selectable = false, hanchor = "HCENTER", vanchor = "VCENTER"},
 				{name = "okButton", sheet = "", sprite = "TUTORIAL_OK", selectable = true, callFunction = closeBetaDisclaimerPage},
@@ -2971,718 +4331,737 @@ function createMenuPages()
 	end
 	
 	
+			
+	levelSelectionPagesGoldenEggs = { {} }
+	--levelCount = 17
 	
-	levelSelectionPagesBasic = {}
+	--if g_newEpisodeScreen.lastSetEnabled == true then
+	--	levelCount = 22
+	--else
+	--	levelCount = 20
+	--end
 	
-	local itemsPerPage = 21
-	local levelCount = itemsPerPage
-	local pages = 3
-		
-	if isLiteVersion then
-		itemsPerPage = 16
-		levelCount = 15
-		pages = 1
+	levelCount = 26
+	
+	if(customer == "Intel") then 
+		levelCount = 31 
 	end
 	
-	if settings.currentLevelSelectionPages.basic > pages then
-		settings.currentLevelSelectionPages.basic = 1
+	-- golden eggs menu
+	local pages = 2
+	if settings.currentLevelSelectionPages.goldeneggs > pages then
+		settings.currentLevelSelectionPages.goldeneggs = 1
+	end
+	levelSelectionPagesGoldenEggs[1].currentPage = 1
+	levelSelectionPagesGoldenEggs[1].currentOffset = 0
+	levelSelectionPagesGoldenEggs[1].targetOffset = 0
+	levelSelectionPagesGoldenEggs[1].pageCount = 2
+	levelSelectionPagesGoldenEggs[1].name = "levelSelectionPagesGoldenEggs" .. 1
+	levelSelectionPagesGoldenEggs[1].pageNumber = 1
+	levelSelectionPagesGoldenEggs[1].levelCount = levelCount
+	levelSelectionPagesGoldenEggs[1].back = episodeSelectionPage
+	levelSelectionPagesGoldenEggs[1].font = fontBasic
+	levelSelectionPagesGoldenEggs[1].state = "READY"
+	levelSelectionPagesGoldenEggs[1].sound = "menu_confirm"
+	levelSelectionPagesGoldenEggs[1].themes = {1, 2}
+	levelSelectionPagesGoldenEggs[1].items = {}
+	levelSelectionPagesGoldenEggs[1].backgroundDrawFunction = drawLevelSelectionBackground
+	levelSelectionPagesGoldenEggs[1].drawSpritesFirst = false
+	levelSelectionPagesGoldenEggs[1].dragging = false
+		
+	
+	
+				
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{ name = "puzzledBird", sheet = puzzledBirdSheet, sprite = "GOLDEN_EGG_PUZZLED_BIRD"})		
+			
+	
+	
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items, { name = "text_1", text = "1", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="VCENTER", visible = false, })
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items, { name = "text_2", text = "2", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="VCENTER", visible = false })
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,	{ name = "dot1", sprite = "LS_DOT_WHITE", visible = false})
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items, { name = "dot2", sprite = "LS_DOT_BLACK", visible = false})
+	
+			
+	
+		
+	
+
+	
+	levelSelectionPagesGoldenEggs[1].firstLevelIndex = #levelSelectionPagesGoldenEggs[1].items + 1
+	
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
+		{
+			pageLevelIndex = 1,
+			levelIndex = 1,
+			filename = levelOrder_goldenEggs[1],
+			folder = "levels/goldeneggs1/",
+			updateFunction = updateGame, 
+			page = levelSelectionPagesGoldenEggs[1],
+			sprite = "EGG_SILHOUETTE_2",
+			children = { { sprite = "EGG_HINT_TUTORIAL", visible = false}, },
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
+		{
+			pageLevelIndex = 2,
+			levelIndex = 2,
+			filename = levelOrder_goldenEggs[2],
+			folder = "levels/goldeneggs1/",
+			updateFunction = updateGame, 
+			page = levelSelectionPagesGoldenEggs[1],
+			sprite = "EGG_SILHOUETTE_4",
+			activateOnRelease = true,
+			children = { { sprite = "EGG_HINT_ROCKET", visible = false}, },
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
+		{
+			pageLevelIndex = 3,
+			levelIndex = 3,
+			filename = levelOrder_goldenEggs[3],
+			folder = "levels/goldeneggs1/",
+			updateFunction = updateGame,
+			page = levelSelectionPagesGoldenEggs[1],
+			sprite = "EGG_SILHOUETTE_1",
+			activateOnRelease = true,
+			children = { { sprite = "EGG_HINT_BEACH_BALL", visible = false}, },
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
+		{
+			pageLevelIndex = 4,
+			levelIndex = 4,
+			updateFunction = updateGame, 
+			page = levelSelectionPagesGoldenEggs[1],
+			sprite = "EGG_SILHOUETTE_3",
+			updateFunction = updateSoundboard,
+			soundboard = "SOUNDBOARD1",
+			activateOnRelease = true,
+			children = { { sprite = "EGG_HINT_3STAR_EP1", visible = false}, },
+			selectable = false,
+			worldNumber = -1,
+		})
+		
+	--[[
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
+		{
+			pageLevelIndex = 5,
+			levelIndex = 5,
+
+			page = levelSelectionPagesGoldenEggs[1],
+			sprite = "EGG_SILHOUETTE_5",
+			updateFunction = updatePictureLevel,
+			pictureLevel = "MIGHTY_EAGLE",
+			activateOnRelease = true,
+			children = { { sprite = "EGG_HINT_ABOUT", visible = false}, },
+			selectable = false
+		})
+		]]--
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
+		{
+			pageLevelIndex = 5,
+			levelIndex = 5,
+			filename = levelOrder_goldenEggs[13],
+			folder = "levels/goldeneggs1/",
+			updateFunction = updateGame, 
+			page = levelSelectionPagesGoldenEggs[1],
+			sprite = "EGG_SILHOUETTE_5",
+			children = { { sprite = "EGG_HINT_ABOUT", visible = false}, },
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+		--[[
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 6,
+			levelIndex = 6,
+			sprite = "EGG_SILHOUETTE_7",
+			updateFunction = updatePictureLevel,
+			pictureLevel = "PIGGY",
+			activateOnRelease = true,
+			children = { { sprite = "EGG_HINT_TREASURE_CHEST", visible = false}, },
+			selectable = false
+		})
+		]]--
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
+		{
+			pageLevelIndex = 6,
+			levelIndex = 6,
+			filename = levelOrder_goldenEggs[14],
+			folder = "levels/goldeneggs1/",
+			updateFunction = updateGame, 
+			page = levelSelectionPagesGoldenEggs[1],
+			sprite = "EGG_SILHOUETTE_7",
+			children = { { sprite = "EGG_HINT_TREASURE_CHEST", visible = false}, },
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 7,
+			levelIndex = 7,
+			sprite = "EGG_SILHOUETTE_6",
+			updateFunction = updateSoundboard,
+			soundboard = "RADIO",
+			activateOnRelease = true,
+			children = { { sprite = "EGG_HINT_3STAR_EP2", visible = false}, },
+			selectable = false,
+			worldNumber = -1
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 8,
+			levelIndex = 8,
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[4],
+			folder = "levels/goldeneggs1/",
+			sprite = "GOLDEN_EGG_2",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 9,
+			levelIndex = 9,
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[5],
+			folder = "levels/goldeneggs1/",
+			sprite = "GOLDEN_EGG_3",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 10,
+			levelIndex = 10,
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[6],
+			folder = "levels/goldeneggs1/",
+			sprite = "GOLDEN_EGG_3",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 11,
+			levelIndex = 11,
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[7],
+			folder = "levels/goldeneggs1/",
+			sprite = "GOLDEN_EGG_3",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 12,
+			levelIndex = 12,
+			sprite = "GOLDEN_EGG_1",
+			updateFunction = updateSoundboard,
+			soundboard = "KEYBOARD",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION"},
+			loadAssetList = {"INGAME"}
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 13,
+			levelIndex = 13,
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[8],
+			folder = "levels/goldeneggs1/",
+			sprite = "GOLDEN_EGG_3",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+			
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 14,
+			levelIndex = 14,
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[9],
+			folder = "levels/goldeneggs1/",
+			sprite = "GOLDEN_EGG_1",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+	
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 15,
+			levelIndex = 15,
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[10],
+			folder = "levels/goldeneggs1/",
+			sprite = "GOLDEN_EGG_1",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 16,
+			levelIndex = 16,
+			sprite = "GOLDEN_EGG_1",
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[11],
+			folder = "levels/goldeneggs1/",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 17,
+			levelIndex = 17,
+			sprite = "GOLDEN_EGG_3",
+			updateFunction = updateSoundboard,
+			soundboard = "SEQUENCER",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			loadAssetList = {"INGAME"},
+			releaseAssetList = {"LEVELSELECTION"}
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 18,
+			levelIndex = 18,
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[15],
+			folder = "levels/goldeneggs1/",
+			sprite = "GOLDEN_EGG_2",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 19,
+			levelIndex = 19,
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[16],
+			folder = "levels/goldeneggs1/",
+			sprite = "GOLDEN_EGG_2",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 20,
+			levelIndex = 20,
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[17],
+			folder = "levels/goldeneggs1/",
+			sprite = "EGG_SUPER_BOWL",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+	
+	--if g_newEpisodeScreen.lastSetEnabled == true then
+		
+		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+			{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 21,
+			levelIndex = 21,
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[27],
+			folder = "levels/goldeneggs1/",
+			sprite = "GOLDEN_EGG_1",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+			})
+			
+		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+			{
+				page = levelSelectionPagesGoldenEggs[1],
+				pageLevelIndex = 22,
+				levelIndex = 22,
+				updateFunction = updateGame, 
+				filename = levelOrder_goldenEggs[18],					
+				folder = "levels/goldeneggs1/",
+				sprite = "GOLDEN_EGG_1",
+				activateOnRelease = true,
+				selectable = false,
+				worldNumber = -1,
+				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+			})
+	
+	--end
+	
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 23,
+			levelIndex = 23,
+			sprite = "GOLDEN_EGG_3",
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[19],
+			folder = "levels/goldeneggs1/",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 24,
+			levelIndex = 24,
+			sprite = "GOLDEN_EGG_3",
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[20],
+			folder = "levels/goldeneggs1/",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 25,
+			levelIndex = 25,
+			sprite = "GOLDEN_EGG_3",
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[21],
+			folder = "levels/goldeneggs1/",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{
+			page = levelSelectionPagesGoldenEggs[1],
+			pageLevelIndex = 26,
+			levelIndex = 26,
+			sprite = "GOLDEN_EGG_1",
+			updateFunction = updateGame, 
+			filename = levelOrder_goldenEggs[22],
+			folder = "levels/goldeneggs1/",
+			activateOnRelease = true,
+			selectable = false,
+			worldNumber = -1,
+			releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+		})
+
+	if(customer == "Intel") then
+		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+			{
+				page = levelSelectionPagesGoldenEggs[1],
+				pageLevelIndex = 27,
+				levelIndex = 27,
+				sprite = "GOLDEN_EGG_1",
+				updateFunction = updateGame, 
+				filename = levelOrder_goldenEggs[23],
+				folder = "levels/goldeneggs1/",
+				activateOnRelease = true,
+				selectable = false,
+				worldNumber = -1,
+				angle = 0.2345,
+				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+			})		
+		
+		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+			{
+				page = levelSelectionPagesGoldenEggs[1],
+				pageLevelIndex = 28,
+				levelIndex = 28,
+				sprite = "GOLDEN_EGG_1",
+				updateFunction = updateGame, 
+				filename = levelOrder_goldenEggs[24],
+				folder = "levels/goldeneggs1/",
+				activateOnRelease = true,
+				selectable = false,
+				worldNumber = -1,
+				angle = -0.2345,
+				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+			})		
+
+		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+			{
+				page = levelSelectionPagesGoldenEggs[1],
+				pageLevelIndex = 29,
+				levelIndex = 29,
+				sprite = "GOLDEN_EGG_1",
+				updateFunction = updateGame, 
+				filename = levelOrder_goldenEggs[25],
+				folder = "levels/goldeneggs1/",
+				activateOnRelease = true,
+				selectable = false,
+				worldNumber = -1,
+				angle = 0.2345,
+				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+				
+			})		
+		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+			{
+				page = levelSelectionPagesGoldenEggs[1],
+				pageLevelIndex = 30,
+				levelIndex = 30,
+				sprite = "GOLDEN_EGG_1",
+				updateFunction = updateGame, 
+				filename = levelOrder_goldenEggs[26],
+				folder = "levels/goldeneggs1/",
+				activateOnRelease = true,
+				selectable = false,
+				angle = -0.2345,
+				worldNumber = -1,
+				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+			})		
+		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+			{
+				page = levelSelectionPagesGoldenEggs[1],
+				pageLevelIndex = 31,
+				levelIndex = 31,
+				sprite = "GOLDEN_EGG_1",
+				updateFunction = updateGame, 
+				filename = levelOrder_goldenEggs[27],
+				folder = "levels/goldeneggs1/",
+				activateOnRelease = true,
+				selectable = false,
+				angle = -0.2345,
+				worldNumber = -1,
+				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
+			})		
+
 	end
 		
-	levelSelectionPagesBasic.currentPage = settings.currentLevelSelectionPages.basic
-	levelSelectionPagesBasic.currentOffset = (levelSelectionPagesBasic.currentPage - 1) * -screenWidth
-	levelSelectionPagesBasic.targetOffset = levelSelectionPagesBasic.currentOffset
-		
-
-	levelSelectionPagesBasic.name = "levelSelectionPagesBasic"
-	levelSelectionPagesBasic.pageCount = pages
-	levelSelectionPagesBasic.levelsPerPage = levelCount
-	levelSelectionPagesBasic.themes = { 1, 2, 3 }
-	levelSelectionPagesBasic.back = episodeSelectionPage
-	levelSelectionPagesBasic.font = fontBasic
-	levelSelectionPagesBasic.backgroundDrawFunction = drawLevelSelectionBackground
-	levelSelectionPagesBasic.state = "READY"
-	levelSelectionPagesBasic.sound = "menu_confirm"
-	levelSelectionPagesBasic.items = { 	
-			{ name = "left", sprite = "LS_THEME_1_LEFT", selectable = false },
-			{ name = "right", sprite = "LS_THEME_1_RIGHT", selectable = false },
-			{ name = "back", sprite = "LS_BACK_BUTTON", updateFunction = updateMenu, page = episodeSelectionPage, sound = "menu_back", activateOnRelease = true },
-			{ name = "text_1", text = "1", font = "FONT_LS_SMALL", visible = false },
-			{ name = "text_2", text = "2", font = "FONT_LS_SMALL", visible = false },
-			{ name = "text_3", text = "3", font = "FONT_LS_SMALL", visible = false },
-			{ name = "dot1", sprite = "LS_DOT_WHITE", visible = false },
-			{ name = "dot2", sprite = "LS_DOT_BLACK", visible = false },
-			{ name = "dot3", sprite = "LS_DOT_BLACK", visible = false },
-			{name = "title", sprite = "SELECT_LEVEL", selectable = false },
-			{name = "scrollAreaOverlay", sprite = "LS_CLIP_AREA", selectable = false},
-			{name = "leftNavigation", sprite = "BUTTON_ARROW_LEFT", visible = true, activateOnRelease = true,
-				shortcutKeys = { "LEFT", "PAGEDOWN" }, callFunction = scrollLevelSelectionLeft, callParam1 = levelSelectionPagesBasic },
-			{name = "rightNavigation", sprite = "BUTTON_ARROW_RIGHT", visible = true, activateOnRelease = true,
-				shortcutKeys = { "RIGHT", "PAGEUP" }, callFunction = scrollLevelSelectionRight, callParam1 = levelSelectionPagesBasic },
-		}
 	
-	if deviceModel == "n900" then
-		_G.table.insert(levelSelectionPagesBasic.items, { name = "overlay", sprite = "DIM_BLOCK", x = 0, y = 0, shade = 0, visible = false })
-		_G.table.insert(levelSelectionPagesBasic.items, { name = "button1", sheet = "", sprite = "AVAILABLE_ON_APP_STORE", callFunction = gotoOviStore, selectable = false, visible = false})
-		_G.table.insert(levelSelectionPagesBasic.items, { name = "button2", sheet = "", sprite = "UPSELL_BUTTON", callFunction = gotoOviStore, selectable = false, visible = false })
-
-		if settings.currentLevelSelectionPages.basic >= 2 then
-			getItemByName(levelSelectionPagesBasic.items, "overlay").shade = 0.65
+	
+	local t_superBowlIndex = 20		
+		
+	for i = 1, levelCount do
+		local t_sprite = "GOLDEN_EGG_CARVED_STAR"
+		if i == t_superBowlIndex then
+			t_sprite = "EGG_SUPER_BOWL_STAR"
 		end
+		local t_angle = 0
+		if customer == "Intel" and i > 26 then
+			t_angle = levelSelectionPagesGoldenEggs[1].items[levelSelectionPagesGoldenEggs[1].firstLevelIndex + i - 1].angle
+		end
+		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{ sprite = t_sprite,
+		  visible = false,
+		  selectable = false,
+		  levelIndex = i+1,
+		  angle = t_angle
+		})
+		
+		
+	end
+	
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{name = "back", sprite = "LS_BACK_BUTTON", updateFunction = updateMenu, page = episodeSelectionPage, sound = "menu_back", activateOnRelease = true, releaseAssetList = {"GOLDEN_EGGS"}} )
+	
+	if deviceModel == "roku" and screenHeight > 576 then
+		getItemByName(levelSelectionPagesGoldenEggs[1].items, "back").loadAssetList = {"OTHER_2"}
 	end
 	
 	if deviceModel == "roku" then
-		getItemByName(levelSelectionPagesBasic.items, "leftNavigation").sprite = "ROKU_BUTTON_ARROW_LEFT"
-		getItemByName(levelSelectionPagesBasic.items, "rightNavigation").sprite = "ROKU_BUTTON_ARROW_RIGHT"
+		getItemByName(levelSelectionPagesGoldenEggs[1].items, "back").needLoadingScreen = true
 	end
 	
-	levelSelectionPagesBasic.firstLevelIndex = #levelSelectionPagesBasic.items + 1
 	
-	local levelNumber = 0
-	for currentPage = 1, pages do	
-		local pageLevelIndex = 0	
-		for i = 1, itemsPerPage do
-			pageLevelIndex = pageLevelIndex + 1
-			levelNumber = levelNumber + 1
-			item = {
-					levelIndex = levelNumber,
-					pageLevelIndex = pageLevelIndex,
-					pageIndex = currentPage,
-					themeIndex = levelSelectionPagesBasic.themes[currentPage],
-					worldNumber = currentPage,
-					text =  "" .. pageLevelIndex,
-					folder = levelPath .. "/pack" .. currentPage .. "/",
-					filename = levelOrder[levelOrder.packs[currentPage]][pageLevelIndex],
-					sprite = "LS_LEVEL_BG_NORMAL_OPEN_" .. currentPage,
-					sheet = "LEVELSELECTION_SHEET_1",
-					updateFunction = updateGame, 
-					activateOnRelease = true,
-					releaseAssetList = {"LEVELSELECTION"}
-				}
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
+		{ name = "overlay", itemDrawFunction = goldenEggMenuDimDraw, sprite = "DIM_BLOCK", shade = 0, visible = false, fadeSpeed = 0, x = 0, y = 0 })
+	
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{name = "tipBubble", sprite = "EGG_THOUGHT_BUBBLE_3", 
+			children = { {sprite = "EGG_THOUGHT_BUBBLE_2"},
+					     {sprite = "EGG_THOUGHT_BUBBLE_1"},
+						}
+		})	
+		
+	_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
+		{name = "tipContent", sprite = "EGG_HINT_TREASURE_CHEST", visible = false,
+		})
+	levelSelectionPagesGoldenEggs[1].bgColors = {{ red = 238, green = 176, blue = 66 }, { red = 238, green = 176, blue = 66 }}
+	levelSelectionPagesGoldenEggs[1].bgColor = { red = 238, green = 176, blue = 66 }
+	
+	createCutscenes()
+	
+	episodes = {}
+	for i,episode in _G.ipairs(g_episodes) do
+--		local itemsPerPage = 21
+		-- local levelCount = #episode.pages[1].levels--itemsPerPage
+		local pages = #episode.pages
+			
+		if isLiteVersion then
+--			itemsPerPage = 16
+			-- levelCount = 15
+			pages = 1
+		end
+		
+		local page = {back = episodeSelectionPage,
+			
+			pageCount = pages,
+			-- levelsPerPage = levelCount,
+			themes = {},
+			folders = {},
+			level_buttons = {},
+			level_buttons_hd = {},
+			short_name = episode.short_page_name or "pack"..i,
+			star_egg = episode.three_stars_goldenegg,
+			layout = episode.layout_params,
+			font = fontBasic,
+			backgroundDrawFunction = drawLevelSelectionBackground,
+			state = "READY",
+			sound = "menu_confirm"}
+		
+		if not episode.short_page_name then break end
+		page.currentPage = settings.currentLevelSelectionPages[page.short_name]
+		if settings.currentLevelSelectionPages[page.short_name] > pages then
+			settings.currentLevelSelectionPages[page.short_name] = 1
+		end
 			
 
-			if deviceModel == "windows" and currentPage > 1 then
-				item.updateFunction = nil
-				item.callFunction = loadLevelFromLevelSelection
-				item.callParam1 = {	levelIndex = levelNumber, 
-									pageLevelIndex = pageLevelIndex,
-									folder = levelPath .. "/pack" .. currentPage .. "/",
-									pageIndex = currentPage,
-									themeIndex = levelSelectionPagesBasic.themes[currentPage],
-									filename = levelOrder[levelOrder.packs[currentPage]][pageLevelIndex],
-									worldNumber = currentPage,
-									page = levelSelectionPagesBasic,
-								}
-			end
-			item.spriteWidth, item.spriteHeight = _G.res.getSpriteBounds(item.sheet, item.sprite)
-			_G.table.insert(levelSelectionPagesBasic.items, item)
-			
-			if isLiteVersion then
-				item.folder = levelPath .. "/packLite/"
-			end
-		end
-		
-	end
-		
-	if isLiteVersion then
-		local lastItemIndex = #levelSelectionPagesBasic.items
-		
-		if deviceModel == "s60" then
-			levelSelectionPagesBasic.items[1].visible = false
-			levelSelectionPagesBasic.items[lastItemIndex].sprite = "OVI_BUTTON_MEDIUM"
-			levelSelectionPagesBasic.items[lastItemIndex].sheet = ""
-			levelSelectionPagesBasic.items[lastItemIndex].levelIndex = nil
-			levelSelectionPagesBasic.items[lastItemIndex].text = nil
-			levelSelectionPagesBasic.items[lastItemIndex].updateFunction = updateMenu
-			levelSelectionPagesBasic.items[lastItemIndex].page = upsellPage
-			levelSelectionPagesBasic.back = mainMenu
-			levelSelectionPagesBasic.items[3].page = mainMenu
-		else
-			levelSelectionPagesBasic.items[lastItemIndex].sprite = "LS_FULL_VERSION"
-			levelSelectionPagesBasic.items[lastItemIndex].sheet = ""
-			levelSelectionPagesBasic.items[lastItemIndex].levelIndex = nil
-			levelSelectionPagesBasic.items[lastItemIndex].text = nil
-			--levelSelectionPagesBasic.items[lastItemIndex].callFunction = gotoFullVersionInAppStore
-			--levelSelectionPagesBasic.items[lastItemIndex].updateFunction = nil
-			levelSelectionPagesBasic.items[lastItemIndex].page = upsellPage
-			levelSelectionPagesBasic.items[lastItemIndex].updateFunction = updateMenu
-			levelSelectionPagesBasic.back = mainMenu
-			levelSelectionPagesBasic.items[3].page = mainMenu
-		end
-	end
-	
-	levelSelectionPagesBasic.bgColors = { { red = 41, green = 118, blue = 142 }, { red = 14, green = 104, blue = 79 }, { red = 161, green = 98, blue = 60 } }
-	levelSelectionPagesBasic.bgColor = { red = 41, green = 118, blue = 142 }
-	levelSelectionPagesBasic.items[levelSelectionPagesBasic.firstLevelIndex].updateFunction = updateMenu
-	levelSelectionPagesBasic.items[levelSelectionPagesBasic.firstLevelIndex].page = gameStart
-	levelSelectionPagesBasic.items[levelSelectionPagesBasic.firstLevelIndex].needLoadingScreen = true
-
-	
-	if not isLiteVersion then
-		
-		levelSelectionPagesExtra = {}
-			
-		local itemsPerPage = 21
-		local levelCount = itemsPerPage
-		local pages = 2
-			
-		if settings.currentLevelSelectionPages.extra > pages then
-			settings.currentLevelSelectionPages.extra = 1
-		end
-			
-		levelSelectionPagesExtra.currentPage = settings.currentLevelSelectionPages.extra
-		levelSelectionPagesExtra.currentOffset = (levelSelectionPagesExtra.currentPage - 1) * -screenWidth
-		levelSelectionPagesExtra.targetOffset = levelSelectionPagesExtra.currentOffset			
-		
-		levelSelectionPagesExtra.name = "levelSelectionPagesExtra"
-		levelSelectionPagesExtra.pageCount = pages
-		levelSelectionPagesExtra.levelsPerPage = levelCount
-		levelSelectionPagesExtra.themes = { 4, 5 }
-		levelSelectionPagesExtra.back = episodeSelectionPage
-		levelSelectionPagesExtra.font = fontBasic
-		levelSelectionPagesExtra.state = "READY"
-		levelSelectionPagesExtra.sound = "menu_confirm"
-		levelSelectionPagesExtra.items = { 	
-				{ name = "left", sprite = "LS_THEME_4_LEFT", selectable = false },
-				{ name = "right", sprite = "LS_THEME_4_RIGHT", selectable = false },
+	--	levelSelectionPagesBasic.name = "levelSelectionPagesBasic"
+		page.items = { 	
+				{ name = "left", sprite = episode.decor_left or "", selectable = false },
+				{ name = "right", sprite = episode.decor_right or "", selectable = false },
 				{ name = "back", sprite = "LS_BACK_BUTTON", updateFunction = updateMenu, page = episodeSelectionPage, sound = "menu_back", activateOnRelease = true },
-				{ name = "text_4", text = "4", font = "FONT_LS_SMALL", visible = false },
-				{ name = "text_5", text = "5", font = "FONT_LS_SMALL", visible = false },
-				{ name = "dot1", sprite = "LS_DOT_WHITE", visible = false },
-				{ name = "dot2", sprite = "LS_DOT_BLACK", visible = false },
-				{name = "title", sprite = "SELECT_LEVEL", selectable = false },	
-				{name = "scrollAreaOverlay", sprite = "LS_CLIP_AREA", selectable = false},
+				{name = "title", sprite = "SELECT_LEVEL", selectable = false },
+				{name = "scrollAreaOverlay", sprite = gameOptions.ui.bigLevelSelection and "" or "LS_CLIP_AREA", selectable = false},
 				{name = "leftNavigation", sprite = "BUTTON_ARROW_LEFT", visible = true, activateOnRelease = true,
-					shortcutKeys = { "LEFT", "PAGEDOWN" }, callFunction = scrollLevelSelectionLeft, callParam1 = levelSelectionPagesExtra },
+					shortcutKeys = { "LEFT", "PAGEDOWN" }, callFunction = scrollLevelSelectionLeft, callParam1 = page },
 				{name = "rightNavigation", sprite = "BUTTON_ARROW_RIGHT", visible = true, activateOnRelease = true,
-					shortcutKeys = { "RIGHT", "PAGEUP" }, callFunction = scrollLevelSelectionRight, callParam1 = levelSelectionPagesExtra },
+					shortcutKeys = { "RIGHT", "PAGEUP" }, callFunction = scrollLevelSelectionRight, callParam1 = page },
 			}
-				
-		levelSelectionPagesExtra.firstLevelIndex = #levelSelectionPagesExtra.items + 1
-		levelSelectionPagesExtra.backgroundDrawFunction = drawLevelSelectionBackground
+			
+		for i,v in _G.pairs(episode.pages) do
+			page.themes[i] = {num = v.world_number, amount = #v.levels, clear_ach = v.clear_achievement}
+			page.folders[i] = v.folder_name
+			page.level_buttons[v.world_number] = v.level_button
+			page.level_buttons_hd[v.world_number] = v.level_button:gsub("%OPEN","OPEN_HD")
+			_G.table.insert(page.items, { name = "text_"..v.world_number, text = v.display_number, font = "FONT_LS_SMALL", visible = false })
+		end
+		for i,v in _G.pairs(episode.pages) do
+			_G.table.insert(page.items, { name = "dot"..i, sprite = i==1 and "LS_DOT_WHITE" or "LS_DOT_BLACK", visible = false })
+		end
 		
 		if deviceModel == "roku" then
-			getItemByName(levelSelectionPagesExtra.items, "leftNavigation").sprite = "ROKU_BUTTON_ARROW_LEFT"
-			getItemByName(levelSelectionPagesExtra.items, "rightNavigation").sprite = "ROKU_BUTTON_ARROW_RIGHT"
+			getItemByName(page.items, "leftNavigation").sprite = "ROKU_BUTTON_ARROW_LEFT"
+			getItemByName(page.items, "rightNavigation").sprite = "ROKU_BUTTON_ARROW_RIGHT"
 		end
+		
+		page.firstLevelIndex = #page.items + 1
 		
 		local levelNumber = 0
 		for currentPage = 1, pages do	
-			local pageLevelIndex = 0
-			for i = 1, itemsPerPage do
+			local pageLevelIndex = 0	
+			for i,v in _G.pairs(episode.pages[currentPage].levels) do
 				pageLevelIndex = pageLevelIndex + 1
 				levelNumber = levelNumber + 1
 				item = {
 						levelIndex = levelNumber,
-						pageLevelIndex = pageLevelIndex,
-						pageIndex = currentPage,
-						themeIndex = levelSelectionPagesExtra.themes[currentPage],
-						worldNumber = currentPage + 3,
-						text =  "" .. pageLevelIndex,
-						folder = levelPath .. "/pack" .. currentPage + 3 .. "/",
-						filename = levelOrder[levelOrder.packs[currentPage + 3]][pageLevelIndex],
-						sprite = "LS_LEVEL_BG_NORMAL_OPEN_" .. currentPage,
-						sheet = "LEVELSELECTION_SHEET_1",
+						pageLevelIndex = episode.per_page_level_numbering and pageLevelIndex or levelNumber,--..page.themes[currentPage],
+						themeIndex = page.themes[currentPage].num,
+						worldNumber = page.themes[currentPage].num,
+						folder = levelPath .. "/" .. page.folders[currentPage] .. "/",
+						filename = v.name,
+						sprite = "",--levelSelectionPagesBasic.level_buttons[currentPage],
 						updateFunction = updateGame, 
 						activateOnRelease = true,
-						releaseAssetList = {"LEVELSELECTION"}
+
+						startcut = v.intro_cutscene,
+						endcut = v.clear_cutscene,
+						-- epend = v.episode_end
 					}
-					
-				if deviceModel == "windows" then
+				
+
+				if deviceModel == "windows" and currentPage > 1 then
 					item.updateFunction = nil
 					item.callFunction = loadLevelFromLevelSelection
 					item.callParam1 = {	levelIndex = levelNumber, 
 										pageLevelIndex = pageLevelIndex,
-										folder = levelPath .. "/pack" .. currentPage + 3 .. "/",
-										pageIndex = currentPage,
-										themeIndex = levelSelectionPagesExtra.themes[currentPage],
-										filename = levelOrder[levelOrder.packs[currentPage + 3]][pageLevelIndex],
-										worldNumber = currentPage + 3,
-										page = levelSelectionPagesExtra,
+										folder = levelPath .. "/" .. page.folders[currentPage] .. "/",
+										themeIndex = page.themes[currentPage].num,
+										filename = v.name,
+										worldNumber = page.themes[currentPage].num,
+										page = page,
 									}
 				end
-				item.spriteWidth, item.spriteHeight = _G.res.getSpriteBounds(item.sheet, item.sprite)
-				_G.table.insert(levelSelectionPagesExtra.items, item)
+				_G.table.insert(page.items, item)
+				
+				if isLiteVersion then
+					item.folder = levelPath .. "/packLite/"
+				end
 			end
-		end
-
-
-		levelSelectionPagesExtra.bgColors = { { red = 105, green = 184, blue = 225 }, { red = 184, green = 152, blue = 91 } }
-		levelSelectionPagesExtra.bgColor =  { red = 105, green = 184, blue = 225 }
-		
-		-- The check below was commented out because if the game is locked he shouldn't even enter episodes > 1, if it is decided to change later, 
-		-- just bring it back
-		-- if deviceModel ~= "windows" or g_registrationEnabled ~= true or g_isGameUnlocked == true then
-			-- levelSelectionPagesExtra.items[levelSelectionPagesExtra.firstLevelIndex].callFunction = nil
-			-- levelSelectionPagesExtra.items[levelSelectionPagesExtra.firstLevelIndex].callParam1 = nil
-		-- end
-		levelSelectionPagesExtra.items[levelSelectionPagesExtra.firstLevelIndex].callFunction = nil
-		levelSelectionPagesExtra.items[levelSelectionPagesExtra.firstLevelIndex].callParam1 = nil
-		levelSelectionPagesExtra.items[levelSelectionPagesExtra.firstLevelIndex].updateFunction = updateMenu
-		levelSelectionPagesExtra.items[levelSelectionPagesExtra.firstLevelIndex].page = theme4Start
-		levelSelectionPagesExtra.items[levelSelectionPagesExtra.firstLevelIndex].needLoadingScreen = true
 			
-		levelSelectionPagesGoldenEggs = { {} }
-		levelCount = 17
-		
-		-- golden eggs menu
-		local pages = 2
-		if settings.currentLevelSelectionPages.goldeneggs > pages then
-			settings.currentLevelSelectionPages.goldeneggs = 1
-		end
-		levelSelectionPagesGoldenEggs[1].currentPage = 1
-		levelSelectionPagesGoldenEggs[1].currentOffset = 0
-		levelSelectionPagesGoldenEggs[1].targetOffset = 0
-		levelSelectionPagesGoldenEggs[1].pageCount = 2
-		levelSelectionPagesGoldenEggs[1].name = "levelSelectionPagesGoldenEggs" .. 1
-		levelSelectionPagesGoldenEggs[1].pageNumber = 1
-		levelSelectionPagesGoldenEggs[1].levelCount = levelCount
-		levelSelectionPagesGoldenEggs[1].back = episodeSelectionPage
-		levelSelectionPagesGoldenEggs[1].font = fontBasic
-		levelSelectionPagesGoldenEggs[1].state = "READY"
-		levelSelectionPagesGoldenEggs[1].sound = "menu_confirm"
-		levelSelectionPagesGoldenEggs[1].themes = {1, 2}
-		levelSelectionPagesGoldenEggs[1].items = {}
-		levelSelectionPagesGoldenEggs[1].backgroundDrawFunction = drawLevelSelectionBackground
-		levelSelectionPagesGoldenEggs[1].drawSpritesFirst = false
-		levelSelectionPagesGoldenEggs[1].dragging = false
-			
-		
-		
-					
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
-			{ name = "puzzledBird", sheet = puzzledBirdSheet, sprite = "GOLDEN_EGG_PUZZLED_BIRD"})		
-				
-		
-		
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items, { name = "text_1", text = "1", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="VCENTER", visible = false, })
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items, { name = "text_2", text = "2", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="VCENTER", visible = false })
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,	{ name = "dot1", sprite = "LS_DOT_WHITE", visible = false})
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items, { name = "dot2", sprite = "LS_DOT_BLACK", visible = false})
-		
-				
-		
-			
-		
-	
-		
-		levelSelectionPagesGoldenEggs[1].firstLevelIndex = #levelSelectionPagesGoldenEggs[1].items + 1
-		
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
-			{
-				pageLevelIndex = 1,
-				levelIndex = 1,
-				filename = levelOrder_goldenEggs[1],
-				folder = "levels/goldeneggs1/",
-				updateFunction = updateGame, 
-				page = levelSelectionPagesGoldenEggs[1],
-				sprite = "EGG_SILHOUETTE_2",
-				children = { { sprite = "EGG_HINT_TUTORIAL", visible = false}, },
-				activateOnRelease = true,
-				selectable = false,
-				worldNumber = -1,
-				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
-			})
-			
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
-			{
-				pageLevelIndex = 2,
-				levelIndex = 2,
-				filename = levelOrder_goldenEggs[2],
-				folder = "levels/goldeneggs1/",
-				updateFunction = updateGame, 
-				page = levelSelectionPagesGoldenEggs[1],
-				sprite = "EGG_SILHOUETTE_4",
-				activateOnRelease = true,
-				children = { { sprite = "EGG_HINT_ROCKET", visible = false}, },
-				selectable = false,
-				worldNumber = -1,
-				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
-			})
-			
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
-			{
-				pageLevelIndex = 3,
-				levelIndex = 3,
-				filename = levelOrder_goldenEggs[3],
-				folder = "levels/goldeneggs1/",
-				updateFunction = updateGame,
-				page = levelSelectionPagesGoldenEggs[1],
-				sprite = "EGG_SILHOUETTE_1",
-				activateOnRelease = true,
-				children = { { sprite = "EGG_HINT_BEACH_BALL", visible = false}, },
-				selectable = false,
-				worldNumber = -1,
-				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
-			})
-			
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
-			{
-				pageLevelIndex = 4,
-				levelIndex = 4,
-				updateFunction = updateGame, 
-				page = levelSelectionPagesGoldenEggs[1],
-				sprite = "EGG_SILHOUETTE_3",
-				updateFunction = updateSoundboard,
-				soundboard = "SOUNDBOARD1",
-				activateOnRelease = true,
-				children = { { sprite = "EGG_HINT_3STAR_EP1", visible = false}, },
-				selectable = false,
-				worldNumber = -1,
-			})
-			
-		--[[
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
-			{
-				pageLevelIndex = 5,
-				levelIndex = 5,
-				page = levelSelectionPagesGoldenEggs[1],
-				sprite = "EGG_SILHOUETTE_5",
-				updateFunction = updatePictureLevel,
-				pictureLevel = "MIGHTY_EAGLE",
-				activateOnRelease = true,
-				children = { { sprite = "EGG_HINT_ABOUT", visible = false}, },
-				selectable = false
-			})
-			]]--
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
-			{
-				pageLevelIndex = 5,
-				levelIndex = 5,
-				filename = levelOrder_goldenEggs[13],
-				folder = "levels/goldeneggs1/",
-				updateFunction = updateGame, 
-				page = levelSelectionPagesGoldenEggs[1],
-				sprite = "EGG_SILHOUETTE_5",
-				children = { { sprite = "EGG_HINT_ABOUT", visible = false}, },
-				activateOnRelease = true,
-				selectable = false,
-				worldNumber = -1,
-				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
-			})
-			--[[
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
-			{
-				page = levelSelectionPagesGoldenEggs[1],
-				pageLevelIndex = 6,
-				levelIndex = 6,
-				sprite = "EGG_SILHOUETTE_7",
-				updateFunction = updatePictureLevel,
-				pictureLevel = "PIGGY",
-				activateOnRelease = true,
-				children = { { sprite = "EGG_HINT_TREASURE_CHEST", visible = false}, },
-				selectable = false
-			})
-			]]--
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
-			{
-				pageLevelIndex = 6,
-				levelIndex = 6,
-				filename = levelOrder_goldenEggs[14],
-				folder = "levels/goldeneggs1/",
-				updateFunction = updateGame, 
-				page = levelSelectionPagesGoldenEggs[1],
-				sprite = "EGG_SILHOUETTE_7",
-				children = { { sprite = "EGG_HINT_TREASURE_CHEST", visible = false}, },
-				activateOnRelease = true,
-				selectable = false,
-				worldNumber = -1,
-				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
-			})
-			
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
-			{
-				page = levelSelectionPagesGoldenEggs[1],
-				pageLevelIndex = 7,
-				levelIndex = 7,
-				sprite = "EGG_SILHOUETTE_6",
-				updateFunction = updateSoundboard,
-				soundboard = "RADIO",
-				activateOnRelease = true,
-				children = { { sprite = "EGG_HINT_3STAR_EP2", visible = false}, },
-				selectable = false,
-				worldNumber = -1
-			})
-			
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
-			{
-				page = levelSelectionPagesGoldenEggs[1],
-				pageLevelIndex = 8,
-				levelIndex = 8,
-				updateFunction = updateGame, 
-				filename = levelOrder_goldenEggs[4],
-				folder = "levels/goldeneggs1/",
-				sprite = "GOLDEN_EGG_2",
-				activateOnRelease = true,
-				selectable = false,
-				worldNumber = -1,
-				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
-			})
-			
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
-			{
-				page = levelSelectionPagesGoldenEggs[1],
-				pageLevelIndex = 9,
-				levelIndex = 9,
-				updateFunction = updateGame, 
-				filename = levelOrder_goldenEggs[5],
-				folder = "levels/goldeneggs1/",
-				sprite = "GOLDEN_EGG_3",
-				activateOnRelease = true,
-				selectable = false,
-				worldNumber = -1,
-				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
-			})
-			
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
-			{
-				page = levelSelectionPagesGoldenEggs[1],
-				pageLevelIndex = 10,
-				levelIndex = 10,
-				updateFunction = updateGame, 
-				filename = levelOrder_goldenEggs[6],
-				folder = "levels/goldeneggs1/",
-				sprite = "GOLDEN_EGG_3",
-				activateOnRelease = true,
-				selectable = false,
-				worldNumber = -1,
-				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
-			})
-			
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
-			{
-				page = levelSelectionPagesGoldenEggs[1],
-				pageLevelIndex = 11,
-				levelIndex = 11,
-				updateFunction = updateGame, 
-				filename = levelOrder_goldenEggs[7],
-				folder = "levels/goldeneggs1/",
-				sprite = "GOLDEN_EGG_3",
-				activateOnRelease = true,
-				selectable = false,
-				worldNumber = -1,
-				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
-			})
-			
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
-			{
-				page = levelSelectionPagesGoldenEggs[1],
-				pageLevelIndex = 12,
-				levelIndex = 12,
-				sprite = "GOLDEN_EGG_1",
-				updateFunction = updateSoundboard,
-				soundboard = "KEYBOARD",
-				activateOnRelease = true,
-				selectable = false,
-				worldNumber = -1,
-				releaseAssetList = {"LEVELSELECTION"},
-				loadAssetList = {"INGAME"}
-			})
-			
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
-			{
-				page = levelSelectionPagesGoldenEggs[1],
-				pageLevelIndex = 13,
-				levelIndex = 13,
-				updateFunction = updateGame, 
-				filename = levelOrder_goldenEggs[8],
-				folder = "levels/goldeneggs1/",
-				sprite = "GOLDEN_EGG_3",
-				activateOnRelease = true,
-				selectable = false,
-				worldNumber = -1,
-				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
-				
-			})
-			
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
-			{
-				page = levelSelectionPagesGoldenEggs[1],
-				pageLevelIndex = 14,
-				levelIndex = 14,
-				updateFunction = updateGame, 
-				filename = levelOrder_goldenEggs[9],
-				folder = "levels/goldeneggs1/",
-				sprite = "GOLDEN_EGG_1",
-				activateOnRelease = true,
-				selectable = false,
-				worldNumber = -1,
-				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
-			})
-		
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
-			{
-				page = levelSelectionPagesGoldenEggs[1],
-				pageLevelIndex = 15,
-				levelIndex = 15,
-				updateFunction = updateGame, 
-				filename = levelOrder_goldenEggs[10],
-				folder = "levels/goldeneggs1/",
-				sprite = "GOLDEN_EGG_1",
-				activateOnRelease = true,
-				selectable = false,
-				worldNumber = -1,
-				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
-			})
-			
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
-			{
-				page = levelSelectionPagesGoldenEggs[1],
-				pageLevelIndex = 16,
-				levelIndex = 16,
-				sprite = "GOLDEN_EGG_1",
-				updateFunction = updateGame, 
-				filename = levelOrder_goldenEggs[11],
-				folder = "levels/goldeneggs1/",
-				activateOnRelease = true,
-				selectable = false,
-				worldNumber = -1,
-				releaseAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}
-			})
-			
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
-			{
-				page = levelSelectionPagesGoldenEggs[1],
-				pageLevelIndex = 17,
-				levelIndex = 17,
-				sprite = "GOLDEN_EGG_3",
-				updateFunction = updateSoundboard,
-				soundboard = "SEQUENCER",
-				activateOnRelease = true,
-				selectable = false,
-				worldNumber = -1,
-				loadAssetList = {"INGAME"},
-				releaseAssetList = {"LEVELSELECTION"}
-			})		
-		
-			
-		for i = 1, levelCount do
-			_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
-			{ sprite = "GOLDEN_EGG_CARVED_STAR",
-			  visible = false,
-			  selectable = false,
-			  levelIndex = i+1,
-			})
-		end
-		
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
-			{name = "back", sprite = "LS_BACK_BUTTON", updateFunction = updateMenu, page = episodeSelectionPage, sound = "menu_back", activateOnRelease = true, releaseAssetList = {"GOLDEN_EGGS"}} )
-		
-		if deviceModel == "roku" and screenHeight > 576 then
-			getItemByName(levelSelectionPagesGoldenEggs[1].items, "back").loadAssetList = {"OTHER_2"}
-		end
-		
-		if deviceModel == "roku" then
-			getItemByName(levelSelectionPagesGoldenEggs[1].items, "back").needLoadingScreen = true
-		end
-		
-		
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items, 
-			{ name = "overlay", itemDrawFunction = goldenEggMenuDimDraw, sprite = "DIM_BLOCK", shade = 0, visible = false, fadeSpeed = 0, x = 0, y = 0 })
-		
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
-			{name = "tipBubble", sprite = "EGG_THOUGHT_BUBBLE_3", 
-				children = { {sprite = "EGG_THOUGHT_BUBBLE_2"},
-						     {sprite = "EGG_THOUGHT_BUBBLE_1"},
-							}
-			})	
-			
-		_G.table.insert(levelSelectionPagesGoldenEggs[1].items,
-			{name = "tipContent", sprite = "EGG_HINT_TREASURE_CHEST", visible = false,
-			})
-		levelSelectionPagesGoldenEggs[1].bgColors = {{ red = 238, green = 176, blue = 66 }, { red = 238, green = 176, blue = 66 }}
-		levelSelectionPagesGoldenEggs[1].bgColor = { red = 238, green = 176, blue = 66 }
-		
-		levelSelectionPagesPack3 = {}
-			
-		local itemsPerPage = 15
-		local levelCount = itemsPerPage
-		local pages = 3
-			
-		if settings.currentLevelSelectionPages.pack3 > pages then
-			settings.currentLevelSelectionPages.pack3 = 1
-		end
-			
-		levelSelectionPagesPack3.currentPage = settings.currentLevelSelectionPages.pack3
-		levelSelectionPagesPack3.currentOffset = (levelSelectionPagesPack3.currentPage - 1) * -screenWidth
-		levelSelectionPagesPack3.targetOffset = levelSelectionPagesPack3.currentOffset
-			
-			
-		levelSelectionPagesPack3.name = "levelSelectionPagesPack3"
-		levelSelectionPagesPack3.pageCount = pages
-		levelSelectionPagesPack3.levelsPerPage = levelCount
-		levelSelectionPagesPack3.themes = { 6, 7, 8 }
-		levelSelectionPagesPack3.back = episodeSelectionPage
-		levelSelectionPagesPack3.font = fontBasic
-		levelSelectionPagesPack3.state = "READY"
-		levelSelectionPagesPack3.sound = "menu_confirm"
-		levelSelectionPagesPack3.items = { 	
-				{ name = "left", sprite = "LS_THEME_6_LEFT", selectable = false },
-				{ name = "right", sprite = "LS_THEME_6_RIGHT", selectable = false },
-				{ name = "back", sprite = "LS_BACK_BUTTON", updateFunction = updateMenu, page = episodeSelectionPage, sound = "menu_back", activateOnRelease = true },
-				{ name = "text_6", text = "6", font = "FONT_LS_SMALL", visible = false },
-				{ name = "text_7", text = "7", font = "FONT_LS_SMALL", visible = false },
-				{ name = "text_8", text = "8", font = "FONT_LS_SMALL", visible = false },
-				{ name = "dot1", sprite = "LS_DOT_BLACK", visible = false },
-				{ name = "dot2", sprite = "LS_DOT_BLACK", visible = false },
-				{ name = "dot3", sprite = "LS_DOT_BLACK", visible = false },
-				{name = "title", sprite = "SELECT_LEVEL", selectable = false },
-				{name = "scrollAreaOverlay", sprite = "LS_CLIP_AREA", selectable = false},
-				{name = "leftNavigation", sprite = "BUTTON_ARROW_LEFT", visible = true, activateOnRelease = true,
-					shortcutKeys = { "LEFT", "PAGEDOWN" }, callFunction = scrollLevelSelectionLeft, callParam1 = levelSelectionPagesPack3 },
-				{name = "rightNavigation", sprite = "BUTTON_ARROW_RIGHT", visible = true, activateOnRelease = true,
-					shortcutKeys = { "RIGHT", "PAGEUP" }, callFunction = scrollLevelSelectionRight, callParam1 = levelSelectionPagesPack3 },
-			}
-				
-			levelSelectionPagesPack3.firstLevelIndex = #levelSelectionPagesPack3.items + 1
-			levelSelectionPagesPack3.backgroundDrawFunction = drawLevelSelectionBackground
-		
-		if deviceModel == "roku" then
-			getItemByName(levelSelectionPagesPack3.items, "leftNavigation").sprite = "ROKU_BUTTON_ARROW_LEFT"
-			getItemByName(levelSelectionPagesPack3.items, "rightNavigation").sprite = "ROKU_BUTTON_ARROW_RIGHT"
-		end
-		
-		local levelNumber = 0
-		for currentPage = 1, pages do
-			local pageLevelIndex = 0
-			for i = 1, itemsPerPage do
-				pageLevelIndex = pageLevelIndex + 1
-				levelNumber = levelNumber + 1
-				item = {
-						levelIndex = levelNumber,
-						pageLevelIndex = pageLevelIndex,
-						pageIndex = currentPage,
-						themeIndex = levelSelectionPagesPack3.themes[currentPage],
-						worldNumber = currentPage + 5,
-						text =  "" .. pageLevelIndex,
-						folder = levelPath .. "/pack" .. currentPage + 5 .. "/",
-						filename = levelOrder[levelOrder.packs[currentPage + 5]][pageLevelIndex],
-						sprite = "LS_LEVEL_BG_NORMAL_OPEN_" .. levelSelectionPagesPack3.themes[currentPage],
-						updateFunction = updateGame, 
-						activateOnRelease = true,
-						releaseAssetList = {"LEVELSELECTION"}
-					}
-					
-				if deviceModel == "windows" then
-					item.updateFunction = nil
-					item.callFunction = loadLevelFromLevelSelection
-					item.callParam1 = {	levelIndex = levelNumber, 
-										pageLevelIndex = pageLevelIndex,
-										folder = levelPath .. "/pack" .. currentPage + 5 .. "/",
-										pageIndex = currentPage,
-										themeIndex = levelSelectionPagesPack3.themes[currentPage],
-										filename = levelOrder[levelOrder.packs[currentPage + 5]][pageLevelIndex],
-										worldNumber = currentPage + 5,
-										page = levelSelectionPagesPack3,
-									}
-				end
-				
-				item.spriteWidth, item.spriteHeight = _G.res.getSpriteBounds("", item.sprite)
-				_G.table.insert(levelSelectionPagesPack3.items, item)
-					
-			end	
-			if currentPage == 3 then
+			if i == 3 and currentPage == 3 then
 				--golden egg
-				_G.table.insert(levelSelectionPagesPack3.items, 
+				_G.table.insert(page.items, 
 					{
 					name = "goldenEgg",
 					sprite = "GOLDEN_EGG_5",
@@ -3690,130 +5069,141 @@ function createMenuPages()
 					})
 			end
 		end
-				
-		levelSelectionPagesPack3.bgColors = { { red = 82, green = 103, blue = 43 }, { red = 21, green = 31, blue = 63 }, { red = 190, green = 219, blue = 229 } }
-		levelSelectionPagesPack3.bgColor = { red = 82, green = 103, blue = 43 }
 		
-		-- The check below was commented out because if the game is locked he shouldn't even enter episodes > 1, if it is decided to change later, 
-		-- just bring it back
-		-- if deviceModel ~= "windows" or g_registrationEnabled ~= true or g_isGameUnlocked == true then
-			-- levelSelectionPagesPack3.items[levelSelectionPagesPack3.firstLevelIndex].callFunction = nil
-			-- levelSelectionPagesPack3.items[levelSelectionPagesPack3.firstLevelIndex].callParam1 = nil
-		-- end
-		levelSelectionPagesPack3.items[levelSelectionPagesPack3.firstLevelIndex].callFunction = nil
-		levelSelectionPagesPack3.items[levelSelectionPagesPack3.firstLevelIndex].callParam1 = nil
-		levelSelectionPagesPack3.items[levelSelectionPagesPack3.firstLevelIndex].updateFunction = updateMenu
-		levelSelectionPagesPack3.items[levelSelectionPagesPack3.firstLevelIndex].page = theme6Start
-		levelSelectionPagesPack3.items[levelSelectionPagesPack3.firstLevelIndex].needLoadingScreen = true
-
-		
-		levelSelectionPagesPack4 = {}
-			
-		local itemsPerPage = 15
-		local levelCount = itemsPerPage
-		local pages = 3
-		
-		if settings.currentLevelSelectionPages.pack4 > pages then
-			settings.currentLevelSelectionPages.pack4 = 1
+		page.bgColors = {}
+		for i,v in _G.pairs(episode.pages) do
+			_G.table.insert(page.bgColors,{ red = v.colour.r, green = v.colour.g, blue = v.colour.b })
 		end
-			
-		levelSelectionPagesPack4.currentPage = settings.currentLevelSelectionPages.pack4
-		levelSelectionPagesPack4.currentOffset = (levelSelectionPagesPack4.currentPage - 1) * -screenWidth
-		levelSelectionPagesPack4.targetOffset = levelSelectionPagesPack4.currentOffset
-		
-		
-		levelSelectionPagesPack4.name = "levelSelectionPagesPack4"
-		levelSelectionPagesPack4.pageCount = pages
-		levelSelectionPagesPack4.levelsPerPage = levelCount
-		levelSelectionPagesPack4.themes = { 9, 10, 11}
-		levelSelectionPagesPack4.back = episodeSelectionPage
-		levelSelectionPagesPack4.font = fontBasic
-		levelSelectionPagesPack4.state = "READY"
-		levelSelectionPagesPack4.sound = "menu_confirm"
-		levelSelectionPagesPack4.items = { 	
-				{ name = "left", sprite = "LS_THEME_9_LEFT", selectable = false },
-				{ name = "right", sprite = "LS_THEME_9_RIGHT", selectable = false },
-				{ name = "back", sprite = "LS_BACK_BUTTON", updateFunction = updateMenu, page = episodeSelectionPage, sound = "menu_back", activateOnRelease = true },
-				{ name = "text_9", text = "9", font = "FONT_LS_SMALL", visible = false },
-				{ name = "text_10", text = "10", font = "FONT_LS_SMALL", visible = false },
-				{ name = "text_11", text = "11", font = "FONT_LS_SMALL", visible = false },
-				{ name = "dot1", sprite = "LS_DOT_BLACK", visible = false },
-				{ name = "dot2", sprite = "LS_DOT_BLACK", visible = false },
-				{ name = "dot3", sprite = "LS_DOT_BLACK", visible = false },
-				{name = "title", sprite = "SELECT_LEVEL", selectable = false },	
-				{name = "scrollAreaOverlay", sprite = "LS_CLIP_AREA", selectable = false},
-				{name = "leftNavigation", sprite = "BUTTON_ARROW_LEFT", visible = true, activateOnRelease = true,
-					shortcutKeys = { "LEFT", "PAGEDOWN" }, callFunction = scrollLevelSelectionLeft, callParam1 = levelSelectionPagesPack4 },
-				{name = "rightNavigation", sprite = "BUTTON_ARROW_RIGHT", visible = true, activateOnRelease = true,
-					shortcutKeys = { "RIGHT", "PAGEUP" }, callFunction = scrollLevelSelectionRight, callParam1 = levelSelectionPagesPack4 },
-			}
-				
-			levelSelectionPagesPack4.firstLevelIndex = #levelSelectionPagesPack4.items + 1
-			levelSelectionPagesPack4.backgroundDrawFunction = drawLevelSelectionBackground
-		
-		if deviceModel == "roku" then
-			getItemByName(levelSelectionPagesPack4.items, "leftNavigation").sprite = "ROKU_BUTTON_ARROW_LEFT"
-			getItemByName(levelSelectionPagesPack4.items, "rightNavigation").sprite = "ROKU_BUTTON_ARROW_RIGHT"
+	--	levelSelectionPagesBasic.bgColor = { red = 41, green = 118, blue = 142 }
+		if episode.pages[1].levels[1].intro_cutscene and cutscenes[episode.pages[1].levels[1].intro_cutscene] then
+			page.items[page.firstLevelIndex].updateFunction = updateMenu
+			page.items[page.firstLevelIndex].page = cutscenes[episode.pages[1].levels[1].intro_cutscene] --TODO
+			page.items[page.firstLevelIndex].needLoadingScreen = true
 		end
 		
-		local levelNumber = 0
-		for currentPage = 1, pages do
-			local pageLevelIndex = 0
-			for i = 1, itemsPerPage do
-				pageLevelIndex = pageLevelIndex + 1
-				levelNumber = levelNumber + 1
-				item = {
-						levelIndex = levelNumber,
-						pageLevelIndex = pageLevelIndex,
-						pageIndex = currentPage,
-						themeIndex = levelSelectionPagesPack4.themes[currentPage],
-						worldNumber = currentPage + 8,
-						text =  "" .. pageLevelIndex,
-						folder = levelPath .. "/pack" .. currentPage + 8 .. "/",
-						filename = levelOrder[levelOrder.packs[currentPage + 8]][pageLevelIndex],
-						sprite = "LS_LEVEL_BG_NORMAL_OPEN_" .. levelSelectionPagesBasic.themes[currentPage], -- uses buttons from episode 1
-						sheet = "LEVELSELECTION_SHEET_1",
-						updateFunction = updateGame, 
-						activateOnRelease = true,
-						releaseAssetList = {"LEVELSELECTION"}
-					}
-					
-				if deviceModel == "windows" then
-					item.updateFunction = nil
-					item.callFunction = loadLevelFromLevelSelection
-					item.callParam1 = {	levelIndex = levelNumber, 
-										pageLevelIndex = pageLevelIndex,
-										folder = levelPath .. "/pack" .. currentPage + 8 .. "/",
-										pageIndex = currentPage,
-										themeIndex = levelSelectionPagesPack4.themes[currentPage],
-										filename = levelOrder[levelOrder.packs[currentPage + 8]][pageLevelIndex],
-										worldNumber = currentPage + 8,
-										page = levelSelectionPagesPack4,
-									}
-				end
-				
-				item.spriteWidth, item.spriteHeight = _G.res.getSpriteBounds(item.sheet, item.sprite)
-				_G.table.insert(levelSelectionPagesPack4.items, item)
-			end
-		end
-					
-		levelSelectionPagesPack4.bgColors = { { red = 41, green = 118, blue = 142 }, { red = 105, green = 184, blue = 225 }, { red = 82, green = 103, blue = 43 } }
-		levelSelectionPagesPack4.bgColor = { red = 41, green = 118, blue = 142 }
-		
-		-- The check below was commented out because if the game is locked he shouldn't even enter episodes > 1, if it is decided to change later, 
-		-- just bring it back
-		-- if deviceModel ~= "windows" or g_registrationEnabled ~= true or g_isGameUnlocked == true then
-			-- levelSelectionPagesPack4.items[levelSelectionPagesPack4.firstLevelIndex].callFunction = nil
-			-- levelSelectionPagesPack4.items[levelSelectionPagesPack4.firstLevelIndex].callParam1 = nil
-		-- end
-		levelSelectionPagesPack4.items[levelSelectionPagesPack4.firstLevelIndex].callFunction = nil
-		levelSelectionPagesPack4.items[levelSelectionPagesPack4.firstLevelIndex].callParam1 = nil
-		levelSelectionPagesPack4.items[levelSelectionPagesPack4.firstLevelIndex].updateFunction = updateMenu
-		levelSelectionPagesPack4.items[levelSelectionPagesPack4.firstLevelIndex].page = theme9Start
-		levelSelectionPagesPack4.items[levelSelectionPagesPack4.firstLevelIndex].needLoadingScreen = true
-	
-		
+		episodes[i] = page
 	end
+--		
+--	
+--	
+--		levelSelectionPagesPack5 = {}
+--			
+--		local itemsPerPage = 15
+--		local levelCount = itemsPerPage
+--		local pages = 3
+--		
+--		if settings.currentLevelSelectionPages.pack5 > pages then
+--			settings.currentLevelSelectionPages.pack5 = 1
+--		end
+--			
+--		levelSelectionPagesPack5.currentPage = settings.currentLevelSelectionPages.pack5
+--		levelSelectionPagesPack5.currentOffset = (levelSelectionPagesPack5.currentPage - 1) * -screenWidth
+--		levelSelectionPagesPack5.targetOffset = levelSelectionPagesPack5.currentOffset
+--		
+--		
+--		levelSelectionPagesPack5.name = "levelSelectionPagesPack5"
+--		levelSelectionPagesPack5.pageCount = pages
+--		levelSelectionPagesPack5.levelsPerPage = levelCount
+--		levelSelectionPagesPack5.themes = { 12, 13, 14}
+--		levelSelectionPagesPack5.back = episodeSelectionPage
+--		levelSelectionPagesPack5.font = fontBasic
+--		levelSelectionPagesPack5.state = "READY"
+--		levelSelectionPagesPack5.sound = "menu_confirm"
+--		levelSelectionPagesPack5.items = { 	
+--				{ name = "left", sprite = "LS_THEME_1_LEFT", selectable = false },
+--				{ name = "right", sprite = "LS_THEME_12_RIGHT", selectable = false },
+--				{ name = "back", sprite = "LS_BACK_BUTTON", updateFunction = updateMenu, page = episodeSelectionPage, sound = "menu_back", activateOnRelease = true },
+--				{ name = "text_12", text = "12", font = "FONT_LS_SMALL", visible = false },
+--				{ name = "text_13", text = "13", font = "FONT_LS_SMALL", visible = false },
+--				{ name = "text_14", text = "14", font = "FONT_LS_SMALL", visible = false },
+--				{ name = "dot1", sprite = "LS_DOT_BLACK", visible = false },
+--				{ name = "dot2", sprite = "LS_DOT_BLACK", visible = false },
+--				{ name = "dot3", sprite = "LS_DOT_BLACK", visible = false },
+--				{name = "title", sprite = "SELECT_LEVEL", selectable = false },		
+--				{name = "scrollAreaOverlay", sprite = "LS_CLIP_AREA", selectable = false},
+--				{name = "leftNavigation", sprite = "BUTTON_ARROW_LEFT", visible = true, activateOnRelease = true,
+--					shortcutKeys = { "LEFT", "PAGEDOWN" }, callFunction = scrollLevelSelectionLeft, callParam1 = levelSelectionPagesPack5 },
+--				{name = "rightNavigation", sprite = "BUTTON_ARROW_RIGHT", visible = true, activateOnRelease = true,
+--					shortcutKeys = { "RIGHT", "PAGEUP" }, callFunction = scrollLevelSelectionRight, callParam1 = levelSelectionPagesPack5 },
+--			}
+--				
+--			levelSelectionPagesPack5.firstLevelIndex = #levelSelectionPagesPack5.items + 1
+--			levelSelectionPagesPack5.backgroundDrawFunction = drawLevelSelectionBackground
+--		
+--		if deviceModel == "roku" then
+--			getItemByName(levelSelectionPagesPack5.items, "leftNavigation").sprite = "ROKU_BUTTON_ARROW_LEFT"
+--			getItemByName(levelSelectionPagesPack5.items, "rightNavigation").sprite = "ROKU_BUTTON_ARROW_RIGHT"
+--		end
+--		
+--		local levelNumber = 0
+--		for currentPage = 1, pages do
+--			local pageLevelIndex = 0
+--			for i = 1, itemsPerPage do
+--				pageLevelIndex = pageLevelIndex + 1
+--				levelNumber = levelNumber + 1
+--				item = {
+--						levelIndex = levelNumber,
+--						pageLevelIndex = pageLevelIndex,
+--						pageIndex = currentPage,
+--						themeIndex = levelSelectionPagesPack5.themes[currentPage],
+--						worldNumber = currentPage + 11,
+--						text =  "" .. pageLevelIndex,
+--						folder = levelPath .. "/pack" .. currentPage + 11 .. "/",
+--						filename = levelOrder[levelOrder.packs[currentPage + 11]][pageLevelIndex],
+--						sprite = "LS_LEVEL_BG_NORMAL_OPEN_" .. levelSelectionPagesBasic.themes[currentPage], -- uses buttons from episode 1
+--						sheet = "LEVELSELECTION_SHEET_1",
+--						updateFunction = updateGame, 
+--						activateOnRelease = true,
+--						releaseAssetList = {"LEVELSELECTION"}
+--					}
+--				if deviceModel == "windows" then
+--					item.updateFunction = nil
+--					item.callFunction = loadLevelFromLevelSelection
+--					item.callParam1 = {	levelIndex = levelNumber, 
+--										pageLevelIndex = pageLevelIndex,
+--										folder = levelPath .. "/pack" .. currentPage + 11 .. "/",
+--										pageIndex = currentPage,
+--										themeIndex = levelSelectionPagesPack5.themes[currentPage],
+--										filename = levelOrder[levelOrder.packs[currentPage + 11]][pageLevelIndex],
+--										worldNumber = currentPage + 11,
+--										page = levelSelectionPagesPack5,
+--									}
+--				end
+--				item.spriteWidth, item.spriteHeight = _G.res.getSpriteBounds(item.sheet, item.sprite)
+--				_G.table.insert(levelSelectionPagesPack5.items, item)
+--			end
+--		end
+--		
+--		if g_newEpisodeScreen.lastSetEnabled == false then
+--			local t_item = {
+--					levelIndex = levelNumber,
+--					pageLevelIndex = "",
+--					name = "comingSoon",
+--					sprite = "LS_COMING_SOON",
+--					sheet = "",
+--				}
+--			
+--			_G.table.insert(levelSelectionPagesPack5.items, t_item)
+--		end
+--					
+--		levelSelectionPagesPack5.bgColors = { { red = 126, green = 113, blue = 89 }, { red = 99, green = 142, blue = 160 }, { red = 67, green = 82, blue = 62 }}
+--		levelSelectionPagesPack5.bgColor = { red = 126, green = 113, blue = 89 }
+--		
+--		-- The check below was commented out because if the game is locked he shouldn't even enter episodes > 1, if it is decided to change later, 
+--		-- just bring it back
+--		-- if deviceModel ~= "windows" or g_registrationEnabled ~= true or g_isGameUnlocked == true then
+--			-- levelSelectionPagesPack5.items[levelSelectionPagesPack5.firstLevelIndex].callFunction = nil
+--			-- levelSelectionPagesPack5.items[levelSelectionPagesPack5.firstLevelIndex].callParam1 = nil
+--		-- end
+--		levelSelectionPagesPack5.items[levelSelectionPagesPack5.firstLevelIndex].callFunction = nil
+--		levelSelectionPagesPack5.items[levelSelectionPagesPack5.firstLevelIndex].callParam1 = nil
+--		levelSelectionPagesPack5.items[levelSelectionPagesPack5.firstLevelIndex].updateFunction = updateMenu
+--		levelSelectionPagesPack5.items[levelSelectionPagesPack5.firstLevelIndex].page = theme12Start
+--		levelSelectionPagesPack5.items[levelSelectionPagesPack5.firstLevelIndex].needLoadingScreen = true
+--		
+--	
+--		
+--	end
 
 	
 	
@@ -3825,10 +5215,11 @@ function createMenuPages()
 			levelSelectionEdit[i], currentLevel = makeEditLevelPack(i, currentLevel)
 			currentLevel = i * 21
 			levelSelectionEdit[i].back = mainMenu
+			local w,h = _G.res.getSpritePivot("","LS_BACK_BUTTON")
 			
 			if i > 0 then
 				_G.table.insert(levelSelectionEdit[i].items,
-					{sprite = "LS_BACK_BUTTON", x = 0, y = screenHeight, updateFunction = updateMenu, page = levelSelectionEdit[i-1], sound = "menu_back" } )
+					{sprite = "LS_BACK_BUTTON", x = 0 + (gameOptions.editor.fixSelectionPage and w or 0), y = screenHeight - (gameOptions.editor.fixSelectionPage and h/2 or 0), updateFunction = updateMenu, page = levelSelectionEdit[i-1], sound = "menu_back" } )
 					if i == 1 then
 						levelSelectionEdit[i].items[#levelSelectionEdit[i].items].back = mainMenu
 						levelSelectionEdit[i].items[#levelSelectionEdit[i].items].page = mainMenu
@@ -3837,7 +5228,7 @@ function createMenuPages()
 			
 			if i-1 > 0 then
 				_G.table.insert(levelSelectionEdit[i-1].items,
-					{sprite = "LS_BACK_BUTTON", x = screenWidth - 100, y = screenHeight, updateFunction = updateMenu, page = levelSelectionEdit[i], sound = "menu_back" } )
+					{sprite = "LS_BACK_BUTTON", x = screenWidth - (gameOptions.editor.fixSelectionPage and w or 100), y = screenHeight - (gameOptions.editor.fixSelectionPage and h/2 or 0), updateFunction = updateMenu, page = levelSelectionEdit[i], sound = "menu_back" } )
 			end
 		end
 	end
@@ -3887,9 +5278,12 @@ function createMenuPages()
 	episodeSelectionPage.back = mainMenu
 	episodeSelectionPage.backgroundDrawFunction = drawLevelSelectionBackground
 	episodeSelectionPage.state = "READY"
-	episodeSelectionPage.sound = "menu_confirm"
+	episodeSelectionPage.sound = ""
 	episodeSelectionPage.bgColor = { red = 11, green = 101, blue = 76 }							
 	episodeSelectionPage.numEpisodes = 6
+
+	episodeSelectionPage.currentPage = 1
+	episodeSelectionPage.pageCount = episodeSelectionPage.numEpisodes
 	
 	episodeSelectionPage.items = {												
 		{name = "left", sprite = "LS_MAIN_LEFT", selectable = false },
@@ -3904,149 +5298,177 @@ function createMenuPages()
 		getItemByName(episodeSelectionPage.items, "back").needLoadingScreen = true
 	end
 	
-	_G.table.insert(episodeSelectionPage.items, 1, 
-		{name = "episode1",  updateFunction = gotoLevelSelection, box = { topLeft = "EPISODE1_TOP_LEFT", left = "EPISODE1_LEFT", 
-											   bottomLeft = "EPISODE1_BOTTOM_LEFT", bottomMiddle = "EPISODE1_BOTTOM_MIDDLE",
-											   bottomRight = "EPISODE1_BOTTOM_RIGHT", right = "EPISODE1_RIGHT",
-											   topRight = "EPISODE1_TOP_RIGHT", topMiddle = "EPISODE1_TOP_MIDDLE",
-											   center = "EPISODE1_CENTER"}, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER", 	
-			children = { {name = "ep1Sprite", sprite = "LS_PACK_THUMB_01"},
-						 {name = "ep1ScoreBox1", box = scoreBox, hanchor = "LEFT", vanchor = "BOTTOM"},
-						 {name = "ep1ScoreBox2", box = scoreBox, hanchor = "RIGHT", vanchor = "BOTTOM"},
-						 {name = "episode1Text", text = "TEXT_LP_NAME_1", hanchor="HCENTER", vanchor="VCENTER", font = fontBasic },
-						 {name = "episode1Score", text = "score", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM"},
-						 {name = "episode1Stars", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" },
-						 {name = "episode1ScoreText", sprite = scoreSpriteName, selectable = false, visible = false, vanchor = "VCENTER", hanchor = "TOP"},
-						 {name = "episode1YellowLine", box = {topMiddle = "EPISODE_YELLOW_LINE"}, hanchor = "HCENTER", vanchor = "TOP"},
-						 {name = "ep1StarSprite", sprite = "LS_STAR_GOLD", hanchor = "HCENTER", vanchor = "VCENTER"},
-						 {name = "lock", sprite = "LS_LEVEL_PACK_LOCK"},
-						}}
-	)
-	
-	if deviceModel == "roku" and screenHeight <= 576 then
-		getItemByName(episodeSelectionPage.items, "episode1Score").font = "FONT_LS_SMALLER"
-	end	
-	
-	_G.table.insert(episodeSelectionPage.items, 2, 
-		{name = "episode2", updateFunction = gotoLevelSelectionExtra, box = { topLeft = "EPISODE2_TOP_LEFT", left = "EPISODE2_LEFT", 
-											   bottomLeft = "EPISODE2_BOTTOM_LEFT", bottomMiddle = "EPISODE2_BOTTOM_MIDDLE",
-											   bottomRight = "EPISODE2_BOTTOM_RIGHT", right = "EPISODE2_RIGHT",
-											   topRight = "EPISODE2_TOP_RIGHT", topMiddle = "EPISODE2_TOP_MIDDLE",
-											   center = "EPISODE2_CENTER"}, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER",
-			children = { {name = "ep2Sprite", sprite = "LS_PACK_THUMB_02"},
-						 {name = "ep2ScoreBox1", box = scoreBox, hanchor = "LEFT", vanchor = "BOTTOM"},
-						 {name = "ep2ScoreBox2", box = scoreBox, hanchor = "RIGHT", vanchor = "BOTTOM"},
-						 {name = "episode2Text", text = "TEXT_LP_NAME_2", hanchor="HCENTER", vanchor="VCENTER", font = fontBasic },
-						 {name = "episode2Score", text = "score", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" },
-						 {name = "episode2Stars", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" },
-						 {name = "episode2ScoreText", sprite = scoreSpriteName,  selectable = false, visible = false, vanchor = "TOP", hanchor = "HCENTER"},
-						 {name = "appStore", sprite = "AVAILABLE_ON_APP_STORE"},
-						 {name = "episode2YellowLine", box = {topMiddle = "EPISODE_YELLOW_LINE"}, hanchor = "HCENTER", vanchor = "TOP"},
-						 {name = "ep2StarSprite", sprite = "LS_STAR_GOLD", hanchor = "HCENTER", vanchor = "VCENTER"},
-						 {name = "lock", sprite = "LS_LEVEL_PACK_LOCK"},
-						}}
-	)
-	
-	_G.table.insert(episodeSelectionPage.items, 3, 
-	{
-		name = "episode3", updateFunction = gotoLevelSelectionPack3, box = { topLeft = "EPISODE3_TOP_LEFT", left = "EPISODE3_LEFT", 
-												   bottomLeft = "EPISODE3_BOTTOM_LEFT", bottomMiddle = "EPISODE3_BOTTOM_MIDDLE",
-												   bottomRight = "EPISODE3_BOTTOM_RIGHT", right = "EPISODE3_RIGHT",
-												   topRight = "EPISODE3_TOP_RIGHT", topMiddle = "EPISODE3_TOP_MIDDLE",
-												   center = "EPISODE3_CENTER"}, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER",
-		children = { {name = "ep3Sprite", sprite = "LS_PACK_THUMB_03"},
-					 {name = "ep3ScoreBox1", box = scoreBox, hanchor = "LEFT", vanchor = "BOTTOM"},
-					 {name = "ep3ScoreBox2", box = scoreBox, hanchor = "RIGHT", vanchor = "BOTTOM"},
-					 {name = "episode3Text", text = "TEXT_LP_NAME_3", hanchor="HCENTER", vanchor="VCENTER", font = fontBasic },
-					 {name = "episode3Score", text = "", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" },
-					 {name = "episode3Stars", text = "", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" },
-					 {name = "episode3ScoreText", sprite = scoreSpriteName, selectable = false, visible = false, vanchor = "TOP", hanchor = "HCENTER"},
-					 {name = "appStore", sprite = "AVAILABLE_ON_APP_STORE"},
-					 {name = "episode3YellowLine", box = {topMiddle = "EPISODE_YELLOW_LINE"}, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "TOP"},
-					 {name = "ep3StarSprite", sprite = "LS_STAR_GOLD", hanchor = "HCENTER", vanchor = "VCENTER"},
-					 {name = "lock", sprite = "LS_LEVEL_PACK_LOCK"},
-					}
-	})
-	
-	
-	_G.table.insert(episodeSelectionPage.items, 4, 
-	{
-		name = "episode4", updateFunction = gotoLevelSelectionPack4, box = { topLeft = "EPISODE4_TOP_LEFT", left = "EPISODE4_LEFT", 
-											   bottomLeft = "EPISODE4_BOTTOM_LEFT", bottomMiddle = "EPISODE4_BOTTOM_MIDDLE",
-											   bottomRight = "EPISODE4_BOTTOM_RIGHT", right = "EPISODE4_RIGHT",
-											   topRight = "EPISODE4_TOP_RIGHT", topMiddle = "EPISODE4_TOP_MIDDLE",
-											   center = "EPISODE4_CENTER"}, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER",
-		children = { {name = "ep4Sprite", sprite = "LS_PACK_THUMB_04"},
-					 {name = "ep4ScoreBox1", box = scoreBox, hanchor = "LEFT", vanchor = "BOTTOM"},
-					 {name = "ep4ScoreBox2", box = scoreBox, hanchor = "RIGHT", vanchor = "BOTTOM"},
-					 {name = "episode4Text", text = "TEXT_LP_NAME_4", hanchor="HCENTER", vanchor="VCENTER", font = fontBasic },
-					 {name = "episode4Score", text = "", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" },
-					 {name = "episode4Stars", text = "", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" },
-					 {name = "episode4ScoreText", sprite = scoreSpriteName, selectable = false, visible = false, vanchor = "TOP", hanchor = "HCENTER"},
-					 {name = "appStore", sprite = "AVAILABLE_ON_APP_STORE"},
-					 {name = "episode4YellowLine", box = {topMiddle = "EPISODE_YELLOW_LINE"}, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "TOP"},
-					 {name = "ep4StarSprite", sprite = "LS_STAR_GOLD", hanchor = "HCENTER", vanchor = "VCENTER"},
-					 {name = "lock", sprite = "LS_LEVEL_PACK_LOCK"},
-					}
-	})
+	if g_newEpisodeScreen.enabled == false or scrollingEpisodes then
+		_G.table.insert(episodeSelectionPage.items,{name = "leftNavigation", sprite = "BUTTON_ARROW_LEFT", visible = true, activateOnRelease = true,
+			shortcutKeys = { "LEFT", "PAGEDOWN" }, callFunction = scrollLevelSelectionLeft, callParam1 = episodeSelectionPage })
+		_G.table.insert(episodeSelectionPage.items,{name = "rightNavigation", sprite = "BUTTON_ARROW_RIGHT", visible = true, activateOnRelease = true,
+			shortcutKeys = { "RIGHT", "PAGEUP" }, callFunction = scrollLevelSelectionRight, callParam1 = episodeSelectionPage })
+
+		for i = 1, episodeSelectionPage.numEpisodes do
+			_G.table.insert(episodeSelectionPage.items, { name = "dot"..i, sprite = i==1 and "LS_DOT_WHITE" or "LS_DOT_BLACK", visible = false })
+		end
+
+		_G.table.insert(episodeSelectionPage.items, 1, 
+			{name = "episode1",  updateFunction = gotoLevelSelection, box = { topLeft = "EPISODE1_TOP_LEFT", left = "EPISODE1_LEFT", 
+												   bottomLeft = "EPISODE1_BOTTOM_LEFT", bottomMiddle = "EPISODE1_BOTTOM_MIDDLE",
+												   bottomRight = "EPISODE1_BOTTOM_RIGHT", right = "EPISODE1_RIGHT",
+												   topRight = "EPISODE1_TOP_RIGHT", topMiddle = "EPISODE1_TOP_MIDDLE",
+												   center = "EPISODE1_CENTER"}, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER", 	
+				children = { {name = "ep1Sprite", sprite = "LS_PACK_THUMB_01"},
+							 {name = "ep1ScoreBox1", box = scoreBox, hanchor = "LEFT", vanchor = "BOTTOM"},
+							 {name = "ep1ScoreBox2", box = scoreBox, hanchor = "RIGHT", vanchor = "BOTTOM"},
+							 {name = "episode1Text", text = "TEXT_LP_NAME_1", hanchor="HCENTER", vanchor="VCENTER", font = fontBasic },
+							 {name = "episode1Score", text = "score", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM"},
+							 {name = "episode1Stars", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" },
+							 {name = "episode1ScoreText", sprite = scoreSpriteName, selectable = false, visible = false, vanchor = "VCENTER", hanchor = "TOP"},
+							 {name = "episode1YellowLine", box = {topMiddle = "EPISODE_YELLOW_LINE"}, hanchor = "HCENTER", vanchor = "TOP"},
+							 {name = "ep1StarSprite", sprite = "LS_STAR_GOLD", hanchor = "HCENTER", vanchor = "VCENTER"},
+							 {name = "lock", sprite = "LS_LEVEL_PACK_LOCK"},
+							}}
+		)
 		
-	_G.table.insert(episodeSelectionPage.items, 5, 
-	{
-		name = "episodeG", updateFunction = gotoLevelSelectionGoldenEggs, box = { topLeft = "EPISODEG_TOP_LEFT", left = "EPISODEG_LEFT", 
-											   bottomLeft = "EPISODEG_BOTTOM_LEFT", bottomMiddle = "EPISODEG_BOTTOM_MIDDLE",
-											   bottomRight = "EPISODEG_BOTTOM_RIGHT", right = "EPISODEG_RIGHT",
-											   topRight = "EPISODEG_TOP_RIGHT", topMiddle = "EPISODEG_TOP_MIDDLE",
-											   center = "EPISODEG_CENTER"}, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER", 
-		children = {{name = "epGSprite", sprite = "EPISODEG_ICON"}, 
-					{name = "epGStar", sprite = "LS_PACK_GE_STAR"},
-					{name = "epGEggs", sprite = "LS_PACK_GE_THUMB_01"},
-					{name = "epGEpisodeText", text = "Golden Eggs", vanchor = "VCENTER", hanchor = "HCENTER", font = fontBasic},
-					{ name = "epGStarText", text = "", hanchor="HCENTER", vanchor="VCENTER", font = "FONT_LS_SMALL"} }
-	})		
-	
-	episodeSelectionPage.goldenEggHitBox = {}			
+		if deviceModel == "roku" and screenHeight <= 576 then
+			getItemByName(episodeSelectionPage.items, "episode1Score").font = "FONT_LS_SMALLER"
+		end	
+		
+		_G.table.insert(episodeSelectionPage.items, 2, 
+			{name = "episode2", updateFunction = gotoLevelSelectionExtra, box = { topLeft = "EPISODE2_TOP_LEFT", left = "EPISODE2_LEFT", 
+												   bottomLeft = "EPISODE2_BOTTOM_LEFT", bottomMiddle = "EPISODE2_BOTTOM_MIDDLE",
+												   bottomRight = "EPISODE2_BOTTOM_RIGHT", right = "EPISODE2_RIGHT",
+												   topRight = "EPISODE2_TOP_RIGHT", topMiddle = "EPISODE2_TOP_MIDDLE",
+												   center = "EPISODE2_CENTER"}, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER",
+				children = { {name = "ep2Sprite", sprite = "LS_PACK_THUMB_02"},
+							 {name = "ep2ScoreBox1", box = scoreBox, hanchor = "LEFT", vanchor = "BOTTOM"},
+							 {name = "ep2ScoreBox2", box = scoreBox, hanchor = "RIGHT", vanchor = "BOTTOM"},
+							 {name = "episode2Text", text = "TEXT_LP_NAME_2", hanchor="HCENTER", vanchor="VCENTER", font = fontBasic },
+							 {name = "episode2Score", text = "score", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" },
+							 {name = "episode2Stars", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" },
+							 {name = "episode2ScoreText", sprite = scoreSpriteName,  selectable = false, visible = false, vanchor = "TOP", hanchor = "HCENTER"},
+							 {name = "appStore", sprite = "AVAILABLE_ON_APP_STORE"},
+							 {name = "episode2YellowLine", box = {topMiddle = "EPISODE_YELLOW_LINE"}, hanchor = "HCENTER", vanchor = "TOP"},
+							 {name = "ep2StarSprite", sprite = "LS_STAR_GOLD", hanchor = "HCENTER", vanchor = "VCENTER"},
+							 {name = "lock", sprite = "LS_LEVEL_PACK_LOCK"},
+							}}
+		)
+		
+		_G.table.insert(episodeSelectionPage.items, 3, 
+		{
+			name = "episode3", updateFunction = gotoLevelSelectionPack3, box = { topLeft = "EPISODE3_TOP_LEFT", left = "EPISODE3_LEFT", 
+													   bottomLeft = "EPISODE3_BOTTOM_LEFT", bottomMiddle = "EPISODE3_BOTTOM_MIDDLE",
+													   bottomRight = "EPISODE3_BOTTOM_RIGHT", right = "EPISODE3_RIGHT",
+													   topRight = "EPISODE3_TOP_RIGHT", topMiddle = "EPISODE3_TOP_MIDDLE",
+													   center = "EPISODE3_CENTER"}, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER",
+			children = { {name = "ep3Sprite", sprite = "LS_PACK_THUMB_03"},
+						 {name = "ep3ScoreBox1", box = scoreBox, hanchor = "LEFT", vanchor = "BOTTOM"},
+						 {name = "ep3ScoreBox2", box = scoreBox, hanchor = "RIGHT", vanchor = "BOTTOM"},
+						 {name = "episode3Text", text = "TEXT_LP_NAME_3", hanchor="HCENTER", vanchor="VCENTER", font = fontBasic },
+						 {name = "episode3Score", text = "", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" },
+						 {name = "episode3Stars", text = "", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" },
+						 {name = "episode3ScoreText", sprite = scoreSpriteName, selectable = false, visible = false, vanchor = "TOP", hanchor = "HCENTER"},
+						 {name = "appStore", sprite = "AVAILABLE_ON_APP_STORE"},
+						 {name = "episode3YellowLine", box = {topMiddle = "EPISODE_YELLOW_LINE"}, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "TOP"},
+						 {name = "ep3StarSprite", sprite = "LS_STAR_GOLD", hanchor = "HCENTER", vanchor = "VCENTER"},
+						 {name = "lock", sprite = "LS_LEVEL_PACK_LOCK"},
+						}
+		})
+		
+		
+		_G.table.insert(episodeSelectionPage.items, 4, 
+		{
+			name = "episode4", updateFunction = gotoLevelSelectionPack4, box = { topLeft = "EPISODE4_TOP_LEFT", left = "EPISODE4_LEFT", 
+												   bottomLeft = "EPISODE4_BOTTOM_LEFT", bottomMiddle = "EPISODE4_BOTTOM_MIDDLE",
+												   bottomRight = "EPISODE4_BOTTOM_RIGHT", right = "EPISODE4_RIGHT",
+												   topRight = "EPISODE4_TOP_RIGHT", topMiddle = "EPISODE4_TOP_MIDDLE",
+												   center = "EPISODE4_CENTER"}, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER",
+			children = { {name = "ep4Sprite", sprite = "LS_PACK_THUMB_04"},
+						 {name = "ep4ScoreBox1", box = scoreBox, hanchor = "LEFT", vanchor = "BOTTOM"},
+						 {name = "ep4ScoreBox2", box = scoreBox, hanchor = "RIGHT", vanchor = "BOTTOM"},
+						 {name = "episode4Text", text = "TEXT_LP_NAME_4", hanchor="HCENTER", vanchor="VCENTER", font = fontBasic },
+						 {name = "episode4Score", text = "", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" },
+						 {name = "episode4Stars", text = "", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" },
+						 {name = "episode4ScoreText", sprite = scoreSpriteName, selectable = false, visible = false, vanchor = "TOP", hanchor = "HCENTER"},
+						 {name = "appStore", sprite = "AVAILABLE_ON_APP_STORE"},
+						 {name = "episode4YellowLine", box = {topMiddle = "EPISODE_YELLOW_LINE"}, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "TOP"},
+						 {name = "ep4StarSprite", sprite = "LS_STAR_GOLD", hanchor = "HCENTER", vanchor = "VCENTER"},
+						 {name = "lock", sprite = "LS_LEVEL_PACK_LOCK"},
+						}
+		})
 			
-	for i = 1, episodeSelectionPage.numEpisodes do
-		episodeSelectionPage.items[i].activateOnRelease = true
-	end
-	
-	if deviceModel == "roku" then
-		getItemByName(episodeSelectionPage.items, "episodeG").needLoadingScreen = true
+		_G.table.insert(episodeSelectionPage.items, 5, 
+		{
+			name = "episodeG", updateFunction = gotoLevelSelectionGoldenEggs, box = { topLeft = "EPISODEG_TOP_LEFT", left = "EPISODEG_LEFT", 
+												   bottomLeft = "EPISODEG_BOTTOM_LEFT", bottomMiddle = "EPISODEG_BOTTOM_MIDDLE",
+												   bottomRight = "EPISODEG_BOTTOM_RIGHT", right = "EPISODEG_RIGHT",
+												   topRight = "EPISODEG_TOP_RIGHT", topMiddle = "EPISODEG_TOP_MIDDLE",
+												   center = "EPISODEG_CENTER"}, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER", 
+			children = {{name = "epGSprite", sprite = "EPISODEG_ICON"}, 
+						{name = "epGStar", sprite = "LS_PACK_GE_STAR"},
+						{name = "epGEggs", sprite = "LS_PACK_GE_THUMB_01"},
+						{name = "epGEpisodeText", text = "Golden Eggs", vanchor = "VCENTER", hanchor = "HCENTER", font = fontBasic},
+						{ name = "epGStarText", text = "", hanchor="HCENTER", vanchor="VCENTER", font = "FONT_LS_SMALL"} }
+		})		
+		
+		episodeSelectionPage.goldenEggHitBox = {}			
+				
+		for i = 1, episodeSelectionPage.numEpisodes do
+			episodeSelectionPage.items[i].activateOnRelease = true
+		end
+		
+		if deviceModel == "roku" then
+			getItemByName(episodeSelectionPage.items, "episodeG").needLoadingScreen = true
+		end
+		
 	end
 
 	if settings.selectedEpisode > episodeSelectionPage.numEpisodes then
 		settings.selectedEpisode = 1
 	end
 	
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButton1", sprite = "BUTTON_EP_1", updateFunction = gotoLevelSelection, page = mainMenu, sound = "menu_back", activateOnRelease = true })
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonScore1", text = "score", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM"})
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonStars1", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" })
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonLock1", sprite = "LS_LEVEL_PACK_LOCK"})
-					 
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButton2", sprite = "BUTTON_EP_2", updateFunction = gotoLevelSelectionExtra, page = mainMenu, sound = "menu_back", activateOnRelease = true })						
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonScore2", text = "score", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM"})
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonStars2", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" })
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonLock2", sprite = "LS_LEVEL_PACK_LOCK"})
-	
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButton3", sprite = "BUTTON_EP_3", updateFunction = gotoLevelSelectionPack3, page = mainMenu, sound = "menu_back", activateOnRelease = true })						
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonScore3", text = "score", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM"})
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonStars3", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" })
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonLock3", sprite = "LS_LEVEL_PACK_LOCK"})
-	
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButton4", sprite = "BUTTON_EP_4", updateFunction = gotoLevelSelectionPack4, page = mainMenu, sound = "menu_back", activateOnRelease = true })					
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonScore4", text = "score", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM"})
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonStars4", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" })
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonLock4", sprite = "LS_LEVEL_PACK_LOCK"})
-	
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonG", sprite = "BUTTON_EP_G", updateFunction = gotoLevelSelectionGoldenEggs, page = mainMenu, sound = "menu_back", activateOnRelease = true, loadAssetList = {"GOLDEN_EGGS"} })						
-	_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonStarsG", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" })
-	
-	if deviceModel == "roku" and screenHeight > 576 then
-		getItemByName(episodeSelectionPage.items, "episodeButtonG").releaseAssetList = {"OTHER_2"}
+	if not scrollingEpisodes then
+		-- To-do: Re-arrange the episode cards, because it looks ugly on screens with resolutions lower than 1366x768.
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButton1", sprite = "BUTTON_EP_1", updateFunction = gotoLevelSelection, page = mainMenu, sound = "menu_back", activateOnRelease = true })
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonScore1", text = "score", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM"})
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonStars1", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" })
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonLock1", sprite = "LS_LEVEL_PACK_LOCK"})
+						 
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButton2", sprite = "BUTTON_EP_2", updateFunction = gotoLevelSelectionExtra, page = mainMenu, sound = "menu_back", activateOnRelease = true })						
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonScore2", text = "score", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM"})
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonStars2", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" })
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonLock2", sprite = "LS_LEVEL_PACK_LOCK"})
+		
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButton3", sprite = "BUTTON_EP_3", updateFunction = gotoLevelSelectionPack3, page = mainMenu, sound = "menu_back", activateOnRelease = true })						
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonScore3", text = "score", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM"})
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonStars3", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" })
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonLock3", sprite = "LS_LEVEL_PACK_LOCK"})
+		
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButton4", sprite = "BUTTON_EP_4", updateFunction = gotoLevelSelectionPack4, page = mainMenu, sound = "menu_back", activateOnRelease = true })					
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonScore4", text = "score", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM"})
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonStars4", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" })
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonLock4", sprite = "LS_LEVEL_PACK_LOCK"})
+		
+		if g_newEpisodeScreen.enabled == true then
+			_G.table.insert(episodeSelectionPage.items,	{name = "episodeButton5", sprite = "BUTTON_EP_5", updateFunction = gotoLevelSelectionPack5, page = mainMenu, sound = "menu_back", activateOnRelease = true })					
+			_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonScore5", text = "score", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM"})
+			_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonStars5", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" })
+			_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonLock5", sprite = "LS_LEVEL_PACK_LOCK"})
+			
+			_G.table.insert(episodeSelectionPage.items, { name = "episodeButton6", sprite = "BUTTON_EP_6", updateFunction = gotoLevelSelectionPack6, page = mainMenu, sound = "menu_back", activateOnRelease = true })
+			_G.table.insert(episodeSelectionPage.items,	{ name = "episodeButtonScore6", text = "score", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" })
+			_G.table.insert(episodeSelectionPage.items,	{ name = "episodeButtonStars6", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" })
+			_G.table.insert(episodeSelectionPage.items,	{ name = "episodeButtonLock6", sprite = "LS_LEVEL_PACK_LOCK"})
+			
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonG", sprite = "BUTTON_EP_G", updateFunction = gotoLevelSelectionGoldenEggs, page = mainMenu, sound = "menu_back", activateOnRelease = true, loadAssetList = {"GOLDEN_EGGS"} })						
+		_G.table.insert(episodeSelectionPage.items,	{name = "episodeButtonStarsG", text = "stars", font = "FONT_LS_SMALL", hanchor="HCENTER", vanchor="BOTTOM" })
+
+		end
 	end
 	
-	if deviceModel == "roku" then
-		getItemByName(episodeSelectionPage.items, "episodeButtonG").needLoadingScreen = true
+	if deviceModel == "windows" and screenHeight > 576 then
+		--getItemByName(episodeSelectionPage.items, "episodeButtonG").releaseAssetList = {"OTHER_2"}
+	end
+	
+	if deviceModel == "windows" then
+		--getItemByName(episodeSelectionPage.items, "episodeButtonG").needLoadingScreen = true
 	end
 	
 	moreGamesPage = {
@@ -4075,7 +5497,7 @@ function createMenuPages()
 	playSpriteName = "MENU_PLAY_EN"		
 	
 	if screenWidth < 1920 or(g_levelSelectionMultipleAssets ~= true) then
-		--playSpriteName = "MENU_PLAY_SMALL_EN"
+		playSpriteName = "MENU_PLAY_SMALL_EN"
 	end
 	
 	
@@ -4084,9 +5506,9 @@ function createMenuPages()
 	mainMenu.back = nil
 	mainMenu.bgColor = { red = 11, green = 101, blue = 76 }
 	mainMenu.state = "READY"
-	mainMenu.sound = "menu_confirm"
+	mainMenu.sound = ""
 	mainMenu.items = {
-			{name = "play", sprite = playSpriteName, updateFunction = updateMenu, page = episodeSelectionPage, hanchor="HCENTER", vanchor="VCENTER", activateOnRelease = true, loadAssetList = {"LEVELSELECTION"}, releaseAssetList = {"INGAME"}}, 
+			{name = "play", sprite = playSpriteName, updateFunction = updateMenu, page = episodeSelectionPage, hanchor="HCENTER", vanchor="VCENTER", activateOnRelease = true, sound = "menu_confirm", loadAssetList = {"LEVELSELECTION"}, releaseAssetList = {"INGAME"}}, 
 			{name = "sliderBGRight", box = sliderBox, hanchor = "HCENTER", vanchor = "BOTTOM", visible = false},
 			{name = "sliderBGLeft", box = sliderBox, hanchor = "HCENTER", vanchor = "BOTTOM", visible = false},
 			{name = "sfx", sprite = "BUTTON_SOUNDS_SMALL", callFunction = changeAudio, hanchor="HCENTER", vanchor="VCENTER", selectable = false, activateOnRelease=true } ,
@@ -4095,7 +5517,7 @@ function createMenuPages()
 			{name = "trailer", sprite = "BUTTON_TRAILER_SMALL", callFunction = gotoAngryBirdsTrailer, selectable = false, visible = false },
 			{name = "buttonOff", sprite = "BUTTON_SOUNDS_OFF_SMALL", selectable = false } ,
 			{name = "menuOvi", sprite = "MENU_OVI", callFunction = gotoOviStore, visible = false },
-			{name = "menuLogo", sprite = "MENU_LOGO", selectable = false, visible = true },
+			{name = "menuLogo", sprite = gameOptions.ui.menuLogo, selectable = false, visible = true },
 			{name = "logoLite", sprite = "LOGO_LITE", selectable = false, visible = false },
 			{name = "appStore", sprite = "MENU_APP_STORE", visible = false, callFunction = gotoFullVersionInAppStore },
 			{name = "facebook", sprite = "BUTTON_FACEBOOK_SMALL", visible = false, callFunction = gotoFacebook, selectable = false },
@@ -4132,7 +5554,8 @@ function createMenuPages()
 	end
 	
 	if showEditor then
-		_G.table.insert(mainMenu.items, {name = "editor", text = "MI_EDIT", updateFunction = updateMenu, page = levelSelectionEdit[1] } )
+		_G.table.insert(mainMenu.items, {name = "editor", sprite = "BUTTON_EMPTY", updateFunction = updateMenu, page = levelSelectionEdit[1] } )
+		_G.table.insert(mainMenu.items, {name = "editor_text", text = "EDITOR", font = fontBasic, updateFunction = updateMenu, page = levelSelectionEdit[1] } )
 	end
 	
 	
@@ -4249,7 +5672,7 @@ function createMenuPages()
 	if deviceModel == "n900" then
 		upsellPage.backgroundSprite = { name = "UPSELL", x = 0, y = 0 }
 		upsellPage.items = {
-			{sprite = "BUTTON_MENU", x = 60, y = screenHeight - 70, selectable = true, updateFunction = updateMenu, page = levelSelectionPagesBasic },
+			{sprite = "BUTTON_MENU", x = 60, y = screenHeight - 70, selectable = true, updateFunction = updateMenu, page = episodes[1] },
 			{sprite = "UPSELL_BUTTON", x = screenWidth*0.5, y = screenHeight, selectable = true, callFunction = gotoOviStore },
 		}
 	elseif deviceModel == "s60" then
@@ -4284,7 +5707,7 @@ function createMenuPages()
 		backgroundDrawFunction = drawGame,
 		backgroundOverlay = { sprite = "DIM_BLOCK", visible = true },
 		state = "READY",
-		sound = "menu_confirm",
+		sound = "",
 		font = fontMenu,
 		items = {
 			{name = "buttonSfx", sprite = "BUTTON_SFX", selectable = true, callFunction = changeAudio, activateOnRelease = true } ,
@@ -4296,8 +5719,9 @@ function createMenuPages()
 			{name = "buttonResume", sprite = "BUTTON_RESUME", visible = true, selectable = true, updateFunction = hidePauseMenu, activateOnRelease = true, shortcutKeys = { "PAUSE" }, } ,
 			{name = "hideArea", updateFunction = hidePauseMenu, activateOnRelease = true },
 			{name = "levelText", text = "", selectable = false } ,
+--            {name = "pausedText", text = "paused", selectable = false } ,
 			{name = "buttonTutorials", sprite = "MENU_TUTORIALS", selectable = true, updateFunction = showTutorials, activateOnRelease = true } ,
-			{name = "buttonEagle", sprite = "INGAME_BUTTON_EAGLE", selectable = true, updateFunction = launchEagleBaitFromPauseMenu,  } ,
+--			{name = "buttonEagle", sprite = "INGAME_BUTTON_EAGLE", selectable = true, updateFunction = launchEagleBaitFromPauseMenu,  } ,
 		}
 	}
 	
@@ -4339,9 +5763,11 @@ function createMenuPages()
 	--and draw those items in updateGame and drawGame methods
 	g_ingamePausePage = {
 		items = {
-			{name = "ingameButtonPause", sheet = "BUTTONS_SHEET_1", sprite = "MENU_BUTTON", shortcutKeys = { "KEY_BACK", "PAUSE" } } ,
-			{name = "ingameButtonRestart", sheet = "BUTTONS_SHEET_1", sprite = "BUTTON_INGAME_RESTART", shortcutKeys = { "F5" } } 
+			{name = "ingameButtonPause", sheet = "BUTTONS_SHEET_1", sprite = "INGAME_BUTTON_PAUSE", shortcutKeys = { "KEY_BACK", "PAUSE" } } ,
+			{name = "ingameButtonRestart", sheet = "BUTTONS_SHEET_1", sprite = "INGAME_BUTTON_RESTART", shortcutKeys = { "F5" } } ,
 			
+			{name = "ingameButtonEagle", sheet = "BUTTONS_SHEET_1", sprite = "INGAME_BUTTON_EAGLE" } ,
+			{name = "ingameButtonPowerups", sheet = "BUTTONS_SHEET_1", sprite = "INGAME_BUTTON_POWERUP" } ,
 		}
 	}
 	
@@ -4376,6 +5802,7 @@ function createMenuPages()
 				{ name = "TUTORIAL_6", sprite = "TUTORIAL_BOOMERANG", selectable = false }, --boomerang
 				{ name = "TUTORIAL_7", sprite = "TUTORIAL_BIG_BROTHER", selectable = false }, --bigbrother
 				{ name = "TUTORIAL_8", sprite = "TUTORIAL_MIGHTYEAGLE", selectable = false }, --mightyeagle
+				{ name = "TUTORIAL_9", sprite = "TUTORIAL_PUFFER", selectable = false }, --puffer
 				}
 		}
 
@@ -4471,7 +5898,7 @@ function createMenuPages()
 		sound = "menu_confirm",
 		nextPage = nil,		
 		items = {
-			{name = "loadingText", text = "MI_LOADING", selectable = false, hanchor="HCENTER", vanchor="VCENTER" } ,
+			{name = "loadingText", text = "MI_LOADING", selectable = false, font = fontBasic, hanchor="HCENTER", vanchor="VCENTER" } ,
 		}
 	}
 	
@@ -4525,536 +5952,6 @@ function createMenuPages()
 		}
 	}
 		
-	gameStart.name = "gameStart"
-	gameStart.back = nil
-	gameStart.sound = "menu_confirm"
-	gameStart.state = "READY"
-	gameStart.animationState = "SCROLL"
-	gameStart.timer = 0
-	gameStart.bgColor = { red = 0, green = 0, blue = 0 }
-	gameStart.isCutScene = true
-	gameStart.items = { 
-						{name = "cutSceneBg", sprite = "CUTSCENE_BG", updateFunction = gotoFirstLevel, dontOffset = true},
-						{name = "storyBegin1", sprite = "STORY_BEGIN_BG_1", updateFunction = gotoFirstLevel, isBackground = true },					
-						{name = "storyBeginGroup", sprite = "STORY_BEGIN_PIG_GROUP_1", selectable = false },
-						{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-						{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-						{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-						{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-						}
-	
-	theme1Complete = {
-		name = "theme1Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
-			{name = "storyBoss", sprite = "STORY_BOSS_THEME_1", selectable = false },
-			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}
-
-	theme2Complete = {
-		name = "theme2Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
-			{name = "storyBoss", sprite = "STORY_BOSS_THEME_2", selectable = false },
-			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}
-	
-
-	gameComplete = {
-		name = "gameComplete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyEnd1", sprite = "STORY_END_1_1", selectable = false, isBackground = true },
-			{name = "storyEnd2", sprite = "STORY_END_1_2", selectable = false, isBackground = true },
-			{name = "storyEndEyeNormal", sprite = "STORY_END_KING_EYE_NORMAL",selectable = false, visible = false },
-			{name = "storyEndEyePeek", sprite = "STORY_END_KING_EYE_PEEK", selectable = false, visible = false },
-			{name = "storyEndEyeWink", sprite = "STORY_END_KING_EYE_WINK", selectable = false, visible = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}	
-
-	theme4Start.name = "theme4Start"
-	theme4Start.back = nil
-	theme4Start.sound = "menu_confirm"
-	theme4Start.state = "READY"
-	theme4Start.animationState = "SCROLL"
-	theme4Start.timer = 0
-	theme4Start.bgColor = { red = 0, green = 0, blue = 0 }
-	theme4Start.isCutScene = true
-	theme4Start.items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG",  updateFunction = gotoFirstLevelLP2, dontOffset = true},
-			{name = "storyBg", sprite = "STORY_BEGIN_BG_1", updateFunction = gotoFirstLevelLP2, isBackground = true },
-			{name = "storyBegin1", sprite = "STORY_BEGIN_BG_2", updateFunction = gotoFirstLevelLP2, isBackground = true },
-			{name = "storyFakeEggs", sprite = "STORY_BEGIN_FAKE_EGGS", selectable = false },
-			{name = "storyGroup", sprite = "STORY_BEGIN_PIG_GROUP_2", selectable = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	
-	theme4Complete = {
-		name = "theme4Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
-			{name = "storyBoss", sprite = "STORY_BOSS_THEME_4", selectable = false },
-			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}
-	
-	theme5Complete = {
-		name = "theme5Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
-			{name = "storyBoss", sprite = "STORY_BOSS_THEME_4", selectable = false, visible = false },
-			{name = "storyTongue", sprite = "STORY_END_2_TONGUE", selectable = false, visible = false },
-			{name = "storyEggs", sprite = "STORY_END_2_EGGS", selectable = false, visible = false },
-			{name = "storyKing", sprite = "STORY_END_2_HIDING_KING", selectable = false, visible = false },
-			{name = "storyEyeOpen", sprite = "STORY_END_2_EYE_OPEN", selectable = false, visible = false },
-			{name = "storyEyePeek", sprite = "STORY_END_2_EYE_PEEK", selectable = false, visible = false },
-			{name = "storyEyeWink", sprite = "STORY_END_2_EYE_WINK", selectable = false, visible = false },
-			{name = "storySmile", sprite = "STORY_END_2_SMILE", selectable = false, visible = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}	
-	
-	theme6Start.name = "theme6Start"
-	theme6Start.back = nil
-	theme6Start.sound = "menu_confirm"
-	theme6Start.state = "READY"
-	theme6Start.animationState = "SCROLL"
-	theme6Start.timer = 0
-	theme6Start.offsetY = 0
-	theme6Start.bgColor = { red = 61, green = 163, blue = 204 }
-	theme6Start.isCutScene = true
-	theme6Start.items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", updateFunction = gotoFirstLevelLP3, dontOffset = true},
-			{name = "blueRect", sprite = "", selectable = false, rectangle = true, color = { red = 59 / 255, green = 161 / 255, blue = 203 / 255 }, dontOffset = true},
-			{name = "storyBg", sprite = "STORY_BEGIN_BG_1", updateFunction = gotoFirstLevelLP3 },
-			{name = "storyHideHoof", sprite = "STORY_HIDE_HOOF_1", selectable = false },
-			{name = "storyFade", sprite = "STORY_BEGIN_FADE", selectable = false },
-			{name = "storyFade2", sprite = "STORY_BEGIN_FADE_2", selectable = false },
-			{name = "storyCloud4", sprite = "STORY_CLOUD_4", selectable = false },
-			{name = "storyCloud3", sprite = "STORY_CLOUD_3", selectable = false },
-			{name = "storyCloud2", sprite = "STORY_CLOUD_2", selectable = false },
-			{name = "storyCloud1", sprite = "STORY_CLOUD_1", selectable = false },
-			{name = "storyYellow", sprite = "STORY_ANGRY_YELLOW_BIRD", selectable = false },
-			{name = "storyPigs3", sprite = "STORY_FLYING_PIGS_3", selectable = false },
-			{name = "storyPigs2", sprite = "STORY_FLYING_PIGS_2", selectable = false },
-			{name = "storyPigs1", sprite = "STORY_FLYING_PIGS_1", selectable = false },
-			{name = "storyHideBirds", sprite = "STORY_HIDE_BIRDS_3", selectable = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-
-	
-	theme6Complete = {
-		name = "theme6Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
-			{name = "storyHoof", sprite = "STORY_HIDE_HOOF_2", selectable = false },
-			{name = "storyBalloon", sprite = "STORY_BOSS_FLATTENED_BALLOON",  selectable = false },
-			{name = "storyBoss", sprite = "STORY_BOSS_THEME_1", selectable = false },
-			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING_2",  selectable = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}	
-	
-	theme7Complete = {
-		name = "theme7Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
-			{name = "storyHoof", sprite = "STORY_HIDE_HOOF_2", selectable = false },
-			{name = "storyBalloon", sprite = "STORY_BOSS_FLATTENED_BALLOON_2", selectable = false },
-			{name = "storyBoss", sprite = "STORY_BOSS_THEME_2", selectable = false },
-			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING_3", selectable = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}	
-	
-	theme8Complete = {
-		name = "theme8Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
-			{name = "storyHoof", sprite = "STORY_HIDE_HOOF_2", selectable = false },
-			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING_4", selectable = false },
-			{name = "storyCarpet", sprite = "STORY_BOSS_CARPET", selectable = false },
-			{name = "storyEye", sprite = "STORY_BOSS_KING_ESCAPING_4_EYE_2", selectable = false, visible = false },
-			{name = "storyWink", sprite = "STORY_BOSS_KING_ESCAPING_4_EYE_WINK", selectable = false, visible = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}
-
-	theme9Start.name = "theme9Start"
-	theme9Start.back = nil
-	theme9Start.sound = "menu_confirm"
-	theme9Start.state = "READY"
-	theme9Start.animationState = "SCROLL"
-	theme9Start.timer = 0
-	theme9Start.bgColor = { red = 0, green = 0, blue = 0 }
-	theme9Start.isCutScene = true
-	theme9Start.items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", updateFunction = gotoFirstLevelLP4, dontOffset = true},
-			{name = "storyBg1", sprite = "STORY_BEGIN_BG_1", updateFunction = gotoFirstLevelLP4, isBackground = true  },
-			{name = "storyBg2", sprite = "STORY_BEGIN_BG_2", updateFunction = gotoFirstLevelLP4, isBackground = true  },
-			{name = "storyHideBirds1", sprite = "STORY_HIDE_BIRDS_1", selectable = false },
-			{name = "storyHideBirds2", sprite = "STORY_HIDE_BIRDS_2", selectable = false },
-			{name = "storyHideBirds3", sprite = "STORY_HIDE_BIRDS_3", selectable = false },
-			{name = "storyYard", sprite = "STORY_CONSTRUCTION_YARD", selectable = false },
-			{name = "bg_extension", sprite = "STORY_BEGIN_BG_EXTENSION", selectable = false },
-			{name = "storyBigBrother", sprite = "STORY_EP4_START_BIG_BROTHER", selectable = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}	
-		
-	theme9Complete = {
-		name = "theme9Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
-			{name = "storyBoss", sprite = "STORY_BOSS_THEME_1", selectable = false },
-			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
-			{name = "storyHideBirds", sprite = "STORY_HIDE_BIRDS_4", selectable = false },
-			{name = "storyBigBrother", sprite = "STORY_BIG_BROTHER_2", selectable = false },
-			{name = "storyHelmet", sprite = "STORY_BOSS_1_HELMET", selectable = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}	
-	
-	theme10Complete = {
-		name = "theme10Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
-			{name = "storyBoss", sprite = "STORY_BOSS_THEME_2", selectable = false },
-			{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
-			{name = "storyHideBirds", sprite = "STORY_HIDE_BIRDS_4", selectable = false },
-			{name = "storyBigBrother", sprite = "STORY_BIG_BROTHER_2", selectable = false },
-			{name = "storyHelmet", sprite = "STORY_BOSS_2_HELMET", selectable = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}
-	
-	theme11Complete = {
-		name = "theme11Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
-			{name = "storyHideBirds", sprite = "STORY_HIDE_BIRDS_4", selectable = false },
-			{name = "storyEnd", sprite = "STORY_EP4_END", selectable = false },
-			{name = "storyBigBrother", sprite = "STORY_BIG_BROTHER_2", selectable = false },
-			{name = "storyHelmet", sprite = "STORY_BIG_BROTHER_HELMET", selectable = false },
-			{name = "storyKingPeak", sprite = "STORY_EP4_KING_PEAK", selectable = false, visible = false },
-			{name = "storyKingWink", sprite = "STORY_EP4_KING_WINK", selectable = false, visible = true },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}
-	
-	theme12Start.name = "theme12Start"
-	theme12Start.back = nil
-	theme12Start.sound = "menu_confirm"
-	theme12Start.state = "READY"
-	theme12Start.animationState = "SCROLL"
-	theme12Start.timer = 0
-	theme12Start.bgColor = { red = 0, green = 0, blue = 0 }
-	theme12Start.isCutScene = true
-	theme12Start.items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", updateFunction = gotoFirstLevelLP5, dontOffset = true},
-			{name = "storyBg1", sprite = "STORY_WESTERN_BEGIN", updateFunction = gotoFirstLevelLP5, isBackground = true, isCompoSprite=true, dontOffset = false },
-			--{name = "storyBg1", sprite = "STORY_BEGIN_BG_1", updateFunction = gotoFirstLevelLP5, isBackground = true, isCompoSprite=false },
-			--{name = "storyBg2", sprite = "STORY_BEGIN_BG_2", updateFunction = gotoFirstLevelLP5, isBackground = true  },
-			--{name = "storyHideBirds1", sprite = "STORY_HIDE_BIRDS_1", selectable = false },
-			--{name = "storyHideBirds2", sprite = "STORY_HIDE_BIRDS_2", selectable = false },
-			--{name = "storyHideBirds3", sprite = "STORY_HIDE_BIRDS_3", selectable = false },
-			--{name = "storyYard", sprite = "STORY_CONSTRUCTION_YARD", selectable = false },
-			--{name = "storyBg2", sprite = "STORY_WESTERN_BEGIN", updateFunction = gotoFirstLevelLP5, isBackground = false, isCompoSprite=true },
-			{name = "bg_extension", sprite = "STORY_BEGIN_BG_EXTENSION", selectable = false },
-			--{name = "storyBigBrother", sprite = "STORY_EP4_START_BIG_BROTHER", selectable = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}	
-		
-	theme12Complete = {
-		name = "theme12Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			--{name = "storyBg", sprite = "STORY_BOSS_BG", selectable = false },
-			{name = "storyBg", sprite = "STORY_WESTERN_MIDDLE_1", isCompoSprite=true, selectable=false},
-			--{name = "storyBoss", sprite = "STORY_BOSS_THEME_2", selectable = false },
-			--{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
-			--{name = "storyHideBirds", sprite = "STORY_HIDE_BIRDS_4", selectable = false },
-			--{name = "storyBigBrother", sprite = "STORY_BIG_BROTHER_2", selectable = false },
-			--{name = "storyHelmet", sprite = "STORY_BOSS_2_HELMET", selectable = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}
-	
-	theme13Complete = {
-		name = "theme13Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_WESTERN_MIDDLE_2", isCompoSprite=true, selectable=false},
-			--{name = "storyBoss", sprite = "STORY_BOSS_THEME_2", selectable = false },
-			--{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
-			--{name = "storyHideBirds", sprite = "STORY_HIDE_BIRDS_4", selectable = false },
-			--{name = "storyBigBrother", sprite = "STORY_BIG_BROTHER_2", selectable = false },
-			--{name = "storyHelmet", sprite = "STORY_BOSS_2_HELMET", selectable = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}
-	
-	theme14Complete = {
-		name = "theme14Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_WESTERN_MIDDLE_2", isCompoSprite=true, selectable=false},
-			--{name = "storyBoss", sprite = "STORY_BOSS_THEME_2", selectable = false },
-			--{name = "storyEscape", sprite = "STORY_BOSS_KING_ESCAPING", selectable = false },
-			--{name = "storyHideBirds", sprite = "STORY_HIDE_BIRDS_4", selectable = false },
-			--{name = "storyBigBrother", sprite = "STORY_BIG_BROTHER_2", selectable = false },
-			--{name = "storyHelmet", sprite = "STORY_BOSS_2_HELMET", selectable = false },
-			{name = "storyWesternEndFinal", sprite = "STORY_WESTERN_END", isCompoSprite = true, selectable = false},
-			{name = "kingEyeOpen", sprite = "STORY_WEST_KING_EYE_OPEN", visible = false },
-			{name = "kingEyePeak", sprite = "STORY_WEST_KING_EYE_PEAK", visible = false },
-			{name = "kingEyeBlink", sprite = "STORY_WEST_KING_EYE_WINK", visible = false },
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}
-	
-	theme15Complete = {
-		name = "theme15Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_CAVE_MIDDLE_1", isCompoSprite = true, selectable = false},
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}
-
-	
-	
-	theme15Start.name = "theme15Start"
-	theme15Start.back = nil
-	theme15Start.sound = "menu_confirm"
-	theme15Start.state = "READY"
-	theme15Start.animationState = "SCROLL"
-	theme15Start.timer = 0
-	theme15Start.bgColor = { red = 0, green = 0, blue = 0 }
-	theme15Start.isCutScene = true
-	theme15Start.items = {
-		{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-		{name = "storyBg", sprite = "STORY_CAVE_BEGIN", isCompoSprite = true, selectable = false},
-		{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-		{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-		{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-		{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-	}
-	
-	-- ADDED
-	theme16Complete = {
-		name = "theme16Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_CAVE_MIDDLE_2", isCompoSprite = true, selectable = false},
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}
-
-	-- ADDED
-	theme17Complete = {
-		name = "theme17Complete",
-		back = nil,
-		sound = "menu_confirm",		
-		state = "READY",
-		animationState = "SCROLL",
-		timer = 0,
-		bgColor = { red = 0, green = 0, blue = 0 },
-		isCutScene = true,
-		items = {
-			{name = "cutSceneBg", sprite = "CUTSCENE_BG", dontOffset = true},
-			{name = "storyBg", sprite = "STORY_CAVE_END", isCompoSprite = true, selectable = false},
-			{name = "cutSceneFilmLeft", sprite = "CUTSCENE_FILMSTRIP_LEFT", dontOffset = true},
-			{name = "cutSceneFilmRight", sprite = "CUTSCENE_FILMSTRIP_RIGHT", dontOffset = true},
-			{name = "cutSceneFilmTop", sprite = "CUTSCENE_FILMSTRIP_TOP", dontOffset = true},
-			{name = "cutSceneFilmBottom", sprite = "CUTSCENE_FILMSTRIP_BOTTOM", dontOffset = true},
-		}
-	}
 	
 	
 	--fine tunning
@@ -5089,7 +5986,7 @@ function createMenuPages()
 		backgroundOverlay = { sprite = "DIM_BLOCK", visible = true },
 		font = fontBasic,
 		items = {
-			{name = "background", box = popupBoxSprites, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER"},
+			{name = "background", box = popupBoxSprites, sheet = "POPUPS_SHEET_1", selectable = false, hanchor = "HCENTER", vanchor = "VCENTER"},
 			{name = "levelNumber", text = "LEVEL_NUMBER_PLACEHOLDER", selectable = false, font = "FONT_BIG_NUMBERS", hanchor="LEFT", vanchor="VCENTER" },
 			{name = "newHighScore", sprite = "NEW_HIGHSCORE_BG", selectable = false, hanchor="HCENTER", vanchor="VCENTER" } ,
 			{name = "levelComplete", text = "MT_LEVEL_COMPLETE", font = fontBasic, selectable = false, hanchor="LEFT", vanchor="TOP" },
@@ -5098,28 +5995,12 @@ function createMenuPages()
 			{name = "highScoreText", text = "MI_HIGH_SCORE", selectable = false, hanchor="HCENTER", vanchor="BOTTOM" },
 			{name = "highScoreNumber", text = "MI_HIGH_SCORE_PLACEHOLDER", selectable = false, hanchor="RIGHT", vanchor="BOTTOM" } ,
 			{name = "starEffect", sprite = "EAGLE_METER_EFFECT", selectable = false, itemDrawFunction = starEffectItemDraw},
-			{name = "buttonMenu", sprite = "BUTTON_MENU", updateFunction = updateMenu, page = levelSelectionPagesBasic[1], visible = true, shortcutKeys = { "KEY_BACK" }, activateOnRelease = true, loadAssetList = {"LEVELSELECTION"}, releaseAssetList = { "INGAME"}  },
+			{name = "buttonMenu", sprite = "BUTTON_MENU", updateFunction = updateMenu, page = episodes[1][1], visible = true, shortcutKeys = { "KEY_BACK" }, activateOnRelease = true, loadAssetList = {"LEVELSELECTION"}, releaseAssetList = { "INGAME"}  },
 			{name = "buttonRestart", sprite = "BUTTON_RESTART", updateFunction = updateGame, restartLevel = true, activateOnRelease = true, shortcutKeys = { "F5" } },
 			{name = "buttonNextLevel", sprite = "BUTTON_NEXTLEVEL", callFunction = loadNextLevel, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene1", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme1Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene2", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme2Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene3", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = gameComplete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			{name = "buttonCutscene1", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world1_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
 			{name = "stars", sprite = "", selectable = false },
 			{name = "starsCurrent", sprite = "", selectable = false },
-			{name = "buttonCutscene4", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme4Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene5", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme5Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene6", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme6Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene7", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme7Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene8", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme8Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene9", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme9Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene10", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme10Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene11", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme11Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene12", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme12Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene13", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme13Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene14", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme14Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene15", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme15Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene16", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme16Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene17", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme17Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
 			{name = "eagleFeatherEmpty", sprite = "EAGLE_METER_EMPTY", selectable = false } ,
 			{name = "eagleFeatherFull", sprite = "EAGLE_METER_FULL", selectable = false } ,
 			{name = "totalDestruction", text = "MT_TOTAL_DESTRUCTION", selectable = false, hanchor="HCENTER", vanchor="TOP" } ,
@@ -5154,29 +6035,29 @@ function createMenuPages()
 			{name = "levelFailed", text = "MT_LEVEL_FAILED", font = fontBasic, selectable = false, hanchor="HCENTER", vanchor="VCENTER" },
 			{name = "highScoreText", text = "MI_HIGH_SCORE", selectable = false, hanchor="HCENTER", vanchor="VCENTER" },
 			{name = "highScoreNumber", text = "MI_HIGH_SCORE_PLACEHOLDER", selectable = false, hanchor="RIGHT", vanchor="VCENTER" } ,
-			{name = "buttonMenu", sprite = "BUTTON_MENU", updateFunction = updateMenu, page = levelSelectionPagesBasic[1], visible = true, shortcutKeys = { "KEY_BACK" }, activateOnRelease = true, loadAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}, releaseAssetList = { "INGAME", "THEMES"} },
+			{name = "buttonMenu", sprite = "BUTTON_MENU", updateFunction = updateMenu, page = episodes[1][1], visible = true, shortcutKeys = { "KEY_BACK" }, activateOnRelease = true, loadAssetList = {"LEVELSELECTION", "GOLDEN_EGGS"}, releaseAssetList = { "INGAME", "THEMES"} },
 			{name = "buttonRestart", sprite = "BUTTON_RESTART", visible = true, updateFunction = updateGame, restartLevel = true, activateOnRelease = true, shortcutKeys = { "F5" } },
 			{name = "stars", sprite = "RESULT_STARS_0", selectable = false },
 			{name = "buttonEagle", sprite = "BUTTON_EAGLE", updateFunction = launchEagleBait, activateOnRelease = true },
 			{name = "buttonEagleLost", sprite = "BUTTON_EAGLE_LOST", selectable = false },
 			{name = "buttonNextLevel", sprite = "BUTTON_NEXTLEVEL", callFunction = loadNextLevel, visible = false, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene1", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme1Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene2", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme2Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene3", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = gameComplete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene4", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme4Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene5", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme5Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene6", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme6Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene7", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme7Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene8", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme8Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene9", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme9Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene10", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme10Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene11", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme11Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene12", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme12Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene13", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme13Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene14", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme14Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene15", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme15Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene16", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme16Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
-			{name = "buttonCutscene17", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = theme17Complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			{name = "buttonCutscene1", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world1_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene2", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world2_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene3", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world3_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene4", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world4_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene5", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world5_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene6", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world6_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene7", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world7_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene8", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world8_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene9", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world9_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene10", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world10_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene11", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world11_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene12", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world12_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene13", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world13_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene14", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world14_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene15", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world15_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene16", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world16_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
+			-- {name = "buttonCutscene17", sprite = "MENU_CUTSCENE", updateFunction = updateMenu, page = cutscenes.world17_complete, needLoadingScreen = true, activateOnRelease = true, shortcutKeys = { "PAGEUP" } },
 			{name = "buttonEagleBuy", sprite = "BUTTON_EAGLE_BUY", updateFunction = updateMenu, page = mightyEagleDemoPage },
 		}
 	}
@@ -5217,6 +6098,28 @@ function createMenuPages()
 		getItemByName(gameFinished.items, "buttonYes").shortcutKeys = { "LBUTTON" }
 	end
 	
+	gameFinishedLP6 = {
+		name = "gameFinishedLP6",	
+		back = nil,
+		state = "READY",
+		sound = "menu_confirm",		
+		backgroundDrawFunction = drawGame, 
+		backgroundOverlay = { sprite = "DIM_BLOCK", visible = true },
+		backgroundBox = { name = "backgroundTop", sprites = popupBoxSprites, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER"},
+		font = fontBasic,
+		items = {
+			{sprite = "GOLDEN_EGG_STAR_EFFECT", selectable = false, angle = 0, itemDrawFunction = starEffectItemDraw},
+			{name = "buttonYes", sprite = "MENU_YES", updateFunction = updateMenu, page = levelComplete, visible = true, selectable = true, activateOnRelease = true  },
+			{sprite = "REWARD_6"},
+			{text = "TEXT_COMPLETE", selectable = false, textBoxSize = 270, hanchor="LEFT", vanchor="VCENTER" },
+			{text = "TEXT_LP_NAME_6", selectable = false, hanchor="LEFT", vanchor="BASELINE" },
+		}
+	}	
+	
+	if deviceModel == "roku" then
+		getItemByName(gameFinishedLP6.items, "buttonYes").sprite = "ROKU_MENU_YES"
+		getItemByName(gameFinishedLP6.items, "buttonYes").shortcutKeys = { "LBUTTON" }
+	end
 	
 	gameFinishedLP2 = {
 		name = "gameFinishedLP2",	
@@ -5425,6 +6328,29 @@ function createMenuPages()
 		getItemByName(gameFinishedThreeStarsLP5.items, "buttonYes").shortcutKeys = { "LBUTTON" }
 	end	
 	
+	gameFinishedThreeStarsLP6 = {
+		name = "gameFinishedThreeStarsLP6",	
+		back = nil,
+		state = "READY",
+		sound = "menu_confirm",		
+		backgroundDrawFunction = drawGame, 
+		backgroundOverlay = { sprite = "DIM_BLOCK", visible = true },
+		backgroundBox = { name = "backgroundTop", sprites = popupBoxSprites, sheet = "POPUPS_SHEET_1", hanchor = "HCENTER", vanchor = "VCENTER"},
+		font = fontBasic,
+		items = {
+			{sprite = "GOLDEN_EGG_STAR_EFFECT", selectable = false, angle = 0,itemDrawFunction = starEffectItemDraw},
+			{name = "buttonYes", sprite = "MENU_YES", visible = true, updateFunction = updateMenu, page = levelComplete, selectable = true, activateOnRelease = true  },
+			{sprite = "REWARD_6_STAR"},
+			{text = "TEXT_PERFECT", selectable = false, hanchor="LEFT", vanchor="VCENTER" },
+			{text = "TEXT_LP_NAME_6", selectable = false,hanchor="LEFT", vanchor="BASELINE" },
+		}
+	}	
+	
+	if deviceModel == "roku" then
+		getItemByName(gameFinishedThreeStarsLP6.items, "buttonYes").sprite = "ROKU_MENU_YES"
+		getItemByName(gameFinishedThreeStarsLP6.items, "buttonYes").shortcutKeys = { "LBUTTON" }
+	end	
+	
 	tutorialGoldenEggPosition = { }
 	
 	
@@ -5524,9 +6450,7 @@ function updateMenu(dt, time)
 		menuDrag = nil
 	end
 	if keyPressed["LBUTTON"] then
-		if currentMenuPage == levelSelectionPagesBasic or currentMenuPage == levelSelectionPagesExtra 
-		  or currentMenuPage == levelSelectionPagesPack3 or currentMenuPage == levelSelectionPagesPack4
-		  or currentMenuPage == levelSelectionPagesPack5 or currentMenuPage == levelSelectionPagesPack6 then
+		if isLevelSelection(currentMenuPage) then
 			--if 	cursor.x > g_levelSelectionClippingArea.x - 20 and cursor.x < g_levelSelectionClippingArea.y - 20 + g_levelSelectionClippingArea.width + 40
 			--	and cursor.y > g_levelSelectionClippingArea.y - 20 and cursor.y < g_levelSelectionClippingArea.y - 20 + g_levelSelectionClippingArea.height + 40 then
 			if 	cursor.x > g_levelSelectionClippingArea.x - g_levelSelectionClippingArea.offsetX and 
@@ -5550,9 +6474,7 @@ function updateMenu(dt, time)
 	
 	if g_mouseOrTouchStates.isUsingMouse == false then
 		
-		if	currentMenuPage == levelSelectionPagesBasic or currentMenuPage == levelSelectionPagesExtra 
-			or currentMenuPage == levelSelectionPagesPack3 or currentMenuPage == levelSelectionPagesPack4
-			or currentMenuPage == levelSelectionPagesPack5 or currentMenuPage == levelSelectionPagesPack6 then
+		if	isLevelSelection(currentMenuPage) then
 			
 			if 	multitouchSweep.isSweepping == true and cursor.x > g_levelSelectionClippingArea.x - g_levelSelectionClippingArea.offsetX and 
 				cursor.x < g_levelSelectionClippingArea.x - g_levelSelectionClippingArea.offsetX + g_levelSelectionClippingArea.width + (g_levelSelectionClippingArea.offsetX *2) and 
@@ -5606,7 +6528,7 @@ function updateMenu(dt, time)
 	if (currentMenuPage == mainMenu) then
 		
 		lockTimer = lockTimer and lockTimer - dt or 0
-		if deviceModel == "roku" and
+		if deviceModel == "roku" and (cheatsEnabled or not releaseBuild) and
 			keyHold["KEY_GAMING_A"] and keyHold["KEY_GAMING_B"] and lockTimer < 0 then
 			lockTimer = 1.0
 			lockLevels()
@@ -6437,7 +7359,7 @@ function updateGameMenuPage(page, dt)
 	end
 	
 	if page == pausePage then
-		local currentMusic = musics[currentThemeNumber]
+		local currentMusic = blockTable.themes[currentTheme].music or musics[currentThemeNumber]
 		if _G.res.isAudioPlaying(currentMusic) == false then
 			_G.res.playAudio(currentMusic, 1, true,7)
 		end
@@ -6472,7 +7394,7 @@ function updateGameMenuPage(page, dt)
 		--print("\n selected episode " .. settings.selectedEpisode)
 			
 		--will never enter this if, we removed the scrolling from the episode selection alltogether. If we decide to roll back, the code is still here
-		if (deviceModel == "windows" or deviceModel == "osx") and false then
+		if (deviceModel == "windows" or deviceModel == "osx") and (false or scrollingEpisodes) then
 			local t_left = getItemByName(episodeSelectionPage.items, "leftNavigation")
 			local t_right= getItemByName(episodeSelectionPage.items, "rightNavigation")
 			
@@ -6512,7 +7434,7 @@ function updateGameMenuPage(page, dt)
 				end
 				
 				-- check if episode is not locked and enable updatefunction
-				if (settings.selectedEpisode ~= page.numEpisodes and getItemByName(page.items[settings.selectedEpisode].children, "lock").visible ~= true) or
+				if (settings.selectedEpisode ~= page.numEpisodes) or-- and getItemByName(page.items[settings.selectedEpisode].children, "lock").visible ~= true) or
 					settings.selectedEpisode == page.numEpisodes then
 					page.items[settings.selectedEpisode].disableUpdateFunctionChange = false
 				end
@@ -6579,7 +7501,7 @@ function updateGameMenuPage(page, dt)
 					elseif dragLength <= 40 then
 					
 						-- check if episode is not locked and enable updatefunction
-						if (settings.selectedEpisode ~= page.numEpisodes and getItemByName(page.items[settings.selectedEpisode].children, "lock").visible ~= true) or
+						if (settings.selectedEpisode ~= page.numEpisodes) or-- and getItemByName(page.items[settings.selectedEpisode].children, "lock").visible ~= true) or
 							settings.selectedEpisode == page.numEpisodes then
 							page.items[settings.selectedEpisode].disableUpdateFunctionChange = false
 						end
@@ -6639,7 +7561,7 @@ function updateGameMenuPage(page, dt)
 							
 						end
 						-- check if episode is not locked and enable updatefunction
-						if (settings.selectedEpisode ~= page.numEpisodes and getItemByName(page.items[settings.selectedEpisode].children, "lock").visible ~= true) or
+						if (settings.selectedEpisode ~= page.numEpisodes) or-- and getItemByName(page.items[settings.selectedEpisode].children, "lock").visible ~= true) or
 							settings.selectedEpisode == page.numEpisodes then
 							page.items[settings.selectedEpisode].disableUpdateFunctionChange = false
 						end
@@ -6698,7 +7620,7 @@ function updateGameMenuPage(page, dt)
 	--this flag will be true when the user tries to scroll by clicking on the navigation buttons. We dont allow that
 	
 	
-	if page == levelSelectionPagesBasic or page == levelSelectionPagesExtra or page == levelSelectionPagesPack3 or page == levelSelectionPagesPack4 or page == levelSelectionPagesPack5 or page == levelSelectionPagesPack6 or (levelSelectionPagesGoldenEggs and page == levelSelectionPagesGoldenEggs[1]) then
+	if isLevelSelection(page) or (levelSelectionPagesGoldenEggs and page == levelSelectionPagesGoldenEggs[1]) then
 		if not isLiteVersion then
 			local t_cursorOnClipArea = false
 			local g_mouseDragStartedFromNavigation = false
@@ -6736,7 +7658,7 @@ function updateGameMenuPage(page, dt)
 					elseif keyPressed["RIGHT"] then
 						scrollLevelSelectionRight(page)
 					end
-				elseif page.currentPage == page.pageCount and page == levelSelectionPagesPack3 and getItemByName(levelSelectionPagesPack3.items, "goldenEgg").visible then
+				elseif page.currentPage == page.pageCount and page == episodes[3] and getItemByName(episodes[3].items, "goldenEgg").visible then
 					local t_rightNavButton = getItemByName(page.items, "rightNavigation")
 					local triggerScroll = false
 					for _, shortcut in _G.ipairs(t_rightNavButton.shortcutKeys or {}) do
@@ -6775,17 +7697,17 @@ function updateGameMenuPage(page, dt)
 				page.currentPage = _G.math.min(page.currentPage +1, page.pageCount)
 				page.scrollToNextPage = false
 				
-				if page  == levelSelectionPagesBasic then
+				if page  == episodes[1] then
 					settings.currentLevelSelectionPages.basic = _G.math.min(settings.currentLevelSelectionPages.basic + 1, page.pageCount)
-				elseif page ==  levelSelectionPagesExtra then
+				elseif page ==  episodes[2] then
 					settings.currentLevelSelectionPages.extra = _G.math.min(settings.currentLevelSelectionPages.extra + 1, page.pageCount)
-				elseif page ==  levelSelectionPagesPack3 then
+				elseif page ==  episodes[3] then
 					settings.currentLevelSelectionPages.pack3 = _G.math.min(settings.currentLevelSelectionPages.pack3 + 1, page.pageCount)
-				elseif page ==  levelSelectionPagesPack4 then
+				elseif page ==  episodes[4] then
 					settings.currentLevelSelectionPages.pack4 = _G.math.min(settings.currentLevelSelectionPages.pack4 + 1, page.pageCount)
-				elseif page ==  levelSelectionPagesPack5 then
+				elseif page ==  episodes[5] then
 					settings.currentLevelSelectionPages.pack5 = _G.math.min(settings.currentLevelSelectionPages.pack5 + 1, page.pageCount)
-				elseif page == levelSelectionPagesPack6 then
+				elseif page == episodes[6] then
 					settings.currentLevelSelectionPages.pack6 = _G.math.min(settings.currentLevelSelectionPages.pack6 + 1, page.pageCount)
 				end
 			end
@@ -6812,18 +7734,8 @@ function updateGameMenuPage(page, dt)
 					end
 					levelSelectionDragSpeed = _G.math.max(menuDrag.speed, 500)
 				end
-				if page == levelSelectionPagesBasic then
-					settings.currentLevelSelectionPages.basic = page.currentPage
-				elseif page == levelSelectionPagesExtra then
-					settings.currentLevelSelectionPages.extra = page.currentPage
-				elseif page == levelSelectionPagesPack3 then
-					settings.currentLevelSelectionPages.pack3 = page.currentPage
-				elseif page == levelSelectionPagesPack4 then
-					settings.currentLevelSelectionPages.pack4 = page.currentPage
-				elseif page == levelSelectionPagesPack5 then
-					settings.currentLevelSelectionPages.pack5 = page.currentPage
-				elseif page == levelSelectionPagesPack6 then
-					settings.currentLevelSelectionPages.pack6 = page.currentPage
+				if isLevelSelection(page) then
+					settings.currentLevelSelectionPages[page.short_name] = page.currentPage
 				elseif page == levelSelectionPagesGoldenEggs[1] then
 					--settings.currentLevelSelectionPages.goldeneggs = page.currentPage
 					if (_G.math.abs(menuDrag.endX - menuDrag.startX) > 30 and menuDrag.speed > 100) or 
@@ -6883,7 +7795,7 @@ function updateGameMenuPage(page, dt)
 						levelSelectionPagesDragStartOffset = (page.pageCount - 1) * -g_levelSelectionScrollOffset
 					end
 					
-					page.currentOffset = levelSelectionPagesDragStartOffset + (cursor.x - menuDragStart.x) / 2
+					page.currentOffset = levelSelectionPagesDragStartOffset + (cursor.x - menuDragStart.x) / (gameOptions.ui.smoothScrolling and 1.5 or 2)
 					if page.currentOffset > g_levelSelectionScrollOffset then
 						page.currentOffset = g_levelSelectionScrollOffset
 					elseif page.currentOffset < page.pageCount * -g_levelSelectionScrollOffset then
@@ -6924,7 +7836,7 @@ function updateGameMenuPage(page, dt)
 					
 					
 					
-					page.currentOffset = levelSelectionPagesDragStartOffset + (multitouchSweep.sweepCurrentX - menuDragStart.x) / 2
+					page.currentOffset = levelSelectionPagesDragStartOffset + (multitouchSweep.sweepCurrentX - menuDragStart.x) / (gameOptions.ui.smoothScrolling and 1.5 or 2)
 					
 					if page.currentOffset > g_levelSelectionScrollOffset then
 						
@@ -6954,10 +7866,15 @@ function updateGameMenuPage(page, dt)
 				if levelSelectionScrollStartTimer == nil or levelSelectionScrollStartTimer <= 0 then
 					local speed = 1000
 					if levelSelectionDragSpeed ~= nil then
-						if _G.math.abs(page.targetOffset - page.currentOffset) < levelSelectionDragSpeed * dt * 3 then
-							levelSelectionDragSpeed = levelSelectionDragSpeed * 0.7
+						if gameOptions.ui.smoothScrolling then
+							levelSelectionDragSpeed = _G.math.abs(page.targetOffset-page.currentOffset)*9
+							speed = _G.math.max(levelSelectionDragSpeed, 10)--25)
+						else
+							if _G.math.abs(page.targetOffset - page.currentOffset) < levelSelectionDragSpeed * dt * 3 then
+								levelSelectionDragSpeed = levelSelectionDragSpeed * 0.7
+							end
+							speed = _G.math.max(levelSelectionDragSpeed, 100)
 						end
-						speed = _G.math.max(levelSelectionDragSpeed, 100)
 					end
 					if page.currentOffset > page.targetOffset then
 						page.currentOffset = page.currentOffset - dt * speed
@@ -6976,8 +7893,8 @@ function updateGameMenuPage(page, dt)
 			end
 			
 			--dots and numbers
-			if page.currentOffset == page.targetOffset  then
-				local _, textIndex = getItemByName(page.items, "text_" .. page.themes[1])
+			if isLevelSelection(page) and ((gameOptions.ui.smoothScrolling and not menuDrag) or page.currentOffset == page.targetOffset)  then
+				local _, textIndex = getItemByName(page.items, "text_" .. page.themes[1].num)
 				for i = 1, page.pageCount do
 					page.items[i + textIndex - 1].visible = page.currentPage == i and (page ~= levelSelectionPagesGoldenEggs[1])
 				end
@@ -6987,34 +7904,34 @@ function updateGameMenuPage(page, dt)
 				end
 				page.items[dotIndex + page.currentPage - 1].sprite = "LS_DOT_WHITE"	
 
-				if page == levelSelectionPagesBasic then
-					settings.currentLevelSelectionPages.basic = page.currentPage
-				elseif page == levelSelectionPagesExtra then
-					settings.currentLevelSelectionPages.extra = page.currentPage
-				elseif page == levelSelectionPagesPack3 then
-					settings.currentLevelSelectionPages.pack3 = page.currentPage
-				elseif page == levelSelectionPagesPack4 then
-					settings.currentLevelSelectionPages.pack4 = page.currentPage
-				elseif page == levelSelectionPagesPack5 then
-					settings.currentLevelSelectionPages.pack5 = page.currentPage
-				elseif page == levelSelectionPagesPack6 then
-					settings.currentLevelSelectionPages.pack6 = page.currentPage
-				end
+
+				settings.currentLevelSelectionPages[page.short_name or "0"] = page.currentPage
 			end
 			
 			for i = page.firstLevelIndex, #page.items do
 				if page.items[i].levelIndex ~= nil then
 				
 
-				
 					page.items[i].x = page.items[i].relativeX + page.currentOffset
 					
 					if page.items[i].starItem ~= nil then
 						page.items[i].starItem.x = page.items[i].x
 						updateItemMouseOverState(page.items[i].starItem, dt)
 					end
+					
+					if page.items[i].eagleItem ~= nil then
+						page.items[i].eagleItem.x = page.items[i].x
+						updateItemMouseOverState(page.items[i].eagleItem, dt)
+					end
+					
+					if page.items[i].featherItem ~= nil then
+						page.items[i].featherItem.x = page.items[i].x
+						updateItemMouseOverState(page.items[i].featherItem, dt)
+					end
 					if levelSelectionPagesPressed and page ~= levelSelectionPagesGoldenEggs[1] then
 						page.items[i].disableSelection = page.currentOffset ~= page.targetOffset
+						if gameOptions.ui.smoothScrolling and menuDrag and menuDrag.speed == 0 then page.items[i].disableSelection = false end
+						
 						if (page.items[i].x < g_levelSelectionClippingArea.x or (page.items[i].x > ( g_levelSelectionClippingArea.x + g_levelSelectionClippingArea.width) )) then
 							page.items[i].disableSelection = true
 						end
@@ -7022,7 +7939,7 @@ function updateGameMenuPage(page, dt)
 				end
 			end
 			
-			if page == levelSelectionPagesPack3 then
+			if page == episodes[3] then
 				-- move golden egg
 					local goldenEgg = getItemByName(page.items, "goldenEgg")
 					goldenEgg.x = goldenEgg.relativeX + page.currentOffset
@@ -7078,7 +7995,7 @@ function updateGameMenuPage(page, dt)
 		end
 			
 		-- move Ovistore buttons
-		if deviceModel == "n900" and page == levelSelectionPagesBasic and getItemByName(page.items, "overlay").visible then
+		if deviceModel == "n900" and page == episodes[1] and getItemByName(page.items, "overlay").visible then
 			getItemByName(page.items, "overlay").shade = _G.math.max(0, _G.math.min(0.65, (page.currentOffset / -screenWidth)))  	
 			if page.currentOffset < -screenWidth then
 				getItemByName(page.items, "button1").x = screenWidth / 2
@@ -7412,7 +8329,7 @@ function updateGameMenuPage(page, dt)
 		end
 	end
 	
-	if page == gameComplete then
+	if page == cutscenes.world3_complete then
 
 		page.timer = page.timer - dt
 		if page.timer < 0 then
@@ -7479,7 +8396,7 @@ function updateGameMenuPage(page, dt)
 		end
 	end
 	
-	if page == theme5Complete then
+	if page == cutscenes.world5_complete then
 	
 		if _G.res.isAudioPlaying("birds_outro") == false then
 			_G.res.playAudio("birds_outro", 1, true,7)
@@ -7557,7 +8474,7 @@ function updateGameMenuPage(page, dt)
 		end
 	end
 	
-	if page == gameStart then
+	if page == cutscenes.gameStart then
 		page.timer = page.timer - dt
 		if page.timer < 0 then
 			if page.animationState == "SCROLL" then
@@ -7589,7 +8506,7 @@ function updateGameMenuPage(page, dt)
 		end
 	end
 	
-	if page == theme1Complete then
+	if page == cutscenes.world1_complete then
 		
 		page.timer = page.timer - dt
 		if page.timer < 0 then
@@ -7614,23 +8531,22 @@ function updateGameMenuPage(page, dt)
 				if not hasLevelPack1() then
 					if isLiteVersion then
 						setActiveMenuPage(mainMenu, false)
-						setActivePopupPage(upsellPage)
 					else
 						setGameMode(gotoLevelSelection)
-						setActiveMenuPage(levelSelectionPagesBasic)
+						setActiveMenuPage(episodes[1])
 						--settings.currentLevelSelectionPages.basic = settings.currentLevelSelectionPages.basic + 1
-						levelSelectionPagesBasic.scrollToNextPage = true
+						episodes[1].scrollToNextPage = true
 					end
 				else
 					setGameMode(gotoLevelSelection)
 					--settings.currentLevelSelectionPages.basic = settings.currentLevelSelectionPages.basic + 1
-					levelSelectionPagesBasic.scrollToNextPage = true
+					episodes[1].scrollToNextPage = true
 				end
 			end
 		end
 	end
 	
-	if page == theme2Complete then
+	if page == cutscenes.world2_complete then
 		page.timer = page.timer - dt
 		if page.timer < 0 then
 			if page.animationState == "SCROLL" then
@@ -7652,12 +8568,12 @@ function updateGameMenuPage(page, dt)
 			if page.animationState == "END" then
 				setGameMode(gotoLevelSelection)
 				--settings.currentLevelSelectionPages.basic = settings.currentLevelSelectionPages.basic + 1
-				levelSelectionPagesBasic.scrollToNextPage = true
+				episodes[1].scrollToNextPage = true
 			end
 		end
 	end
 
-	if page == theme4Start then
+	if page == cutscenes.pack2_intro then
 		page.timer = page.timer - dt
 		if page.timer < 0 then
 			if page.animationState == "SCROLL" then
@@ -7689,7 +8605,7 @@ function updateGameMenuPage(page, dt)
 		end
 	end
 	
-	if page == theme4Complete then
+	if page == cutscenes.world4_complete then
 		page.timer = page.timer - dt
 		if page.timer < 0 then
 			if page.animationState == "SCROLL" then
@@ -7716,7 +8632,7 @@ function updateGameMenuPage(page, dt)
 		end
 	end
 	
-	if page == theme6Start then
+	if page == cutscenes.pack3_intro then
 		page.timer = page.timer - dt
 		if page.timer < 0 then
 			if page.animationState == "SCROLL" then
@@ -7736,14 +8652,14 @@ function updateGameMenuPage(page, dt)
 				setGameMode(gotoFirstLevelLP3)
 				settings.lp3Started = true
 			end
-		end
 		
-		if settings.lp3Started == true and keyPressed["LBUTTON"] then
-			gotoFirstLevelLP3()
-		end
+--		if page.animationState == "END" then
+--			gotoFirstLevelLP3()
+--		end
+	  end
 	end
 	
-	if page == theme6Complete then
+	if page == cutscenes.world6_complete then
 		page.timer = page.timer - dt
 		if page.timer < 0 then
 			if page.animationState == "SCROLL" then
@@ -7765,12 +8681,12 @@ function updateGameMenuPage(page, dt)
 			if page.animationState == "END" then
 				setGameMode(gotoLevelSelectionPack3)
 				--settings.currentLevelSelectionPages.pack3 = settings.currentLevelSelectionPages.pack3 + 1
-				levelSelectionPagesPack3.scrollToNextPage = true
+				episodes[3].scrollToNextPage = true
 			end
 		end
 	end
 	
-	if page == theme7Complete then
+	if page == cutscenes.world7_complete then
 		page.timer = page.timer - dt
 		if page.timer < 0 then
 			if page.animationState == "SCROLL" then
@@ -7792,12 +8708,12 @@ function updateGameMenuPage(page, dt)
 			if page.animationState == "END" then
 				setGameMode(gotoLevelSelectionPack3)
 				--settings.currentLevelSelectionPages.pack3 = settings.currentLevelSelectionPages.pack3 + 1
-				levelSelectionPagesPack3.scrollToNextPage = true
+				episodes[3].scrollToNextPage = true
 			end
 		end
 	end
 	
-	if page == theme8Complete then
+	if page == cutscenes.world8_complete then
 		page.timer = page.timer - dt
 		if page.timer < 0 then
 			if page.animationState == "SCROLL" then
@@ -7850,7 +8766,7 @@ function updateGameMenuPage(page, dt)
 		end
 	end
 	
-	if page == theme9Start then
+	if page == cutscenes.pack4_intro then
 		page.timer = page.timer - dt
 		if page.timer < 0 then
 			if page.animationState == "SCROLL" then
@@ -7916,7 +8832,7 @@ function updateGameMenuPage(page, dt)
 	end
 	
 	--update
-	if page == theme12Start then
+	if page == cutscenes.pack5_intro then
 		page.timer = page.timer - dt
 		if page.timer < 0 then
 			
@@ -7950,7 +8866,7 @@ function updateGameMenuPage(page, dt)
 		end
 	end
 	
-	if page == theme9Complete or page == theme10Complete then
+	if page == cutscenes.world9_complete or page == cutscenes.world10_complete then
 		page.timer = page.timer - dt
 		if page.timer < 0 then
 			if page.animationState == "SCROLL" then
@@ -7972,12 +8888,13 @@ function updateGameMenuPage(page, dt)
 			if page.animationState == "END" then
 				setGameMode(gotoLevelSelectionPack4)
 				--settings.currentLevelSelectionPages.pack4 = settings.currentLevelSelectionPages.pack4 + 1
-				levelSelectionPagesPack4.scrollToNextPage = true
+				episodes[4].scrollToNextPage = true
 			end
 		end
 	end
 	
-	if page == theme11Complete then
+	--update
+	if page == cutscenes.world11_complete then
 		page.timer = page.timer - dt
 		if page.timer < 0 then
 			if page.animationState == "SCROLL" then
@@ -7991,13 +8908,315 @@ function updateGameMenuPage(page, dt)
 						page.offsetX = -(page.backgroundWidth + page.cutSceneOffset) * scaleX + screenWidth
 					end
 					page.timer = 3.0
-					page.animationState = "OINK"
+					page.animationState = "STATE1"
 					return
 				end
 			end
-			if page.animationState == "OINK" then
+			local storyKingPeak = getItemByName(page.items, "storyKingPeak")
+			local storyKingWink = getItemByName(page.items, "storyKingWink")
+			if page.animationState == "STATE1" then
+				storyKingWink.visible = false
+				page.timer = 1
+				page.animationState = "STATE2"
+				return
+			end
+			
+			if page.animationState == "STATE2" then
+				storyKingPeak.visible = true
+				page.timer = 1.0
+				page.animationState = "STATE3"
+				return
+			end
+			
+			if page.animationState == "STATE3" then
+				storyKingPeak.visible = false
+				page.timer = 1.0
+				page.animationState = "STATE4"
+				return
+			end
+
+			if page.animationState == "STATE4" then
 				_G.res.playAudio("piglette_oink_story", 1, false, 0)
-				page.timer = 2
+				storyKingWink.visible = true
+				page.timer = 0.2
+				page.animationState = "STATE5"
+				return
+			end
+			
+			if page.animationState == "STATE5" then
+				storyKingWink.visible = false
+				page.timer = 1.5
+				page.animationState = "END"
+				return
+			end
+			if page.animationState == "END" then
+				setGameMode(gotoAbout)
+			end
+		end
+	end
+	
+	--update
+	if page == cutscenes.world12_complete then
+		page.timer = page.timer - dt
+		if page.timer < 0 then
+			if page.animationState == "SCROLL" then
+				local scaleX = page.xs or 1
+				if not page.dontScroll then
+					page.offsetX = page.offsetX - dt * page.scrollSpeed
+				end
+				page.tuneTimer = page.tuneTimer - dt
+				if page.tuneTimer <= 0 or (page.dontScroll ~= true and page.offsetX <= -(page.backgroundWidth + page.cutSceneOffset)  * scaleX + screenWidth) then
+					if not page.dontScroll then
+						page.offsetX = -(page.backgroundWidth + page.cutSceneOffset) * scaleX + screenWidth
+					end
+					page.timer = 2.5
+					page.animationState = "END"
+					return
+				end
+			end
+									
+			if page.animationState == "END" then
+				setGameMode(gotoLevelSelectionPack5)
+				--settings.currentLevelSelectionPages.pack4 = settings.currentLevelSelectionPages.pack4 + 1
+				episodes[5].scrollToNextPage = true
+			end
+		end
+	end
+	
+	--update
+	if page == cutscenes.world13_complete then
+		page.timer = page.timer - dt
+		if page.timer < 0 then
+			if page.animationState == "SCROLL" then
+				local scaleX = page.xs or 1
+				if not page.dontScroll then
+					page.offsetX = page.offsetX - dt * page.scrollSpeed
+				end
+				page.tuneTimer = page.tuneTimer - dt
+				if page.tuneTimer <= 0 or (page.dontScroll ~= true and page.offsetX <= -(page.backgroundWidth + page.cutSceneOffset)  * scaleX + screenWidth) then
+					if not page.dontScroll then
+						page.offsetX = -(page.backgroundWidth + page.cutSceneOffset) * scaleX + screenWidth
+					end
+					page.timer = 2.5
+					page.animationState = "END"
+					return
+				end
+			end
+									
+			if page.animationState == "END" then
+				setGameMode(gotoLevelSelectionPack5)
+				--settings.currentLevelSelectionPages.pack4 = settings.currentLevelSelectionPages.pack4 + 1
+				episodes[5].scrollToNextPage = true
+			end
+		end
+	end
+	
+	if page == cutscenes.world14_complete or page == cutscenes.world17_complete then
+		page.timer = page.timer - dt
+		if page.timer < 0 then
+			if page.animationState == "SCROLL" then
+				local scaleX = page.xs or 1
+				if not page.dontScroll then
+					page.offsetX = page.offsetX - dt * page.scrollSpeed
+				end
+				page.tuneTimer = page.tuneTimer - dt
+				if page.tuneTimer <= 0 or (page.dontScroll ~= true and page.offsetX <= -(page.backgroundWidth + page.cutSceneOffset)  * scaleX + screenWidth) then
+					if not page.dontScroll then
+						page.offsetX = -(page.backgroundWidth + page.cutSceneOffset) * scaleX + screenWidth
+					end
+					page.timer = 2.5
+					page.animationState = "END"
+					return
+				end
+			end
+			
+			if page.animationState == "END" then
+				setGameMode(gotoAbout)
+			end
+		end
+	end
+	
+	if page == cutscenes.pack6_intro then
+		if keyPressed["LBUTTON"] and settings.lp6Started and settings.lp6Started == true then
+			gotoFirstLevelLP6()
+		end
+
+		page.timer = page.timer - dt
+		if page.timer <= 0 then
+			if page.animationState == "SCROLL" then
+				local scaleX = page.xs or 1
+				--page.timer = 2.3
+				if not page.dontScroll then
+					page.offsetX = page.offsetX - dt * page.scrollSpeed
+				end
+				page.tuneTimer = page.tuneTimer - dt
+				if page.tuneTimer <= 0 then --or (page.dontScroll ~= true and page.offsetX < screenWidth - page.backgroundWidth * scaleX) then
+					page.animationState = "STATE1"
+				end
+			end
+			
+			if page.animationState == "STATE1" then
+				page.timer = 3
+				page.animationState = "END"
+				return
+			end
+			
+			if page.animationState == "END" then
+				setGameMode(gotoFirstLevelLP6)
+				settings.lp6Started = true
+			end
+		end	
+	end
+	
+	if page == cutscenes.world15_complete or page == cutscenes.world16_complete then
+		page.timer = page.timer - dt
+		if page.timer <= 0 then
+			if page.animationState == "SCROLL" then
+				local scaleX = page.xs or 1
+				--page.timer = 2.3
+				if not page.dontScroll then
+					page.offsetX = page.offsetX - dt * page.scrollSpeed
+				end
+				page.tuneTimer = page.tuneTimer - dt
+				if page.tuneTimer <= 0 then-- or (page.dontScroll ~= true and page.offsetX < screenWidth - page.backgroundWidth * scaleX) then
+					page.animationState = "STATE1"
+				end
+			end
+			
+			if page.animationState == "STATE1" then
+				page.timer = 3
+				page.animationState = "END"
+				return
+			end
+			
+			if page.animationState == "END" then
+				--setGameMode(gotoAbout)
+				setGameMode(gotoLevelSelectionPack6)
+				episodes[6].scrollToNextPage = true
+			end
+		end	
+	end
+	--update
+	if page == cutscenes.world14_complete then
+		page.timer = page.timer - dt
+		if page.timer < 0 then
+			if page.animationState == "SCROLL" then
+				local scaleX = page.xs or 1
+				if not page.dontScroll then
+					page.offsetX = page.offsetX - dt * page.scrollSpeed
+				end
+				page.tuneTimer = page.tuneTimer - dt
+				if page.tuneTimer <= 0 or (page.dontScroll ~= true and page.offsetX <= -(page.backgroundWidth + page.cutSceneOffset)  * scaleX + screenWidth) then
+					if not page.dontScroll then
+						page.offsetX = -(page.backgroundWidth + page.cutSceneOffset) * scaleX + screenWidth
+					end
+					page.timer = 3.0
+					page.animationState = "STATE1"
+					return
+				end
+			end
+			local kingEyeOpen = getItemByName(page.items, "kingEyeOpen")
+			local kingEyePeak = getItemByName(page.items, "kingEyePeak")
+			local kingEyeBlink = getItemByName(page.items, "kingEyeBlink")
+			if page.animationState == "STATE1" then
+				kingEyeOpen.visible = true
+				page.timer = 1
+				page.animationState = "STATE2"
+				return
+			end
+			
+			if page.animationState == "STATE2" then
+				kingEyePeak.visible = true
+				page.timer = 1.0
+				page.animationState = "STATE3"
+				return
+			end
+			
+			if page.animationState == "STATE3" then
+				kingEyePeak.visible = false
+				kingEyeOpen.visible = true
+				page.timer = 1.0
+				page.animationState = "STATE4"
+				return
+			end
+
+			if page.animationState == "STATE4" then
+				_G.res.playAudio("piglette_oink_story", 1, false, 0)
+				kingEyeBlink.visible = true
+				page.timer = 0.2
+				page.animationState = "STATE5"
+				return
+			end
+			
+			if page.animationState == "STATE5" then
+				kingEyeOpen.visible = true
+				kingEyeBlink.visible = false
+				page.timer = 1.5
+				page.animationState = "END"
+				return
+			end
+			if page.animationState == "END" then
+				setGameMode(gotoAbout)
+			end
+		end
+	end
+	
+	--update
+	if page == cutscenes.world17_complete then
+		page.timer = page.timer - dt
+		if page.timer < 0 then
+			if page.animationState == "SCROLL" then
+				local scaleX = page.xs or 1
+				if not page.dontScroll then
+					page.offsetX = page.offsetX - dt * page.scrollSpeed
+				end
+				page.tuneTimer = page.tuneTimer - dt
+				if page.tuneTimer <= 0 or (page.dontScroll ~= true and page.offsetX <= -(page.backgroundWidth + page.cutSceneOffset)  * scaleX + screenWidth) then
+					if not page.dontScroll then
+						page.offsetX = -(page.backgroundWidth + page.cutSceneOffset) * scaleX + screenWidth
+					end
+					page.timer = 3.0
+					page.animationState = "STATE1"
+					return
+				end
+			end
+			local storyKingOpen = getItemByName(page.items, "storyKingOpen")
+			local storyKingWink = getItemByName(page.items, "storyKingWink")
+			local storyKingPeak = getItemByName(page.items, "storyKingPeak")
+			if page.animationState == "STATE1" then
+				storyKingOpen.visible = true
+				page.timer = 1
+				page.animationState = "STATE2"
+				return
+			end
+			
+			if page.animationState == "STATE2" then
+				storyKingPeak.visible = true
+				page.timer = 1.0
+				page.animationState = "STATE3"
+				return
+			end
+			
+			if page.animationState == "STATE3" then
+				storyKingOpen.visible = true
+				storyKingPeak.visible = false
+				page.timer = 1.0
+				page.animationState = "STATE4"
+				return
+			end
+
+			if page.animationState == "STATE4" then
+				_G.res.playAudio("piglette_oink_story", 1, false, 0)
+				storyKingWink.visible = true
+				page.timer = 0.2
+				page.animationState = "STATE5"
+				return
+			end
+			
+			if page.animationState == "STATE5" then
+				storyKingOpen.visible = true
+				storyKingWink.visible = false
+				page.timer = 1.5
 				page.animationState = "END"
 				return
 			end
@@ -8010,7 +9229,9 @@ function updateGameMenuPage(page, dt)
 	if page == gameFinished or page == gameFinishedThreeStars or
 	   page == gameFinishedLP2 or page == gameFinishedThreeStarsLP2 or 
 	   page == gameFinishedLP3 or page == gameFinishedThreeStarsLP3 or
-	   page == gameFinishedLP4 or page == gameFinishedThreeStarsLP4 then
+	   page == gameFinishedLP4 or page == gameFinishedThreeStarsLP4 or
+	   page == gameFinishedLP5 or page == gameFinishedThreeStarsLP5 or
+	   page == gameFinishedLP6 or page == gameFinishedThreeStarsLP6 then
 		page.items[1].angle = page.items[1].angle + 0.8 * dt
 	end
 end
@@ -8309,9 +9530,14 @@ function calculateLevelSelectionClippingArea()
 	
 	local t_finalWidth = t_finalSpaceX * (t_maxItemsPerRow - 1)	
 	local t_finalHeight = t_finalSpaceY * (t_maxItemsPerCol - 1)
+
+	local bls = gameOptions.ui.bigLevelSelection
 	
-	g_levelSelectionClippingArea = {x = (screenWidth * 0.5) - (t_finalWidth * 0.5), 
-									y = t_y, width = t_finalWidth, height = t_finalHeight, offsetX = t_offsetX, offsetY = t_offsetY}
+	g_levelSelectionClippingArea = {x = bls and t_finalSpaceX or (screenWidth * 0.5) - (t_finalWidth * 0.5), 
+									y = bls and t_finalSpaceY or t_y,
+									width = bls and screenWidth - t_finalSpaceX*2 or t_finalWidth,
+									height = bls and screenHeight-t_finalSpaceY*2 or t_finalHeight,
+									offsetX = t_offsetX, offsetY = t_offsetY}
 	
 	if deviceModel == "roku" and screenHeight <= 576 then
 		--g_levelSelectionClippingArea.y = g_levelSelectionClippingArea.y - 40
@@ -8423,14 +9649,9 @@ function prepareMenuPage(page)
 		
 		prepareItemForMouseScalingStates(buttonQuit)
 		
-		if deviceModel == "roku" then
-			buttonSliderBG.visible = false
-			buttonSlider.visible   = false
-			buttonSliderBGOptions.x = screenWidth  - bsOW + 5
-			buttonSliderBGOptions.y = screenHeight - bsOH + 17
-			buttonSliderOptions.x   = buttonSliderBGOptions.x
-			buttonSliderOptions.y   = buttonSliderBGOptions.y
-			buttonQuit.visible = false
+		if deviceModel == "windows" or deviceModel == "pc_build" or deviceModel == "ipad" or deviceModel == "iphone" or deviceModel == "android" then
+			buttonSliderBG.visible = true
+			buttonSlider.visible   = true
 		end
 	
 		local sliderBGRight = getItemByName(page.items, "sliderBGRight")
@@ -8607,8 +9828,19 @@ function prepareMenuPage(page)
 			editor.x, editor.y = screenWidth * 0.75, screenHeight * 0.75
 			if showEditor then
 				editor.visible = true
+		        prepareItemForMouseScalingStates(editor)
 			else 
 				editor.visible = false
+			end
+			local editor_text = getItemByName(page.items, "editor_text")
+			editor_text.x, editor_text.y = screenWidth * 0.75, screenHeight * 0.75
+			if showEditor then
+				editor_text.visible = true
+		        prepareItemForMouseScalingStates(editor_text,editor)
+		        editor_text.scaleText = true
+		        editor_text.vanchor = "VCENTER"
+			else
+				editor_text.visible = false
 			end
 		end
 				
@@ -8695,7 +9927,7 @@ function prepareMenuPage(page)
 		end
 		
 		-- enable when the REWARD_6(_STAR) sprites are added
-		--[[if settings.theme17Completed then
+		if settings.theme17Completed then
 			if settings.threeStarsLP6 then
 				_G.table.insert(birdSprites, { sprite = "REWARD_6_STAR", sheet = "", reward = 1})
 				_G.table.insert(birdSprites, { sprite = "REWARD_6_STAR", sheet = "", reward = 1})
@@ -8703,7 +9935,13 @@ function prepareMenuPage(page)
 				_G.table.insert(birdSprites, { sprite = "REWARD_6", sheet = "", reward = 1})
 				_G.table.insert(birdSprites, { sprite = "REWARD_6", sheet = "", reward = 1})
 			end
-		end]]
+		end
+		
+
+			if settings.threeStars and settings.threeStarsLP2 and settings.threeStarsLP3 and settings.threeStarsLP4 and settings.threeStarsLP5 and settings.threeStarsLP6 then
+				_G.table.insert(birdSprites, { sprite = "REWARD_6_STAR", sheet = "", reward = 1})
+				_G.table.insert(birdSprites, { sprite = "REWARD_6_STAR", sheet = "", reward = 1})
+			end
 		
 		if deviceModel == "iphone" or deviceModel == "ipad" or deviceModel == "iphone4" then
 			checkForAchievements()
@@ -8722,7 +9960,8 @@ function prepareMenuPage(page)
 		birdSpriteSoundMapping = { BIRD_RED = "bird_01_flying", BIRD_BLUE = "bird_02_flying", 
 								   BIRD_YELLOW = "bird_03_flying", BIRD_GREY = "bird_04_flying",
 								   BIRD_GREEN = "bird_05_flying", BIRD_BIG_BROTHER = "big_brother_flying",
-								   BIRD_BOOMERANG = "bird_06_flying"
+								   BIRD_BOOMERANG = "bird_06_flying", BIRD_PUFFER = "bubbles_flying",
+								   BIRD_PINK = "pink_activate_01"
 								 }
 		
 	end
@@ -8921,10 +10160,10 @@ function prepareMenuPage(page)
 		prepareTextItem(page, highScoreNumber)
 		prepareTextItem(page, highScoreText)
 		background.x, background.y = screenWidth * 0.5, screenHeight * 0.5 + highScoreText.h
-		background.width = buttonW * 3.8
-		if background.width < newHighScoreW * 2.8 then
-			background.width = newHighScoreW * 2.8
-		end
+		background.width = buttonW * 4.8
+		--if background.width < newHighScoreW * 2.4 then
+			--background.width = newHighScoreW * 2.4
+		--end
 		-- simple hack to solve the problem of a too small window
 		if deviceModel == "roku" then
 			background.width = _G.math.max(buttonW * 4.5, newHighScoreW * 3.5)
@@ -8944,8 +10183,8 @@ function prepareMenuPage(page)
 			levelComplete.textBoxSize = background.width * 0.55
 		end
 		background.height = levelComplete.h + score.h * 1.5 + scoreNumber.h + buttonH * 0.7
-		if background.height < newHighScoreH + buttonH * 0.4 then
-			background.height = newHighScoreH + buttonH * 0.4
+		if background.height < newHighScoreH + buttonH * 0.6 then
+			background.height = newHighScoreH + buttonH * 0.6
 		end
 		
 		background.height = background.height + g_popupBoxHeightOffset
@@ -9031,7 +10270,7 @@ function prepareMenuPage(page)
 		-- each cutscene has it's own button
 		--for i = 1, 11 do
 		
-		for i = 1, 17 do
+		for i = 1, 1 do
 			local tempButton = getItemByName(page.items, "buttonCutscene" .. i)
 			tempButton.x, tempButton.y = buttonNextLevel.x, buttonNextLevel.y
 			prepareItemForMouseScalingStates(tempButton)
@@ -9042,7 +10281,7 @@ function prepareMenuPage(page)
 		prepareItemForMouseScalingStates(buttonRio)
 		
 		buttonRio.visible = inExtraWorld and currentLevelNumberInTheme == 20
-		if deviceModel == "roku" then
+		if deviceModel == "windows" or deviceModel == "pc_build" then
 			buttonRio.visible = false
 		end
 		
@@ -9182,7 +10421,7 @@ function prepareMenuPage(page)
 		-- each cutscene has it's own button
 		--for i = 1, 11 do
 		
-		for i = 1, 17 do
+		for i = 1, 1 do
 			local tempButton = getItemByName(page.items, "buttonCutscene" .. i)
 			tempButton.x, tempButton.y = buttonNextLevel.x, buttonNextLevel.y
 			prepareItemForMouseScalingStates(tempButton)
@@ -9199,7 +10438,7 @@ function prepareMenuPage(page)
 		end
 	end
 	
-	if page == episodeSelectionPage then
+	if page == episodeSelectionPage and (g_newEpisodeScreen.enabled == false or scrollingEpisodes) then
 		--if we come back from the level selection screen, the clipping rect would still be the one defined on the level selection drawing method
 		_G.res.setClipRect(0, 0, screenWidth, screenHeight)
 		local t_useScalableButtons = g_enableMouseOverStates
@@ -9242,11 +10481,13 @@ function prepareMenuPage(page)
 		--starts relative component positioning 
 		local t_referenceScreenWidth = 1920
 		local t_referenceScreenHeight = 1200
-		--local t_leftNavigation = getItemByName(page.items, "leftNavigation")
-		--local t_rightNavigation = getItemByName(page.items, "rightNavigation")
-		
-		--t_leftNavigation.x, t_leftNavigation.y = (408 / t_referenceScreenWidth) * screenWidth, (562 / t_referenceScreenHeight) * screenHeight
-		--t_rightNavigation.x, t_rightNavigation.y= (1515 / t_referenceScreenWidth) * screenWidth, (562 / t_referenceScreenHeight) * screenHeight
+		if scrollingEpisodes then
+			local t_leftNavigation = getItemByName(page.items, "leftNavigation")
+			local t_rightNavigation = getItemByName(page.items, "rightNavigation")
+			
+			t_leftNavigation.x, t_leftNavigation.y = (408 / t_referenceScreenWidth) * screenWidth, (562 / t_referenceScreenHeight) * screenHeight
+			t_rightNavigation.x, t_rightNavigation.y= (1515 / t_referenceScreenWidth) * screenWidth, (562 / t_referenceScreenHeight) * screenHeight
+		end
 		
 		
 		
@@ -9300,8 +10541,8 @@ function prepareMenuPage(page)
 		local lsDotY = 10
 		local lsDotSpacing = 20
 		
-		page.goldenEggHitBox.xMin, page.goldenEggHitBox.xMax = 0.44 * screenWidth, 0.56 * screenWidth
-		page.goldenEggHitBox.yMin, page.goldenEggHitBox.yMax = 0.87 * screenHeight, 0.95 * screenHeight
+--		page.goldenEggHitBox.xMin, page.goldenEggHitBox.xMax = 0.44 * screenWidth, 0.56 * screenWidth
+--		page.goldenEggHitBox.yMin, page.goldenEggHitBox.yMax = 0.87 * screenHeight, 0.95 * screenHeight
 		
 		--[[
 		if deviceModel ~= "android" and deviceModel ~= "palm" then
@@ -9708,10 +10949,10 @@ function prepareMenuPage(page)
 		
 		local epGStarText = getItemByName(page.items, "epGStarText")
 		local goldenEggStars = calculateStarsFromGoldenEggLevels()
-		if goldenEggStars > 0 then
+		if goldenEggStars > 0 and getItemByName(page.items, "episodeButtonStarsG") then
 			epGStarText.text = "" .. goldenEggStars
 			getItemByName(page.items, "episodeButtonStarsG").text = "" .. goldenEggStars
-		else
+		elseif getItemByName(page.items, "episodeButtonStarsG") then
 			getItemByName(page.items, "episodeButtonStarsG").text = ""
 		end
 		
@@ -9767,8 +11008,8 @@ function prepareMenuPage(page)
 		getItemByName(page.items[3].children, "episode3ScoreText").visible = true
 		
 		
-		getItemByName(page.items, "episodeButtonScore1").text = _G.string.format("%d", score)
-		getItemByName(page.items, "episodeButtonStars1").text = gainedStars .. "/" .. totalStars
+		-- getItemByName(page.items, "episodeButtonScore1").text = _G.string.format("%d", score)
+		-- getItemByName(page.items, "episodeButtonStars1").text = gainedStars .. "/" .. totalStars
 
 		
 	
@@ -9806,7 +11047,7 @@ function prepareMenuPage(page)
 			t_item.x = t_firstX + t_episodeSpacing * (i-1)
 			t_item.y = screenHeight * (t_referenceCardY / t_referenceScreenHeight)
 			
-			if t_useScalableButtons then
+			if t_useScalableButtons and not scrollingEpisodes then
 			
 				local t_button = getItemByName(page.items, "episodeButton" ..i)
 				t_button.x, t_button.y  = t_item.x, t_item.y
@@ -9853,7 +11094,7 @@ function prepareMenuPage(page)
 				prepareItemForMouseScalingStates(t_starsField,t_button)
 				prepareItemForMouseScalingStates(t_buttonLock,t_button)
 				
-			else
+			elseif false then
 				local t_button = getItemByName(page.items, "episodeButton" ..i)
 				t_button.visible = false
 				local t_scoreField = getItemByName(page.items, "episodeButtonScore" ..i)
@@ -9866,7 +11107,7 @@ function prepareMenuPage(page)
 			end
 		end
 		
-		episodeG.x = screenWidth * 0.50
+		episodeG.x = 0
 		episodeG.y = (t_goldCardReferenceY / t_referenceScreenHeight) * screenHeight
 		
 		episodeG.visible = not t_useScalableButtons
@@ -9883,21 +11124,22 @@ function prepareMenuPage(page)
 		local t_button = getItemByName(page.items, "episodeButtonG")
 		local t_starsField = getItemByName(page.items, "episodeButtonStarsG")
 				
-		t_button.x, t_button.y  = episodeG.x, episodeG.y
-		t_button.visible = t_useScalableButtons
-		local t_starsOffsetX = 154
-		local t_starsOffsetY = 13
-		
-		t_starsField.x, t_starsField.y = t_button.x + t_starsOffsetX, t_button.y + t_starsOffsetY
-		--t_starsField.text = "12"
-		t_starsField.visible = t_useScalableButtons
-		t_starsField.scaleText = true
-		t_starsField.font = "FONT_LS_SMALL"
-		
-		
-		prepareItemForMouseScalingStates(t_button)
-		prepareItemForMouseScalingStates(t_starsField, t_button)
-				
+		if t_button then
+			t_button.x, t_button.y  = episodeG.x, episodeG.y
+			t_button.visible = t_useScalableButtons
+			local t_starsOffsetX = 154
+			local t_starsOffsetY = 13
+			
+			t_starsField.x, t_starsField.y = t_button.x + t_starsOffsetX, t_button.y + t_starsOffsetY
+			--t_starsField.text = "12"
+			t_starsField.visible = t_useScalableButtons
+			t_starsField.scaleText = true
+			t_starsField.font = "FONT_LS_SMALL"
+			
+			
+			prepareItemForMouseScalingStates(t_button)
+			prepareItemForMouseScalingStates(t_starsField, t_button)
+		end
 		
 		
 		
@@ -9907,10 +11149,10 @@ function prepareMenuPage(page)
 		end
 
 		getItemByName(page.items[1].children, "lock").visible = false
-		local t_buttonLock1 = getItemByName(page.items, "episodeButtonLock1")
-		t_buttonLock1.visible = false
+		-- local t_buttonLock1 = getItemByName(page.items, "episodeButtonLock1")
+		-- t_buttonLock1.visible = false
 		
-		if t_useScalableButtons then
+		if t_useScalableButtons and not scrollingEpisodes then
 			local t_packs = {"pack3", "pack5", "pack8"}
 			for k = 2, 4,1 do 
 				local t_totalLevelsPerPage = #levelOrder[ t_packs[k-1] ]
@@ -9950,179 +11192,543 @@ function prepareMenuPage(page)
 		end
 		
 		
-		
-		-- Prepare Level Pack 2 icon if available
-		if hasLevelPack2() == true then
-			
-			
-			local score, gainedStars, totalStars = calculateTotalScoreAndStars(levelOrder_packOne)
-			
-			episode2.selectable = true
-			episode2.updateFunction = gotoLevelSelectionExtra
-			episode2Text.visible = true
-			episode2Score.text = _G.string.format("%d", score)
-			episode2Score.visible = true
-			episode2Stars.text = gainedStars .. "/" .. totalStars
-			
-			getItemByName(page.items, "episodeButtonScore2").text = _G.string.format("%d", score)
-			getItemByName(page.items, "episodeButtonStars2").text = gainedStars .. "/" .. totalStars
-
-			
-			episode2Stars.visible = true
-			episode2ScoreText.visible = true
-			getItemByName(page.items[2].children, "appStore").visible = false
-			
-			if deviceModel == "n900" or score > 0 or settings.gameCompleted then 
-				getItemByName(page.items[2].children, "lock").visible = false
+		if not scrollingEpisodes then
+			-- Prepare Level Pack 2 icon if available
+			if hasLevelPack2() == true then
 				
 				
+				local score, gainedStars, totalStars = calculateTotalScoreAndStars(levelOrder_packOne)
 				
-			else
-				getItemByName(page.items[2].children, "lock").visible = true
+				episode2.selectable = true
+				episode2.updateFunction = gotoLevelSelectionExtra
+				episode2Text.visible = true
+				episode2Score.text = _G.string.format("%d", score)
+				episode2Score.visible = true
+				episode2Stars.text = gainedStars .. "/" .. totalStars
 				
-			end
-			
-			
-		else
-			getItemByName(page.items, "episode2").selectable = true
-			if deviceModel == "n900" or deviceModel == "s60" then
-				episode2.updateFunction = gotoOviStore
-			else
-				episode2.callFunction = gotoFullVersionInAppStore
-				episode2.updateFunction = nil
-			end
-			if deviceModel == "n900" then
-				episode2.box = {left = "EPISODE_LOCKED_LEFT", bottomLeft = "EPISODE_LOCKED_BOTTOM_LEFT",
-								bottomMiddle = "EPISODE_LOCKED_BOTTOM_MIDDLE", bottomRight = "EPISODE_LOCKED_BOTTOM_RIGHT",
-								right = "EPISODE_LOCKED_RIGHT", topRight = "EPISODE_LOCKED_TOP_RIGHT",
-								topMiddle = "EPISODE_LOCKED_TOP_MIDDLE", topLeft = "EPISODE_LOCKED_TOP_LEFT",
-								center = "EPISODE_LOCKED_CENTER"}
-			end
-			
-			ep2Sprite.visible = false
-			episode2Text.visible = true
-			episode2Score.visible = false
-			episode2Stars.visible = false
-			episode2ScoreText.visible = true
-			getItemByName(page.items[2].children, "lock").visible = false
-			getItemByName(page.items[2].children, "appStore").visible = true
-
-		end
-		
-		if hasLevelPack3() == true then
-		
-			local score, gainedStars, totalStars = calculateTotalScoreAndStars(levelOrder_packThree)
-			episode3.selectable = true
-			episode3.updateFunction = gotoLevelSelectionPack3
-			episode3.callFunction = nil
-			ep3Sprite.visible = true
-			episode3Text.visible = true
-			episode3Score.visible = true
-			episode3Score.text = _G.string.format("%d", score)
-			episode3Stars.visible = true
-			episode3Stars.text = gainedStars .. "/" .. totalStars
-			episode3ScoreText.visible = true
-			getItemByName(page.items[3].children, "appStore").visible = false
-			
-			getItemByName(page.items, "episodeButtonScore3").text = _G.string.format("%d", score)
-			getItemByName(page.items, "episodeButtonStars3").text = gainedStars .. "/" .. totalStars
-
-			
-			if deviceModel == "n900" or settings.gameCompleted or score > 0 then
-				getItemByName(page.items[3].children, "lock").visible = false
-				
-				
-				
-			else
-				getItemByName(page.items[3].children, "lock").visible = true
-				
-			end
-		else
-			getItemByName(page.items, "episode3").selectable = true
-			
-			if deviceModel == "n900" or deviceModel == "s60" then
-				episode3.updateFunction = gotoOviStore
-			else
-				episode3.callFunction = gotoFullVersionInAppStore
-				episode3.updateFunction = nil
-			end
-			
-			if deviceModel == "n900" then
-				episode3.box = {left = "EPISODE_LOCKED_LEFT", bottomLeft = "EPISODE_LOCKED_BOTTOM_LEFT",
-								bottomMiddle = "EPISODE_LOCKED_BOTTOM_MIDDLE", bottomRight = "EPISODE_LOCKED_BOTTOM_RIGHT",
-								right = "EPISODE_LOCKED_RIGHT", topRight = "EPISODE_LOCKED_TOP_RIGHT",
-								topMiddle = "EPISODE_LOCKED_TOP_MIDDLE", topLeft = "EPISODE_LOCKED_TOP_LEFT",
-								center = "EPISODE_LOCKED_CENTER"}
-			end
-				
-			ep3Sprite.visible = false
-			episode3Text.visible = true
-			episode3Score.visible = false
-			episode3Stars.visible = false
-			episode3ScoreText.visible = true
-			getItemByName(page.items[3].children, "lock").visible = false
-			getItemByName(page.items[3].children, "appStore").visible = true
-
-		end
-		
-		if deviceModel ~= "android" and deviceModel ~= "palm" then
-			if hasLevelPack4() == true then
-			
-				local score, gainedStars, totalStars = calculateTotalScoreAndStars(levelOrder_packFour)
-				episode4.selectable = true
-				episode4.updateFunction = gotoLevelSelectionPack4
-				episode4.callFunction = nil
-				ep4Sprite.visible = true
-				episode4Text.visible = true
-				episode4Score.visible = true
-				episode4Score.text = _G.string.format("%d", score)
-				episode4Stars.visible = true
-				episode4Stars.text = gainedStars .. "/" .. totalStars
-				episode4ScoreText.visible = true
-				
-				getItemByName(page.items, "episodeButtonScore4").text = _G.string.format("%d", score)
-				getItemByName(page.items, "episodeButtonStars4").text = gainedStars .. "/" .. totalStars
+				getItemByName(page.items, "episodeButtonScore2").text = _G.string.format("%d", score)
+				getItemByName(page.items, "episodeButtonStars2").text = gainedStars .. "/" .. totalStars
 
 				
-				getItemByName(page.items[4].children, "appStore").visible = false
+				episode2Stars.visible = true
+				episode2ScoreText.visible = true
+				getItemByName(page.items[2].children, "appStore").visible = false
 				
-				if deviceModel == "n900" or deviceModel == "s60" or settings.gameCompleted or score > 0 then
-					getItemByName(page.items[4].children, "lock").visible = false	
+				if deviceModel == "n900" or score > 0 or settings.gameCompleted then 
+					getItemByName(page.items[2].children, "lock").visible = false
 					
 					
-				
+					
 				else
-					getItemByName(page.items[4].children, "lock").visible = true
+					getItemByName(page.items[2].children, "lock").visible = true
 					
+				end
+				
+				
+			else
+				getItemByName(page.items, "episode2").selectable = true
+				if deviceModel == "n900" or deviceModel == "s60" then
+					episode2.updateFunction = gotoOviStore
+				else
+					episode2.callFunction = gotoFullVersionInAppStore
+					episode2.updateFunction = nil
+				end
+				if deviceModel == "n900" then
+					episode2.box = {left = "EPISODE_LOCKED_LEFT", bottomLeft = "EPISODE_LOCKED_BOTTOM_LEFT",
+									bottomMiddle = "EPISODE_LOCKED_BOTTOM_MIDDLE", bottomRight = "EPISODE_LOCKED_BOTTOM_RIGHT",
+									right = "EPISODE_LOCKED_RIGHT", topRight = "EPISODE_LOCKED_TOP_RIGHT",
+									topMiddle = "EPISODE_LOCKED_TOP_MIDDLE", topLeft = "EPISODE_LOCKED_TOP_LEFT",
+									center = "EPISODE_LOCKED_CENTER"}
+				end
+				
+				ep2Sprite.visible = false
+				episode2Text.visible = true
+				episode2Score.visible = false
+				episode2Stars.visible = false
+				episode2ScoreText.visible = true
+				getItemByName(page.items[2].children, "lock").visible = false
+				getItemByName(page.items[2].children, "appStore").visible = true
+
+			end
+			
+			if hasLevelPack3() == true then
+			
+				local score, gainedStars, totalStars = calculateTotalScoreAndStars(levelOrder_packThree)
+				episode3.selectable = true
+				episode3.updateFunction = gotoLevelSelectionPack3
+				episode3.callFunction = nil
+				ep3Sprite.visible = true
+				episode3Text.visible = true
+				episode3Score.visible = true
+				episode3Score.text = _G.string.format("%d", score)
+				episode3Stars.visible = true
+				episode3Stars.text = gainedStars .. "/" .. totalStars
+				episode3ScoreText.visible = true
+				getItemByName(page.items[3].children, "appStore").visible = false
+				
+				getItemByName(page.items, "episodeButtonScore3").text = _G.string.format("%d", score)
+				getItemByName(page.items, "episodeButtonStars3").text = gainedStars .. "/" .. totalStars
+
+				
+				if deviceModel == "n900" or settings.gameCompleted or score > 0 then
+					getItemByName(page.items[3].children, "lock").visible = false
+					
+					
+					
+				else
+					getItemByName(page.items[3].children, "lock").visible = true
 					
 				end
 			else
-				episode4.selectable = true
+				getItemByName(page.items, "episode3").selectable = true
+				
 				if deviceModel == "n900" or deviceModel == "s60" then
-					episode4.updateFunction = gotoOviStore
+					episode3.updateFunction = gotoOviStore
 				else
-					episode4.callFunction = gotoFullVersionInAppStore
-					episode4.updateFunction = nil
+					episode3.callFunction = gotoFullVersionInAppStore
+					episode3.updateFunction = nil
 				end
 				
 				if deviceModel == "n900" then
-				episode4.box = {left = "EPISODE_LOCKED_LEFT", bottomLeft = "EPISODE_LOCKED_BOTTOM_LEFT",
-								bottomMiddle = "EPISODE_LOCKED_BOTTOM_MIDDLE", bottomRight = "EPISODE_LOCKED_BOTTOM_RIGHT",
-								right = "EPISODE_LOCKED_RIGHT", topRight = "EPISODE_LOCKED_TOP_RIGHT",
-								topMiddle = "EPISODE_LOCKED_TOP_MIDDLE", topLeft = "EPISODE_LOCKED_TOP_LEFT",
-								center = "EPISODE_LOCKED_CENTER"}
+					episode3.box = {left = "EPISODE_LOCKED_LEFT", bottomLeft = "EPISODE_LOCKED_BOTTOM_LEFT",
+									bottomMiddle = "EPISODE_LOCKED_BOTTOM_MIDDLE", bottomRight = "EPISODE_LOCKED_BOTTOM_RIGHT",
+									right = "EPISODE_LOCKED_RIGHT", topRight = "EPISODE_LOCKED_TOP_RIGHT",
+									topMiddle = "EPISODE_LOCKED_TOP_MIDDLE", topLeft = "EPISODE_LOCKED_TOP_LEFT",
+									center = "EPISODE_LOCKED_CENTER"}
 				end
 					
-				ep4Sprite.visible = false
-				episode4Text.visible = true
-				episode4Score.visible = false
-				episode4Stars.visible = false
-				episode4ScoreText.visible = true
-				getItemByName(page.items[4].children, "lock").visible = false
+				ep3Sprite.visible = false
+				episode3Text.visible = true
+				episode3Score.visible = false
+				episode3Stars.visible = false
+				episode3ScoreText.visible = true
+				getItemByName(page.items[3].children, "lock").visible = false
 				getItemByName(page.items[3].children, "appStore").visible = true
 
 			end
+			
+			if deviceModel ~= "android" and deviceModel ~= "palm" then
+				if hasLevelPack4() == true then
+				
+					local score, gainedStars, totalStars = calculateTotalScoreAndStars(levelOrder_packFour)
+					episode4.selectable = true
+					episode4.updateFunction = gotoLevelSelectionPack4
+					episode4.callFunction = nil
+					ep4Sprite.visible = true
+					episode4Text.visible = true
+					episode4Score.visible = true
+					episode4Score.text = _G.string.format("%d", score)
+					episode4Stars.visible = true
+					episode4Stars.text = gainedStars .. "/" .. totalStars
+					episode4ScoreText.visible = true
+					
+					getItemByName(page.items, "episodeButtonScore4").text = _G.string.format("%d", score)
+					getItemByName(page.items, "episodeButtonStars4").text = gainedStars .. "/" .. totalStars
+
+					
+					getItemByName(page.items[4].children, "appStore").visible = false
+					
+					if deviceModel == "n900" or deviceModel == "s60" or settings.gameCompleted or score > 0 then
+						getItemByName(page.items[4].children, "lock").visible = false	
+						
+						
+					
+					else
+						getItemByName(page.items[4].children, "lock").visible = true
+						
+						
+					end
+				else
+					episode4.selectable = true
+					if deviceModel == "n900" or deviceModel == "s60" then
+						episode4.updateFunction = gotoOviStore
+					else
+						episode4.callFunction = gotoFullVersionInAppStore
+						episode4.updateFunction = nil
+					end
+					
+					if deviceModel == "n900" then
+					episode4.box = {left = "EPISODE_LOCKED_LEFT", bottomLeft = "EPISODE_LOCKED_BOTTOM_LEFT",
+									bottomMiddle = "EPISODE_LOCKED_BOTTOM_MIDDLE", bottomRight = "EPISODE_LOCKED_BOTTOM_RIGHT",
+									right = "EPISODE_LOCKED_RIGHT", topRight = "EPISODE_LOCKED_TOP_RIGHT",
+									topMiddle = "EPISODE_LOCKED_TOP_MIDDLE", topLeft = "EPISODE_LOCKED_TOP_LEFT",
+									center = "EPISODE_LOCKED_CENTER"}
+					end
+						
+					ep4Sprite.visible = false
+					episode4Text.visible = true
+					episode4Score.visible = false
+					episode4Stars.visible = false
+					episode4ScoreText.visible = true
+					getItemByName(page.items[4].children, "lock").visible = false
+					getItemByName(page.items[3].children, "appStore").visible = true
+
+				end
+			end
 		end
+	end
+	
+	if page == episodeSelectionPage and g_newEpisodeScreen.enabled == true and not scrollingEpisodes then
+		--if we come back from the level selection screen, the clipping rect would still be the one defined on the level selection drawing method
+		_G.res.setClipRect(0, 0, screenWidth, screenHeight)
+		local t_useScalableButtons = g_enableMouseOverStates
+		
+		episodeMenuDragStart = nil		
+		
+		local left = getItemByName(page.items, "left")
+		left.x, left.y = 0, screenHeight
+		
+		local right = getItemByName(page.items, "right")
+		right.x, right.y = screenWidth, screenHeight
+		
+		local back = getItemByName(page.items, "back")
+		back.activateOnRelease = true
+
+		local t_spriteWidth, t_spriteHeight = _G.res.getSpriteBounds("", "LS_BACK_BUTTON")
+		local t_pivotX, t_pivotY = _G.res.getSpritePivot("", "LS_BACK_BUTTON")
+		local t_offsetX, t_offsetY = t_pivotX, -(t_spriteHeight-t_pivotY)
+		back.x = t_offsetX
+		back.y = screenHeight + t_offsetY
+		
+		if deviceModel == "roku" then
+			back.x = back.x + screenWidth  * 0.05 - 5
+			back.y = screenHeight * 0.05 + t_pivotY
+		end
+		
+		prepareItemForMouseScalingStates(back)
+		
+		--starts relative component positioning 
+		local t_referenceScreenWidth = 1920
+		local t_referenceScreenHeight = 1200		
+		
+		local t_title = getItemByName(page.items, "title")
+		--t_title.x, t_title.y = screenWidth / 2, (107 / t_referenceScreenHeight) * screenHeight
+		t_title.x, t_title.y = screenWidth / 2, (93 / t_referenceScreenHeight) * screenHeight
+				
+		local t_minDistance = 150
+		
+		if (g_levelSelectionClippingArea.y - t_title.y) < t_minDistance then
+			t_title.y = g_levelSelectionClippingArea.y - t_minDistance
+		end
+		
+		t_title.visible = false								
+		
+		local goldenEggStars = calculateStarsFromGoldenEggLevels()
+		if goldenEggStars > 0 then			
+			getItemByName(page.items, "episodeButtonStarsG").text = "" .. goldenEggStars
+		else
+			getItemByName(page.items, "episodeButtonStarsG").text = ""
+		end				
+		
+		-- Prepare base game icon if available
+		local score, gainedStars, totalStars = calculateTotalScoreAndStars(levelOrder_packBasic)				
+		getItemByName(page.items, "episodeButtonScore1").text = _G.string.format("%d", score)
+		getItemByName(page.items, "episodeButtonStars1").text = gainedStars .. "/" .. totalStars			
+		
+		--aligns all episodes
+		--values found by measuring the mockup, since the mockup was based on the ipad resolution, we use those dimensions as reference
+		--local t_episodeReferenceSpacing = 238
+		--local t_episodeReferenceSpacing = 245
+		local t_episodeReferenceSpacing = 245
+		local t_referenceScreenHeight = 768
+		local t_referenceScreenWidth = 1024
+		
+		--indexed by screenWidths
+		local t_episodesSpacingMultipliers = {}
+		t_episodesSpacingMultipliers[1920] = 0.7
+		
+		local t_episodeSpacingMultiplier = t_episodesSpacingMultipliers[screenWidth] or 1
+		
+		
+		local t_episodeSpacing = ((t_episodeReferenceSpacing / t_referenceScreenWidth) * screenWidth) * t_episodeSpacingMultiplier
+		--local t_episodeSpacing = 300
+		local t_episodeSpacingX = t_episodeSpacing
+		local t_episodeSpacingY = t_episodeSpacing
+		
+		local t_referenceCardY = 332
+		
+		
+		local t_button = getItemByName(page.items, "episodeButton1")
+		local t_goldenButton = getItemByName(page.items, "episodeButtonG")
+		
+		local t_squareCardWidth, t_squareCardHeight = _G.res.getSpriteBounds("", t_button.sprite)
+		local t_goldenCardWidth, t_goldenCardHeight = _G.res.getSpriteBounds("", t_goldenButton.sprite)
+		
+		local t_realSpacingX = t_episodeSpacingX - t_squareCardWidth
+		local t_realSpacingY = t_episodeSpacingY - t_squareCardHeight
+		
+		local t_minumiumSpacingY = 5
+		--local t_maxSpaceY = (screenHeight - (t_squareCardHeight * 2) - t_goldenCardHeight - (t_minumiumSpacingY * 2) ) * 0.5
+		--local t_maxSpaceX = 60
+		--local t_maxSpaceY = 60
+		
+		
+		local t_maxSpaceX = _G.math.min(60, (screenHeight - (t_squareCardHeight * 2) - t_goldenCardHeight - (t_minumiumSpacingY * 2) ) * 0.5)
+		local t_maxSpaceY = _G.math.min(60, (screenHeight - (t_squareCardHeight * 2) - t_goldenCardHeight - (t_minumiumSpacingY * 2) ) * 0.5)
+		
+		--print("\n t_realSpacingY " .. t_realSpacingY)
+		
+		if t_realSpacingY > t_maxSpaceY then
+			t_realSpacingY = t_maxSpaceY			
+			t_episodeSpacingY = t_realSpacingY + t_squareCardHeight
+		end
+		
+		if t_realSpacingX > t_maxSpaceX then
+			t_realSpacingX = t_maxSpaceX			
+			t_episodeSpacingX = t_realSpacingX + t_squareCardWidth
+		end
+		
+		
+		
+		local t_totalWidth = t_squareCardWidth * 3 + t_realSpacingX * 2
+		local t_totalHeight = t_squareCardHeight * 2 + t_goldenCardHeight + t_realSpacingY * 2
+		
+		
+		
+		local t_row1Attributes =
+		{
+			startX = (screenWidth * 0.5) -  t_squareCardWidth - t_realSpacingX, 
+			spacingX = t_squareCardWidth + t_realSpacingX,
+			posY = (screenHeight * 0.5) - (t_totalHeight * 0.5) + (t_squareCardHeight * 0.5)
+		}
+									
+		local t_row2Attributes =
+		{
+			startX = (screenWidth * 0.5) -  t_squareCardWidth - t_realSpacingX, 
+			spacingX = t_squareCardWidth + t_realSpacingX,
+			posY = t_row1Attributes.posY + t_episodeSpacingY
+		}
+		
+		local plush_button = (t_row1Attributes.startX + 2 * t_row1Attributes.spacingX) - (t_row1Attributes.startX + (t_goldenCardWidth * 0.5 - t_squareCardWidth * 0.5))
+									
+		local t_row3Attributes =
+		{
+			startX = t_row1Attributes.startX + (t_goldenCardWidth * 0.5 - t_squareCardWidth * 0.5),
+			spacingX = plush_button,
+			posY = t_row2Attributes.posY + (t_squareCardHeight * 0.5) + (t_goldenCardHeight * 0.5) + t_realSpacingY
+		}
+		
+	
+		
+		local t_rows = {1,1,1,2,2,2,3,3}
+		local t_indices = {0,1,2,0,1,2,0.39,0}
+		if deviceModel == "windows" then
+			t_indices = {0,1,2,0,1,2,0.37,0}
+			if screenHeight > 576 then
+				t_indices = {0,1,2,0,1,2,0.39,0}
+			end
+		end
+		local t_attributes = {t_row1Attributes, t_row2Attributes, t_row3Attributes}
+		local t_buttons = {}
+		
+		for i = 1, 7 do
+			local t_item = getItemByName(page.items, "episodeButton" .. i)
+			_G.table.insert(t_buttons,	t_item)
+		end
+		
+		local t_goldenButton = getItemByName(page.items, "episodeButtonG")
+		_G.table.insert(t_buttons,	t_goldenButton)
+
+		for i = 1, #t_buttons do
+			local t_button = t_buttons[i]
+			local t_row = t_rows[i]
+			local t_index = t_indices[i]
+			local t_attribute = t_attributes[t_row]
+			
+			t_button.x = t_attribute.startX + (t_index * t_attribute.spacingX)
+			t_button.y = t_attribute.posY
+			
+		end
+		
+		
+		
+		
+		
+		--local t_goldCardReferenceY = 502
+		local t_goldCardReferenceY = 510
+		
+		local t_totalEpisodes = 6
+		
+		local t_firstX = (screenWidth - ((t_totalEpisodes - 1) * t_episodeSpacing)) / 2
+		
+		for i = 1, 6 do			
+			--[[local t_item = getItemByName(page.items, "episodeButton" ..i)
+			t_item.visible = true
+			t_item.x = t_firstX + t_episodeSpacing * (i-1)
+			t_item.y = screenHeight * (t_referenceCardY / t_referenceScreenHeight)]]
+			
+			if t_useScalableButtons then
+			
+				local t_button = getItemByName(page.items, "episodeButton" ..i)
+				--t_button.x, t_button.y  = t_firstX + t_episodeSpacing * (i-1), screenHeight * (t_referenceCardY / t_referenceScreenHeight)
+				
+				local t_scoreField = getItemByName(page.items, "episodeButtonScore" ..i)
+				local t_starsField = getItemByName(page.items, "episodeButtonStars" ..i)
+				local t_buttonLock = getItemByName(page.items, "episodeButtonLock" ..i)
+				
+				t_buttonLock.x, t_buttonLock.y = t_button.x, t_button.y
+				
+				local t_scoreOffsetX = -52
+				local t_scoreOffsetY = 95
+				
+				local t_starsOffsetX = 52
+				local t_starsOffsetY = 95
+				
+				if deviceModel == "roku" and screenHeight <= 576 then
+					t_scoreOffsetX = -38
+					t_scoreOffsetY = 63
+					t_starsOffsetX = 33
+					t_starsOffsetY = 63
+				end
+				
+				t_scoreField.x, t_scoreField.y = t_button.x + t_scoreOffsetX, t_button.y + t_scoreOffsetY
+				--t_scoreField.x, t_scoreField.y = 10, 10
+				t_starsField.x, t_starsField.y = t_button.x + t_starsOffsetX, t_button.y + t_starsOffsetY
+				
+				t_scoreField.scaleText = true
+				t_starsField.scaleText = true
+				
+				t_scoreField.font = "FONT_LS_SMALL"
+				t_starsField.font = "FONT_LS_SMALL"								
+				
+				if deviceModel == "roku" and screenHeight <= 576 then
+					t_scoreField.font = "FONT_LS_SMALLER"
+					t_scoreField.y = t_scoreField.y - 5
+					t_starsField.font = "FONT_LS_SMALLER"	
+					t_starsField.y = t_starsField.y - 5
+				end
+				
+				prepareItemForMouseScalingStates(t_button)
+				
+				prepareItemForMouseScalingStates(t_scoreField,t_button)
+				prepareItemForMouseScalingStates(t_starsField,t_button)
+				prepareItemForMouseScalingStates(t_buttonLock,t_button)
+				
+			else
+				local t_button = getItemByName(page.items, "episodeButton" ..i)
+				t_button.visible = false
+				local t_scoreField = getItemByName(page.items, "episodeButtonScore" ..i)
+				local t_starsField = getItemByName(page.items, "episodeButtonStars" ..i)
+				local t_buttonLock = getItemByName(page.items, "episodeButtonLock" ..i)
+				
+				t_scoreField.visible = false
+				t_starsField.visible = false
+				t_buttonLock.visible = false
+			end
+		end		
+		
+		local t_button = getItemByName(page.items, "episodeButtonG")
+		local t_starsField = getItemByName(page.items, "episodeButtonStarsG")
+				
+		--t_button.x, t_button.y  = screenWidth / 2, 600
+		t_button.visible = t_useScalableButtons
+		local t_starsOffsetX = 154
+		local t_starsOffsetY = 13
+		if deviceModel == "windows" and screenHeight <= 576 then --pal
+			t_starsOffsetX = t_starsOffsetX - 55
+			t_starsOffsetY = t_starsOffsetY - 3
+		end
+		t_starsField.x, t_starsField.y = t_button.x + t_starsOffsetX, t_button.y + t_starsOffsetY
+		--t_starsField.text = "12"
+		t_starsField.visible = t_useScalableButtons
+		t_starsField.scaleText = true
+		t_starsField.font = "FONT_LS_SMALL"
+		
+		
+		prepareItemForMouseScalingStates(t_button)
+		prepareItemForMouseScalingStates(t_starsField, t_button)
+		
+		local t_buttonLock1 = getItemByName(page.items, "episodeButtonLock1")
+		t_buttonLock1.visible = false
+		
+		if t_useScalableButtons then
+			local t_packs = {"pack3", "pack5", "pack8", "pack11", "pack15"}
+			for k = 2, 6, 1 do 
+				local t_totalLevelsPerPage = #levelOrder[ t_packs[k-1] ]
+				local t_targetPack = levelOrder[ t_packs[k-1] ]
+				local t_targetLevel = t_targetPack[t_totalLevelsPerPage]
+				--print("\n target level " ..  t_targetLevel)
+				local t_lastLevelOfPreviousWorldScore = highscores[ t_targetLevel ]
+				
+				local t_buttonLock = getItemByName(page.items, "episodeButtonLock" .. k)
+				local t_episodeButton = getItemByName(page.items, "episodeButton" .. k)
+				
+				if releaseBuild then
+					if t_lastLevelOfPreviousWorldScore == nil then
+						t_buttonLock.visible = false
+						t_episodeButton.disableUpdateFunctionChange = false
+					else
+						local t_isUnlocked = t_lastLevelOfPreviousWorldScore.score > 0
+						t_buttonLock.visible = not t_isUnlocked
+						t_episodeButton.disableUpdateFunctionChange = not t_isUnlocked
+						
+						
+					end
+				else
+					t_buttonLock.visible = false
+					t_episodeButton.disableUpdateFunctionChange = false
+				end
+				
+				if settings.gameCompleted then
+					t_buttonLock.visible = false
+					t_episodeButton.disableUpdateFunctionChange = false
+				end
+				
+				
+			end
+			
+			
+		end		
+
+		--uncomment code below to put locks on episode buttons if the player  has not registered
+		if deviceModel == "windows" and g_registrationEnabled == true and g_isGameUnlocked ~= true then
+			for k = 2, 6, 1 do 
+				local t_buttonLock = getItemByName(page.items, "episodeButtonLock" .. k)
+				local t_episodeButton = getItemByName(page.items, "episodeButton" .. k)
+				
+				t_buttonLock.visible = true				
+				t_episodeButton.disableUpdateFunctionChange = true
+			end
+		end		
+		
+		local score, gainedStars, totalStars = calculateTotalScoreAndStars(levelOrder_packOne)			
+		
+		getItemByName(page.items, "episodeButtonScore2").text = _G.string.format("%d", score)
+		getItemByName(page.items, "episodeButtonStars2").text = gainedStars .. "/" .. totalStars				
+		
+		
+		local score, gainedStars, totalStars = calculateTotalScoreAndStars(levelOrder_packThree)		
+		
+		getItemByName(page.items, "episodeButtonScore3").text = _G.string.format("%d", score)
+		getItemByName(page.items, "episodeButtonStars3").text = gainedStars .. "/" .. totalStars				
+		
+		local score, gainedStars, totalStars = calculateTotalScoreAndStars(levelOrder_packFour)
+		
+		getItemByName(page.items, "episodeButtonScore4").text = _G.string.format("%d", score)
+		getItemByName(page.items, "episodeButtonStars4").text = gainedStars .. "/" .. totalStars
+
+		local score, gainedStars, totalStars = calculateTotalScoreAndStars(levelOrder_packFive)		
+		
+		getItemByName(page.items, "episodeButtonScore5").text = _G.string.format("%d", score)
+		getItemByName(page.items, "episodeButtonStars5").text = gainedStars .. "/" .. totalStars		
+
+
+		score, gainedStars, totalStars = calculateTotalScoreAndStars(levelOrder_packSix)
+		
+		getItemByName(page.items, "episodeButtonScore6").text = _G.string.format("%d", score)
+		getItemByName(page.items, "episodeButtonStars6").text = gainedStars .. "/" .. totalStars
+
+
+
+
+
+
+		
+
+
+		
+		
+		
 	end
 	
 	if page == about then
@@ -10250,11 +11856,18 @@ function prepareMenuPage(page)
 	
 		local t_buttonPause = getItemByName(page.items, "ingameButtonPause")
 		local t_buttonRestart = getItemByName(page.items, "ingameButtonRestart")
+		local t_buttonEagle = getItemByName(page.items,"ingameButtonEagle")
+		local t_buttonPu = getItemByName(page.items,"ingameButtonPowerups")
 		
 		local t_pauseWidth, t_pauseHeight =  _G.res.getSpriteBounds(t_buttonPause.sheet, t_buttonPause.sprite)
 		local t_restartWidth, t_restartHeight =  _G.res.getSpriteBounds(t_buttonRestart.sheet, t_buttonRestart.sprite)
+		local t_eagleWidth, t_eagleHeight =  _G.res.getSpriteBounds(t_buttonEagle.sheet, t_buttonEagle.sprite)
+		local t_puWidth, t_puHeight =  _G.res.getSpriteBounds(t_buttonPu.sheet, t_buttonPu.sprite)
+		
 		local t_pausePX, t_pausePY =  _G.res.getSpritePivot(t_buttonPause.sheet, t_buttonPause.sprite)
 		local t_restartPX, t_restartPY =  _G.res.getSpritePivot(t_buttonRestart.sheet, t_buttonRestart.sprite)
+		local t_eaglePX, t_eaglePY =  _G.res.getSpritePivot(t_buttonEagle.sheet, t_buttonEagle.sprite)
+		local t_puPX, t_puPY =  _G.res.getSpritePivot(t_buttonPu.sheet, t_buttonPu.sprite)
 		
 		
 		local t_hudButtonsLowestTargetScale = 0.6
@@ -10277,20 +11890,37 @@ function prepareMenuPage(page)
 		end
 		
 		t_buttonPause.x = t_buttonOffsetX + t_pausePX * t_hudButtonsScale
+		
+		t_buttonRestart.x = t_buttonPause.x - t_pausePX + t_restartPX + t_pauseWidth * t_hudButtonsScale + t_buttonSpacing
+		
+		t_buttonEagle.x = t_buttonRestart.x - t_restartPX + t_eaglePX + t_restartWidth * t_hudButtonsScale + t_buttonSpacing
+		if gameOptions.mightyEagle.enabled then
+			t_buttonPu.x = t_buttonEagle.x + t_eagleWidth * t_hudButtonsScale + t_buttonSpacing
+		else
+			t_buttonPu.x = t_buttonEagle.x
+		end
+		
 		t_buttonPause.y = t_buttonOffsetY + t_pausePY * t_hudButtonsScale
-		t_buttonRestart.x = t_buttonOffsetX + t_pauseWidth * t_hudButtonsScale + t_buttonSpacing + t_restartPX * t_hudButtonsScale
+		t_buttonEagle.y = t_buttonPause.y
 		t_buttonRestart.y = t_buttonPause.y
+		t_buttonPu.y = t_buttonPause.y
 		
 		t_buttonPause.xs = t_hudButtonsScale
 		t_buttonPause.ys = t_hudButtonsScale
 		t_buttonRestart.xs = t_hudButtonsScale
 		t_buttonRestart.ys = t_hudButtonsScale				
+		t_buttonEagle.xs = t_hudButtonsScale
+		t_buttonEagle.ys = t_hudButtonsScale				
+		t_buttonPu.xs = t_hudButtonsScale
+		t_buttonPu.ys = t_hudButtonsScale				
 		
 		--dirty hack!
 		if not g_ingameButtonsPrepared then
 			g_ingameButtonsPrepared = true
 			prepareItemForMouseScalingStates(t_buttonPause)
 			prepareItemForMouseScalingStates(t_buttonRestart)
+			prepareItemForMouseScalingStates(t_buttonEagle)
+			prepareItemForMouseScalingStates(t_buttonPu)
 		end
 	end
 	
@@ -10308,14 +11938,14 @@ function prepareMenuPage(page)
 			showButtonEagle = true
 		end
 		if inExtraWorld == true or ((highscores[levelName] == nil or highscores[levelName].score == 0) and 
-		   ((levelSelectionPages == levelSelectionPagesBasic and settings.eaglesAvailable.basic < 1) or
-			(levelSelectionPages == levelSelectionPagesExtra and settings.eaglesAvailable.extra < 1) or
-			(levelSelectionPages == levelSelectionPagesPack3 and settings.eaglesAvailable.pack3 < 1) or
-			(levelSelectionPages == levelSelectionPagesPack4 and settings.eaglesAvailable.pack4 < 1))) then
+		   ((levelSelectionPages == episodes[1] and settings.eaglesAvailable.basic < 1) or
+			(levelSelectionPages == episodes[2] and settings.eaglesAvailable.extra < 1) or
+			(levelSelectionPages == episodes[3] and settings.eaglesAvailable.pack3 < 1) or
+			(levelSelectionPages == episodes[4] and settings.eaglesAvailable.pack4 < 1))) then
 			showButtonEagle = false
 		end
 		
-		if showButtonEagle == true then
+		if false then--showButtonEagle == true then
 			page.backgroundBox.width = sw * 3.75
 			buttonSfx.x, buttonSfx.y = page.backgroundBox.width / 2 - sw * 1.08, screenHeight - sh * 0.66
 			
@@ -10335,7 +11965,7 @@ function prepareMenuPage(page)
 				buttonOvi.visible = true
 			end
 		else
-			page.backgroundBox.width = sw * 2.5
+			page.backgroundBox.width = sw * 3
 			buttonSfx.x, buttonSfx.y = page.backgroundBox.width / 2 - sw * 0.54, screenHeight - sh * 0.66
 			
 			local buttonOff = getItemByName(page.items, "buttonOff")
@@ -10348,8 +11978,8 @@ function prepareMenuPage(page)
 			
 			prepareItemForMouseScalingStates(buttonTutorials)
 			
-			local buttonEagle = getItemByName(page.items, "buttonEagle")
-			buttonEagle.visible = false
+--			local buttonEagle = getItemByName(page.items, "buttonEagle")
+--			buttonEagle.visible = false
 			
 			if deviceModel == "s60" and isLiteVersion then
 				local buttonOvi = getItemByName(page.items, "buttonOvi")
@@ -10389,7 +12019,10 @@ function prepareMenuPage(page)
 		hideArea.w, hideArea.h = screenWidth, screenHeight
 		
 		local levelText = getItemByName(page.items, "levelText")
-		levelText.x, levelText.y = page.backgroundBox.width / 2, sh * 0.65	
+		levelText.x, levelText.y = page.backgroundBox.width / 2, sh * .65--1.5	
+	
+--		local pausedText = getItemByName(page.items, "pausedText")
+--		pausedText.x, pausedText.y = page.backgroundBox.width / 2, sh * 0.45
 		
 		if deviceModel == "n900" or deviceModel == "s60" then
 			local taskSwitcher = getItemByName(page.items, "taskSwitcher")
@@ -10407,24 +12040,24 @@ function prepareMenuPage(page)
 			--getItemByName(page.items, "levelText").text = "^-" .. currentLevelNumberInTheme
 			
 			if currentLevelNumberInTheme == 20 then
-				getItemByName(page.items, "levelText").text = "*"
+				getItemByName(page.items, "levelText").text = "*-" .. currentLevelNumberInTheme
 			else
 				getItemByName(page.items, "levelText").text = "^-" .. currentLevelNumberInTheme
 			end
 			
 		else
 			if currentWorldNumber <= 3 then
-				getItemByName(page.items, "buttonMenu").page = levelSelectionPagesBasic
+				getItemByName(page.items, "buttonMenu").page = episodes[1]
 			elseif currentWorldNumber <= 5 then
-				getItemByName(page.items, "buttonMenu").page = levelSelectionPagesExtra
+				getItemByName(page.items, "buttonMenu").page = episodes[2]
 			elseif currentWorldNumber <= 8 then
-				getItemByName(page.items, "buttonMenu").page = levelSelectionPagesPack3
+				getItemByName(page.items, "buttonMenu").page = episodes[3]
 			elseif currentWorldNumber <= 11 then
-				getItemByName(page.items, "buttonMenu").page = levelSelectionPagesPack4
+				getItemByName(page.items, "buttonMenu").page = episodes[4]
 			elseif currentWorldNumber <= 14 then
-				getItemByName(page.items, "buttonMenu").page = levelSelectionPagesPack5
+				getItemByName(page.items, "buttonMenu").page = episodes[5]
 			elseif currentWorldNumber <= 17 then
-				getItemByName(page.items, "buttonMenu").page = levelSelectionPagesPack6
+				getItemByName(page.items, "buttonMenu").page = episodes[6]
 			end
 			getItemByName(page.items, "levelText").text = currentWorldNumber .. "-" .. currentLevelNumberInTheme
 		end
@@ -10463,17 +12096,17 @@ function prepareMenuPage(page)
 			getItemByName(page.items, "buttonMenu").page = levelSelectionPagesGoldenEggs[settings.currentLevelSelectionPages.goldeneggs]			
 		else
 			if currentWorldNumber <= 3 then
-				getItemByName(page.items, "buttonMenu").page = levelSelectionPagesBasic
+				getItemByName(page.items, "buttonMenu").page = episodes[1]
 			elseif currentWorldNumber <= 5 then
-				getItemByName(page.items, "buttonMenu").page = levelSelectionPagesExtra
+				getItemByName(page.items, "buttonMenu").page = episodes[2]
 			elseif currentWorldNumber <= 8 then
-				getItemByName(page.items, "buttonMenu").page = levelSelectionPagesPack3
+				getItemByName(page.items, "buttonMenu").page = episodes[3]
 			elseif currentWorldNumber <= 11 then
-				getItemByName(page.items, "buttonMenu").page = levelSelectionPagesPack4
+				getItemByName(page.items, "buttonMenu").page = episodes[4]
 			elseif currentWorldNumber <= 14 then
-				getItemByName(page.items, "buttonMenu").page = levelSelectionPagesPack5
+				getItemByName(page.items, "buttonMenu").page = episodes[5]
 			elseif currentWorldNumber <= 17 then
-				getItemByName(page.items, "buttonMenu").page = levelSelectionPagesPack6
+				getItemByName(page.items, "buttonMenu").page = episodes[6]
 			end
 			
 		end
@@ -10493,11 +12126,28 @@ function prepareMenuPage(page)
 		t_levelSelectionBackOffsetY = -screenHeight * 0.95 + t_pivotY
 	end
 	
-	if page == levelSelectionPagesBasic or levelSelectionPagesExtra or levelSelectionPagesPack3 or levelSelectionPagesPack3 then
-		calculateLevelSelectionClippingArea()
-	end
+	calculateLevelSelectionClippingArea()
 	
-	if page == levelSelectionPagesBasic then
+	if isLevelSelection(page) then --for all episodes
+		
+		settings.currentLevelSelectionPages[page.short_name] = page.currentPage
+		
+		local t_visibleAreaOverlayOffsetX = g_levelSelectionClippingArea.offsetX
+		local t_visibleAreaOverlayOffsetY = g_levelSelectionClippingArea.offsetY
+		local t_height = g_levelSelectionClippingArea.height + t_visibleAreaOverlayOffsetY * 2
+		local t_y = g_levelSelectionClippingArea.y - t_visibleAreaOverlayOffsetY		
+		
+		local t_leftNavigation = getItemByName(page.items, "leftNavigation")
+		local t_rightNavigation = getItemByName(page.items, "rightNavigation")
+		
+		prepareItemForMouseScalingStates(t_leftNavigation)
+		prepareItemForMouseScalingStates(t_rightNavigation)
+		
+		t_leftNavigation.y = t_y + (t_height * 0.5)
+		t_rightNavigation.y = t_leftNavigation.y
+		
+		t_leftNavigation.x = g_levelSelectionClippingArea.x - t_navigationButtonOffsetX
+		t_rightNavigation.x = g_levelSelectionClippingArea.x + g_levelSelectionClippingArea.width + t_navigationButtonOffsetX
 		
 		levelRestartedFrom = nil
 		levelSelectionDragSpeed = nil
@@ -10505,11 +12155,9 @@ function prepareMenuPage(page)
 		page.bgColor = {red = page.bgColors[page.currentPage].red, green = page.bgColors[page.currentPage].green, blue =  page.bgColors[page.currentPage].blue}
 		
 		levelSelectionPagesPressed = false
-		for i = levelSelectionPagesBasic.firstLevelIndex, #levelSelectionPagesBasic.items do
-			levelSelectionPagesBasic.items[i].disableSelection = true
+		for i = page.firstLevelIndex, #page.items do
+			page.items[i].disableSelection = true
 		end
-		
-		settings.currentLevelSelectionPages.basic = levelSelectionPagesBasic.currentPage
 
 		local ySpaceAdd = -0.08 * screenHeight
 		local lsDotSpacing = 15
@@ -10524,14 +12172,6 @@ function prepareMenuPage(page)
 				lsDotY = textY - 18
 			end
 		end
-		local yDividerMultiplier = 1.16
-		
-		
-		local contentAreaWidth = screenWidth * 0.83
-		if isLiteVersion then
-			contentAreaWidth = screenWidth * 0.7
-			yDividerMultiplier = 1.3
-		end
 		
 		local left = getItemByName(page.items, "left")
 		left.x, left.y = 0, screenHeight
@@ -10543,24 +12183,19 @@ function prepareMenuPage(page)
 		
 		prepareItemForMouseScalingStates(back)
 		
-		
-		
-		local text1 = getItemByName(page.items, "text_1")
-		text1.x, text1.y = screenWidth / 2 - lsDotSpacing, screenHeight - textY
-		local text2 = getItemByName(page.items, "text_2")
-		text2.x, text2.y = screenWidth / 2, screenHeight - textY
-		local text3 = getItemByName(page.items, "text_3")
-		text3.x, text3.y = screenWidth / 2 + lsDotSpacing, screenHeight - textY
-		
-	
-		
-		local dot1 = getItemByName(page.items, "dot1")
-		dot1.x, dot1.y = screenWidth / 2 - lsDotSpacing, screenHeight - lsDotY
-		local dot2 = getItemByName(page.items, "dot2")
-		dot2.x, dot2.y = screenWidth / 2, screenHeight - lsDotY
-		local dot3 = getItemByName(page.items, "dot3")
-		dot3.x, dot3.y = screenWidth / 2 + lsDotSpacing, screenHeight - lsDotY
-		
+		local pagesAmount = #page.themes
+		local xcenter = screenWidth/2
+		local ytext = screenHeight-textY
+		local ydot = screenHeight-lsDotY	
+		local xstart = xcenter-(pagesAmount-1)/2*lsDotSpacing
+		for i,v in _G.pairs(page.themes) do
+			
+			local text1 = getItemByName(page.items, "text_"..v.num)
+			text1.x, text1.y = xstart + (i-1) * lsDotSpacing, ytext
+			
+			local dot1 = getItemByName(page.items, "dot"..i)
+			dot1.x, dot1.y = xstart + (i-1) * lsDotSpacing, ydot
+		end
 	
 		local t_title = getItemByName(page.items, "title")
 		--t_title.x, t_title.y = screenWidth / 2, (81 / 1200) * screenHeight
@@ -10577,58 +12212,54 @@ function prepareMenuPage(page)
 			t_title.y = t_title.y + 50
 		end
 		
-		--print("\n T DIFF " .. g_levelSelectionButtonsVisibleAreaY .. " " .. t_title.y)
-		
-		local t_leftNavigation = getItemByName(page.items, "leftNavigation")
-		local t_rightNavigation = getItemByName(page.items, "rightNavigation")
-		
-		prepareItemForMouseScalingStates(t_leftNavigation)
-		prepareItemForMouseScalingStates(t_rightNavigation)
-		
-		--t_leftNavigation.x, t_leftNavigation.y = (210 / t_referenceScreenWidth) * screenWidth, (619 / t_referenceScreenHeight) * screenHeight
-		
-		--t_leftNavigation.x, t_leftNavigation.y = (210 / t_referenceScreenWidth) * screenWidth, (1100 / t_referenceScreenHeight) * screenHeight
-		--t_rightNavigation.x, t_rightNavigation.y= (1710 / t_referenceScreenWidth) * screenWidth, (619 / t_referenceScreenHeight) * screenHeight
-		--t_rightNavigation.x, t_rightNavigation.y= (1710 / t_referenceScreenWidth) * screenWidth, (1100 / t_referenceScreenHeight) * screenHeight
-		
-		--t_leftNavigation.x = t_leftNavigation.x - t_navigationButtonOffset
-		--t_rightNavigation.x = t_rightNavigation.x + t_navigationButtonOffset
-		
-		
-		local t_visibleAreaOverlayOffsetX = g_levelSelectionClippingArea.offsetX
-		local t_visibleAreaOverlayOffsetY = g_levelSelectionClippingArea.offsetY
-		
-		local t_height = g_levelSelectionClippingArea.height + t_visibleAreaOverlayOffsetY * 2
-		local t_y = g_levelSelectionClippingArea.y - t_visibleAreaOverlayOffsetY		
-		
-		t_leftNavigation.y = t_y + (t_height * 0.5)
-		t_rightNavigation.y = t_leftNavigation.y
-		
-		t_leftNavigation.x = g_levelSelectionClippingArea.x - t_navigationButtonOffsetX
-		t_rightNavigation.x = g_levelSelectionClippingArea.x + g_levelSelectionClippingArea.width + t_navigationButtonOffsetX
-		
-		
-		local t_overlay = getItemByName(page.items, "scrollAreaOverlay")
-		t_overlay.x, t_overlay.y = g_levelSelectionClippingArea.x + g_levelSelectionClippingArea.width / 2, g_levelSelectionClippingArea.y + g_levelSelectionClippingArea.height / 2
-		
-		--t_overlay.xs = 0.5
-		--t_overlay.ys = 0.5
-		
-		
-		local itemsPerPage = 21
-		local itemsPerLine = 7
-		local linesPerPage = 3
-		local pages = 3
-		
-		if isLiteVersion then
-			itemsPerPage = 16
-			itemsPerLine = 5
-			linesPerPage = 4
-			pages = 1
+		for i = 1, #page.items do
+			if page.items[i].levelIndex ~= nil then
+				themeIndex = page.items[i].themeIndex
+				if settings.lastOpenLevelLP2 >= page.items[i].levelIndex or highscores[page.items[i].filename] ~= nil then
+					page.items[i].text = "" .. page.items[i].pageLevelIndex
+					--page.items[i].sprite = "LS_LEVEL_BG_NORMAL_OPEN_" .. page.themes[themeIndex]
+--					page.items[i].sprite = page.level_buttons[themeIndex]--t_openLevelSpritePrefix .. page.themes[themeIndex]
+					if screenWidth < 1920 or (g_levelSelectionMultipleAssets ~= true) then
+						page.items[i].sprite = page.level_buttons[themeIndex]--t_openLevelSpritePrefix .. page.themes[themeIndex]
+					else
+						page.items[i].sprite = page.level_buttons_hd[themeIndex]--t_openLevelSpritePrefix .. page.themes[themeIndex]
+					end
+					page.items[i].selectable = true
+				else
+					page.items[i].text = nil
+					--page.items[i].sprite = "LS_LEVEL_BG_NORMAL_CLOSED"
+					page.items[i].sprite = t_closedLevelSpritePrefix
+					page.items[i].selectable = false
+				end
+				prepareItemForMouseScalingStates(page.items[i])
+			end
 		end
 		
+		--if oldMenuPage ~= mainMenu and oldMenuPage ~= episodeSelectionPage then
+			--_G.res.stopAllAudio()
+		--end
+		if _G.res.isAudioPlaying("title_theme") == false then
+			_G.res.playAudio("title_theme", 0.8, true, 7)
+		end
 		
-		--new level selection
+		if not isLiteVersion and (levelSelectionScrollStartTimer == nil or levelSelectionScrollStartTimer <= 0) then
+			for i,v in _G.pairs(page.themes)do
+				getItemByName(page.items, "text_"..v.num).visible = page.currentPage == i
+				getItemByName(page.items, "dot"..i).visible = true
+			end
+		end
+		
+		--the buttons
+
+		if isLiteVersion then
+			yDividerMultiplier = 1.3
+		end
+		
+		local itemsPerLine = page.layout.cols
+		local linesPerPage = page.layout.rows
+		local pages = #page.themes
+		
+		
 		--local t_pivotX, t_pivotY = _G.res.getSpritePivot("", page.items[page.firstLevelIndex].sprite)
 		local t_pivotX, t_pivotY = _G.res.getSpritePivot("", "LS_LEVEL_BG_NORMAL_OPEN_HD_1")
 		--local t_width, t_height = _G.res.getSpriteBounds("", page.items[page.firstLevelIndex].sprite)
@@ -10641,146 +12272,59 @@ function prepareMenuPage(page)
 		
 		local t_spaceX = (g_levelSelectionClippingArea.width - t_width) / (itemsPerLine - 1)
 		--t_spaceX = t_spaceX  - 25
-		local t_totalLines = itemsPerPage / itemsPerLine
-		local t_spaceY = (g_levelSelectionClippingArea.height - t_height) / (t_totalLines - 1)
 		--t_spaceY = t_spaceY - 60
+
+		g_levelSelectionScrollOffset = g_levelSelectionClippingArea.width + (t_spaceX)
 		
-		g_levelSelectionScrollOffset = g_levelSelectionClippingArea.width + (t_spaceX)			
-		
-		contentAreaWidth = g_levelSelectionClippingArea.width - (t_pivotX * 2)
-		--new level selection	
-		
-		local contentAreaStart = (screenWidth / 2) - (contentAreaWidth / 2)
-		local contentItemStep = 0
-		if itemsPerLine > 1 then
-			contentItemStep = contentAreaWidth / (itemsPerLine-1)
-		end
-		
-		
-		
+		local yDividerMultiplier = 1.16
 		local offset = 0
 		
 		--new level selection
-		levelSelectionPagesBasic.currentOffset = (levelSelectionPagesBasic.currentPage - 1) * -g_levelSelectionScrollOffset		
-		levelSelectionPagesBasic.targetOffset = levelSelectionPagesBasic.currentOffset
+		page.currentOffset = (page.currentPage - 1) * -g_levelSelectionScrollOffset
+		page.targetOffset = page.currentOffset
 		
+		local t_itemIndex = page.firstLevelIndex - 1
 		for k = 0, pages - 1 do		
-			for i = 1, itemsPerPage do
+			local t_spaceY = (g_levelSelectionClippingArea.height - t_height) / ((page.themes[k+1].amount/itemsPerLine) - 1)
+			for i = 1, page.themes[k+1].amount do
 				local line = _G.math.ceil(i / itemsPerLine)
 				local indexInLine = _G.math.fmod((i - 1), itemsPerLine) + 1
 				local yDivider = line / (linesPerPage + 2) * yDividerMultiplier
 				
-				--new level selection
-				local t_itemIndex = page.firstLevelIndex - 1 + i + (k * itemsPerPage)
+				-- local t_itemIndex = page.firstLevelIndex - 1 + i + (k * page.themes[k+1].amount)
+				t_itemIndex = t_itemIndex + 1
 				
 				page.items[t_itemIndex].relativeX =  offset + g_levelSelectionClippingArea.x + t_pivotX + (indexInLine - 1) * t_spaceX
-				--page.items[t_itemIndex].x = offset + levelSelectionPagesBasic.currentOffset + g_levelSelectionClippingArea.x + t_pivotX + (indexInLine - 1) * t_spaceX				
-				page.items[t_itemIndex].x = levelSelectionPagesBasic.currentOffset +  page.items[t_itemIndex].relativeX					
+				--page.items[t_itemIndex].x = offset + episodes[1].currentOffset + g_levelSelectionClippingArea.x + t_pivotX + (indexInLine - 1) * t_spaceX				
+				page.items[t_itemIndex].x = page.currentOffset +  page.items[t_itemIndex].relativeX					
 				page.items[t_itemIndex].y = g_levelSelectionClippingArea.y + t_pivotY + ( (line-1) * t_spaceY )
 				
 				prepareItemForMouseScalingStates(page.items[t_itemIndex])
-				
-				--new level selection
-				
-				--[[
-				page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].x = offset + (indexInLine-1) * t_spaceX
-				page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].relativeX = page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].x - g_levelSelectionButtonsVisibleAreaW
-				page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].y = g_levelSelectionButtonsVisibleAreaY + (line - 1) * t_spaceY
-				]]--
 			end						
 			
 			--offset = offset + screenWidth / 2
 			
-			--new level selection
-			offset = offset + g_levelSelectionScrollOffset
-			
+			offset = offset + g_levelSelectionClippingArea.width + (t_spaceX)
 		end
 		
-		
-		
-		-- check if player has theme 2 and 3 for n900
-		if deviceModel == "n900" then
-			if not hasLevelPack1() then 
-				getItemByName(page.items, "overlay").visible = true
-				local itm = getItemByName(page.items, "button1")
-				itm.visible, itm.selectable = true, true
-				itm = getItemByName(page.items, "button2")
-				itm.visible, itm.selectable = true, true
-				
-			else
-				getItemByName(page.items, "overlay").visible = false
-				local itm = getItemByName(page.items, "button1")
-				itm.visible, itm.selectable = false, false
-				itm = getItemByName(page.items, "button2")
-				itm.visible, itm.selectable = false, false
-			end
-		end	
-		
-		local t_openLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_OPEN_HD_"
-		local t_closedLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_HD_CLOSED"
-		
-		if screenWidth < 1920 or (g_levelSelectionMultipleAssets ~= true) then
-			t_openLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_OPEN_"
-			t_closedLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_CLOSED"
-		end
-		
-		local t_gameUnlocked = 	(deviceModel == "windows" and g_registrationEnabled == true and g_isGameUnlocked == true) or 
-								(deviceModel ~= "windows") or 
-								(g_registrationEnabled == false)
-		
-		if not limitLevels then
-			for i = 1, #page.items do
-				if page.items[i].levelIndex ~= nil then
-					themeIndex = _G.math.ceil(page.items[i].levelIndex / page.levelsPerPage)
-					if 	( 	(settings.lastOpenLevel >= page.items[i].levelIndex) or
-							(highscores[page.items[i].filename] ~= nil) ) and
-							(t_gameUnlocked == true or page.items[i].levelIndex < 23) then
-							
-						page.items[i].text = "" .. page.items[i].pageLevelIndex						
-						--page.items[i].sprite = "LS_LEVEL_BG_NORMAL_OPEN_" .. page.themes[themeIndex]
-						page.items[i].sprite = t_openLevelSpritePrefix .. page.themes[themeIndex]
-						
-						page.items[i].selectable = true
-					else
-						page.items[i].text = nil
-						--page.items[i].sprite = "LS_LEVEL_BG_NORMAL_CLOSED"
-						page.items[i].sprite = t_closedLevelSpritePrefix
-						page.items[i].selectable = false
-					end
-				end
-			end
-		else
-			for i = 1, #page.items do
-				if page.items[i].levelIndex ~= nil then
-					page.items[i].text = ""
-					page.items[i].sprite = "LS_LEVEL_BG_NORMAL_CLOSED"
-					page.items[i].selectable = false
-				
-					for j = 1, #openDemoLevels do
-						if page.items[i].levelIndex == openDemoLevels[j] then
-							page.items[i].text = "" .. page.items[i].pageLevelIndex
-							page.items[i].sprite = "LS_LEVEL_BG_NORMAL_OPEN_" .. page.themes[page.currentPage]
-							page.items[i].selectable = true
-						end
-					end
-				end
-			end		
-		end
-		
-		for k = 0, pages - 1 do		
-			for i = 1, itemsPerPage do				
-				local t_itemIndex = page.firstLevelIndex - 1 + i + (k * itemsPerPage)				
-				prepareItemForMouseScalingStates(page.items[t_itemIndex])				
-			end															
-		end
+		page.currentOffset = page.targetOffset
+	end
 		
 	
+	if page == episodes[3] then
 		
-		if not isLiteVersion and (levelSelectionScrollStartTimer == nil or levelSelectionScrollStartTimer <= 0) then
-			getItemByName(page.items, "text_1").visible = page.currentPage == 1
-			getItemByName(page.items, "text_2").visible = page.currentPage == 2
-			getItemByName(page.items, "text_3").visible = page.currentPage == 3
-			
+		local goldenEgg = getItemByName(page.items, "goldenEgg")
+		goldenEgg.x = g_levelSelectionScrollOffset * 3.25 + page.currentOffset
+		--goldenEgg.relativeX = g_levelSelectionScrollOffset * 3.25
+		goldenEgg.relativeX = g_levelSelectionClippingArea.x + g_levelSelectionScrollOffset * 2.95
+		goldenEgg.y = screenHeight / 2
+		goldenEgg.y = g_levelSelectionClippingArea.y + g_levelSelectionClippingArea.height / 2
+				
+		if levelSelectionScrollStartTimer == nil or levelSelectionScrollStartTimer <= 0 then	
+			getItemByName(page.items, "text_6").visible = page.currentPage == 1
+			getItemByName(page.items, "text_7").visible = page.currentPage == 2
+			getItemByName(page.items, "text_8").visible = page.currentPage == 3
+	
 			local dot1, dot1Index = getItemByName(page.items, "dot1") 
 			dot1.sprite = "LS_DOT_BLACK"
 			getItemByName(page.items, "dot2").sprite = "LS_DOT_BLACK"
@@ -10789,236 +12333,7 @@ function prepareMenuPage(page)
 			getItemByName(page.items, "dot1").visible = true
 			getItemByName(page.items, "dot2").visible = true
 			getItemByName(page.items, "dot3").visible = true
-		end
-		
-		if isLiteVersion then
-			levelSelectionPagesBasic.items[#levelSelectionPagesBasic.items].x = screenWidth*0.5
-			levelSelectionPagesBasic.items[#levelSelectionPagesBasic.items].y = levelSelectionPagesBasic.items[#levelSelectionPagesBasic.items].y + 16
-		end
-		
-		--if oldMenuPage ~= mainMenu and oldMenuPage ~= episodeSelectionPage then
-			--_G.res.stopAllAudio()
-		--end
-		if _G.res.isAudioPlaying("title_theme") == false then
-			_G.res.playAudio("title_theme", 0.8, true, 7)
-		end
-		
-		page.currentOffset = page.targetOffset
-		
-	end	
-	
-	if page == levelSelectionPagesExtra then
-		
-		levelRestartedFrom = nil
-		levelSelectionDragSpeed = nil
-		
-		page.bgColor = { red = page.bgColors[page.currentPage].red, green = page.bgColors[page.currentPage].green, blue = page.bgColors[page.currentPage].blue}
-		
-		levelSelectionPagesPressed = false
-		for i = levelSelectionPagesExtra.firstLevelIndex, #levelSelectionPagesExtra.items do
-			levelSelectionPagesExtra.items[i].disableSelection = true
-		end
-		
-		settings.currentLevelSelectionPages.extra = page.currentPage		
-		
-		local ySpaceAdd = -0.08 * screenHeight
-		local lsDotSpacing = 15
-		local lsDotY = 10
-		local textY = 0.03 * screenHeight + 15
-		local yDividerMultiplier = 1.16
-		if deviceModel == "roku" then
-			textY = 0.059 * screenHeight
-			lsDotY = textY - 25
-			if screenHeight <= 576 then
-				textY = 0.07 * screenHeight
-				lsDotY = textY - 18
-			end
-		end
-		local left = getItemByName(page.items, "left")
-		left.x, left.y = 0, screenHeight
-		local right = getItemByName(page.items, "right")
-		right.x, right.y = screenWidth, screenHeight
-		
-		local back = getItemByName(page.items, "back")
-		--back.x, back.y = 0, screenHeight
-		back.x, back.y = 0 + t_levelSelectionBackOffsetX, screenHeight + t_levelSelectionBackOffsetY
-		
-		local text1 = getItemByName(page.items, "text_4")
-		text1.x, text1.y = screenWidth / 2 - lsDotSpacing / 2, screenHeight - textY
-		local text2 = getItemByName(page.items, "text_5")
-		text2.x, text2.y = screenWidth / 2 + lsDotSpacing / 2, screenHeight - textY
-
-		
-		local dot1 = getItemByName(page.items, "dot1")
-		dot1.x, dot1.y = screenWidth / 2 - lsDotSpacing / 2, screenHeight - lsDotY
-		local dot2 = getItemByName(page.items, "dot2")
-		dot2.x, dot2.y = screenWidth / 2 + lsDotSpacing / 2, screenHeight - lsDotY
-		
-		local t_title = getItemByName(page.items, "title")
-		t_title.x, t_title.y = screenWidth / 2, (93 / 1200) * screenHeight
-		
-		local t_minDistance = 150
-		
-		if (g_levelSelectionClippingArea.y - t_title.y) < t_minDistance then
-			t_title.y = g_levelSelectionClippingArea.y - t_minDistance
-		end
-		
-		if deviceModel == "roku" and screenHeight <= 576 then
-			t_title.y = t_title.y + 50
-		end
-		
-		local t_leftNavigation = getItemByName(page.items, "leftNavigation")
-		local t_rightNavigation = getItemByName(page.items, "rightNavigation")
-		
-		--t_leftNavigation.x, t_leftNavigation.y = (210 / t_referenceScreenWidth) * screenWidth, (619 / t_referenceScreenHeight) * screenHeight
-		--t_leftNavigation.x, t_leftNavigation.y = (210 / t_referenceScreenWidth) * screenWidth, (1100 / t_referenceScreenHeight) * screenHeight
-		--t_rightNavigation.x, t_rightNavigation.y= (1710 / t_referenceScreenWidth) * screenWidth, (619 / t_referenceScreenHeight) * screenHeight
-		--t_rightNavigation.x, t_rightNavigation.y= (1710 / t_referenceScreenWidth) * screenWidth, (1100 / t_referenceScreenHeight) * screenHeight
-		
-		--t_leftNavigation.x = g_levelSelectionClippingArea.x - t_navigationButtonOffsetX
-		--t_rightNavigation.x = g_levelSelectionClippingArea.x + g_levelSelectionClippingArea.width + t_navigationButtonOffsetX
-		
-		local t_visibleAreaOverlayOffsetX = g_levelSelectionClippingArea.offsetX
-		local t_visibleAreaOverlayOffsetY = g_levelSelectionClippingArea.offsetY
-		
-		local t_height = g_levelSelectionClippingArea.height + t_visibleAreaOverlayOffsetY * 2
-		local t_y = g_levelSelectionClippingArea.y - t_visibleAreaOverlayOffsetY		
-		
-		t_leftNavigation.y = t_y + (t_height * 0.5)
-		t_rightNavigation.y = t_leftNavigation.y
-		
-		t_leftNavigation.x = g_levelSelectionClippingArea.x - t_navigationButtonOffsetX
-		t_rightNavigation.x = g_levelSelectionClippingArea.x + t_navigationButtonOffsetX + g_levelSelectionClippingArea.width
-		
-		
-		prepareItemForMouseScalingStates(back)
-		prepareItemForMouseScalingStates(t_leftNavigation)
-		prepareItemForMouseScalingStates(t_rightNavigation)
-				
-		
-		local ySpaceAdd = -0.08 * screenHeight
-		local lsDotSpacing = 0.023 * screenWidth
-		local lsDotY = 0.03 * screenHeight
-		local textY = 0.03 * screenHeight + 15
-		local yDividerMultiplier = 1.16
 			
-		local contentAreaWidth = screenWidth * 0.83
-		
-		
-		
-		
-		local itemsPerPage = 21
-		local itemsPerLine = 7
-		local linesPerPage = 3
-		local pages = 2
-		
-		local contentItemStep = 0
-		if itemsPerLine > 1 then
-			contentItemStep = contentAreaWidth / (itemsPerLine-1)
-		end
-		
-		
-		--new level selection
-		--local t_pivotX, t_pivotY = _G.res.getSpritePivot("", page.items[page.firstLevelIndex].sprite)
-		local t_pivotX, t_pivotY = _G.res.getSpritePivot("", "LS_LEVEL_BG_NORMAL_OPEN_HD_1")
-		--local t_width, t_height = _G.res.getSpriteBounds("", page.items[page.firstLevelIndex].sprite)
-		local t_width, t_height = _G.res.getSpriteBounds("", "LS_LEVEL_BG_NORMAL_OPEN_HD_1")
-				
-		if screenWidth < 1920 or (g_levelSelectionMultipleAssets ~= true) then
-			t_width, t_height = _G.res.getSpriteBounds("", "LS_LEVEL_BG_NORMAL_OPEN_1")
-			t_pivotX, t_pivotY = _G.res.getSpritePivot("", "LS_LEVEL_BG_NORMAL_OPEN_1")
-		end		
-		
-		local t_spaceX = (g_levelSelectionClippingArea.width - t_width) / (itemsPerLine - 1)
-		local t_totalLines = itemsPerPage / itemsPerLine
-		local t_spaceY = (g_levelSelectionClippingArea.height - t_height) / (t_totalLines - 1)
-		
-		g_levelSelectionScrollOffset = g_levelSelectionClippingArea.width + (t_spaceX)			
-		
-		contentAreaWidth = g_levelSelectionClippingArea.width - (t_pivotX * 2)
-		--new level selection	
-		
-		
-		
-		local contentAreaStart = (screenWidth / 2) - (contentAreaWidth / 2)
-		
-		--new level selection
-		levelSelectionPagesExtra.currentOffset = (levelSelectionPagesExtra.currentPage - 1) * -g_levelSelectionScrollOffset		
-		levelSelectionPagesExtra.targetOffset = levelSelectionPagesExtra.currentOffset
-		
-		
-		local offset = 0
-		for k = 0, pages - 1 do
-			for i = 1, itemsPerPage do
-				local line = _G.math.ceil(i / itemsPerLine)
-				local indexInLine = _G.math.fmod((i - 1), itemsPerLine) + 1
-				local yDivider = line / (linesPerPage + 2) * yDividerMultiplier
-				
-				--new level selection
-				local t_itemIndex = page.firstLevelIndex - 1 + i + (k * itemsPerPage)
-				
-				page.items[t_itemIndex].x = offset + levelSelectionPagesExtra.currentOffset + g_levelSelectionClippingArea.x + t_pivotX + (indexInLine - 1) * t_spaceX				
-				page.items[t_itemIndex].relativeX =  offset + g_levelSelectionClippingArea.x + t_pivotX + (indexInLine - 1) * t_spaceX
-				page.items[t_itemIndex].y = g_levelSelectionClippingArea.y + t_pivotY + ( (line-1) * t_spaceY )
-				--new level selection
-				
-				prepareItemForMouseScalingStates(page.items[t_itemIndex])
-				
-				
-				--[[
-				page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].x = offset + contentAreaStart + (indexInLine - 1) * contentItemStep + levelSelectionPagesBasic.currentOffset
-				page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].relativeX =  offset + page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].x - levelSelectionPagesBasic.currentOffset
-				page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].y = screenHeight * yDivider + ySpaceAdd
-				]]--
-			end
-				
-			--offset = offset + screenWidth / 2
-			--new level selection
-			offset = offset + g_levelSelectionScrollOffset
-		end
-		
-		local t_openLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_OPEN_HD_"
-		local t_closedLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_HD_CLOSED"
-		
-		if screenWidth < 1920 or (g_levelSelectionMultipleAssets ~= true) then
-			t_openLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_OPEN_"
-			t_closedLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_CLOSED"
-		end
-		
-		
-		for i = 1, #page.items do
-			if page.items[i].levelIndex ~= nil then
-				themeIndex = _G.math.ceil(page.items[i].levelIndex / page.levelsPerPage)
-				if settings.lastOpenLevelLP2 >= page.items[i].levelIndex or highscores[page.items[i].filename] ~= nil then
-					page.items[i].text = "" .. page.items[i].pageLevelIndex
-					--page.items[i].sprite = "LS_LEVEL_BG_NORMAL_OPEN_" .. page.themes[themeIndex]
-					page.items[i].sprite = t_openLevelSpritePrefix .. page.themes[themeIndex]
-					page.items[i].selectable = true
-				else
-					page.items[i].text = nil
-					--page.items[i].sprite = "LS_LEVEL_BG_NORMAL_CLOSED"
-					page.items[i].sprite = t_closedLevelSpritePrefix
-					page.items[i].selectable = false
-				end
-			end
-		end
-		
-		for k = 0, pages - 1 do
-			for i = 1, itemsPerPage do
-				local t_itemIndex = page.firstLevelIndex - 1 + i + (k * itemsPerPage)
-				prepareItemForMouseScalingStates(page.items[t_itemIndex])
-			end
-		end
-		
-		if not isLiteVersion and (levelSelectionScrollStartTimer == nil or levelSelectionScrollStartTimer <= 0) then
-			getItemByName(page.items, "text_4").visible = page.currentPage == 1
-			getItemByName(page.items, "text_5").visible = page.currentPage == 2
-			local dot1, dot1Index = getItemByName(page.items, "dot1") 
-			dot1.sprite = "LS_DOT_BLACK"
-			getItemByName(page.items, "dot2").sprite = "LS_DOT_BLACK"
-			page.items[dot1Index - 1 + page.currentPage].sprite = "LS_DOT_WHITE"
-			getItemByName(page.items, "dot1").visible = true
-			getItemByName(page.items, "dot2").visible = true
 		end
 		
 		--if oldMenuPage ~= mainMenu and 
@@ -11031,7 +12346,62 @@ function prepareMenuPage(page)
 		
 		page.currentOffset = page.targetOffset
 		
-	end	
+		getItemByName(page.items, "goldenEgg").visible = settings.openGoldenEggLevels["Level11"] == nil
+	
+	end
+	
+	if page == episodes[5] then
+		
+		--[[
+		if g_newEpisodeScreen.lastSetEnabled == false then
+			local t_comingSoonSign = getItemByName(page.items, "comingSoon")
+			--t_comingSoonSign.x = 0
+			--t_comingSoonSign.relativeX = g_levelSelectionClippingArea.x + g_levelSelectionScrollOffset * 2.2
+			t_comingSoonSign.relativeX = g_levelSelectionClippingArea.x + g_levelSelectionClippingArea.width * 0.5 + g_levelSelectionScrollOffset * 2
+			t_comingSoonSign.x = episodes[5].currentOffset + t_comingSoonSign.relativeX
+			t_comingSoonSign.y = g_levelSelectionClippingArea.y + g_levelSelectionClippingArea.height * 0.5
+			t_comingSoonSign.visible = true
+			t_comingSoonSign.sprite = "LS_COMING_SOON"
+		end
+		]]--
+		
+	end
+	
+	if page == episodes[6] then
+		
+		--[[
+		if g_newEpisodeScreen.lastSetEnabled == false then
+			local t_comingSoonSign = getItemByName(page.items, "comingSoon")
+			--t_comingSoonSign.x = 0
+			--t_comingSoonSign.relativeX = g_levelSelectionClippingArea.x + g_levelSelectionScrollOffset * 2.2
+			t_comingSoonSign.relativeX = g_levelSelectionClippingArea.x + g_levelSelectionClippingArea.width * 0.5 + g_levelSelectionScrollOffset * 2
+			t_comingSoonSign.x = episodes[6].currentOffset + t_comingSoonSign.relativeX
+			t_comingSoonSign.y = g_levelSelectionClippingArea.y + g_levelSelectionClippingArea.height * 0.5
+			t_comingSoonSign.visible = true
+			t_comingSoonSign.sprite = "LS_COMING_SOON"
+		end
+		]]--
+		
+		if(LP6_PAGE2_LOCKED == true) then
+			--getItemByName(page.items, "comingSoon2").x, getItemByName(page.items, "comingSoon2").y, getItemByName(page.items, "comingSoon2").relativeX = 0, screenHeight / 2, screenWidth * 1.5
+			local t_comingSoonSign = getItemByName(page.items, "comingSoon2")
+			t_comingSoonSign.sprite = "LS_COMING_SOON"
+			t_comingSoonSign.relativeX = g_levelSelectionClippingArea.x + g_levelSelectionClippingArea.width * 0.5 + g_levelSelectionScrollOffset * 1
+			t_comingSoonSign.x = episodes[5].currentOffset + t_comingSoonSign.relativeX
+			t_comingSoonSign.y = g_levelSelectionClippingArea.y + g_levelSelectionClippingArea.height * 0.5
+		end
+		
+		if(LP6_PAGE3_LOCKED == true) then
+			--getItemByName(page.items, "comingSoon3").x, getItemByName(page.items, "comingSoon3").y, getItemByName(page.items, "comingSoon3").relativeX = 0, screenHeight / 2, screenWidth * 2.5
+			local t_comingSoonSign = getItemByName(page.items, "comingSoon3")
+			t_comingSoonSign.sprite = "LS_COMING_SOON"
+			t_comingSoonSign.relativeX = g_levelSelectionClippingArea.x + g_levelSelectionClippingArea.width * 0.5 + g_levelSelectionScrollOffset * 2
+			t_comingSoonSign.x = episodes[5].currentOffset + t_comingSoonSign.relativeX
+			t_comingSoonSign.y = g_levelSelectionClippingArea.y + g_levelSelectionClippingArea.height * 0.5					
+		
+		end
+		
+	end
 	
 	if levelSelectionPagesGoldenEggs and page == levelSelectionPagesGoldenEggs[1] then
 		g_levelSelectionScrollOffset = screenWidth
@@ -11130,7 +12500,12 @@ function prepareMenuPage(page)
 									{x = 0.37 * screenWidth, y = 0.76 * screenHeight}, 
 									{x = 0.40 * screenWidth, y = 0.31 * screenHeight}, 
 								 }
-		end
+		end				 
+		--[[if g_newEpisodeScreen.lastSetEnabled == true then
+			_G.table.insert(goldenEggPositions, {x = 0.80 *  screenWidth, y = 0.11 * screenHeight})
+			_G.table.insert(goldenEggPositions, {x = 0.185 *  screenWidth, y = 0.87 * screenHeight})
+			
+		end]]--
 		
 		local tipBubblePositions = {{x = screenWidth - 3.5 * pbw, y = screenHeight - 1.5 * pbh}, 
 									{x = 1.5 * pbw, y = 0.75 * pbh}, 
@@ -11252,7 +12627,7 @@ function prepareMenuPage(page)
 		page.items[page.firstLevelIndex + 18].visible = settings.openGoldenEggLevels["Level19"] ~= nil or highscores[goldenEggLevelMapping["Level19"]] ~= nil
 		page.items[page.firstLevelIndex + 19].visible = settings.openGoldenEggLevels["Level20"] ~= nil or highscores[goldenEggLevelMapping["Level20"]] ~= nil
 		
-		page.items[page.firstLevelIndex + 20].visible = settings.openGoldenEggLevels["Level21"] ~= nil or highscores[goldenEggLevelMapping["Level21"]] ~= nil
+		page.items[page.firstLevelIndex + 20].visible = settings.openGoldenEggLevels["Level27"] ~= nil or highscores[goldenEggLevelMapping["Level27"]] ~= nil
 		page.items[page.firstLevelIndex + 21].visible = settings.openGoldenEggLevels["Level22"] ~= nil or highscores[goldenEggLevelMapping["Level22"]] ~= nil
 		
 		page.items[page.firstLevelIndex + 22].visible = settings.openGoldenEggLevels["Level23"] ~= nil or highscores[goldenEggLevelMapping["Level23"]] ~= nil
@@ -11323,7 +12698,7 @@ function prepareMenuPage(page)
 		end
 		
 		if settings.threeStarsLP5 == true then
-			goldenEggAchieved("Level21")
+			goldenEggAchieved("Level27")
 		end
 
 		if settings.threeStarsLP6 == true then
@@ -11351,467 +12726,8 @@ function prepareMenuPage(page)
 		page.currentOffset = page.targetOffset
 	end
 	
-	if page == levelSelectionPagesPack3 then
-	
-		levelRestartedFrom = nil
-		levelSelectionDragSpeed = nil
-		
-		page.bgColor = { red = page.bgColors[page.currentPage].red, green = page.bgColors[page.currentPage].green, blue = page.bgColors[page.currentPage].blue}
-		
-		levelSelectionPagesPressed = false
-		for i = levelSelectionPagesPack3.firstLevelIndex, #levelSelectionPagesPack3.items do
-			levelSelectionPagesPack3.items[i].disableSelection = true
-		end
-		
-		settings.currentLevelSelectionPages.pack3 = page.currentPage
-			
-		local ySpaceAdd = -0.08 * screenHeight
-		local lsDotSpacing = 15
-		local lsDotY = 10
-		local textY = 0.03 * screenHeight + 15
-		local yDividerMultiplier = 1.16
-		if deviceModel == "roku" then
-			textY = 0.059 * screenHeight
-			lsDotY = textY - 25
-			if screenHeight <= 576 then
-				textY = 0.07 * screenHeight
-				lsDotY = textY - 18
-			end
-		end
-	
-		
-		local left = getItemByName(page.items, "left")
-		left.x, left.y = 0, screenHeight
-		local right = getItemByName(page.items, "right")
-		right.x, right.y = screenWidth, screenHeight
-		
-		local back = getItemByName(page.items, "back")
-		--back.x, back.y = 0, screenHeight
-		back.x, back.y = 0 + t_levelSelectionBackOffsetX, screenHeight + t_levelSelectionBackOffsetY
-		
-		local text6 = getItemByName(page.items, "text_6")
-		text6.x, text6.y = screenWidth / 2 - lsDotSpacing, screenHeight - textY
-		local text7 = getItemByName(page.items, "text_7")
-		text7.x, text7.y = screenWidth / 2, screenHeight - textY
-		local text8 = getItemByName(page.items, "text_8")
-		text8.x, text8.y = screenWidth / 2 + lsDotSpacing, screenHeight - textY
-		
-		local dot1 = getItemByName(page.items, "dot1")
-		dot1.x, dot1.y = screenWidth / 2 - lsDotSpacing, screenHeight - lsDotY
-		local dot2 = getItemByName(page.items, "dot2")
-		dot2.x, dot2.y = screenWidth / 2, screenHeight - lsDotY
-		local dot3 = getItemByName(page.items, "dot3")
-		dot3.x, dot3.y = screenWidth / 2 + lsDotSpacing, screenHeight - lsDotY
-		
-		local t_title = getItemByName(page.items, "title")
-		t_title.x, t_title.y = screenWidth / 2, (93 / 1200) * screenHeight
-		
-		local t_minDistance = 150
-		
-		if (g_levelSelectionClippingArea.y - t_title.y) < t_minDistance then
-			t_title.y = g_levelSelectionClippingArea.y - t_minDistance
-		end
-		
-		if deviceModel == "roku" and screenHeight <= 576 then
-			t_title.y = t_title.y + 50
-		end
-		
-		local t_leftNavigation = getItemByName(page.items, "leftNavigation")
-		local t_rightNavigation = getItemByName(page.items, "rightNavigation")
-		
-		--t_leftNavigation.x, t_leftNavigation.y = (210 / t_referenceScreenWidth) * screenWidth, (619 / t_referenceScreenHeight) * screenHeight
-		--t_leftNavigation.x, t_leftNavigation.y = (210 / t_referenceScreenWidth) * screenWidth, (1100 / t_referenceScreenHeight) * screenHeight
-		--t_rightNavigation.x, t_rightNavigation.y= (1710 / t_referenceScreenWidth) * screenWidth, (619 / t_referenceScreenHeight) * screenHeight
-		--t_rightNavigation.x, t_rightNavigation.y= (1710 / t_referenceScreenWidth) * screenWidth, (1100 / t_referenceScreenHeight) * screenHeight
-		
-		--t_leftNavigation.x = t_leftNavigation.x - t_navigationButtonOffset
-		--t_rightNavigation.x = t_rightNavigation.x + t_navigationButtonOffset
-		
-		local t_visibleAreaOverlayOffsetX = g_levelSelectionClippingArea.offsetX
-		local t_visibleAreaOverlayOffsetY = g_levelSelectionClippingArea.offsetY
-		
-		local t_height = g_levelSelectionClippingArea.height + t_visibleAreaOverlayOffsetY * 2
-		local t_y = g_levelSelectionClippingArea.y - t_visibleAreaOverlayOffsetY		
-		
-		t_leftNavigation.y = t_y + (t_height * 0.5)
-		t_rightNavigation.y = t_leftNavigation.y
-		
-		t_leftNavigation.x = g_levelSelectionClippingArea.x - t_navigationButtonOffsetX
-		t_rightNavigation.x = g_levelSelectionClippingArea.x + g_levelSelectionClippingArea.width + t_navigationButtonOffsetX
-		
-
-		prepareItemForMouseScalingStates(back)
-		prepareItemForMouseScalingStates(t_leftNavigation)
-		prepareItemForMouseScalingStates(t_rightNavigation)
-		
-		
-		local itemsPerPage = 15
-		local itemsPerLine = 5
-		local linesPerPage = 3
-		local pages = 3
-		local contentAreaWidth = screenWidth * 0.74	
-		
-		--new level selection
-		--local t_pivotX, t_pivotY = _G.res.getSpritePivot("", page.items[page.firstLevelIndex].sprite)
-		--local t_width, t_height = _G.res.getSpriteBounds("", page.items[page.firstLevelIndex].sprite)
-		
-		local t_pivotX, t_pivotY = _G.res.getSpritePivot("", "LS_LEVEL_BG_NORMAL_OPEN_HD_1")
-		local t_width, t_height = _G.res.getSpriteBounds("", "LS_LEVEL_BG_NORMAL_OPEN_HD_1")
-				
-		if screenWidth < 1920 or (g_levelSelectionMultipleAssets ~= true) then
-			t_width, t_height = _G.res.getSpriteBounds("", "LS_LEVEL_BG_NORMAL_OPEN_1")
-			t_pivotX, t_pivotY = _G.res.getSpritePivot("", "LS_LEVEL_BG_NORMAL_OPEN_1")
-		end		
-		
-		
-		
-		local t_spaceX = (g_levelSelectionClippingArea.width - t_width) / (itemsPerLine - 1)
-		local t_totalLines = itemsPerPage / itemsPerLine
-		local t_spaceY = (g_levelSelectionClippingArea.height - t_height) / (t_totalLines - 1)
-		
-		g_levelSelectionScrollOffset = g_levelSelectionClippingArea.width + (t_spaceX)			
-		
-		contentAreaWidth = g_levelSelectionClippingArea.width - (t_pivotX * 2)
-		--new level selection	
-		
-		local contentAreaStart = (screenWidth / 2) - (contentAreaWidth / 2)
-		local contentItemStep = 0
-		if itemsPerLine > 1 then
-			contentItemStep = contentAreaWidth / (itemsPerLine-1)
-		end
-		
-		--new level selection
-		levelSelectionPagesPack3.currentOffset = (levelSelectionPagesPack3.currentPage - 1) * -g_levelSelectionScrollOffset		
-		levelSelectionPagesPack3.targetOffset = levelSelectionPagesPack3.currentOffset
-		
-		
-		local offset = 0
-		for k = 0, pages - 1 do
-			for i = 1, itemsPerPage do
-				local line = _G.math.ceil(i / itemsPerLine)
-				local indexInLine = _G.math.fmod((i - 1), itemsPerLine) + 1
-				local yDivider = line / (linesPerPage + 2) * yDividerMultiplier
-				
-				--new level selection
-				local t_itemIndex = page.firstLevelIndex - 1 + i + (k * itemsPerPage)
-				
-				page.items[t_itemIndex].x = offset + levelSelectionPagesPack3.currentOffset + g_levelSelectionClippingArea.x + t_pivotX + (indexInLine - 1) * t_spaceX				
-				page.items[t_itemIndex].relativeX =  offset + g_levelSelectionClippingArea.x + t_pivotX + (indexInLine - 1) * t_spaceX
-				page.items[t_itemIndex].y = g_levelSelectionClippingArea.y + t_pivotY + ( (line-1) * t_spaceY )
-				prepareItemForMouseScalingStates(page.items[t_itemIndex])
-				
-				
-				--new level selection
-				
-				--[[
-				page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].x = offset + contentAreaStart + (indexInLine - 1) * contentItemStep + levelSelectionPagesBasic.currentOffset
-				page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].relativeX =  offset + page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].x - levelSelectionPagesBasic.currentOffset
-				page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].y = screenHeight * yDivider + ySpaceAdd
-				]]--
-			end	
-			if k == pages - 1 then
-				local goldenEgg = getItemByName(page.items, "goldenEgg")
-				goldenEgg.x = g_levelSelectionScrollOffset * 3.25 + levelSelectionPagesPack3.currentOffset
-				--goldenEgg.relativeX = g_levelSelectionScrollOffset * 3.25
-				goldenEgg.relativeX = g_levelSelectionClippingArea.x + g_levelSelectionScrollOffset * 2.95
-				goldenEgg.y = screenHeight / 2
-				goldenEgg.y = g_levelSelectionClippingArea.y + g_levelSelectionClippingArea.height / 2
-			end
-			--offset = offset + screenWidth / 2
-			--new level selection
-			offset = offset + g_levelSelectionScrollOffset
-		end
-		
-		local t_openLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_OPEN_HD_"
-		local t_closedLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_HD_CLOSED"
-		
-		if screenWidth < 1920 or (g_levelSelectionMultipleAssets ~= true) then
-			t_openLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_OPEN_"
-			t_closedLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_CLOSED"
-		end
-		
-		
-		for i = 1, #page.items do
-			if page.items[i].levelIndex ~= nil then
-				themeIndex = _G.math.ceil(page.items[i].levelIndex / page.levelsPerPage)
-				if settings.lastOpenLevelLP3 >= page.items[i].levelIndex or highscores[page.items[i].filename] ~= nil then
-					page.items[i].text = "" .. page.items[i].pageLevelIndex
-					--page.items[i].sprite = "LS_LEVEL_BG_NORMAL_OPEN_" .. page.themes[themeIndex]
-					page.items[i].sprite = t_openLevelSpritePrefix .. page.themes[themeIndex]
-					page.items[i].selectable = true
-				else
-					page.items[i].text = nil
-					--page.items[i].sprite = "LS_LEVEL_BG_NORMAL_CLOSED"
-					page.items[i].sprite = t_closedLevelSpritePrefix
-					page.items[i].selectable = false
-				end
-			end
-		end
-		
-		for k = 0, pages - 1 do		
-			for i = 1, itemsPerPage do				
-				local t_itemIndex = page.firstLevelIndex - 1 + i + (k * itemsPerPage)				
-				prepareItemForMouseScalingStates(page.items[t_itemIndex])				
-			end															
-		end
-				
-		if levelSelectionScrollStartTimer == nil or levelSelectionScrollStartTimer <= 0 then	
-			getItemByName(page.items, "text_6").visible = page.currentPage == 1
-			getItemByName(page.items, "text_7").visible = page.currentPage == 2
-			getItemByName(page.items, "text_8").visible = page.currentPage == 3
-	
-			local dot1, dot1Index = getItemByName(page.items, "dot1") 
-			dot1.sprite = "LS_DOT_BLACK"
-			getItemByName(page.items, "dot2").sprite = "LS_DOT_BLACK"
-			getItemByName(page.items, "dot3").sprite = "LS_DOT_BLACK"
-			page.items[dot1Index - 1 + page.currentPage].sprite = "LS_DOT_WHITE"
-			getItemByName(page.items, "dot1").visible = true
-			getItemByName(page.items, "dot2").visible = true
-			getItemByName(page.items, "dot3").visible = true
-			
-		end
-		
-		--if oldMenuPage ~= mainMenu and 
-		--	oldMenuPage ~= episodeSelectionPage then
-		--	_G.res.stopAllAudio()
-		--end
-		if _G.res.isAudioPlaying("title_theme") == false then
-			_G.res.playAudio("title_theme", 0.8, true, 7)
-		end
-		
-		page.currentOffset = page.targetOffset
-		
-		getItemByName(page.items, "goldenEgg").visible = settings.openGoldenEggLevels["Level11"] == nil
-	
-	end
-	
-	if page == levelSelectionPagesPack4 then
-	
-		levelRestartedFrom = nil
-		levelSelectionDragSpeed = nil
-		
-		page.bgColor = { red = page.bgColors[page.currentPage].red, green = page.bgColors[page.currentPage].green, blue = page.bgColors[page.currentPage].blue}
-		
-		levelSelectionPagesPressed = false
-		for i = levelSelectionPagesPack4.firstLevelIndex, #levelSelectionPagesPack4.items do
-			levelSelectionPagesPack4.items[i].disableSelection = true
-		end
-		
-		settings.currentLevelSelectionPages.pack4 = page.currentPage
-		
-		
-		
-		local ySpaceAdd = -0.08 * screenHeight
-		local lsDotSpacing = 15
-		local lsDotY = 10
-		local textY = 0.03 * screenHeight + 15
-		local yDividerMultiplier = 1.16
-		if deviceModel == "roku" then
-			textY = 0.059 * screenHeight
-			lsDotY = textY - 25
-			if screenHeight <= 576 then
-				textY = 0.07 * screenHeight
-				lsDotY = textY - 18
-			end
-		end
-		local left = getItemByName(page.items, "left")
-		left.x, left.y = 0, screenHeight
-		local right = getItemByName(page.items, "right")
-		right.x, right.y = screenWidth, screenHeight
-		
-		local back = getItemByName(page.items, "back")
-		--back.x, back.y = 0, screenHeight
-		back.x, back.y = 0 + t_levelSelectionBackOffsetX, screenHeight + t_levelSelectionBackOffsetY
-		
-		local text9 = getItemByName(page.items, "text_9")
-		text9.x, text9.y = screenWidth / 2 - lsDotSpacing, screenHeight - textY
-		local text10 = getItemByName(page.items, "text_10")
-		text10.x, text10.y = screenWidth / 2, screenHeight - textY
-		local text11 = getItemByName(page.items, "text_11")
-		text11.x, text11.y = screenWidth / 2 + lsDotSpacing, screenHeight - textY
-		
-		local dot1 = getItemByName(page.items, "dot1")
-		dot1.x, dot1.y = screenWidth / 2 - lsDotSpacing, screenHeight - lsDotY
-		local dot2 = getItemByName(page.items, "dot2")
-		dot2.x, dot2.y = screenWidth / 2, screenHeight - lsDotY
-		local dot3 = getItemByName(page.items, "dot3")
-		dot3.x, dot3.y = screenWidth / 2 + lsDotSpacing, screenHeight - lsDotY
-		
-		local t_title = getItemByName(page.items, "title")
-		t_title.x, t_title.y = screenWidth / 2, (93 / 1200) * screenHeight
-		
-		local t_minDistance = 150
-		
-		if (g_levelSelectionClippingArea.y - t_title.y) < t_minDistance then
-			t_title.y = g_levelSelectionClippingArea.y - t_minDistance
-		end
-		
-		if deviceModel == "roku" and screenHeight <= 576 then
-			t_title.y = t_title.y + 50
-		end
-		
-		local t_leftNavigation = getItemByName(page.items, "leftNavigation")
-		local t_rightNavigation = getItemByName(page.items, "rightNavigation")
-		
-		prepareItemForMouseScalingStates(back)
-		prepareItemForMouseScalingStates(t_leftNavigation)
-		prepareItemForMouseScalingStates(t_rightNavigation)
-		
-		--t_leftNavigation.x, t_leftNavigation.y = (210 / t_referenceScreenWidth) * screenWidth, (619 / t_referenceScreenHeight) * screenHeight
-		--t_leftNavigation.x, t_leftNavigation.y = (210 / t_referenceScreenWidth) * screenWidth, (1100 / t_referenceScreenHeight) * screenHeight
-		--t_rightNavigation.x, t_rightNavigation.y= (1710 / t_referenceScreenWidth) * screenWidth, (619 / t_referenceScreenHeight) * screenHeight
-		--t_rightNavigation.x, t_rightNavigation.y= (1710 / t_referenceScreenWidth) * screenWidth, (1100 / t_referenceScreenHeight) * screenHeight
-		
-		--t_leftNavigation.x = t_leftNavigation.x - t_navigationButtonOffset
-		--t_rightNavigation.x = t_rightNavigation.x + t_navigationButtonOffset
-		
-		local t_visibleAreaOverlayOffsetX = g_levelSelectionClippingArea.offsetX
-		local t_visibleAreaOverlayOffsetY = g_levelSelectionClippingArea.offsetY
-		
-		local t_height = g_levelSelectionClippingArea.height + t_visibleAreaOverlayOffsetY * 2
-		local t_y = g_levelSelectionClippingArea.y - t_visibleAreaOverlayOffsetY		
-		
-		t_leftNavigation.y = t_y + (t_height * 0.5)
-		t_rightNavigation.y = t_leftNavigation.y
-		
-		t_leftNavigation.x = g_levelSelectionClippingArea.x - t_navigationButtonOffsetX
-		t_rightNavigation.x = g_levelSelectionClippingArea.x + g_levelSelectionClippingArea.width + t_navigationButtonOffsetX
-		
-		local itemsPerPage = 15
-		local itemsPerLine = 5
-		local linesPerPage = 3
-		local pages = 3
-		local contentAreaWidth = screenWidth * 0.74
-		
-		--new level selection
-		--local t_pivotX, t_pivotY = _G.res.getSpritePivot("", page.items[page.firstLevelIndex].sprite)
-		--local t_width, t_height = _G.res.getSpriteBounds("", page.items[page.firstLevelIndex].sprite)
-		
-		local t_pivotX, t_pivotY = _G.res.getSpritePivot("", "LS_LEVEL_BG_NORMAL_OPEN_HD_1")
-		local t_width, t_height = _G.res.getSpriteBounds("", "LS_LEVEL_BG_NORMAL_OPEN_HD_1")
-				
-		if screenWidth < 1920 or (g_levelSelectionMultipleAssets ~= true) then
-			t_width, t_height = _G.res.getSpriteBounds("", "LS_LEVEL_BG_NORMAL_OPEN_1")
-			t_pivotX, t_pivotY = _G.res.getSpritePivot("", "LS_LEVEL_BG_NORMAL_OPEN_1")
-		end		
-		
-		local t_spaceX = (g_levelSelectionClippingArea.width - t_width) / (itemsPerLine - 1)
-		local t_totalLines = itemsPerPage / itemsPerLine
-		local t_spaceY = (g_levelSelectionClippingArea.height - t_height) / (t_totalLines - 1)
-		
-		g_levelSelectionScrollOffset = g_levelSelectionClippingArea.width + (t_spaceX)			
-		
-		contentAreaWidth = g_levelSelectionClippingArea.width - (t_pivotX * 2)
-		--new level selection	
-			
-		local contentAreaStart = (screenWidth / 2) - (contentAreaWidth / 2)
-		local contentItemStep = 0
-		if itemsPerLine > 1 then
-			contentItemStep = contentAreaWidth / (itemsPerLine-1)
-		end
-		
-		--new level selection
-		levelSelectionPagesPack4.currentOffset = (levelSelectionPagesPack4.currentPage - 1) * -g_levelSelectionScrollOffset		
-		levelSelectionPagesPack4.targetOffset = levelSelectionPagesPack4.currentOffset
-		
-		
-		local offset = 0
-		for k = 0, pages - 1 do
-			for i = 1, itemsPerPage do
-				local line = _G.math.ceil(i / itemsPerLine)
-				local indexInLine = _G.math.fmod((i - 1), itemsPerLine) + 1
-				local yDivider = line / (linesPerPage + 2) * yDividerMultiplier
-				
-				--new level selection
-				local t_itemIndex = page.firstLevelIndex - 1 + i + (k * itemsPerPage)
-				
-				page.items[t_itemIndex].x = offset + levelSelectionPagesPack4.currentOffset + g_levelSelectionClippingArea.x + t_pivotX + (indexInLine - 1) * t_spaceX				
-				page.items[t_itemIndex].relativeX =  offset + g_levelSelectionClippingArea.x + t_pivotX + (indexInLine - 1) * t_spaceX
-				page.items[t_itemIndex].y = g_levelSelectionClippingArea.y + t_pivotY + ( (line-1) * t_spaceY )
-				--new level selection
-				prepareItemForMouseScalingStates(page.items[t_itemIndex])
-				
-				
-				--[[
-				page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].x = offset + contentAreaStart + (indexInLine - 1) * contentItemStep + levelSelectionPagesBasic.currentOffset
-				page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].relativeX =  offset + page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].x - levelSelectionPagesBasic.currentOffset
-				page.items[page.firstLevelIndex - 1 + i + k * itemsPerPage].y = screenHeight * yDivider + ySpaceAdd
-				]]--
-			end	
-			--offset = offset + screenWidth / 2
-			--new level selection
-			offset = offset + g_levelSelectionScrollOffset
-		end
-		
-		local t_openLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_OPEN_HD_"
-		local t_closedLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_HD_CLOSED"
-		
-		if screenWidth < 1920 or (g_levelSelectionMultipleAssets ~= true) then
-			t_openLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_OPEN_"
-			t_closedLevelSpritePrefix = "LS_LEVEL_BG_NORMAL_CLOSED"
-		end
-		
-		for i = 1, #page.items do
-			if page.items[i].levelIndex ~= nil then
-				themeIndex = _G.math.ceil(page.items[i].levelIndex / page.levelsPerPage)
-				if settings.lastOpenLevelLP4 >= page.items[i].levelIndex or highscores[page.items[i].filename] ~= nil then
-					page.items[i].text = "" .. page.items[i].pageLevelIndex
-					if themeIndex == 1 then
-						--page.items[i].sprite = "LS_LEVEL_BG_NORMAL_OPEN_6" 
-						page.items[i].sprite = t_openLevelSpritePrefix .. "6"
-					elseif themeIndex == 2 then
-						--page.items[i].sprite = "LS_LEVEL_BG_NORMAL_OPEN_5" 
-						page.items[i].sprite = t_openLevelSpritePrefix .. "5" 
-					else
-						--page.items[i].sprite = "LS_LEVEL_BG_NORMAL_OPEN_2"
-						page.items[i].sprite = t_openLevelSpritePrefix .. "2"
-					end
-					page.items[i].selectable = true
-				else
-					page.items[i].text = nil
-					--page.items[i].sprite = "LS_LEVEL_BG_NORMAL_CLOSED"
-					page.items[i].sprite = t_closedLevelSpritePrefix
-					page.items[i].selectable = false
-				end
-			end
-		end
-		
-		for k = 0, pages - 1 do		
-			for i = 1, itemsPerPage do				
-				local t_itemIndex = page.firstLevelIndex - 1 + i + (k * itemsPerPage)				
-				prepareItemForMouseScalingStates(page.items[t_itemIndex])				
-			end															
-		end
-				
-		if levelSelectionScrollStartTimer == nil or levelSelectionScrollStartTimer <= 0 then
-			getItemByName(page.items, "text_9").visible = page.currentPage == 1
-			getItemByName(page.items, "text_10").visible = page.currentPage == 2
-			getItemByName(page.items, "text_11").visible = page.currentPage == 3
-	
-			local dot1, dot1Index = getItemByName(page.items, "dot1") 
-			dot1.sprite = "LS_DOT_BLACK"
-			getItemByName(page.items, "dot2").sprite = "LS_DOT_BLACK"
-			getItemByName(page.items, "dot3").sprite = "LS_DOT_BLACK"
-			page.items[dot1Index - 1 + page.currentPage].sprite = "LS_DOT_WHITE"
-			getItemByName(page.items, "dot1").visible = true
-			getItemByName(page.items, "dot2").visible = true
-			getItemByName(page.items, "dot3").visible = true
-		end
-		
-		--if oldMenuPage ~= mainMenu and 
-		--	oldMenuPage ~= episodeSelectionPage then
-		--	_G.res.stopAllAudio()
-		--end
-		if _G.res.isAudioPlaying("title_theme") == false then
-			_G.res.playAudio("title_theme", 0.8, true, 7)
-		end
-		
-		page.currentOffset = page.targetOffset
-		
-	end
-	
 	--prepare levelselectionpages for faster drawing
-	if page == levelSelectionPagesBasic or page == levelSelectionPagesExtra or page == levelSelectionPagesPack3 or page == levelSelectionPagesPack4 then
+	if isLevelSelection(page) then
 		levelSelectionButtonIndeces = {}
 		for k, v in _G.pairs(page.items) do
 			if v.filename then
@@ -11863,10 +12779,24 @@ function prepareMenuPage(page)
 						ci.starItem = {sprite = t_starSpritePrefix .. "3", x = ci.x, y = ci.y + ci.spriteHeight * 0.5 + t_starOffset}
 						prepareItemForMouseScalingStates(ci.starItem, ci)
 					end
-					if settings.mightyEagleEnabled == true and highscores[ci.filename].eagleScore ~= nil and 
-					    ((starTable[ci.filename].eagleFeatherScore ~= nil and highscores[ci.filename].eagleScore >= starTable[ci.filename].eagleFeatherScore) or 
-					     (starTable[ci.filename].eagleFeatherScore == nil and highscores[ci.filename].eagleScore > 0)) then
-						levelSelectionButtonIndeces[i].featherSprite = "LS_EAGLE_FEATHER"
+					if (settings.mightyEagleEnabled == true or true) and highscores[ci.filename].eagleScore ~= nil and 
+					    ((starTable[ci.filename].eagleScore ~= nil and highscores[ci.filename].eagleScore >= 100) or--starTable[ci.filename].eagleScore) or 
+					     (starTable[ci.filename].eagleScore == nil and highscores[ci.filename].eagleScore > 0)) then
+--						levelSelectionButtonIndeces[i].featherSprite = "EAGLE_FEATHER_FULL"
+						ci.featherItem = {sprite = "EAGLE_FEATHER_FULL", x = ci.x, y = ci.y}
+						ci.featherItem.spriteWidth, ci.featherItem.spriteHeight = _G.res.getSpriteBounds("", ci.featherItem.sprite)
+						prepareItemForMouseScalingStates(ci.featherItem, ci)
+					end
+				end
+				
+				for k, v in _G.pairs(settings.eaglesUsedIn) do
+					if v.world == ci.worldNumber and v.level == ci.pageLevelIndex then
+--						setRenderState(0,0,1.2,1.2)
+--						_G.res.drawSprite("LS_EAGLE_BUTTON", _G.math.floor(ci.x), _G.math.floor(ci.y))
+						ci.eagleItem = {sprite = "LS_EAGLE_BUTTON", x = ci.x, y = ci.y}
+						ci.eagleItem.spriteWidth, ci.eagleItem.spriteHeight = _G.res.getSpriteBounds("", ci.eagleItem.sprite)
+						prepareItemForMouseScalingStates(ci.eagleItem, ci)
+						break
 					end
 				end
 			end
@@ -11918,15 +12848,40 @@ function prepareMenuPage(page)
 	if page == tutorials then
 		
 		local maxW, maxH = 0, 0
+		
 		for i = 1, #tutorials.items do
 			local itm = tutorials.items[i]
 			itm.x, itm.y = screenWidth / 2, screenHeight / 2
-			local x1, y1, x2, y2 = _G.res.getCompoSpriteBounds("", itm.sprite)
-			if x2 - x1 > maxW then
-				maxW = x2 - x1
-			end
-			if y2 - y1 > maxH then
-				maxH = y2 - y1
+			--local x1, y1, x2, y2 = _G.res.getCompoSpriteBounds("", itm.sprite)
+			local t_width, t_height = _G.res.getSpriteBounds(itm.sprite)			
+			local t_pivotX, t_pivotY = _G.res.getSpritePivot(itm.sprite)			
+			local x1, y1, x2, y2 = -t_pivotX,-t_pivotY,-t_pivotX+t_width,-t_pivotY+t_height
+			local t_isTrackPadTutorial = (itm.trackpadTutorial == true)
+			
+			if not t_isTrackPadTutorial then
+				if x2 - x1 > maxW then
+					maxW = x2 - x1
+				end
+				if y2 - y1 > maxH then
+					maxH = y2 - y1
+				end
+			else
+				itm.boxWidth = x2 - x1
+				itm.boxHeight = y2 - y1
+				
+				
+				local _, t_borderH = _G.res.getSpriteBounds("", "TUTORIAL_BOTTOM_MIDDLE")
+				local t_borderW, _ = _G.res.getSpriteBounds("", "TUTORIAL_LEFT")
+				t_backgroundBoxX, t_backgroundBoxY = _G.math.floor(screenWidth / 2), _G.math.floor(screenHeight / 2)
+				t_backgroundBoxWidth, t_backgroundBoxHeight = _G.math.floor(itm.boxWidth) - t_borderW * 2, _G.math.floor(itm.boxHeight) - t_borderH * 1.5
+				local t_sw, t_sh = _G.res.getSpriteBounds("", "TUTORIAL_OK")
+				if deviceModel == "roku" then
+					t_sw, t_sh =  _G.res.getSpriteBounds("", "ROKU_TUTORIAL_OK")
+				end
+				local t_gew, t_geh = _G.res.getSpriteBounds("", "GOLDEN_EGG_1")
+				
+				itm.okButtonX, itm.okButtonY = t_backgroundBoxX + t_backgroundBoxWidth / 2 - t_sw / 3, _G.math.floor(t_backgroundBoxY + t_backgroundBoxHeight / 2 + t_borderH * 1.3)
+				
 			end
 		end
 		
@@ -11967,18 +12922,18 @@ function prepareMenuPage(page)
 		
 	end
 	
-	if page == gameComplete then
+	if page == cutscenes.world3_complete then
 		_G.res.stopAllAudio()
 		loadCutScenes()
 		_G.res.playAudio("birds_outro", 1, false, 7)
 		getItemByName(page.items, "storyEnd1").visible = true
 		getItemByName(page.items, "storyEnd2").visible = true
-		getItemByName(page.items, "storyEndEyeNormal").visible = true
+		getItemByName(page.items, "storyEndEyeNormal").visible = false
 		page.timer = 2.5
 		page.offsetX = 0
 		page.animationState = "SCROLL"
 		
-		page.tuneTimer = 3	
+		page.tuneTimer = 5.5	
 		page.dontScroll = false
 		page.scale = false
 		page.xs = 1
@@ -12000,7 +12955,7 @@ function prepareMenuPage(page)
 		setGameOn(true)
 	end
 	
-	if page == theme5Complete then
+	if page == cutscenes.world5_complete then
 		_G.res.stopAllAudio()
 		loadCutScenes()
 		_G.res.playAudio("birds_outro", 1, false, 7)
@@ -12040,7 +12995,7 @@ function prepareMenuPage(page)
 	end
 	
 		
-	if page == gameStart then
+	if page == cutscenes.gameStart then
 		_G.res.stopAllAudio()
 		loadCutScenes()
 		_G.res.playAudio("birds_intro", 1, false, 7)
@@ -12078,7 +13033,7 @@ function prepareMenuPage(page)
 		setGameOn(true)
 	end	
 	
-	if page == theme1Complete then
+	if page == cutscenes.world1_complete then
 		_G.res.stopAllAudio()
 		loadCutScenes()
 		_G.res.playAudio("birds_boss", 1, false, 7)
@@ -12111,7 +13066,7 @@ function prepareMenuPage(page)
 		end
 	end
 	
-	if page == theme4Start then
+	if page == cutscenes.pack2_intro then
 		_G.res.stopAllAudio()
 		loadCutScenes()
 		_G.res.playAudio("birds_intro", 1, false, 7)
@@ -12149,7 +13104,7 @@ function prepareMenuPage(page)
 		setGameOn(true)
 	end	
 	
-	if page == theme6Start then
+	if page == cutscenes.pack3_intro then
 		_G.res.stopAllAudio()
 		loadCutScenes()
 		_G.res.playAudio("birds_intro", 1, false, 7)
@@ -12162,47 +13117,36 @@ function prepareMenuPage(page)
 		page.xs = 1
 		page.ys = 1
 		
-		local beginStoryWidth, beginStoryHeight = _G.res.getSpriteBounds("", "STORY_BEGIN_BG_1")
-		
-		local _, pigsHeight = _G.res.getSpriteBounds("", "STORY_FLYING_PIGS_1")
+		local storyBg = getItemByName(page.items, "storyBg")
+		storyBg.selectable = true
+		getItemByName(page.items, "cutSceneBg").selectable = true
+
+		local beginStoryWidth, beginStoryHeight = _G.res.getSpriteBounds("", storyBg.sprite)
+		page.backgroundWidth = beginStoryWidth 
 		local _, py = _G.res.getSpritePivot("", "STORY_FLYING_PIGS_1")
-		
-		page.backgroundWidth = beginStoryWidth / 2
-		page.backgroundHeight = py
-		if deviceModel == "roku" then page.backgroundHeight = py + beginStoryHeight + pigsHeight / 2 end
 		
 		for i = 1, #page.items do
 			page.items[i].x, page.items[i].y = 0, 0
 		end
 		
-		if deviceModel == "roku" then
-			prepareCutScene(page, page.backgroundWidth, page.backgroundHeight)
-			page.offsetX = page.clipX
-			page.offsetY = _G.math.max(0, screenHeight - beginStoryHeight * page.ys + 1)
-			page.cutSceneOffset = page.offsetX
-			theme6Start.maxOffsetY = py * page.ys
-			page.scrollSpeed = theme6Start.maxOffsetY / page.tuneTimer
-		else
-			prepareCutScene(page, page.backgroundWidth, beginStoryHeight, page.tuneTimer)
-			page.offsetX = _G.math.max(0, (screenWidth - 1024) / 2)
-			page.offsetY = (screenHeight - beginStoryHeight) / 2
-			page.cutSceneOffset = page.offsetY
-			theme6Start.maxOffsetY = py + page.offsetY
-			page.scrollSpeed = page.backgroundHeight / page.tuneTimer
-		end
+		page.clipX = (screenWidth - 1024) / 2
+		page.clipY = (screenHeight - beginStoryHeight) / 2
+		page.clipW = 1024
+		page.clipH = 659
 		
-		if deviceModel ~= "roku" then
-			page.clipX = (screenWidth - 1024) / 2
-			page.clipY = (screenHeight - beginStoryHeight) / 2
-			page.clipW = 1024
-			page.clipH = 659
-		end
-		
-		for i = 1, #page.items do
-			local itm = page.items[i]
-			if not itm.dontOffset then
-				itm.clip = true
-			end
+		prepareCutScene(page, page.backgroundWidth, beginStoryHeight)
+		page.offsetX = page.clipX
+		page.offsetY = (screenHeight - beginStoryHeight) / 2
+		page.cutSceneOffset = page.offsetX
+		page.maxOffsetY = py + page.offsetY--* page.ys
+		page.scrollSpeed = py / page.tuneTimer
+		if deviceModel == "roku" then page.offsetY = 0 end
+	
+		getItemByName(page.items, "storyBg").selectable = true
+		getItemByName(page.items, "cutSceneBg").selectable = true
+		if settings.lp3Started ~= true then
+			getItemByName(page.items, "storyBg").selectable = false
+			getItemByName(page.items, "cutSceneBg").selectable = false
 		end
 		
 		local blueRect = getItemByName(page.items, "blueRect")
@@ -12218,7 +13162,7 @@ function prepareMenuPage(page)
 		setGameOn(true)
 	end
 	
-	if page == theme9Start then
+	if page == cutscenes.pack4_intro then
 		_G.res.stopAllAudio()
 		loadCutScenes()
 		_G.res.playAudio("birds_intro", 1, false, 7)
@@ -12255,7 +13199,7 @@ function prepareMenuPage(page)
 	end	
 	
 	--prepare
-	if page == theme12Start then
+	if page == cutscenes.pack5_intro then
 		_G.res.stopAllAudio()
 		loadCutScenes()
 		_G.res.playAudio("birds_intro", 1, false, 7)
@@ -12292,7 +13236,7 @@ function prepareMenuPage(page)
 		setGameOn(true)
 	end
 	
-	if page == theme15Start then
+	if page == cutscenes.pack6_intro then
 		_G.res.stopAllAudio()
 		loadCutScenes()
 		_G.res.playAudio("birds_intro", 1, false, 7)
@@ -12331,17 +13275,17 @@ function prepareMenuPage(page)
 	end
 	
 	--prepare
-	if page == theme2Complete or page == theme4Complete or page == theme6Complete 
-		or page == theme7Complete or page == theme9Complete or page == theme10Complete
-		or page == theme11Complete or page == theme8Complete then
+	if page == cutscenes.world2_complete or page == cutscenes.world4_complete or page == cutscenes.world6_complete 
+		or page == cutscenes.world7_complete or page == cutscenes.world9_complete or page == cutscenes.world10_complete
+		or page == cutscenes.world11_complete or page == cutscenes.world8_complete then
 		_G.res.stopAllAudio()
 		loadCutScenes()
-		if page == theme11Complete or page == theme8Complete then
+		if page == cutscenes.world11_complete or page == cutscenes.world8_complete then
 			_G.res.playAudio("birds_outro", 1, false, 7)
 		else
 			_G.res.playAudio("birds_boss", 1, false, 7)
 		end
-		if page == theme11Complete then
+		if page == cutscenes.world11_complete then
 			getItemByName(page.items, "storyKingPeak").visible = false
 			getItemByName(page.items, "storyKingWink").visible = true
 		end
@@ -12370,14 +13314,14 @@ function prepareMenuPage(page)
 	end
 	
 	--prepare
-	if page == theme12Complete then
+	if page == cutscenes.world12_complete then
 		_G.res.stopAllAudio()
 		loadCutScenes()
-		if page == theme11Complete or page == theme8Complete then
-			_G.res.playAudio("birds_outro", 1, false, 7)
-		else
+--		if page == cutscenes.world11_complete or page == cutscenes.world8_complete or page == cutscenes.world17_complete then
+--			_G.res.playAudio("birds_outro", 1, false, 7)
+--		else
 			_G.res.playAudio("birds_boss", 1, false, 7)
-		end
+--		end
 		page.timer = 3.5
 		page.offsetX = 0
 		page.animationState = "SCROLL"
@@ -12403,8 +13347,38 @@ function prepareMenuPage(page)
 			
 	end
 	
+	if page == cutscenes.world17_complete then
+		_G.res.stopAllAudio()
+		loadCutScenes()
+			_G.res.playAudio("birds_outro", 1, false, 7)
+		page.timer = 3.5
+		page.offsetX = 0
+		page.animationState = "SCROLL"
+		page.dontScroll = false
+		page.scale = false
+		page.xs, page.ys = 1, 1
+		page.tuneTimer = 1.002
+		getItemByName(page.items, "storyKingOpen").visible = false
+		
+		local bossStoryWidth, bossStoryHeight = _G.res.getSpriteBounds("", "STORY_BOSS_BG")
+		page.backgroundWidth = bossStoryWidth
+		
+		for i = 1, #page.items do
+			page.items[i].x, page.items[i].y = 0, 0
+		end
+		
+		prepareCutScene(page, page.backgroundWidth, bossStoryHeight)
+		page.offsetX = page.clipX
+		page.offsetY = (screenHeight - bossStoryHeight) / 2
+		page.cutSceneOffset = page.offsetX
+		if deviceModel == "roku" then page.offsetY = 0 end
+	
+		setGameOn(true)
+			
+	end
+	
 	--prepare
-	if page == theme13Complete then
+	if page == cutscenes.world13_complete then
 		_G.res.stopAllAudio()
 		loadCutScenes()
 		_G.res.playAudio("birds_boss", 1, false, 7)
@@ -12432,10 +13406,10 @@ function prepareMenuPage(page)
 		setGameOn(true)
 	end
 	
-	if page == theme14Complete then
+	if page == cutscenes.world14_complete then
 		_G.res.stopAllAudio()
 		loadCutScenes()
-		_G.res.playAudio("birds_boss", 1, false, 7)
+		_G.res.playAudio("birds_outro", 1, false, 7)
 		page.timer = 3.5
 		page.offsetX = 0
 		page.animationState = "SCROLL"
@@ -12443,6 +13417,7 @@ function prepareMenuPage(page)
 		page.scale = false
 		page.xs, page.ys = 1, 1
 		page.tuneTimer = 1.002
+        getItemByName(page.items, "kingEyeOpen").visible = false
 		
 		local bossStoryWidth, bossStoryHeight = _G.res.getSpriteBounds("", "STORY_BOSS_BG")
 		page.backgroundWidth = bossStoryWidth
@@ -12460,7 +13435,7 @@ function prepareMenuPage(page)
 		setGameOn(true)
 	end
 	
-	if page == theme15Complete or page == theme16Complete or page == theme17Complete then
+	if page == cutscenes.world15_complete or page == cutscenes.world16_complete then
 		_G.res.stopAllAudio()
 		loadCutScenes()
 		_G.res.playAudio("birds_boss", 1, false, 7)
@@ -12490,7 +13465,7 @@ function prepareMenuPage(page)
 	end
 	
 	if page == gameFinished or page == gameFinishedLP2 or page == gameFinishedLP3 or page == gameFinishedLP4 or page == gameFinishedLP5 or
-	   page == gameFinishedThreeStars or page == gameFinishedThreeStarsLP2 or page == gameFinishedThreeStarsLP3 or page == gameFinishedThreeStarsLP4 or page == gameFinishedThreeStarsLP5 then
+	   page == gameFinishedThreeStars or page == gameFinishedThreeStarsLP2 or page == gameFinishedThreeStarsLP3 or page == gameFinishedThreeStarsLP4 or page == gameFinishedThreeStarsLP5 or page == gameFinishedLP6 or page == gameFinishedThreeStarsLP6 then
 		page.items[4].textBoxSize = 0.56 * screenWidth
 		if page.items[4].textBoxSize > 395 then
 			page.items[4].textBoxSize = 395
@@ -12634,17 +13609,37 @@ function prepareMenuPage(page)
 	end
 	
 	if page == about then
-		local textAbout = getItemByName(page.items, "textAbout")
-		local k = 1
-		while k <= #textAbout.lines do
-			local beginIndex, endIndex = _G.string.find(textAbout.lines[k], "$GAME_VERSION")
-			if beginIndex ~= nil and beginIndex >= 1 then
-				local s = _G.string.gsub(textAbout.lines[k], "(%$GAME_VERSION)", gameVersionNumber)
-				textAbout.lines[k] = s
-			end
-			k = k + 1
+		local textAbout    = getItemByName(page.items, "textAbout")
+		local textOriginal = getItemByName(page.items, "textCreditsOriginal")
+		
+		local verStr = gameVersionNumber
+		if not releaseBuild then
+			verStr = verStr .." (".. svnRevisionNumber ..") - ".. customerString
+		end
+		
+		replaceTextOccurrences(textAbout, "$GAME_VERSION", verStr)
+		
+		if deviceModel == "roku" then
+			replaceTextOccurrences(textOriginal, "CREDITS", "ORIGINAL VERSION CREDITS")
 		end
 	end
+end
+
+function replaceTextOccurrences(textItem, what, with)
+	if textItem == nil then return end
+	_G.assert(textItem.lines ~= nil, "text item not clipped")
+	
+	local hits = {}
+	for k=1,#textItem.lines do
+		local beginIndex, endIndex = _G.string.find(textItem.lines[k], what)
+		if beginIndex ~= nil and beginIndex >= 1 then
+			_G.table.insert(hits, k)
+			if with ~= nil then
+				textItem.lines[k] = _G.string.gsub(textItem.lines[k], "(%" .. what .. ")", with)
+			end
+		end
+	end
+	return hits -- return an array containing the lines that had the text searched for
 end
 
 function setLevelButtonLocked(page, i)
@@ -12744,7 +13739,7 @@ function recalculateLevelFailedPositions(levelFailedPage, boxWidthIncrease)
 	-- each cutscene has it's own button
 	--for i = 1, 11 do
 		
-	for i = 1, 17 do
+	for i = 1, 1 do
 		local tempButton = getItemByName(levelFailedPage.items, "buttonCutscene" .. i)
 		tempButton.x, tempButton.y = buttonNextLevel.x, buttonNextLevel.y
 		prepareItemForMouseScalingStates(tempButton)
@@ -12811,14 +13806,14 @@ function prepareCutSceneDefault(page, storyWidth, storyHeight)
 			end
 		end
 		page.clipX = (screenWidth - 1024) / 2
-		page.clipY = 0
+		page.clipY = page.clipY or 0
 		page.clipW = 1024
-		page.clipH = screenHeight
+		page.clipH = page.clipH or screenHeight
 	else
 		page.clipX = 0
-		page.clipY = 0
+		page.clipY = page.clipY or 0
 		page.clipW = screenWidth
-		page.clipH = screenHeight
+		page.clipH = page.clipH or screenHeight
 	end
 	
 	page.scrollSpeed = -(1024 - page.backgroundWidth) / page.tuneTimer
@@ -13059,12 +14054,12 @@ end
 
 function gotoLevelSelection(dt)
 	setGameMode(updateMenu)
-	levelSelectionPages = levelSelectionPagesBasic
-	if levelSelectionPagesBasic.currentPage ~= settings.currentLevelSelectionPages.basic then
+	levelSelectionPages = episodes[1]
+	if episodes[1].currentPage ~= settings.currentLevelSelectionPages.basic then
 		levelSelectionScrollStartTimer = 0.5
-		levelSelectionPagesBasic.currentPage = settings.currentLevelSelectionPages.basic
+		episodes[1].currentPage = settings.currentLevelSelectionPages.basic
 	end
-	setActiveMenuPage(levelSelectionPagesBasic)
+	setActiveMenuPage(episodes[1])
 	
 	drawMenu()
 	releaseCutScenes()
@@ -13075,12 +14070,12 @@ end
 
 function gotoLevelSelectionExtra(dt)
 	setGameMode(updateMenu)
-	levelSelectionPages = levelSelectionPagesExtra
-	if levelSelectionPagesExtra.currentPage ~= settings.currentLevelSelectionPages.extra then
+	levelSelectionPages = episodes[2]
+	if episodes[2].currentPage ~= settings.currentLevelSelectionPages.extra then
 		levelSelectionScrollStartTimer = 0.5
-		levelSelectionPagesExtra.currentPage = settings.currentLevelSelectionPages.extra
+		episodes[2].currentPage = settings.currentLevelSelectionPages.extra
 	end
-	setActiveMenuPage(levelSelectionPagesExtra)
+	setActiveMenuPage(episodes[2])
 
 	drawMenu()
 	releaseCutScenes()
@@ -13098,12 +14093,12 @@ end
 
 function gotoLevelSelectionPack3(dt)
 	setGameMode(updateMenu)
-	levelSelectionPages = levelSelectionPagesPack3
-	if levelSelectionPagesPack3.currentPage ~= settings.currentLevelSelectionPages.pack3 then
+	levelSelectionPages = episodes[3]
+	if episodes[3].currentPage ~= settings.currentLevelSelectionPages.pack3 then
 		levelSelectionScrollStartTimer = 0.5
-		levelSelectionPagesPack3.currentPage = settings.currentLevelSelectionPages.pack3
+		episodes[3].currentPage = settings.currentLevelSelectionPages.pack3
 	end
-	setActiveMenuPage(levelSelectionPagesPack3)
+	setActiveMenuPage(episodes[3])
 
 	drawMenu()
 	releaseCutScenes()
@@ -13117,12 +14112,12 @@ end
 
 function gotoLevelSelectionPack4(dt)
 	setGameMode(updateMenu)
-	levelSelectionPages = levelSelectionPagesPack4
-	if levelSelectionPagesPack4.currentPage ~= settings.currentLevelSelectionPages.pack4 then
+	levelSelectionPages = episodes[4]
+	if episodes[4].currentPage ~= settings.currentLevelSelectionPages.pack4 then
 		levelSelectionScrollStartTimer = 0.5
-		levelSelectionPagesPack4.currentPage = settings.currentLevelSelectionPages.pack4
+		episodes[4].currentPage = settings.currentLevelSelectionPages.pack4
 	end
-	setActiveMenuPage(levelSelectionPagesPack4)
+	setActiveMenuPage(episodes[4])
 
 	drawMenu()
 	releaseCutScenes()
@@ -13133,12 +14128,12 @@ end
 
 function gotoLevelSelectionPack5(dt)
 	setGameMode(updateMenu)
-	levelSelectionPages = levelSelectionPagesPack5
-	if levelSelectionPagesPack5.currentPage ~= settings.currentLevelSelectionPages.pack5 then
+	levelSelectionPages = episodes[5]
+	if episodes[5].currentPage ~= settings.currentLevelSelectionPages.pack5 then
 		levelSelectionScrollStartTimer = 0.5
-		levelSelectionPagesPack5.currentPage = settings.currentLevelSelectionPages.pack5
+		episodes[5].currentPage = settings.currentLevelSelectionPages.pack5
 	end
-	setActiveMenuPage(levelSelectionPagesPack5)
+	setActiveMenuPage(episodes[5])
 
 	drawMenu()
 	releaseCutScenes()
@@ -13149,12 +14144,12 @@ end
 
 function gotoLevelSelectionPack6(dt)
 	setGameMode(updateMenu)
-	levelSelectionPages = levelSelectionPagesPack6
-	if levelSelectionPagesPack6.currentPage ~= settings.currentLevelSelectionPages.pack6 then
+	levelSelectionPages = episodes[6]
+	if episodes[6].currentPage ~= settings.currentLevelSelectionPages.pack6 then
 		levelSelectionScrollStartTimer = 0.5
-		levelSelectionPagesPack6.currentPage = settings.currentLevelSelectionPages.pack6
+		episodes[6].currentPage = settings.currentLevelSelectionPages.pack6
 	end
-	setActiveMenuPage(levelSelectionPagesPack6)
+	setActiveMenuPage(episodes[6])
 
 	drawMenu()
 	releaseCutScenes()
@@ -13168,29 +14163,29 @@ function gotoABShop()
 	setActiveMenuPage(episodeSelectionPage, true)	
 	drawMenu()
 	logFlurryEvent("ABshop link clicked")
-	openURL(ABSHOP_URL)
+	openURL(BOTO_URL)
 end
 
 function loadPreviousLevel(dt)
 	drawGame()
 	drawMenu()
-	if  levelSelectionPages == levelSelectionPagesBasic or levelSelectionPages == levelSelectionPagesExtra or levelSelectionPages == levelSelectionPagesPack3 or levelSelectionPages == levelSelectionPagesPack4 or levelSelectionPages == levelSelectionPagesPack5 or levelSelectionPages == levelSelectionPagesPack6 then
+	if  isLevelSelection(levelSelectionPages) then
 		if currentLevelNumberInTheme <= 1 then
 			levelSelectionPages.currentPage = levelSelectionPages.currentPage - 1
 			if levelSelectionPages.currentPage <= 0 then
-				if levelSelectionPages == levelSelectionPagesBasic then
+				if levelSelectionPages == episodes[1] then
 					levelSelectionPages.currentPage = 1
 				else
-					if levelSelectionPages == levelSelectionPagesExtra then
-						levelSelectionPages = levelSelectionPagesBasic
-					elseif levelSelectionPages == levelSelectionPagesPack3 then
-						levelSelectionPages = levelSelectionPagesExtra
-					elseif levelSelectionPages == levelSelectionPagesPack4 then
-						levelSelectionPages = levelSelectionPagesPack3
-					elseif levelSelectionPages == levelSelectionPagesPack5 then
-						levelSelectionPages = levelSelectionPagesPack4
-					elseif levelSelectionPages == levelSelectionPagesPack6 then
-						levelSelectionPages = levelSelectionPagesPack5
+					if levelSelectionPages == episodes[2] then
+						levelSelectionPages = episodes[1]
+					elseif levelSelectionPages == episodes[3] then
+						levelSelectionPages = episodes[2]
+					elseif levelSelectionPages == episodes[4] then
+						levelSelectionPages = episodes[3]
+					elseif levelSelectionPages == episodes[5] then
+						levelSelectionPages = episodes[4]
+					elseif levelSelectionPages == episodes[6] then
+						levelSelectionPages = episodes[5]
 					end
 					levelSelectionPages.currentPage = levelSelectionPages.pageCount
 					currentLevelNumberInTheme = levelSelectionPages.levelsPerPage
@@ -13224,7 +14219,7 @@ function loadNextLevel(dt)
 
 	
 	
-	local t_lockedLevel = ((currentLevelNumberInTheme) == levelSelectionPages.levelsPerPage) and (levelSelectionPages == levelSelectionPagesBasic)
+	local t_lockedLevel = ((currentLevelNumberInTheme) == levelSelectionPages.levelsPerPage) and (levelSelectionPages == episodes[1])
 	
 	if deviceModel == "windows" and g_registrationEnabled == true and g_isGameUnlocked == false and t_lockedLevel == true then	
 		-- local buttonNextLevel = getItemByName(levelComplete.items, "buttonNextLevel")
@@ -13259,23 +14254,25 @@ function loadNextLevel(dt)
 	
 	--drawGame()
 	--drawMenu()
-	if levelSelectionPages == levelSelectionPagesBasic or levelSelectionPages == levelSelectionPagesExtra or levelSelectionPages == levelSelectionPagesPack3 or levelSelectionPages == levelSelectionPagesPack4 or levelSelectionPages == levelSelectionPagesPack5 or levelSelectionPages == levelSelectionPagesPack6 then
-		if currentLevelNumberInTheme >= levelSelectionPages.levelsPerPage then
+	local amount = levelSelectionPages.themes[currentWorldNumber].amount
+
+	if isLevelSelection(levelSelectionPages) then
+		if currentLevelNumberInTheme >= levelSelectionPages.themes[currentWorldNumber].amount then
 			levelSelectionPages.currentPage = levelSelectionPages.currentPage + 1
 			if levelSelectionPages.currentPage > levelSelectionPages.pageCount then
-				if levelSelectionPages == levelSelectionPagesPack6 then
+				if levelSelectionPages == episodes[6] then
 					levelSelectionPages.currentPage = levelSelectionPages.pageCount
 				else
-					if levelSelectionPages == levelSelectionPagesBasic then
-						levelSelectionPages = levelSelectionPagesExtra
-					elseif levelSelectionPages == levelSelectionPagesExtra then
-						levelSelectionPages = levelSelectionPagesPack3
-					elseif levelSelectionPages == levelSelectionPagesPack3 then
-						levelSelectionPages = levelSelectionPagesPack4	
-					elseif levelSelectionPages == levelSelectionPagesPack4 then
-						levelSelectionPages = levelSelectionPagesPack5	
-					elseif levelSelectionPages == levelSelectionPagesPack5 then
-						levelSelectionPages = levelSelectionPagesPack6
+					if levelSelectionPages == episodes[1] then
+						levelSelectionPages = episodes[2]
+					elseif levelSelectionPages == episodes[2] then
+						levelSelectionPages = episodes[3]
+					elseif levelSelectionPages == episodes[3] then
+						levelSelectionPages = episodes[4]	
+					elseif levelSelectionPages == episodes[4] then
+						levelSelectionPages = episodes[5]	
+					elseif levelSelectionPages == episodes[5] then
+						levelSelectionPages = episodes[6]
 					end
 					levelSelectionPages.currentPage = 1
 					currentLevelNumberInTheme = 1
@@ -13303,9 +14300,9 @@ function loadNextLevel(dt)
 		--print("FlurryEventWithParam: Level started, Level, " .. currentWorldNumber .. "-" ..currentLevelNumberInTheme .. "\n")
 		--logEvent("level_started", "COMPLETED_MENU", currentWorldNumber, currentLevelNumberInTheme, nil, numberOfAttemptsInLevel, 0, "", "")
 		
-		local index = (levelSelectionPages.currentPage - 1) * levelSelectionPages.levelsPerPage + levelSelectionPages.firstLevelIndex
-		levelName = levelSelectionPages.items[currentLevelNumberInTheme + index - 1].filename
-		levelFolder = levelSelectionPages.items[currentLevelNumberInTheme + index - 1].folder
+		-- local index = (levelSelectionPages.currentPage - 1) * amount + levelSelectionPages.firstLevelIndex
+		levelName = levelSelectionPages.items[currentLevelNumber + levelSelectionPages.firstLevelIndex - 1].filename
+		levelFolder = levelSelectionPages.items[currentLevelNumber + levelSelectionPages.firstLevelIndex - 1].folder
 	end
 	
 	levelRestartedFrom = nil
@@ -13317,8 +14314,8 @@ function hasLevelPack1()
 	if isLiteVersion then
 		return false
 	else
-		local index = levelSelectionPagesBasic.levelsPerPage + levelSelectionPagesBasic.firstLevelIndex
-		return checkForLuaFile(levelSelectionPagesBasic.items[index].folder .. levelSelectionPagesBasic.items[index].filename .. ".lua")
+		local index = episodes[1].firstLevelIndex
+		return checkForLuaFile(episodes[1].items[index].folder .. episodes[1].items[index].filename .. ".lua")
 	end
 end
 
@@ -13326,8 +14323,8 @@ function hasLevelPack2()
 	if isLiteVersion then
 		return false
 	else
-		local index = levelSelectionPagesExtra.firstLevelIndex
-		return checkForLuaFile(levelSelectionPagesExtra.items[index].folder .. levelSelectionPagesExtra.items[index].filename .. ".lua")
+		local index = episodes[2].firstLevelIndex
+		return checkForLuaFile(episodes[2].items[index].folder .. episodes[2].items[index].filename .. ".lua")
 	end
 end
 
@@ -13335,8 +14332,8 @@ function hasLevelPack3()
 	if isLiteVersion then
 		return false
 	else
-		local index = levelSelectionPagesPack3.firstLevelIndex
-		return checkForLuaFile(levelSelectionPagesPack3.items[index].folder .. levelSelectionPagesPack3.items[index].filename .. ".lua")
+		local index = episodes[3].firstLevelIndex
+		return checkForLuaFile(episodes[3].items[index].folder .. episodes[3].items[index].filename .. ".lua")
 	end
 end
 
@@ -13344,8 +14341,8 @@ function hasLevelPack4()
 	if isLiteVersion then
 		return false
 	else
-		local index = levelSelectionPagesPack4.firstLevelIndex
-		return checkForLuaFile(levelSelectionPagesPack4.items[index].folder .. levelSelectionPagesPack4.items[index].filename .. ".lua")
+		local index = episodes[4].firstLevelIndex
+		return checkForLuaFile(episodes[4].items[index].folder .. episodes[4].items[index].filename .. ".lua")
 	end
 end
 
@@ -13353,8 +14350,8 @@ function hasLevelPack5()
 	if isLiteVersion then
 		return false
 	else
-		local index = levelSelectionPagesPack5.firstLevelIndex
-		return checkForLuaFile(levelSelectionPagesPack5.items[index].folder .. levelSelectionPagesPack5.items[index].filename .. ".lua")
+		local index = episodes[5].firstLevelIndex
+		return checkForLuaFile(episodes[5].items[index].folder .. episodes[5].items[index].filename .. ".lua")
 	end
 end
 
@@ -13362,8 +14359,8 @@ function hasLevelPack6()
 	if isLiteVersion then
 		return false
 	else
-		local index = levelSelectionPagesPack6.firstLevelIndex
-		return checkForLuaFile(levelSelectionPagesPack6.items[index].folder .. levelSelectionPagesPack6.items[index].filename .. ".lua")
+		local index = episodes[6].firstLevelIndex
+		return checkForLuaFile(episodes[6].items[index].folder .. episodes[6].items[index].filename .. ".lua")
 	end
 end
 
@@ -13373,6 +14370,7 @@ function showLeftMenu(dt)
 	if isLiteVersion or settings.openGoldenEggLevels["Level5"] ~= nil then
 		about.items[9].sprite = "ABOUT_BIRDS_3"
 		about.items[9].callFunction = nil
+		about.items[9].selectable = false
 	else
 		loadGoldenEggSprites()
 		about.items[9].sprite = "GOLDEN_EGG_5"
@@ -13635,10 +14633,7 @@ function changeAudio()
 		getItemByName(mainMenu.items, "buttonOff").visible = false
 		settings.audioEnabled = true
 		_G.res.startAudioOutput()
-		 if currentGameMode == updateMenu and _G.res.isAudioPlaying("title_theme") == false and (currentMenuPage and currentMenuPage == levelSelectionPagesBasic 
-		   or currentMenuPage == levelSelectionPagesExtra or currentMenuPage == levelSelectionPagesPack3
-		   or currentMenuPage == levelSelectionPagesPack4 or currentMenuPage == levelSelectionPagesPack5
-		   or currentMenuPage == levelSelectionPagesPack6
+		 if currentGameMode == updateMenu and _G.res.isAudioPlaying("title_theme") == false and (currentMenuPage and isLevelSelection(currentMenuPage)
 		   or (levelSelectionPagesGoldenEggs and currentMenuPage == levelSelectionPagesGoldenEggs[1])
 		   or currentMenuPage == mainMenu or currentMenuPage == episodeSelectionPage) then
 			 _G.res.playAudio("title_theme", 0.8, true, 7)
@@ -13647,45 +14642,50 @@ function changeAudio()
 	saveLuaFileWrapper("settings.lua", "settings", true)
 end
 
+function isLevelSelection(page)
+	for i,v in _G.ipairs(episodes)do if page == v then return true end end
+	return false
+end
+
 function gotoFirstLevel()
 	setGameMode(updateGame)
 	_G.res.stopAllAudio()
-	handleGameModeChange(levelSelectionPagesBasic, levelSelectionPagesBasic.firstLevelIndex)
+	handleGameModeChange(episodes[1], episodes[1].firstLevelIndex)
 	drawMenu()	
 end
 
 function gotoFirstLevelLP2()
 	setGameMode(updateGame)
 	_G.res.stopAllAudio()
-	handleGameModeChange(levelSelectionPagesExtra, levelSelectionPagesExtra.firstLevelIndex)
+	handleGameModeChange(episodes[2], episodes[2].firstLevelIndex)
 	drawMenu()
 end
 
 function gotoFirstLevelLP3()
 	setGameMode(updateGame)
 	_G.res.stopAllAudio()
-	handleGameModeChange(levelSelectionPagesPack3, levelSelectionPagesPack3.firstLevelIndex)
+	handleGameModeChange(episodes[3], episodes[3].firstLevelIndex)
 	drawMenu()
 end
 
 function gotoFirstLevelLP4()
 	setGameMode(updateGame)
 	_G.res.stopAllAudio()
-	handleGameModeChange(levelSelectionPagesPack4, levelSelectionPagesPack4.firstLevelIndex)
+	handleGameModeChange(episodes[4], episodes[4].firstLevelIndex)
 	drawMenu()
 end
 
 function gotoFirstLevelLP5()
 	setGameMode(updateGame)
 	_G.res.stopAllAudio()
-	handleGameModeChange(levelSelectionPagesPack5, levelSelectionPagesPack5.firstLevelIndex)
+	handleGameModeChange(episodes[5], episodes[5].firstLevelIndex)
 	drawMenu()
 end
 
 function gotoFirstLevelLP6()
 	setGameMode(updateGame)
 	_G.res.stopAllAudio()
-	handleGameModeChange(levelSelectionPagesPack6, levelSelectionPagesPack6.firstLevelIndex)
+	handleGameModeChange(episodes[6], episodes[6].firstLevelIndex)
 	drawMenu()
 end
 
@@ -13796,6 +14796,9 @@ function showTutorials()
 	end
 	if settings.tutorials["BAIT_SARDINE"] ~= nil then
 		_G.table.insert(birdTutorialPopups, settings.tutorials["BAIT_SARDINE"].sprite)
+	end
+	if settings.tutorials["BIRD_PUFFER"] ~= nil then
+		_G.table.insert(birdTutorialPopups, settings.tutorials["BIRD_PUFFER"].sprite)
 	end
 	
 	if deviceModel ~= "roku" then
@@ -13912,7 +14915,8 @@ function animateBirds(dt)
 				birdAnimations[i].renderState = true
 				if SpriteItem.checkBounds(birdAnimations[i], cursor.x, cursor.y) 
 				   and birdAnimations[i].yelling ~= true 
-				   and _G.string.sub(birdAnimations[i].sprite, 1, 4) == "BIRD" then
+				   and _G.string.sub(birdAnimations[i].sprite, 1, 4) == "BIRD"
+				   and birdSpriteSoundMapping[birdAnimations[i].sprite] then
 					birdAnimations[i].yelling = true
 					_G.res.playAudio(birdSpriteSoundMapping[birdAnimations[i].sprite], 1.0, false, 0)
 					birdAnimations[i].sprite = birdAnimations[i].sprite .. "_YELL"
@@ -14017,9 +15021,11 @@ end
 function drawSpriteBasedOnRatios(x, y, xs, ys, spriteSheet, spriteName)
 	
 	setRenderState(x, y, xs, ys, 0)
-	_G.res.drawSprite("", spriteName, 0, 0)
+	_G.res.drawSprite(spriteName, 0, 0)
 	
 end
+
+
 
 -------------------------------------------------------------------------------
 
@@ -14081,7 +15087,7 @@ function drawMenu()
 				if v.layer == 3  then
 					local scale = v.scale * g_birdAnimationScaleMultipliers[v.layer]
 					setRenderState(0, 0, scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
-					_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale - screenHeight * 0.2 / scale))
+					_G.res.drawSprite(v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale - screenHeight * 0.2 / scale))
 				end
 			end	
 			
@@ -14090,7 +15096,7 @@ function drawMenu()
 				if v.layer == 4 then
 					local scale = v.scale  * g_birdAnimationScaleMultipliers[v.layer]
 					setRenderState(0, 0, scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
-					_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale - screenHeight * 0.125 / scale))
+					_G.res.drawSprite(v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale - screenHeight * 0.125 / scale))
 				end
 			end		
 			
@@ -14099,7 +15105,7 @@ function drawMenu()
 				if v.layer == 5 then
 					local scale = v.scale  * g_birdAnimationScaleMultipliers[v.layer]
 					setRenderState(0, 0,scale, scale, v.angle, _G.res.getSpritePivot(v.sheet, v.sprite))
-					_G.res.drawSprite("", v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale))
+					_G.res.drawSprite(v.sprite, _G.math.floor(v.x/scale), _G.math.floor(v.y/scale))
 				end
 			end		
 			
@@ -14129,9 +15135,9 @@ function drawMenu()
 		drawMenuPage(currentMenuPage)
 		local newHighScore = getItemByName(currentMenuPage.items, "newHighScore")
 		if newHighScore.visible == true and inExtraWorld ~= true then
-			local spriteName = _G.res.getString("TEXTS_BASIC", "TEXT_HIGHSCORE_SPRITE")
+			local spriteName = "NEW_HIGHSCORE_EN"
 			setRenderState(0, 0, 1, 1, 0.471238898, _G.res.getSpritePivot("", spriteName))
-			_G.res.drawSprite("", spriteName, newHighScore.x+2, newHighScore.y-2)
+			_G.res.drawSprite(spriteName, newHighScore.x+2, newHighScore.y-2)
 			setRenderState(0, 0, 1, 1, 0, 0, 0)
 		end
 		
@@ -14220,7 +15226,7 @@ function drawMenuPage(page)
 				w, h = _G.res.getSpriteBounds("", page.backgroundOverlay.sprite)
 				for y = 0, screenHeight/h do
 					for x = 0, screenWidth/w do
-						_G.res.drawSprite("", page.backgroundOverlay.sprite, _G.math.floor(x*w), _G.math.floor(y*h))
+						_G.res.drawSprite(page.backgroundOverlay.sprite, _G.math.floor(x*w), _G.math.floor(y*h))
 					end
 				end
 			end
@@ -14278,7 +15284,7 @@ function drawMenuBackground(page)
 	elseif page.backgroundSprite ~= nil then
 		if page.backgroundSprite.scale and page.backgroundSprite.xs and page.backgroundSprite.ys then
 			setRenderState(0, 0, page.backgroundSprite.xs, page.backgroundSprite.ys, 0)
-			_G.res.drawSprite("", page.backgroundSprite.name, _G.math.floor(page.backgroundSprite.x) / page.backgroundSprite.xs, _G.math.floor(page.backgroundSprite.y) / page.backgroundSprite.ys)
+			_G.res.drawSprite(page.backgroundSprite.name, _G.math.floor(page.backgroundSprite.x) / page.backgroundSprite.xs, _G.math.floor(page.backgroundSprite.y) / page.backgroundSprite.ys)
 			setRenderState(0, 0, 1, 1, 0)
 		else
 			local sx, sy = 0, 0
@@ -14293,7 +15299,7 @@ function drawMenuBackground(page)
 			local x, y = offsetCoordinates(page, sx, sy)
 				
 			setRenderState(0, 0, 1, 1, 0)
-			_G.res.drawSprite("", page.backgroundSprite.name, _G.math.floor(x), _G.math.floor(y))
+			_G.res.drawSprite(page.backgroundSprite.name, _G.math.floor(x), _G.math.floor(y))
 		end
 	end
 	
@@ -14344,13 +15350,13 @@ function drawMenuTitle(page)
 	end
 
 	if title.sprite ~= nil then
-		_G.res.drawSprite("", title.sprite, _G.math.floor(x), _G.math.floor(y))
+		_G.res.drawSprite(title.sprite, _G.math.floor(x), _G.math.floor(y))
 	end
 end
 
 function drawMenuItems(page)
 
-	if (page == levelSelectionPagesBasic or page == levelSelectionPagesExtra or page == levelSelectionPagesPack3 or page == levelSelectionPagesPack4 or page == levelSelectionPagesPack5 or page == levelSelectionPagesPack6) then
+	if (isLevelSelection(page)) then
 		return drawLevelSelectionItems(page)
 	end
 	
@@ -14369,7 +15375,7 @@ function drawMenuItems(page)
 		setRenderState(0, 0, 1, 1, goldenEggsStarEffectAngle, _G.res.getSpritePivot("", "GOLDEN_EGG_STAR_EFFECT"))
 		for i = 1, page.levelCount do
 			if settings.openGoldenEggLevels["Level" .. i] == 0 then
-				_G.res.drawSprite("", "GOLDEN_EGG_STAR_EFFECT", page.items[levelSelectionPagesGoldenEggs[1].firstLevelIndex - 1 + i].x, page.items[levelSelectionPagesGoldenEggs[1].firstLevelIndex - 1 + i].y)
+				_G.res.drawSprite("GOLDEN_EGG_STAR_EFFECT", page.items[levelSelectionPagesGoldenEggs[1].firstLevelIndex - 1 + i].x, page.items[levelSelectionPagesGoldenEggs[1].firstLevelIndex - 1 + i].y)
 			end
 		end
 		setRenderState(0, 0, 1, 1, 0)
@@ -14378,27 +15384,27 @@ function drawMenuItems(page)
 	if page == goldenEggAchievedPage and page.items[1].visible == true then
 		local starEffectSprite = "GOLDEN_EGG_STAR_EFFECT"
 		setRenderState(0, 0, 1, 1, page.items[1].angle, _G.res.getSpritePivot("", starEffectSprite))
-		_G.res.drawSprite("", starEffectSprite, page.items[1].x, page.items[1].y)
+		_G.res.drawSprite(starEffectSprite, page.items[1].x, page.items[1].y)
 		setRenderState(0, 0, 1, 1, 0)
 	end
 	
 	if page == boomerangBirdAchievedPage and page.items[1].visible == true then
 		local starEffectSprite = "GOLDEN_EGG_STAR_EFFECT"
 		setRenderState(0, 0, 1, 1, page.items[1].angle, _G.res.getSpritePivot("", starEffectSprite))
-		_G.res.drawSprite("", starEffectSprite, page.items[1].x, page.items[1].y)
+		_G.res.drawSprite(starEffectSprite, page.items[1].x, page.items[1].y)
 		setRenderState(0, 0, 1, 1, 0)
 	end
 	
 	if page == mightyEaglePaymentPage and page.items[3].angle < 1080 then		
 		setRenderState(0, 0, 1, 1, page.items[3].angle, _G.res.getSpritePivot("", page.items[3].sprite))
-		_G.res.drawSprite("", page.items[3].sprite, page.items[3].x, page.items[3].y)
+		_G.res.drawSprite(page.items[3].sprite, page.items[3].x, page.items[3].y)
 		setRenderState(0, 0, 1, 1, 0)
 	end
 	
 	if page == goldenEggStarAchievedPage and page.items[1].visible == true and page.items[2].visible == true then
 		local starEffectSprite = "GOLDEN_EGG_STAR_EFFECT"
 		setRenderState(0, 0, 1, 1, page.items[1].angle, _G.res.getSpritePivot("", starEffectSprite))
-		_G.res.drawSprite("", starEffectSprite, page.items[1].x, page.items[1].y)
+		_G.res.drawSprite(starEffectSprite, page.items[1].x, page.items[1].y)
 		setRenderState(0, 0, 1, 1, 0)
 	end
 	
@@ -14524,15 +15530,15 @@ function drawMouseScalingItem(sheet,item, x, y)
 		
 		
 		if item.mouseState == "up" then
-			_G.res.drawSprite("", item.spriteUp.sprite, 0, 0)
+			_G.res.drawSprite(item.spriteUp.sprite, 0, 0)
 		elseif item.mouseState == "down" then
-			_G.res.drawSprite("", item.spriteDown.sprite, 0, 0)
+			_G.res.drawSprite(item.spriteDown.sprite, 0, 0)
 		elseif item.mouseState == "over" then
-			_G.res.drawSprite("", item.spriteOver.sprite, 0, 0)
+			_G.res.drawSprite(item.spriteOver.sprite, 0, 0)
 		elseif item.mouseState == "overIn" then
-			_G.res.drawSprite("", item.spriteOver.sprite, 0, 0)
+			_G.res.drawSprite(item.spriteOver.sprite, 0, 0)
 		elseif item.mouseState == "overOut" then
-			_G.res.drawSprite("", item.spriteUp.sprite, 0, 0)
+			_G.res.drawSprite(item.spriteUp.sprite, 0, 0)
 		end
 		
 			
@@ -14596,10 +15602,10 @@ function drawMouseScalingItem(sheet,item, x, y)
 		--setRenderState(_G.math.floor(t_finalX), _G.math.floor(t_finalY), t_itemXS, t_itemYS)
 		if item.scaleText == true and item.text ~= nil then		
 			setFont(item.font)
-			_G.res.drawString("", item.text, 0,0, "HCENTER", "BOTTOM")				
+			_G.res.drawString("", item.text, 0,0, "HCENTER", item.vanchor or "BOTTOM")				
 		else
 			
-			_G.res.drawSprite("", item.sprite, 0, 0)
+			_G.res.drawSprite(item.sprite, 0, 0)
 		end
 		setRenderState(0, 0, 1, 1)	
 		
@@ -14648,11 +15654,11 @@ function drawMenuItem(page, item, x, y, drawSprites, drawText)
 				if ci.useRelativePositioning ~= nil then
 					--ignoring the pages scaling
 					setRenderState(_G.math.floor(x), _G.math.floor(y), ci.xs, ci.ys)
-					_G.res.drawSprite("", ci.sprite, 0,0)
+					_G.res.drawSprite(ci.sprite, 0,0)
 					setRenderState(0, 0, 1, 1)
 				else
 					setRenderState(0, 0, page.xs, page.ys)
-					_G.res.drawSprite("", ci.sprite, _G.math.floor(x) / page.xs, _G.math.floor(y) / page.ys)
+					_G.res.drawSprite(ci.sprite, _G.math.floor(x) / page.xs, _G.math.floor(y) / page.ys)
 					setRenderState(0, 0, 1, 1)		
 				end
 			else	
@@ -14681,20 +15687,21 @@ function drawMenuItem(page, item, x, y, drawSprites, drawText)
 					
 					elseif ci.useRelativePositioning ~= nil then	
 						setRenderState(_G.math.floor(x), _G.math.floor(y), ci.xs, ci.ys)
-						_G.res.drawSprite("", ci.sprite, 0,0)
+						_G.res.drawSprite(ci.sprite, 0,0)
 						setRenderState(0, 0, 1, 1)
 					elseif ci.scale then
 						setRenderState(_G.math.floor(x) / ci.xs, _G.math.floor(y) / ci.ys, ci.xs, ci.ys)
-						_G.res.drawSprite("", ci.sprite, 0, 0)
+						_G.res.drawSprite(ci.sprite, 0, 0)
 						setRenderState(0, 0, 1, 1)
 					elseif ci.rectangle then
+						setRenderState(0,0,1,1)
 						drawRect(ci.color.red, ci.color.green, ci.color.blue, 1.0, _G.math.floor(x), _G.math.floor(y), _G.math.floor(ci.width + x), _G.math.floor(ci.height + y), false)
 					elseif ci.clip then
 						_G.res.setClipRect(page.clipX, page.clipY, page.clipW, page.clipH)
-						_G.res.drawSprite("", ci.sprite, _G.math.floor(x), _G.math.floor(y))
+						_G.res.drawSprite(ci.sprite, _G.math.floor(x), _G.math.floor(y))
 						_G.res.setClipRect(0, 0, screenWidth, screenHeight)
 					else
-						_G.res.drawSprite("", ci.sprite, _G.math.floor(x), _G.math.floor(y))
+						_G.res.drawSprite(ci.sprite, _G.math.floor(x), _G.math.floor(y))
 					end
 				end
 			end
@@ -14784,7 +15791,7 @@ function drawLevelSelectionItems(page)
 	local t_visibleAreaOverlayOffsetY = g_levelSelectionClippingArea.offsetY
 	local t_overlay = getItemByName(page.items, "scrollAreaOverlay")
 	--draws the overlay behind all items
-	_G.res.drawSprite("", t_overlay.sprite, g_levelSelectionClippingArea.x - t_visibleAreaOverlayOffsetX, g_levelSelectionClippingArea.y - t_visibleAreaOverlayOffsetY, "LEFT", "TOP", g_levelSelectionClippingArea.width + (t_visibleAreaOverlayOffsetX*2), g_levelSelectionClippingArea.height + (t_visibleAreaOverlayOffsetY*2))					
+	_G.res.drawSprite(t_overlay.sprite, g_levelSelectionClippingArea.x - t_visibleAreaOverlayOffsetX, g_levelSelectionClippingArea.y - t_visibleAreaOverlayOffsetY, "LEFT", "TOP", g_levelSelectionClippingArea.width + (t_visibleAreaOverlayOffsetX*2), g_levelSelectionClippingArea.height + (t_visibleAreaOverlayOffsetY*2))					
 	
 	--those values were found by measuring themockup
 	--local t_clipW = (1543 / 1920) * screenWidth - (378 / 1920) * screenWidth
@@ -14820,23 +15827,23 @@ function drawLevelSelectionItems(page)
 				if ci.name == "scrollAreaOverlay" then
 					
 					--setRenderState(0, 0, 1, 1, 0)
-					--_G.res.drawSprite("", ci.sprite, g_levelSelectionButtonsVisibleAreaX - t_visibleAreaOverlayOffset, g_levelSelectionButtonsVisibleAreaY - t_visibleAreaOverlayOffset, "LEFT", "TOP", g_levelSelectionButtonsVisibleAreaW + (t_visibleAreaOverlayOffset*2), g_levelSelectionButtonsVisibleAreaH + (t_visibleAreaOverlayOffset*2))					
+					--_G.res.drawSprite(ci.sprite, g_levelSelectionButtonsVisibleAreaX - t_visibleAreaOverlayOffset, g_levelSelectionButtonsVisibleAreaY - t_visibleAreaOverlayOffset, "LEFT", "TOP", g_levelSelectionButtonsVisibleAreaW + (t_visibleAreaOverlayOffset*2), g_levelSelectionButtonsVisibleAreaH + (t_visibleAreaOverlayOffset*2))					
 				elseif ci.name == "leftNavigation" then
 					if page.currentPage > 1 then
-						--_G.res.drawSprite("", ci.sprite, _G.math.floor(ci.x), _G.math.floor(ci.y))
+						--_G.res.drawSprite(ci.sprite, _G.math.floor(ci.x), _G.math.floor(ci.y))
 						--mouse over scaling
 						if ci.mouseState ~= nil then
 							
 							drawMouseScalingItem(sheet,ci, ci.x, ci.y)
 							
 						else
-							_G.res.drawSprite("", ci.sprite, _G.math.floor(ci.x), _G.math.floor(ci.y))
+							_G.res.drawSprite(ci.sprite, _G.math.floor(ci.x), _G.math.floor(ci.y))
 						end
 					end
 				elseif ci.name == "rightNavigation" then
 					if page.currentPage < page.pageCount then
 						
-						--_G.res.drawSprite("", ci.sprite, _G.math.floor(ci.x), _G.math.floor(ci.y))
+						--_G.res.drawSprite(ci.sprite, _G.math.floor(ci.x), _G.math.floor(ci.y))
 							
 						--mouse over scaling
 						if ci.mouseState ~= nil then
@@ -14844,30 +15851,46 @@ function drawLevelSelectionItems(page)
 							drawMouseScalingItem(sheet,ci, ci.x, ci.y)
 							
 						else
-							_G.res.drawSprite("", ci.sprite, _G.math.floor(ci.x), _G.math.floor(ci.y))
+							_G.res.drawSprite(ci.sprite, _G.math.floor(ci.x), _G.math.floor(ci.y))
 						end
 						
 						
 						
 					end
 				else
-					--_G.res.drawSprite("", ci.sprite, _G.math.floor(ci.x), _G.math.floor(ci.y))
+					--_G.res.drawSprite(ci.sprite, _G.math.floor(ci.x), _G.math.floor(ci.y))
 					if ci.mouseState ~= nil then							
 						drawMouseScalingItem(sheet,ci, ci.x, ci.y)						
 					else
-						_G.res.drawSprite("", ci.sprite, _G.math.floor(ci.x), _G.math.floor(ci.y))
+						_G.res.drawSprite(ci.sprite, _G.math.floor(ci.x), _G.math.floor(ci.y))
 					end
 						
 				end
 				
 				
-				if settings.mightyEagleEnabled then
-					for k, v in _G.pairs(settings.eaglesUsedIn) do
-						if v.world == ci.worldNumber and v.level == ci.pageLevelIndex then
-							_G.res.drawSprite("", "LS_EAGLE_BUTTON", _G.math.floor(ci.x), _G.math.floor(ci.y))
-						end
-					end
+--				if settings.mightyEagleEnabled then
+--					for k, v in _G.pairs(settings.eaglesUsedIn) do
+--						if v.world == ci.worldNumber and v.level == ci.pageLevelIndex then
+--							setRenderState(0,0,1.2,1.2)
+				if ci.eagleItem and ci.mouseState ~= nil then							
+					local sd = screenWidth < 1920 or (g_levelSelectionMultipleAssets ~= true)
+					ci.eagleItem.xs,ci.eagleItem.ys = sd and .87 or 1.18, sd and .87 or 1.18
+					drawMouseScalingItem(sheet,ci.eagleItem)						
+				elseif ci.eagleItem then
+					_G.res.drawSprite("LS_EAGLE_BUTTON", _G.math.floor(ci.x), _G.math.floor(ci.y))
 				end
+				
+				if ci.featherItem and ci.mouseState ~= nil then							
+					local sd = screenWidth < 1920 or (g_levelSelectionMultipleAssets ~= true)
+					ci.featherItem.xs,ci.featherItem.ys = sd and .7 or 1, sd and .7 or 1
+					ci.featherItem.x,ci.featherItem.y = ci.x-ci.featherItem.spriteWidth/2 + 1, ci.y+ci.featherItem.spriteHeight * 1.2
+					drawMouseScalingItem(sheet,ci.featherItem)						
+				elseif ci.featherItem then
+					_G.res.drawSprite("LS_EAGLE_BUTTON", _G.math.floor(ci.x), _G.math.floor(ci.y))
+				end
+--						end
+--					end
+--				end
 			end
 		end
 		i = i + 1
@@ -14885,16 +15908,17 @@ function drawLevelSelectionItems(page)
 					if ci.starItem.mouseState ~= nil then
 						drawMouseScalingItem("LEVELSELECTION_SHEET_1",ci.starItem)
 					else
-						_G.res.drawSprite("", levelSelectionButtonIndeces[i].starSprite, _G.math.floor(ci.x), _G.math.floor(ci.y + ci.spriteHeight * 0.5))			
+						_G.res.drawSprite(levelSelectionButtonIndeces[i].starSprite, _G.math.floor(ci.x), _G.math.floor(ci.y + ci.spriteHeight * 0.5))			
 					end
 				else
-					_G.res.drawSprite("", levelSelectionButtonIndeces[i].starSprite, _G.math.floor(ci.x), _G.math.floor(ci.y + ci.spriteHeight * 0.5))			
+					_G.res.drawSprite(levelSelectionButtonIndeces[i].starSprite, _G.math.floor(ci.x), _G.math.floor(ci.y + ci.spriteHeight * 0.5))			
 				end
 				
 				--drawMouseScalingItem("",ci.starItem)
 			end
-			if settings.mightyEagleEnabled == true and levelSelectionButtonIndeces[i].featherSprite ~= nil then
-				_G.res.drawSprite("", levelSelectionButtonIndeces[i].featherSprite, _G.math.floor(ci.x), _G.math.floor(ci.y))			
+			if (settings.mightyEagleEnabled == true or true) and levelSelectionButtonIndeces[i].featherSprite ~= nil then
+--				setRenderState(0,0,ci.spriteWidth/80,ci.spriteWidth/80)
+				_G.res.drawSprite(levelSelectionButtonIndeces[i].featherSprite or "", _G.math.floor(ci.x + ci.spriteWidth*.5), _G.math.floor(ci.y + ci.spriteHeight*.25))			
 			end
 		end
 	end
@@ -14939,21 +15963,21 @@ function drawLevelSelectionItems(page)
 	
 	
 	_G.res.setClipRect(0, 0, screenWidth, screenHeight)
-	if deviceModel == "n900" and page == levelSelectionPagesBasic and getItemByName(page.items, "overlay").visible then
+	if deviceModel == "n900" and page == episodes[1] and getItemByName(page.items, "overlay").visible then
 		local itm = getItemByName(page.items, "overlay")
 		drawRect( 0, 0, 0, itm.shade, itm.x, itm.y, screenWidth, screenHeight, false)
 		itm = getItemByName(page.items, "button1")
-		_G.res.drawSprite("", itm.sprite, itm.x, itm.y)
+		_G.res.drawSprite(itm.sprite, itm.x, itm.y)
 		itm = getItemByName(page.items, "button2")
-		_G.res.drawSprite("", itm.sprite, itm.x, itm.y)
+		_G.res.drawSprite(itm.sprite, itm.x, itm.y)
 	end
 	
 	local back = page.items[1]
-	--_G.res.drawSprite("",  back.sprite, back.x, back.y)
+	--_G.res.drawSprite( back.sprite, back.x, back.y)
 	
 	
 	
-	local _, textIndex = getItemByName(page.items, "text_" .. page.themes[1])
+	local _, textIndex = getItemByName(page.items, "text_" .. page.themes[1].num)
 	for i = textIndex, page.pageCount + textIndex - 1 do
 		local numberText = page.items[i]
 		if numberText.visible and numberText.lines then
@@ -14980,9 +16004,9 @@ end
 function drawLevelSelectionBackground(page)
 	
 	setRenderState(0, 0, -1, 1, 0)
-	_G.res.drawSprite("", "LS_BACKGROUND", -screenWidth, 0, "LEFT", "TOP", _G.math.ceil(screenWidth / 2), screenHeight)
+	_G.res.drawSprite("LS_BACKGROUND", -screenWidth, 0, "LEFT", "TOP", _G.math.ceil(screenWidth / 2), screenHeight)
 	setRenderState(0, 0, 1, 1, 0)
-	_G.res.drawSprite("", "LS_BACKGROUND", 0, 0, "LEFT", "TOP", _G.math.floor(screenWidth / 2), screenHeight)
+	_G.res.drawSprite("LS_BACKGROUND", 0, 0, "LEFT", "TOP", _G.math.floor(screenWidth / 2), screenHeight)
 	setRenderState(0, 0, 1, 1, 0)	
 end
 
@@ -15001,7 +16025,7 @@ function starEffectItemDraw(page, item, x, y, drawSprites, drawText)
 		starEffectSprite = ci.sprite
 	end
 	setRenderState(0, 0, 1, 1, ci.angle, _G.res.getSpritePivot("", starEffectSprite))
-	_G.res.drawSprite("", starEffectSprite, ci.x, ci.y)
+	_G.res.drawSprite(starEffectSprite, ci.x, ci.y)
 	setRenderState(0, 0, 1, 1, 0)
 --	ci.angle = ci.angle + 1.6 * dt
 end
@@ -15014,7 +16038,7 @@ function buttonSliderDraw(page, item, x, y, drawSprites, drawText)
 	end
 	--old implementation without mouse over state
 	--setRenderState(0, 0, 1, 1, ci.angle, _G.res.getSpritePivot("", buttonSprite))
-	--_G.res.drawSprite("", buttonSprite, ci.x, ci.y)
+	--_G.res.drawSprite(buttonSprite, ci.x, ci.y)
 	--setRenderState(0, 0, 1, 1, 0)	
 			
 	if (item.mouseState ~= nil) then
@@ -15028,7 +16052,7 @@ function buttonSliderDraw(page, item, x, y, drawSprites, drawText)
 		setItemMouseOverScaling(item)				
 		
 		setRenderState(_G.math.floor(x / ci.xs), _G.math.floor(y / ci.ys), ci.xs, ci.ys, ci.angle, _G.res.getSpritePivot("", buttonSprite))
-		_G.res.drawSprite("", buttonSprite, 0, 0)
+		_G.res.drawSprite(buttonSprite, 0, 0)
 		setRenderState(0, 0, 1, 1, 0)
 		
 		ci.xs = t_oldScales.x
@@ -15037,7 +16061,7 @@ function buttonSliderDraw(page, item, x, y, drawSprites, drawText)
 		
 	else
 		setRenderState(0, 0, 1, 1, ci.angle, _G.res.getSpritePivot("", buttonSprite))
-		_G.res.drawSprite("", buttonSprite, ci.x, ci.y)
+		_G.res.drawSprite(buttonSprite, ci.x, ci.y)
 		setRenderState(0, 0, 1, 1, 0)	
 	end
 end
@@ -15051,7 +16075,7 @@ function buttonSliderOptionsDraw(page, item, x, y, drawSprites, drawText)
 	
 	--old implementation without mouse over state
 	--setRenderState(0, 0, 1, 1, ci.angle, _G.res.getSpritePivot("", buttonSprite))
-	--_G.res.drawSprite("", buttonSprite, ci.x, ci.y)
+	--_G.res.drawSprite(buttonSprite, ci.x, ci.y)
 	--setRenderState(0, 0, 1, 1, 0)	
 	
 	if (item.mouseState ~= nil) then
@@ -15064,7 +16088,7 @@ function buttonSliderOptionsDraw(page, item, x, y, drawSprites, drawText)
 		setItemMouseOverScaling(item)
 		
 		setRenderState(_G.math.floor(x) / ci.xs, _G.math.floor(y) / ci.ys, ci.xs, ci.ys, ci.angle, _G.res.getSpritePivot("", buttonSprite))
-		_G.res.drawSprite("", buttonSprite, 0, 0)
+		_G.res.drawSprite(buttonSprite, 0, 0)
 		setRenderState(0, 0, 1, 1, 0)
 		
 		ci.xs = t_oldScales.x
@@ -15073,7 +16097,7 @@ function buttonSliderOptionsDraw(page, item, x, y, drawSprites, drawText)
 		
 	else
 		setRenderState(0, 0, 1, 1, ci.angle, _G.res.getSpritePivot("", buttonSprite))
-		_G.res.drawSprite("", buttonSprite, ci.x, ci.y)
+		_G.res.drawSprite(buttonSprite, ci.x, ci.y)
 		setRenderState(0, 0, 1, 1, 0)
 	end
 end
@@ -15090,7 +16114,7 @@ function eagleFeatherFillDraw(page, item, x, y, drawSprites, drawText)
 	local top = y - py
 	
 	_G.res.setClipRect(left, 0, _G.math.floor(w * (ci.fill / 100)), screenHeight)
-	_G.res.drawSprite("", fillEffectSprite, ci.x, ci.y)
+	_G.res.drawSprite(fillEffectSprite, ci.x, ci.y)
 	_G.res.setClipRect(0, 0, screenWidth, screenHeight)
 end
 -------------------------------------------------------------------------------
@@ -15146,6 +16170,17 @@ function filterLoadedLevel()
 			end
 		end
 		
+		if currentLevelNumberInTheme == 4 and currentWorldNumber == 14 then
+			if settings.openGoldenEggLevels["Level22"] then
+				loadedObjects.world["ExtraGoldenEgg_1"] = nil
+				for k,v in _G.pairs(loadedObjects.joints) do
+					if v.end1 == "ExtraGoldenEgg_1" or v.end2 == "ExtraGoldenEgg_1" then
+						loadedObjects.joints[k] = nil
+					end
+				end
+			end
+		end
+		
 		if currentLevelNumberInTheme == 15 and currentWorldNumber == 11 then
 			if settings.openGoldenEggLevels["Level16"] then
 				loadedObjects.world["ExtraGoldenEgg_1"] = nil
@@ -15156,12 +16191,74 @@ function filterLoadedLevel()
 				end
 			end
 		end
+		
+		if currentLevelNumberInTheme == 10 and currentWorldNumber == 13 then
+			if settings.openGoldenEggLevels["Level19"] then
+				loadedObjects.world["ExtraGoldenEgg_1"] = nil
+				for k,v in _G.pairs(loadedObjects.joints) do
+					if v.end1 == "ExtraGoldenEgg_1" or v.end2 == "ExtraGoldenEgg_1" then
+						loadedObjects.joints[k] = nil
+					end
+				end
+			end
+		end
+		
+		if currentLevelNumberInTheme == 12 and currentWorldNumber == 13 then
+			if settings.openGoldenEggLevels["Level22"] then
+				loadedObjects.world["ExtraSuperBowl_2"] = nil
+				for k,v in _G.pairs(loadedObjects.joints) do
+					if v.end1 == "ExtraSuperBowl_2" or v.end2 == "ExtraSuperBowl_2" then
+						loadedObjects.joints[k] = nil
+					end
+				end
+			end
+		end
+		
+		if currentLevelNumberInTheme == 12 and currentWorldNumber == 15 then
+			if settings.openGoldenEggLevels["Level23"] then
+				loadedObjects.world["ExtraGoldenEgg_1"] = nil
+				for k,v in _G.pairs(loadedObjects.joints) do
+					if v.end1 == "ExtraGoldenEgg_1" or v.end2 == "ExtraGoldenEgg_1" then
+						loadedObjects.joints[k] = nil
+					end
+				end
+			end
+		end
+		
+		
+
+		if currentLevelNumberInTheme == 9 and currentWorldNumber == 16 then
+			if settings.openGoldenEggLevels["Level24"] then
+				loadedObjects.world["ExtraGoldenEgg_1"] = nil
+				for k,v in _G.pairs(loadedObjects.joints) do
+					if v.end1 == "ExtraGoldenEgg_1" or v.end2 == "ExtraGoldenEgg_1" then
+						loadedObjects.joints[k] = nil
+					end
+				end
+			end
+		end
+		
+		if currentLevelNumberInTheme == 12 and currentWorldNumber == 17 then
+			if settings.openGoldenEggLevels["Level23"] then
+				loadedObjects.world["ExtraTreasureChest_1"] = nil
+				for k,v in _G.pairs(loadedObjects.joints) do
+					if v.end1 == "ExtraTreasureChest_1" or v.end2 == "ExtraTreasureChest_1" then
+						loadedObjects.joints[k] = nil
+					end
+				end
+			end
+		end	
 	end
 end
 
 function loadLevelInternal(levelFileName)
 	
 	releaseCutScenes()
+	if deviceModel == "roku" then
+		_G.res.stopAudio("title_theme")
+		releaseImages({"GOLDEN_EGGS"})
+		loadImages({"INGAME"})
+	end
 	prepareMenuPage(loadingPage)
 	prepareMenuPage(tutorials)
 	
@@ -15174,6 +16271,7 @@ function loadLevelInternal(levelFileName)
 	-- END FPS DEBUG CODE --]] 
 
 	setAnimationState("ingamePausePageScroll", "HIDDEN")
+	setAnimationState("ingameGesturePausePageScroll", "HIDDEN")
 	pausePage.offsetX = elementAnimations["ingamePausePageScroll"].percentage / 100 * pauseBGw - pauseBGw
 	pausePage.backgroundOverlay.shade = elementAnimations["ingamePausePageScroll"].percentage / 100 * 0.65
 	_G.res.stopAllAudio()
@@ -15182,8 +16280,12 @@ function loadLevelInternal(levelFileName)
 		-- print("Object: " .. k .. " - " .. v.name .. "\n")
 	-- end
 	
+	editor = {drawOneLayer = false, currentLayer = 0}
+
 	quadClick = false
-	quadClickCounter = 0	
+	quadClickCounter = 0
+	rokuCheat = false
+	rokuClickCounter = 0
 	eagleBaitLaunched = false
 	eagleTimer = nil
 	cameraShake = nil
@@ -15219,7 +16321,8 @@ function loadLevelInternal(levelFileName)
 	castleCameraTimer = 0
 	dragCursorIndex = 1
 	dragCursorTable = { {dx = 0, dy = 0, dt = 1} }
-	
+	rokuDragVector = { x = 0, y = 0 }
+
 	rubberBandAngle = 0
 	rubberBandLength = 0
 	oldRubberBandLength = 0
@@ -15255,6 +16358,7 @@ function loadLevelInternal(levelFileName)
 	particles = {}
 	birdTutorialPopups = {}
 	showTutorialGoldenEgg = false
+	deadBlocks = {}
 	
 	--print("-Load-\n")
 	if objects.world ~= nil then
@@ -15270,6 +16374,7 @@ function loadLevelInternal(levelFileName)
 
 	birds = {}
 	levelGoals = {}
+	cannons = {}
 	
 	flyingGrenades = {}
 	birdTrajectory = { {}, {}, {} }
@@ -15285,15 +16390,12 @@ function loadLevelInternal(levelFileName)
 	--episode4BGCranes = { startX = (wx1 + wx2) * 0.5 }
 	episode4BGCranes = { startX = 64 }
 	
-	loadLevel(levelFileName)
-	
-	filterLoadedLevel()
-
 	currentThemeIndex = 1
-
+	
 	objects.world = {}
 	objects.joints = {}
 	objects.counts = {}
+	objects.themeSprites = {}
 	objects.physicsToWorld = physicsToWorld
 	objects.theme = "theme1"
 	objects.castleCameraData = nil --{ px = 0, py = 0, sx = 1, sy = 1, }
@@ -15310,12 +16412,46 @@ function loadLevelInternal(levelFileName)
 	rubberBandPos.y = 0
 	rubberBandSpeed = 0
 	
+	loadLevel(levelFileName)
+--[[
+	--Debug data to test all blocks
+	for k, v in _G.pairs(blockTable.blocks) do
+		local block = v
+		if block.damageSprites ~= nil then
+			for k2, v2 in _G.pairs(block.damageSprites) do
+				local sprite = v2.sprite
+				--print("-Testing sprite " .. sprite .. "\n")
+				local sw, sh = _G.res.getSpriteBounds("", sprite)
+				if sw == 0 or sh == 0 then
+					print("Block " .. k .. "\n")
+					print("ERROR: Sprite has zero dimensions! " .. sprite .. "\n")
+				end
+			end
+		else
+			if block.sprite ~= nil and block.sprite ~= "" then
+				local sprite = block.sprite
+				--print("-Testing sprite " .. sprite .. "\n")
+				local sw, sh = _G.res.getSpriteBounds("", sprite)
+				if sw == 0 or sh == 0 then
+					print("Block " .. k .. "\n")
+					print("ERROR: Sprite has zero dimensions! " .. sprite .. "\n")
+				end				
+			else
+				print("Block " .. k .. "\n")
+				print("WARNING: No damage sprites or sprite defined for block " .. k .. "!\n")
+			end
+		end
+	end
+--]]
+	
+	filterLoadedLevel()
+	
 	-- level was not found
 	if loadedObjects == nil then
 		-- find the current theme based on the theme index in blocktable
-		for k0, v0 in _G.pairs(blockTable.themes) do
-			if v0.index ~= nil and v0.index == currentThemeIndex then
-				currentTheme = k0
+		for k, v in _G.pairs(blockTable.themes) do
+			if v.index ~= nil and v.index == currentThemeIndex then
+				currentTheme = k
 			end
 		end		
 		
@@ -15326,7 +16462,7 @@ function loadLevelInternal(levelFileName)
 		objects.world["ground"].defence = 1000000		
 		
 		setTheme(currentTheme)
-		return		
+		return
 	end
 
 	-- init counts table
@@ -15345,6 +16481,32 @@ function loadLevelInternal(levelFileName)
 	end
 	scaleFactor = pscale/physicsToWorld
 	
+	-- handle theme
+	if loadedObjects.theme ~= nil then
+		objects.theme = loadedObjects.theme
+		currentThemeIndex = blockTable.themes[objects.theme].index
+		-- find the current theme based on the theme index in blocktable
+		for k, v in _G.pairs(blockTable.themes) do
+			if v.index ~= nil and v.index == currentThemeIndex then
+				currentTheme = k
+				settings.currentMainMenuTheme = k
+				--settings.currentZoomLevelMainMenu = (v0.bgLayers[1][4] + v0.bgLayers[2][4] + v0.bgLayers[3][4]) / 3
+				local layersAmount = 0
+				for l = 1, #v.bgLayers do
+					layersAmount = layersAmount + 1
+					settings.currentZoomLevelMainMenu = v.bgLayers[l][4] + settings.currentZoomLevelMainMenu
+				end
+				settings.currentZoomLevelMainMenu = settings.currentZoomLevelMainMenu /  layersAmount
+			end
+		end
+	end
+	if deviceModel == "roku" then
+		print("Setting theme to "..currentTheme.."\n")
+		loadThemeGraphics(currentTheme)
+	end
+	setTheme(currentTheme)
+	print("Theme set\n")
+	
 	--print("Creating objects\n")
 	if loadedObjects.world ~= nil then
 		for k, v in _G.pairs(loadedObjects.world) do
@@ -15362,7 +16524,8 @@ function loadLevelInternal(levelFileName)
 				setRotation(name, obj.angle)
 				setMaterial(name, objects.world[name].material)
 				if objects.world[name].texture ~= nil then
-					setTexture(name, objects.world[name].texture)
+					local texture = blockTable.themes[currentTheme].texture	
+					setTexture(name, texture)
 				end
 				
 				if objects.world[name].controllable then
@@ -15397,7 +16560,9 @@ function loadLevelInternal(levelFileName)
 	--print("Creating joints\n")
 	if loadedObjects.joints ~= nil then
 		for k, v in _G.pairs(loadedObjects.joints) do
-			createJoint(v.name, v.end1, v.end2, v.type, v.coordType, v.x1, v.y1, v.x2, v.y2)
+			--createJoint(v.name, v.end1, v.end2, v.type, v.coordType, v.x1, v.y1, v.x2, v.y2)
+			createJoint(v)
+			
 		end
 	end
 
@@ -15408,17 +16573,7 @@ function loadLevelInternal(levelFileName)
 	-- level end condition
 	objects.doNotWaitForMovingObjects = loadedObjects.doNotWaitForMovingObjects
 
-	-- handle theme
-	if loadedObjects.theme ~= nil then
-		objects.theme = loadedObjects.theme
-		currentThemeIndex = blockTable.themes[objects.theme].index
-		-- find the current theme based on the theme index in blocktable
-		for k0, v0 in _G.pairs(blockTable.themes) do
-			if v0.index ~= nil and v0.index == currentThemeIndex then
-				currentTheme = k0
-			end
-		end
-	end
+	
 	
 	for k, v in _G.pairs(loadedObjects) do
 		loadedObjects[k] = nil
@@ -15451,6 +16606,19 @@ function loadLevelInternal(levelFileName)
 					settings.tutorials[v.sprite].sprite = blockTable.blocks[v.definition].tutorialInfo
 					_G.table.insert(birdTutorialPopups, blockTable.blocks[v.definition].tutorialInfo)
 					
+					if deviceModel ~= "roku" then
+						if not g_mouseOrTouchStates.isUsingMouse and blockTable.blocks[v.definition].tutorialInfo == "TUTORIAL_1" and settings.fullScreen == true then
+						--if blockTable.blocks[v.definition].tutorialInfo == "TUTORIAL_1" then
+							_G.table.insert(birdTutorialPopups, "TUTORIAL_9")
+							_G.table.insert(birdTutorialPopups, "TUTORIAL_10")
+							_G.table.insert(birdTutorialPopups, "TUTORIAL_11")
+						end
+					elseif blockTable.blocks[v.definition].tutorialInfo == "TUTORIAL_1" then
+						_G.table.insert(birdTutorialPopups, "TUTORIAL_9")
+						_G.table.insert(birdTutorialPopups, "TUTORIAL_10")
+					end
+					
+					
 					if settings.tutorials["BIRD_BLUE"] ~= nil then
 						addToAchievementUnlockQueue("Split it!")
 					end
@@ -15477,6 +16645,10 @@ function loadLevelInternal(levelFileName)
 			v.oinkTimer = _G.math.random(5, 30) / 10			
 			levelGoals[k] = v
 			setObjectParameter(k, 1, 1) -- set this object as level goal
+		end
+		if v.cannonBlock then
+			cannons[k] = v
+			setObjectParameter(k, 1, 1)
 		end
 		local sprites = getDamageSprite(v, blockTable.blocks)
 		v.damageSprite = sprites.sprite
@@ -15533,235 +16705,8 @@ function loadLevelInternal(levelFileName)
 
 	local c = blockTable.themes[objects.theme].color
 	setBGColor(c.r, c.g, c.b)
-	cameraFunction = levelStartCamera
 	
-	if objects.castleCameraData ~= nil then
-	
-		-- Check if level has camera data for current device
-		if objects.castleCameraData[deviceModel] == nil then
-		
-			-- Check if file has camera data for iphone
-			if objects.castleCameraData["iphone"] then
-				objects.castleCameraData[deviceModel] = {}
-				objects.castleCameraData[deviceModel].px = objects.castleCameraData["iphone"].px
-				objects.castleCameraData[deviceModel].py = objects.castleCameraData["iphone"].py
-				objects.castleCameraData[deviceModel].sx = objects.castleCameraData["iphone"].sx
-				objects.castleCameraData[deviceModel].sy = objects.castleCameraData["iphone"].sy
-				objects.castleCameraData[deviceModel].screenWidth = objects.castleCameraData["iphone"].screenWidth
-				objects.castleCameraData[deviceModel].screenHeight = objects.castleCameraData["iphone"].screenHeight
-			elseif objects.castleCameraData.px ~= nil then
-				-- Check if has data generic camera data
-				objects.castleCameraData[deviceModel] = {}
-				objects.castleCameraData[deviceModel].px = objects.castleCameraData.px
-				objects.castleCameraData[deviceModel].py = objects.castleCameraData.py
-				objects.castleCameraData[deviceModel].sx = objects.castleCameraData.sx
-				objects.castleCameraData[deviceModel].sy = objects.castleCameraData.sy
-				objects.castleCameraData[deviceModel].screenWidth = objects.castleCameraData.screenWidth
-				objects.castleCameraData[deviceModel].screenHeight = objects.castleCameraData.screenHeight
-			else
-				objects.castleCameraData[deviceModel] = {}
-				objects.castleCameraData[deviceModel].px = screen.x
-				objects.castleCameraData[deviceModel].py = screen.y
-				objects.castleCameraData[deviceModel].sx = 1
-				objects.castleCameraData[deviceModel].sy = 1
-				objects.castleCameraData[deviceModel].screenWidth = screenWidth
-				objects.castleCameraData[deviceModel].screenHeight = screenHeight
-			end
-		end
-	
-		local ccd = objects.castleCameraData[deviceModel]
-		
-		if ccd.screenWidth == nil then
-			ccd.screenWidth = 1680
-		end
-		if ccd.screenHeight == nil then
-			ccd.screenHeight = 1050
-		end
-
-		local cameraAspectRation = ccd.screenWidth / ccd.screenHeight
-		local currentAspectRation = screenWidth / screenHeight
-		
-		if currentAspectRation >= cameraAspectRation then
-			-- Current aspect ratio is wider than the one used to make the level, expand horizontally
-			ccd.sx = ccd.sx * screenHeight / ccd.screenHeight
-			ccd.sy = ccd.sy * screenHeight / ccd.screenHeight
-		else
-			-- Current aspect ratio is narrower than the one used to make the level, expand vertically
-			ccd.sx = ccd.sx * screenWidth / ccd.screenWidth
-			ccd.sy = ccd.sy * screenWidth / ccd.screenWidth
-		end
-		if objects.castleCameraData.version == nil then
-			-- old version has the screen center position in wrong place
-			worldScale = ccd.sx
-			setWorldScale(worldScale)
-			screen.left = ccd.px - screenWidth * 0.5
-			screen.top = ccd.py - screenHeight * 0.5
-			screen.right = screen.left + screenWidth / worldScale
-			screen.bottom = screen.top + screenHeight / worldScale
-			screen.x = (screen.right + screen.left) * 0.5
-			screen.y = (screen.bottom + screen.top) * 0.5
-			--print("CScreen: " .. screen.left .. ", " .. screen.top .. " - " .. screen.right .. ", " .. screen.bottom .. "\n")
-			--print("CScreen: " .. screen.x .. ", " .. screen.y .. "\n")
-			ccd.px = screen.x
-			ccd.py = screen.y
-			--updateScale()
-		else
-			worldScale = ccd.sx
-			setWorldScale(worldScale)
-			screen.x = ccd.px
-			screen.y = ccd.py
-			screen.left = screen.x - screenWidth * 0.5 / worldScale
-			screen.top = screen.y - screenHeight * 0.5 / worldScale
-			screen.right = screen.x + screenWidth * 0.5 / worldScale
-			screen.bottom = screen.y + screenHeight * 0.5 / worldScale
-			--updateScale()
-		end
-	else
-		-- camera not defined set default camera
-		objects.castleCameraData = {}
-		objects.castleCameraData[deviceModel] = {}
-		local ccd = objects.castleCameraData[deviceModel]
-		ccd.sx = 1
-		ccd.sy = 1
-		ccd.px = screen.x
-		ccd.py = screen.y
-	end
-	
-	local ccd = objects.castleCameraData[deviceModel]
-	ccd.top = screen.top
-	ccd.left = screen.left
-	ccd.right = screen.right
-	ccd.bottom = screen.bottom
-	cameraAnimationSlider = 1
-	cameraAnimationSliderTarget = 1
-	defaultCamera()
-	
-	local wx1, _ = worldToPhysicsTransform(ccd.left, ccd.top)
-	local wx2, _ = worldToPhysicsTransform(ccd.right, ccd.bottom)
-	setTheme(currentTheme)
-	
-	if objects.birdCameraData ~= nil then
-	
-		-- Check if leevl has camera data for current device
-		if objects.birdCameraData[deviceModel] == nil then
-			
-			-- Check if file has camera data for iphone
-			if objects.birdCameraData["iphone"] then
-				objects.birdCameraData[deviceModel] = {}
-				objects.birdCameraData[deviceModel].px = objects.birdCameraData["iphone"].px
-				objects.birdCameraData[deviceModel].py = objects.birdCameraData["iphone"].py
-				objects.birdCameraData[deviceModel].sx = objects.birdCameraData["iphone"].sx
-				objects.birdCameraData[deviceModel].sy = objects.birdCameraData["iphone"].sy
-				objects.birdCameraData[deviceModel].screenWidth = objects.birdCameraData["iphone"].screenWidth
-				objects.birdCameraData[deviceModel].screenHeight = objects.birdCameraData["iphone"].screenHeight
-			elseif objects.birdCameraData.px ~= nil then
-				objects.birdCameraData[deviceModel] = {}
-				objects.birdCameraData[deviceModel].px = objects.birdCameraData.px
-				objects.birdCameraData[deviceModel].py = objects.birdCameraData.py
-				objects.birdCameraData[deviceModel].sx = objects.birdCameraData.sx
-				objects.birdCameraData[deviceModel].sy = objects.birdCameraData.sy
-				objects.birdCameraData[deviceModel].screenWidth = objects.birdCameraData.screenWidth
-				objects.birdCameraData[deviceModel].screenHeight = objects.birdCameraData.screenHeight
-			else
-				objects.birdCameraData[deviceModel] = {}
-				objects.birdCameraData[deviceModel].px = screen.x
-				objects.birdCameraData[deviceModel].py = screen.y
-				objects.birdCameraData[deviceModel].sx = 1
-				objects.birdCameraData[deviceModel].sy = 1
-				objects.birdCameraData[deviceModel].screenWidth = screenWidth
-				objects.birdCameraData[deviceModel].screenHeight = screenHeight
-			end
-		end
-	
-		local bcd = objects.birdCameraData[deviceModel]
-		
-		if bcd.screenWidth == nil then
-			bcd.screenWidth = 1680
-		end
-		if bcd.screenHeight == nil then
-			bcd.screenHeight = 1050
-		end
-
-		local cameraAspectRation = bcd.screenWidth / bcd.screenHeight
-		local currentAspectRation = screenWidth / screenHeight
-		
-		if currentAspectRation >= cameraAspectRation then
-			-- Current aspect ratio is wider than the one used to make the level, expand horizontally
-			bcd.sx = bcd.sx * screenHeight / bcd.screenHeight
-			bcd.sy = bcd.sy * screenHeight / bcd.screenHeight
-		else
-			-- Current aspect ratio is narrower than the one used to make the level, expand vertically
-			bcd.sx = bcd.sx * screenWidth / bcd.screenWidth
-			bcd.sy = bcd.sy * screenWidth / bcd.screenWidth
-		end
-		
-		if objects.birdCameraData.version == nil then
-			-- old version has the screen center position in wrong place
-			scale = bcd.sx
-			bcd.left = bcd.px - screenWidth * 0.5
-			bcd.top = bcd.py - screenHeight * 0.5
-			bcd.right = screen.left + screenWidth / scale
-			bcd.bottom = screen.top + screenHeight / scale
-			bcd.px = (screen.right + screen.left) * 0.5
-			bcd.py = (screen.bottom + screen.top) * 0.5
-			--print("BScreen: " .. screen.left .. ", " .. screen.top .. " - " .. screen.right .. ", " .. screen.bottom .. "\n")
-			--print("BScreen: " .. screen.x .. ", " .. screen.y .. "\n")
-		else
-			bcd.left = bcd.px - screenWidth * 0.5 / bcd.sx
-			bcd.top = bcd.py - screenHeight * 0.5 / bcd.sy
-			bcd.right = screen.left + screenWidth / bcd.sx
-			bcd.bottom = screen.top + screenHeight / bcd.sy
-		end
-	else
-		-- bird camera not defined
-		objects.birdCameraData = {}
-		objects.birdCameraData[deviceModel] = {}
-		local bcd = objects.birdCameraData[deviceModel]
-		bcd.sx = 1
-		bcd.sy = 1
-		bcd.px = screen.x
-		bcd.py = screen.y
-		bcd.left = bcd.px - screenWidth * 0.5
-		bcd.top = bcd.py - screenHeight * 0.5
-		bcd.right = screen.left + screenWidth * 0.5
-		bcd.bottom = screen.top + screenHeight * 0.5
-	end
-
-	local bcd = objects.birdCameraData[deviceModel]
-	ccd.screenWidth = screenWidth
-	ccd.screenHeight = screenHeight
-	bcd.screenWidth = screenWidth
-	bcd.screenHeight = screenHeight
-		
-	leftLimit = bcd.left - screenWidth * 0.20
-	rightLimit = ccd.right + screenWidth * 0.20
-	
-	local leftLimitPhysics, rightLimitPhysics = worldToPhysicsTransform(leftLimit, rightLimit)
-	if rightLimitPhysics > levelRightEdge then
-		levelRightEdge = rightLimitPhysics
-	end
-	if leftLimitPhysics < levelLeftEdge then
-		levelLeftEdge = leftLimitPhysics
-	end
-	-- set level left and right limit, other values do not affect at the moment
-	levelLimitMinX = levelLeftEdge - screenWidth*0.75*physicsScale
-	levelLimitMaxX = levelRightEdge + screenWidth*0.75*physicsScale
-	setLevelLimits(levelLimitMinX, -10000, levelLimitMaxX, 20)
-	
-	-- calculate minimum scale. ie the player can't see the world smaller than this size
-	maxLevelWidth = rightLimit - leftLimit
-	minWorldScale = screenWidth / maxLevelWidth
-	groundLimit = bcd.bottom
-	if groundLimit < ccd.bottom then
-		groundLimit = ccd.bottom
-	end
-	groundLimit = screenHeight / (minWorldScale * 5)
-	if levelRestartedFrom == nil or startedFromEditor == true then 
-		currentZoomedScale = bcd.sx
-		if currentZoomedScale < ccd.sx then
-			currentZoomedScale = ccd.sx
-		end
-	end
+	initCameras()
 	
 	startedFromEditor = false
 	loadedObjects = nil
@@ -15769,13 +16714,34 @@ function loadLevelInternal(levelFileName)
 	loadingPageDrawn = false
 	--print("level load complete\n")
 	
+	--debug camera
+	g_camerasList = {}
+	for k, v in _G.pairs(objects.birdCameraData) do 
+		
+		if _G.type(v) == "table" then
+			_G.table.insert(g_camerasList, k)							
+		end
+		
+	end
+	
+	local bcd = objects.birdCameraData[deviceModel]
+	local ccd = objects.castleCameraData[deviceModel]
+	
+	--tempCamera.sx = bcd.sx + zoomLevel
+	
+		
+	setMaxWorldScale(_G.math.min(bcd.sx, ccd.sx))
+	
+	--forceInputStateToTrackpad()
+	
 	_G.collectgarbage("collect")
 end
 
 -- Creates object from definition (blocks.lua)
 function createObject(definitions, objectDefinition, objName, xpos, ypos)
+
 	local name = ""
-	
+	--print("\n definition is " .. objectDefinition)
 	local blockDef = definitions.blocks[objectDefinition]
 	local materialDef = definitions.materials[blockDef.material]
 
@@ -15787,6 +16753,7 @@ function createObject(definitions, objectDefinition, objName, xpos, ypos)
 	local strength = blockDef.strength
 	local defence = blockDef.defence
 	local levelGoal = blockDef.levelGoal
+                local cannonBlock = blockDef.cannonBlock
 	local collision = blockDef.collision
 	local damageFactors = blockDef.damageFactors
 	local useLegacyCollisionPath = blockDef.useLegacyCollisionPath
@@ -15857,7 +16824,7 @@ function createObject(definitions, objectDefinition, objName, xpos, ypos)
 	-- set physics related settings
 	if blockDef.type == "box" then
 		-- use sprite if available if not use defined width and height
-		if sprite ~= "" and sprite ~= nil then
+		if blockDef.width == nil or blockDef.height == nil then
 			w, h = _G.res.getSpriteBounds("", sprite)
 			-- immovable walls have always the sprites size to prevent gaps
 			if blockDef.density == 0 then
@@ -15869,6 +16836,7 @@ function createObject(definitions, objectDefinition, objName, xpos, ypos)
 		else
 			w = blockDef.width
 			h = blockDef.height
+			pivotx, pivoty = _G.res.getSpritePivot("", sprite)
 		end
 
 		if collision == nil then
@@ -15899,6 +16867,7 @@ function createObject(definitions, objectDefinition, objName, xpos, ypos)
 		else
 			w = blockDef.width
 			h = blockDef.height
+			pivotx, pivoty = _G.res.getSpritePivot("", sprite)
 		end
 
 		if collision == nil then
@@ -15951,8 +16920,12 @@ function createObject(definitions, objectDefinition, objName, xpos, ypos)
 	objects.world[name].material = blockDef.material
 	objects.world[name].texture = blockDef.texture
 	objects.world[name].levelGoal = levelGoal
+                objects.world[name].cannonBlock = cannonBlock
 	objects.world[name].spritePivotX = pivotx
 	objects.world[name].spritePivotY = pivoty
+	
+	g_currentCursorName = "CURSOR_HAND_HOVER"
+	
 	return name
 end
 
@@ -16025,11 +16998,12 @@ function getObjectListBounds(objects)
 	return px, py, w, h
 end
 
-
-
 function updateEditor(dt, time)
--- editor can be preprocessed out by defining "STRIP_EDITOR"
---#ifndef STRIP_EDITOR
+	
+	if not editorJointPage then
+		editorJointPage = EditorJointPage:new()
+		editorJointPage:onEntry()
+	end
 
 	if oldZoomLevel ~= zoomLevel then
 		worldScale = worldScale + zoomLevel - oldZoomLevel
@@ -16040,16 +17014,110 @@ function updateEditor(dt, time)
 	updateScale()
 	cursorPhysics.x, cursorPhysics.y = screenToPhysicsTransform(cursor.x, cursor.y)
 	cursorWorld.x, cursorWorld.y = screenToWorldTransform(cursor.x, cursor.y)
+	
+	
 
+	-- XXX: ADD TO OTHERS
+	if(selectedObjects ~= nil and #selectedObjects == 1) then
+		initCollisionDummy(selectedObjects[1])	
+	end
+	
+	if(keyReleased["LBUTTON"] or keyReleased["RBUTTON"]) then
+		
+	end
+	
+	if(keyHold["RETURN"] and keyPressed["DOWN"]) then
+		alignObjects("DOWN")
+	end
+	
+	if(keyHold["RETURN"] and keyPressed["UP"]) then
+		alignObjects("UP")
+	end
+
+	if(keyHold["RETURN"] and keyPressed["RIGHT"]) then
+		alignObjects("RIGHT")
+	end
+	
+	if(keyHold["RETURN"] and keyPressed["LEFT"]) then
+		alignObjects("LEFT")
+	end
+
+	-- XXX: ADD TO OTHERS
+	if (keyHold["SHIFT"] or keyHold["CONTROL"]) and (keyPressed["W"] or keyPressed["E"]) and showSleepingObjects == true then
+		if  #selectedObjects == 1 then
+			local name = selectedObjects[1].name
+			local selected = objects.world[name]
+			local blockDef = blockTable.blocks[selected.definition]
+			local dir = 1
+
+			if(keyHold["CONTROL"]) then dir = -1 end
+
+			if(blockDef.radius) then
+				adjustedBlockDef.objectNames[name].radius = adjustedBlockDef.objectNames[name].radius + 0.1 * dir
+				
+				if(adjustedBlockDef.objectNames[name].radius < 0) then
+					adjustedBlockDef.objectNames[name].radius = 0
+				end
+				
+			elseif(blockDef.width and blockDef.height) then
+				if(keyPressed["W"]) then
+					adjustedBlockDef.objectNames[name].width = adjustedBlockDef.objectNames[name].width + 0.1 * dir
+					if(adjustedBlockDef.objectNames[name].width < 0) then
+						adjustedBlockDef.objectNames[name].width = 0
+					end			
+
+				else
+					adjustedBlockDef.objectNames[name].height = adjustedBlockDef.objectNames[name].height + 0.1 * dir
+					if(adjustedBlockDef.objectNames[name].height < 0) then
+						adjustedBlockDef.objectNames[name].height = 0
+					end			
+				end
+			elseif(blockDef.vertices ~= nil) then
+				for k,v in _G.pairs(blockDef.vertices) do
+					local vert = adjustedBlockDef.objectNames[name].vertices[k]
+					if(keyPressed["W"]) then
+						if(vert.x > 0.5) then
+							vert.x = vert.x + 0.05 * dir
+						elseif(vert.x < 0.5) then
+							vert.x = vert.x - 0.05 * dir
+						end
+					else
+						if(vert.y > 0.5) then
+							vert.y = vert.y + 0.05 * dir										
+						elseif(vert.y < 0.5) then
+							vert.y = vert.y - 0.05 * dir
+						end
+					end
+				end
+			end
+		end		
+	end
+	
+	
+	--the m_cursorWorldDownX will keep the values of the cursor in world coordinates when 
+	--the RMB was pressed on the screen, will be used for scaling sprites on the background
+	if(keyHold["RBUTTON"]) then
+		if editor.m_cursorWorldDownX == nil and editor.m_cursorWorldDownY == nil then
+			editor.m_cursorWorldDownX = cursorWorld.x
+			editor.m_cursorWorldDownY = cursorWorld.y
+		end
+	else
+		editor.m_cursorWorldDownX = nil
+		editor.m_cursorWorldDownY = nil
+	end
+	
 	--print("cp.x_ " .. cursorPhysics.x .. " - cp.y: " .. cursorPhysics.y .. "\n")
 	--print("cw.x_ " .. cursorWorld.x .. " - cw.y: " .. cursorWorld.y .. "\n")
 
-	-- Handle input
-	if keyPressed["ESCAPE"] or keyPressed["F1"] then
+	if keyPressed["ESCAPE"] or touchcount == 3 then
+
 		setGameMode(updateMenu)
 		setPhysicsEnabled(false)
 		physicsEnabled = false
 		setActiveMenuPage(levelSelectionEdit[currentThemeNumber])
+		editorJointPage:onExit()
+		editorJointPage = nil
+		return
 	end
 
 	if keyHold["CONTROL"] and keyPressed["S"] then
@@ -16088,35 +17156,8 @@ function updateEditor(dt, time)
 												screenHeight = screenHeight }
 		levelSaved = false
 	end
-	
-	--debug camera
-	
-	if keyHold["CONTROL"] and keyHold["SHIFT"] and keyPressed["SPACE"] then 
-		 
-		if g_debugCameras == nil then
-			g_debugCameras = true
-		else 
-			g_debugCameras = not g_debugCameras	
-			g_cameraToDraw	= nil
-		end								
-		
-	end
-	
-	if g_debugCameras and keyPressed["LBUTTON"] then								
-		for i = 1, #g_camerasList, 1 do
-			local t_initialX = 20
-			local t_initialY = 150
-			
-			local t_offsetY = 50
-			
-			if checkTextBounds("TEXTS_BASIC", g_camerasList[i], "LEFT", "BOTTOM", t_initialX, t_initialY + (t_offsetY * (i-1)), cursor.x, cursor.y) then
-				g_cameraToDraw = g_camerasList[i]
-				break
-			end
-		end
-	end
 
-	if keyHold["SHIFT"] and keyPressed["P"] then
+	if keyPressed["P"] then--keyHold["SHIFT"] and keyPressed["P"] then
 		setEditing(false)
 		setPhysicsEnabled(false)
 		local name = "temp/" .. levelName .. ".temp.playtest"
@@ -16159,9 +17200,9 @@ function updateEditor(dt, time)
 			currentThemeIndex = 1
 		end
 
-		for k0, v0 in _G.pairs(blockTable.themes) do
-			if v0.index ~= nil and v0.index == currentThemeIndex then
-				currentTheme = k0
+		for k, v in _G.pairs(blockTable.themes) do
+			if v.index ~= nil and v.index == currentThemeIndex then
+				currentTheme = k
 				setTheme(currentTheme)
 				-- replace all blocks that are theme dependent
 				for k1, v1 in _G.pairs(objects.world) do
@@ -16262,43 +17303,114 @@ function updateEditor(dt, time)
 
 			draggingStartPosWorld.x = cursorWorld.x
 			draggingStartPosWorld.y = cursorWorld.y
-
-			--find object that was clicked
-			for k, v in _G.pairs(objects.world) do
-				object = v
-				if object.type == "polygon" then
-					x = object.x
-					y = object.y
-					--print(object.name .. " ")
-					if checkPolygonObjectBounds(x, y, object.width, object.height, object.angle, getObjectDefinition(k).vertices, cursorPhysics.x, cursorPhysics.y) then
-						addObjectToSelection(object, true)
+			
+			if editor.drawOneLayer then
+				--find object that was clicked
+				for k, v in _G.pairs(themeSpriteObjects) do
+					object = v
+					if object.type == "polygon" then						
+						if checkPolygonObjectBounds(object.x, object.y, object.width * object.scale.x, object.height * object.scale.y, object.angle, object.vertices, cursorPhysics.x, cursorPhysics.y) then
+							addObjectToSelection(object, true)
+						end
+					end
+					if object.type == "box" then
+						if checkObjectBounds( object.x, object.y, object.width * object.scale.x, object.height * object.scale.y, object.angle, cursorPhysics.x, cursorPhysics.y) then
+							addObjectToSelection(object, true)
+						end
+					end
+					if object.type == "circle" then
+						local t_scale = _G.math.max(object.scale.x, object.scale.y)
+						if distance(object.x, object.y, cursorPhysics.x, cursorPhysics.y) < (object.radius * t_scale) then
+							addObjectToSelection(object, true)
+						end
 					end
 				end
-				if object.type == "box" then
-					x = object.x
-					y = object.y
-					--print(object.name .. " ")
-					if checkObjectBounds(x, y, object.width, object.height, object.angle, cursorPhysics.x, cursorPhysics.y) then
-						addObjectToSelection(object, true)
+			else
+				--find object that was clicked
+				for k, v in _G.pairs(objects.world) do
+					object = v
+					if object.type == "polygon" then
+						x = object.x
+						y = object.y
+						--print(object.name .. " ")
+						if checkPolygonObjectBounds(x, y, object.width, object.height, object.angle, getObjectDefinition(k).vertices, cursorPhysics.x, cursorPhysics.y) then
+							addObjectToSelection(object, true)
+						end
 					end
-				end
-				if object.type == "circle" then
-					if distance(object.x, object.y, cursorPhysics.x, cursorPhysics.y) < object.radius then
-						addObjectToSelection(object, true)
+					if object.type == "box" then
+						x = object.x
+						y = object.y
+						--print(object.name .. " ")
+						if checkObjectBounds(x, y, object.width, object.height, object.angle, cursorPhysics.x, cursorPhysics.y) then
+							addObjectToSelection(object, true)
+						end
+					end
+					if object.type == "circle" then
+						if distance(object.x, object.y, cursorPhysics.x, cursorPhysics.y) < object.radius then
+							addObjectToSelection(object, true)
+						end
 					end
 				end
 			end
 		end
 	end
 
-	if keyHold["RBUTTON"] then
+	if keyHold["RBUTTON"] and (not keyHold["CONTROL"]) then
 		selectionRectActive = true
 	end
-
+	
+	--scales backgrond sprites
+	if keyHold["RBUTTON"] and keyHold["CONTROL"] and editor.drawOneLayer and (#selectedObjects > 0) then
+		
+		for k, v in _G.pairs(selectedObjects) do
+			object = v
+			
+			local t_scaleX = 1
+			local t_scaleY = 1
+			
+			--if the user is pressing shif, we scale both axis equally
+			if(keyHold["SHIFT"]) then
+				local t_oldCursorPhysicsX, t_oldCursorPhysicsY = worldToPhysicsTransform(editor.m_cursorWorldDownX, editor.m_cursorWorldDownY)
+									
+				local t_originalDistance = distance(v.x, v.y, t_oldCursorPhysicsX, t_oldCursorPhysicsY)
+				
+				local t_newDistance = distance(v.x, v.y, cursorPhysics.x, cursorPhysics.y)
+				
+				local t_scale = t_newDistance / t_originalDistance
+				
+				t_scaleX = t_scale
+				t_scaleY = t_scale
+			else
+				local t_oldCursorPhysicsX, t_oldCursorPhysicsY = worldToPhysicsTransform(editor.m_cursorWorldDownX, editor.m_cursorWorldDownY)
+									
+				local t_oldDistanceX = t_oldCursorPhysicsX - v.x
+				local t_oldDistanceY = t_oldCursorPhysicsY - v.y
+				
+				local t_newDistanceX = cursorPhysics.x - v.x
+				local t_newDistanceY = cursorPhysics.y - v.y
+								
+				t_scaleX = t_newDistanceX / t_oldDistanceX
+				t_scaleY = t_newDistanceY / t_oldDistanceY
+			end
+			
+			modifyThemeSprite(object.name, object.x, object.y, t_scaleX, t_scaleY, object.angle, object.layer)
+			
+			object.scale = {x = t_scaleX, y = t_scaleY}			
+			objects.themeSprites[object.name].scale = { x =  t_scaleX, y = t_scaleY}			
+			
+		end
+		
+	end
+	
 	-- this is here so that the dragging position is not set on this frame if LBUTTON is released
 	if keyReleased["RBUTTON"] then
 		if objectToAdd ~= nil and selectedObjects == nil or #selectedObjects < 1 then
-			selectedObjects = getObjectsInsideRect(draggingStartPosWorld.x, draggingStartPosWorld.y, cursorWorld.x, cursorWorld.y)
+			if editor.drawOneLayer then
+				selectedObjects = getThemeObjectsInsideRect(draggingStartPosWorld.x, draggingStartPosWorld.y, cursorWorld.x, cursorWorld.y, editor.currentLayer)
+			else 
+				selectedObjects = getObjectsInsideRect(draggingStartPosWorld.x, draggingStartPosWorld.y, cursorWorld.x, cursorWorld.y)
+				
+			end
 		else
 			if keyHold["SHIFT"] then
 				local tempObjects = getObjectsInsideRect(draggingStartPosWorld.x, draggingStartPosWorld.y, cursorWorld.x, cursorWorld.y)
@@ -16326,16 +17438,116 @@ function updateEditor(dt, time)
 		oldCursor.y = cursor.y
 		if not keyHold["SPACE"] then
 			if objectToAdd ~= nil then
-				local name = createObject(blockTable, objectToAdd, nil, cursorPhysics.x, cursorPhysics.y)
-				setRotation(name, objectToAddAngle)
-				selectedObjects = {}
-				_G.table.insert(selectedObjects, objects.world[name])
-				levelSaved = false
+				-- local name = createObject(blockTable, objectToAdd, nil, cursorPhysics.x, cursorPhysics.y)
+				-- setRotation(name, objectToAddAngle)
+				-- selectedObjects = {}
+				-- _G.table.insert(selectedObjects, objects.world[name])
+				-- levelSaved = false
+				if not editor.drawOneLayer then
+					local name = createObject(blockTable, objectToAdd, nil, cursorPhysics.x, cursorPhysics.y)
+					setRotation(name, objectToAddAngle)
+					selectedObjects = {}
+					birdSelected = false
+					_G.table.insert(selectedObjects, objects.world[name])
+				else
+					local spr = blockTable.blocks[objectToAdd].sprite
+					if not spr and blockTable.blocks[objectToAdd].damageSprites then
+						spr = blockTable.blocks[objectToAdd].damageSprites.damage1
+					end
+					if spr then
+					
+						if objects.counts[objectToAdd] == nil then
+							objects.counts[objectToAdd] = 0
+						end
+	
+						objects.counts[objectToAdd] = objects.counts[objectToAdd] + 1
+						local name = objectToAdd .. "_" .. objects.counts[objectToAdd]
+						selectedObjects = {}
+						
+						addThemeSprite(name, {definition=objectToAdd, name=name, x = cursorPhysics.x, y = cursorPhysics.y, angle = 0, scale = {x=1,y=1}, layer = editor.currentLayer })
+						
+						if not objects.themeSprites then
+							objects.themeSprites = {}
+						end
+						objects.themeSprites[name] = { definition = objectToAdd, 
+													   name = name, x = cursorPhysics.x, 
+													   y = cursorPhysics.y, layer = editor.currentLayer, 
+													   angle = objectToAddAngle, scale = {x=1,y=1} }							   						
+					end
+				end	
 			end
 			if copiedObjects ~= nil then
+				-- for k, v in _G.pairs(copiedObjects) do
+					-- local name = createObject(blockTable, v.definition, nil, cursorPhysics.x + v.x, cursorPhysics.y + v.y)
+					-- setRotation(name, v.angle)
+				-- end
+				
+				--this table will be indexed by the copied objects names, and the values
+				--will be the new copies name
+				local t_nameRelationTable = {}
 				for k, v in _G.pairs(copiedObjects) do
-					local name = createObject(blockTable, v.definition, nil, cursorPhysics.x + v.x, cursorPhysics.y + v.y)
-					setRotation(name, v.angle)
+					if editor.drawOneLayer then
+						--print("k = "..k.." value = " ..v.definition)
+						
+						if objects.counts[v.definition] then
+							objects.counts[v.definition] = objects.counts[v.definition] + 1						
+						else
+							objects.counts[v.definition] = 1			
+						end
+						local name = v.definition .. "_" .. objects.counts[v.definition]
+						addThemeSprite(name, {definition=v.definition, name=name, x = cursorPhysics.x + v.x, y = cursorPhysics.y + v.y, angle = v.angle, scale = v.scale, layer = editor.currentLayer })
+						
+						if not objects.themeSprites then
+							objects.themeSprites = {}
+						end
+						objects.themeSprites[name] = { 	definition = v.definition, 
+														name = name, x = cursorPhysics.x + v.x, 
+														y = cursorPhysics.y + v.y, 
+														layer = editor.currentLayer, 
+														angle = v.angle,
+														scale = v.scale}
+					else
+						local name = createObject(blockTable, v.definition, nil, cursorPhysics.x + v.x, cursorPhysics.y + v.y)
+						t_nameRelationTable[v.name] = name
+						setRotation(name, v.angle)
+						objects.world[name].strength = v.strength
+					end
+					
+				end						
+				
+				--will create new joints based on the new objects
+				if copiedJoints ~= nil then
+					for k, v in _G.pairs(copiedJoints) do
+						
+						
+						local t_newJointName = t_nameRelationTable[v.end1] .. t_nameRelationTable[v.end2]
+						
+						--makes a copy of the joint to be copied, with updated name, and1 and end2 values					
+						
+						t_newJoint = {}
+						
+						
+						--distance joint
+						if v.type == 1 then
+							t_newJoint = { name = t_newJointName, type =  v.type, end1 = t_nameRelationTable[v.end1], end2= t_nameRelationTable[v.end2], x1=v.x1, y1=v.y1, x2=v.x2, y2=v.y2, coordType=v.coordType,collideConnected=v.collideConnected, dampingRatio=v.dampingRatio, frequency=v.frequency }
+						--weld joint
+						elseif v.type == 2 then
+							t_newJoint = { name = t_newJointName, type =  v.type, end1 = t_nameRelationTable[v.end1], end2= t_nameRelationTable[v.end2], x1=v.x1, y1=v.y1, x2=v.x2, y2=v.y2, coordType=v.coordType,collideConnected=v.collideConnected }
+						--revolute joint
+						elseif v.type == 3 then
+							t_newJoint = { name = t_newJointName, type =  v.type, end1 = t_nameRelationTable[v.end1], end2= t_nameRelationTable[v.end2], x1=v.x1, y1=v.y1, x2=v.x2, y2=v.y2, coordType=v.coordType,collideConnected=v.collideConnected, maxTorque=v.maxTorque,limit=v.limit,backAndForth=v.backAndForth,motorSpeed=v.motorSpeed,motor=v.motor,lowerLimit=v.lowerLimit,upperLimit=v.upperLimit }
+						--prismatic joint
+						elseif v.type == 4 then
+							t_newJoint = { name = t_newJointName, type =  v.type, end1 = t_nameRelationTable[v.end1], end2= t_nameRelationTable[v.end2], x1=v.x1, y1=v.y1, x2=v.x2, y2=v.y2, coordType=v.coordType,collideConnected=v.collideConnected, maxTorque=v.maxTorque, limit=v.limit, backAndForth=v.backAndForth,motorSpeed=v.motorSpeed,worldAxisY=v.worldAxisY, motor=v.motor, lowerLimit=v.lowerLimit, upperLimit=v.upperLimit, worldAxisX = v.worldAxisX}
+						--anihilation joint
+						elseif v.type == 5 then
+							t_newJoint = { name = t_newJointName, type =  v.type, end1 = t_nameRelationTable[v.end1], end2= t_nameRelationTable[v.end2], x1=v.x1, y1=v.y1, x2=v.x2, y2=v.y2, coordType=v.coordType,collideConnected=v.collideConnected, destroyTimer = v.destroyTimer}
+						end					
+						
+						--print("\nnew joint name: " .. t_newJointName)
+						createJoint(t_newJoint)
+						editorJointPage.addJoint(editorJointPage, t_newJointName)
+					end
 				end
 			end
 		end
@@ -16348,7 +17560,7 @@ function updateEditor(dt, time)
 		else
 			if objectToAdd ~= nil then
 				-- do not allow object selection if object to add is active
-			elseif selectedObjects ~= nil and #selectedObjects > 0 then
+			elseif selectedObjects ~= nil and #selectedObjects > 0 and (not editor.drawOneLayer)then
 				for k, v in _G.pairs(selectedObjects) do
 					object = v
 					x, y = worldToPhysicsTransform(cursor.x - oldCursor.x, cursor.y - oldCursor.y)
@@ -16359,6 +17571,25 @@ function updateEditor(dt, time)
 						setRotation(object.name, object.angle + (cursor.x - oldCursor.x)/180 * _G.math.pi )
 					else
 						setPosition(object.name, x + object.x, y + object.y)
+					end
+				end
+				levelSaved = false
+			elseif selectedObjects ~= nil and #selectedObjects > 0 and editor.drawOneLayer then
+				for k, v in _G.pairs(selectedObjects) do
+					object = v
+					x, y = worldToPhysicsTransform(cursor.x - oldCursor.x, cursor.y - oldCursor.y)
+					x = x / worldScale
+					y = y / worldScale
+					if keyHold["CONTROL"] then
+						modifyThemeSprite(object.name, object.x, object.y, object.scale.x, object.scale.y, object.angle + (cursor.x - oldCursor.x)/180 * _G.math.pi , object.layer)
+						object.angle = object.angle + (cursor.x - oldCursor.x)/180 * _G.math.pi 
+						objects.themeSprites[object.name].angle = object.angle
+					else
+						modifyThemeSprite(object.name,  x + object.x, y + object.y, object.scale.x, object.scale.y, object.angle, object.layer)
+						object.x = x + object.x
+						object.y = y + object.y
+						objects.themeSprites[object.name].x = object.x
+						objects.themeSprites[object.name].y = object.y
 					end
 				end
 				levelSaved = false
@@ -16386,49 +17617,73 @@ function updateEditor(dt, time)
 		end
 		
 		if keyReleased["DELETE"] then
-			for k, v in _G.pairs(selectedObjects) do
-				local name = v.name
-				objects.world[name] = nil
-				removeObject(name)
+			if editor.drawOneLayer then
+				for k, v in _G.pairs(selectedObjects) do					
+					local name = v.name
+					objects.themeSprites[v.name] = nil
+					themeSpriteObjects[v.name] = nil
+					removeThemeSprite(name, editor.currentLayer)
+				end
+			else
+	
+				for k, v in _G.pairs(selectedObjects) do
+					for key, value in _G.pairs(objects.joints) do
+						if value.end1 == v.name or value.end2 == v.name then
+							editorJointPage:removeItem(value.name)
+							editorJointPage:removeItem(value.name .. "_ANCHOR_1")
+							editorJointPage:removeItem(value.name .. "_ANCHOR_2")
+						end
+					end
+					
+					local name = v.name
+					objects.world[name] = nil
+					removeObject(name)
+				end
+				
 			end
 			selectedObjects = {}
 			levelSaved = false
 		end
-		
-		local moveKeyDown = false
+		if not keyHold["RETURN"] then
+			local moveKeyDown = false
 
-		if keyHold["LEFT"] or keyHold["RIGHT"] or keyHold["UP"] or keyHold["DOWN"] then
-			moveKeyDown = true
-		end
-		
-		if blockMoveTimer == 0 or blockMoveTimer > 0.3 then
-			if keyHold["LEFT"] then
-				setPositions(-moveAmount, 0)
+			if (keyHold["LEFT"] or keyHold["RIGHT"] or keyHold["UP"] or keyHold["DOWN"])then
+				moveKeyDown = true
 			end
-			if keyHold["RIGHT"] then
-				setPositions(moveAmount, 0)
+			
+			if blockMoveTimer == 0 or blockMoveTimer > 0.3 then
+				if keyHold["LEFT"] then
+					setPositions(-moveAmount, 0)
+				end
+				if keyHold["RIGHT"] then
+					setPositions(moveAmount, 0)
+				end
+				if keyHold["UP"] then
+					setPositions(0, -moveAmount)
+				end
+				if keyHold["DOWN"] then
+					setPositions(0, moveAmount)
+				end
 			end
-			if keyHold["UP"] then
-				setPositions(0, -moveAmount)
-			end
-			if keyHold["DOWN"] then
-				setPositions(0, moveAmount)
-			end
-		end
-		
-		if moveKeyDown then
-			blockMoveTimer = blockMoveTimer + dt
-		else
-			blockMoveTimer = 0
+			
+			if moveKeyDown then
+				blockMoveTimer = blockMoveTimer + dt
+			else
+				blockMoveTimer = 0
+			end		
 		end
 	end
 
 	if keyHold["SHIFT"] then
 		if keyPressed["R"] then
+			local angle = _G.math.pi / 8
+			if keyHold["CONTROL"] then
+				angle = -angle
+			end
 			if copiedObjects ~= nil then
 				local px, py, w, h = getObjectListBounds(copiedObjects)
 				for k, v in _G.pairs(copiedObjects) do
-					local angle = _G.math.pi/4
+	
 					v.angle = v.angle + angle
 					
 					-- move to origin
@@ -16446,11 +17701,11 @@ function updateEditor(dt, time)
 				end
 			else
 				if objectToAdd ~= nil then
-					objectToAddAngle = objectToAddAngle + _G.math.pi/4
+					objectToAddAngle = objectToAddAngle + angle
 				else
 					if selectedObjects ~= nil and #selectedObjects > 0 then
 						for k, v in _G.pairs(selectedObjects) do
-							setRotation(v.name, v.angle + _G.math.pi/4)
+							setRotation(v.name, v.angle + angle)
 						end
 						levelSaved = false
 					end
@@ -16460,9 +17715,49 @@ function updateEditor(dt, time)
 		
 		if keyPressed["J"] then
 			if #selectedObjects == 2 then
-				createJoint(selectedObjects[1].name .. selectedObjects[2].name, selectedObjects[1].name, selectedObjects[2].name, 1, 2, 0, 0, 0, 0)
+				--createJoint(selectedObjects[1].name .. selectedObjects[2].name, selectedObjects[1].name, selectedObjects[2].name, 1, 2, 0, 0, 0, 0)
+				--levelSaved = false
+				
+				editor.newJoint = { name = selectedObjects[1].name .. selectedObjects[2].name, 
+								end1 = selectedObjects[1].name, end2 = selectedObjects[2].name, type = 1,
+								coordType = 2, x1 = 0, y1 = 0, x2 = 0, y2 = 0, collideConnected = false }
+				editorJointPage.newJoint = true	
 				levelSaved = false
+				
 			end
+		end
+	end
+	
+	if #selectedObjects == 2 then
+		if keyPressed["F1"] then -- distance joint
+			editor.newJoint = { name = selectedObjects[1].name .. selectedObjects[2].name, 
+								end1 = selectedObjects[1].name, end2 = selectedObjects[2].name, type = 1,
+								coordType = 2, x1 = 0, y1 = 0, x2 = 0, y2 = 0 }
+			editorJointPage.newJoint = true		
+		elseif keyPressed["F2"] then -- weld joint
+			editor.newJoint = { name = selectedObjects[1].name .. selectedObjects[2].name, 
+								end1 = selectedObjects[1].name, end2 = selectedObjects[2].name, type = 2,
+								coordType = 2, x1 = 0, y1 = 0, x2 = 0, y2 = 0 }
+			editorJointPage.newJoint = true	
+		elseif keyPressed["F3"] then -- revolute joint
+			editor.newJoint = { name = selectedObjects[1].name .. selectedObjects[2].name, 
+								end1 = selectedObjects[1].name, end2 = selectedObjects[2].name, type = 3,
+								coordType = 2, x1 = 0, y1 = 0, x2 = 0, y2 = 0 }
+			editorJointPage.newJoint = true		
+		elseif keyPressed["F4"] then -- prismatic joint
+			editor.newJoint = { name = selectedObjects[1].name .. selectedObjects[2].name, 
+								end1 = selectedObjects[1].name, end2 = selectedObjects[2].name, type = 4,
+								coordType = 2, x1 = 0, y1 = 0, x2 = 0, y2 = 0}
+			editorJointPage.items.x.visible = true
+			editorJointPage.items.y.visible = true
+			editorJointPage.items.x.text = editorJointPage.xTexts[1]
+			editorJointPage.items.y.text = editorJointPage.yTexts[1]
+			editorJointPage.newJoint = true	
+		elseif keyPressed["F5"] then -- "destroy attached" -joint
+			editor.newJoint = { name = selectedObjects[1].name .. selectedObjects[2].name,
+								end1 = selectedObjects[1].name, end2 = selectedObjects[2].name, type = 5,
+								coordType = 2, x1 = 0, y1 = 0, x2 = 0, y2 = 0								}
+			editorJointPage.newJoint = true	
 		end
 	end
 		
@@ -16520,6 +17815,7 @@ function updateEditor(dt, time)
 	
 	if not keyHold["SHIFT"] and keyHold["CONTROL"] and keyPressed["C"] then
 		copiedObjects = {}
+		copiedJoints = {}
 		local x, y, w, h = getObjectListBounds(selectedObjects)
 		for k, v in _G.pairs(selectedObjects) do
 			--print("Adding to copied objects: " .. v.name .. "\n")
@@ -16531,8 +17827,91 @@ function updateEditor(dt, time)
 				copiedObjects[v.name].width = v.width
 				copiedObjects[v.name].height = v.height
 			end
+			
+			if editor.drawOneLayer then
+				copiedObjects[v.name].scale = v.scale
+			end	
+			
 		end
+		
+		for k, v in _G.pairs(objects.joints) do
+			--print("Current joints to check: " .. v.name .. "\n")
+			
+			--change the clause below to or if you want to select a joint even if you have
+			--only selected one block of it
+			--if isKeyInList(v.end1, copiedObjects) and isKeyInList(v.end2, copiedObjects) then
+			if copiedObjects[v.end1] ~= nil and copiedObjects[v.end2] ~= nil then
+				--print("this joint is going to get copied " .. v.name .. "\n")
+				
+				--distance joint
+				if v.type == 1 then
+					copiedJoints[v.name] = { type =  v.type, end1 = v.end1, end2= v.end2, x1=v.x1, y1=v.y1, x2=v.x2, y2=v.y2, coordType=v.coordType,collideConnected=v.collideConnected, dampingRatio=v.dampingRatio, frequency=v.frequency }
+				--weld joint
+				elseif v.type == 2 then
+					copiedJoints[v.name] = { type =  v.type, end1 = v.end1, end2= v.end2, x1=v.x1, y1=v.y1, x2=v.x2, y2=v.y2, coordType=v.coordType,collideConnected=v.collideConnected }
+				--revolute joint
+				elseif v.type == 3 then
+					copiedJoints[v.name] = { type =  v.type, end1 = v.end1, end2= v.end2, x1=v.x1, y1=v.y1, x2=v.x2, y2=v.y2, coordType=v.coordType,collideConnected=v.collideConnected, maxTorque=v.maxTorque,limit=v.limit,backAndForth=v.backAndForth,motorSpeed=v.motorSpeed,motor=v.motor,lowerLimit=v.lowerLimit,upperLimit=v.upperLimit }
+				--prismatic joint
+				elseif v.type == 4 then
+					copiedJoints[v.name] = { type =  v.type, end1 = v.end1, end2= v.end2, x1=v.x1, y1=v.y1, x2=v.x2, y2=v.y2, coordType=v.coordType,collideConnected=v.collideConnected, maxTorque=v.maxTorque, limit=v.limit, backAndForth=v.backAndForth,motorSpeed=v.motorSpeed,worldAxisY=v.worldAxisY, motor=v.motor, lowerLimit=v.lowerLimit, upperLimit=v.upperLimit, worldAxisX = v.worldAxisX}
+				--anihilation joint
+				elseif v.type == 5 then
+					copiedJoints[v.name] = { type =  v.type, end1 = v.end1, end2= v.end2, x1=v.x1, y1=v.y1, x2=v.x2, y2=v.y2, coordType=v.coordType,collideConnected=v.collideConnected, destroyTimer = v.destroyTimer}
+				end
+			end
+			
+		end
+		--the loop below is for selecting blocks that were left off from the selection
+		--but are connected to a joint that is connected to a selected block. 
+		--uncomment it out if needed later
+		--[[
+		for k, v in _G.pairs(copiedJoints) do
+			--print("this joint will be copied: " .. k .. "\n")
+			
+			
+			
+			if (not isKeyInList(v.end1, copiedObjects)) then
+				--print("this object is not selected, but will be copied " .. v.end1 .. "\n")				
+				
+				copiedObjects[v.end1] = { name = v.end1, definition = objects.world[v.end1].definition, x = objects.world[v.end1].x - x, y = objects.world[v.end1].y - y, angle = objects.world[v.end1].angle, strength=objects.world[v.end1].strength }
+				if objects.world[v.end1].width == nil then
+					copiedObjects[v.end1].width = objects.world[v.end1].radius
+					copiedObjects[v.end1].height = objects.world[v.end1].radius
+				else
+					copiedObjects[v.end1].width = objects.world[v.end1].width
+					copiedObjects[v.end1].height = objects.world[v.end1].height
+				end
+			
+			elseif (not isKeyInList(v.end2, copiedObjects)) then
+				--print("this object is not selected, but will be copied " .. v.end1 .. "\n")				
+				
+				copiedObjects[v.end2] = { name = v.end2, definition = objects.world[v.end2].definition, x = objects.world[v.end2].x - x, y = objects.world[v.end2].y - y, angle = objects.world[v.end2].angle, strength=objects.world[v.end2].strength }
+				if objects.world[v.end2].width == nil then
+					copiedObjects[v.end2].width = objects.world[v.end2].radius
+					copiedObjects[v.end2].height = objects.world[v.end2].radius
+				else
+					copiedObjects[v.end2].width = objects.world[v.end2].width
+					copiedObjects[v.end2].height = objects.world[v.end2].height
+				end
+			end
+			
+		end
+		]]--
+		
+		--for k, v in _G.pairs(copiedObjects) do
+		--	print("Final objects to copy: " .. v.name .. "\n")
+		--end
+		
 		selectedObjects = {}
+	end
+	
+	if keyPressed["0"] then
+		editor.drawOneLayer = not editor.drawOneLayer
+		selectedObjects = {}
+		copiedObjects = {}
+		copiedJoints = {}
+		objectToAdd = nil
 	end
 	
 	defaultCamera(dt)
@@ -16540,8 +17919,821 @@ function updateEditor(dt, time)
 	oldCursor.x = cursor.x
 	oldCursor.y = cursor.y	
 	
-	drawGame()
---#endif
+--	drawGame()
+	for k, v in _G.pairs(objects.joints) do
+		if v.backAndForth then
+			checkJointLimits(v.name)
+		end
+	end
+	
+	if editor.drawOneLayer and keyHold["CONTROL"] and cursor.wheelTriggered then
+		editor.currentLayer = editor.currentLayer - cursor.wheel
+		local maxLayer = #blockTable.themes[objects.theme].bgLayers + #blockTable.themes[objects.theme].fgLayers 
+		if editor.currentLayer >= maxLayer then
+			editor.currentLayer = 0
+		elseif editor.currentLayer < 0 then
+			editor.currentLayer = maxLayer - 1
+		end
+	end
+	
+	editorJointPage:update(dt)
+	drawEditor()
+	editorJointPage:draw()
+	
+	if cursor.wheelTriggered then
+		cursor.wheelTriggered = false
+	end
+	
+
+	
+end
+
+
+-------------------
+--OverlayPage-class
+-------------------
+
+OverlayPage = Page:new()
+
+function OverlayPage:init()
+	self:insertItem("shade", RectItem:new({alpha = 0.0}))
+	self:insertItem("kingText", TextItem:new({default = "Pigs popped: ", text = "Pigs popped: ", x = screenWidth / 2, y = screenHeight / 2, visible = false}))
+	self:insertItem("trainText", TextItem:new({default = "Carts wrecked: ", text = "Carts Wrecked: ", x = screenWidth / 2, y = screenHeight / 2, visible = false}))
+	self:insertItem("again", TextItem:new({text = "Try again", x = screenWidth / 2, y = (screenHeight / 2) + (50 / 320) * screenHeight, visible = false,
+										   action = {[function(x) sm:changeScene(x) end] = "kingOfTheHill"}}))
+	self:insertItem("quit", TextItem:new({text = "Quit", x = screenWidth / 2, y = (screenHeight / 2) + (80 / 320) * screenHeight, visible = false,
+										   action = {[function(x) sm:changeScene(x) end] = "mainMenu"}}))
+end
+
+function OverlayPage:onEntry()
+	--print("\noverlay on entry")
+	self.items.shade.x1 = 0
+	self.items.shade.x2 = screenWidth
+	self.items.shade.y1 = 0
+	self.items.shade.y2 = screenHeight
+	
+end
+
+function OverlayPage:update(dt, time)
+	if self.fadeIn == true then
+		self.fadeTime = self.fadeTime - dt
+		self.items.shade.alpha = self.items.shade.alpha + dt * self.fadeIncrement
+		if self.fadeTime < 0 then
+			self.fadeIn = false
+			self.items.shade.alpha = self.fadeTo
+			self.fadeTime = 0
+		end
+	elseif self.fadeOut == true then
+		self.fadeTime = self.fadeTime - dt
+		self.items.shade.alpha = self.items.shade.alpha - dt * self.fadeIncrement
+		if self.fadeTime < 0 then
+			self.fadeOut = false
+			self.items.shade.alpha = self.fadeTo
+			self.fadeTime = 0
+		end
+	end
+end
+
+function OverlayPage:initTexts(score)
+	self.visible = true
+	self.items.kingText.text = self.items.kingText.default .. score
+	self.items.kingText.visible = true
+	self.items.again.visible = true
+	self.items.quit.visible = true
+	self:fade(0, 0.3, 1)
+end
+
+
+function OverlayPage:initTrainTexts(score)
+	self.visible = true
+	self.items.trainText.text = self.items.trainText.default .. score
+	self.items.trainText.visible = true
+	self.items.again.visible = true
+	self.items.quit.visible = true
+	self:fade(0, 0.3, 1)
+end
+
+function OverlayPage:updatePositions()
+	self.items.shade.x2 = screenWidth
+	self.items.shade.y2 = screenHeight
+	self.items.kingText.x = screenWidth / 2
+	self.items.kingText.y = screenHeight / 2
+	self.items.trainText.x = screenWidth / 2
+	self.items.trainText.y = screenHeight / 2
+	self.items.again.x = screenWidth / 2
+	self.items.again.y = screenHeight / 2 + (50 / 320) * screenHeight
+	self.items.quit.x = screenWidth / 2
+	self.items.quit.y = screenHeight / 2 + (80 / 320) * screenHeight
+end
+
+function OverlayPage:fade(from, to, time)
+	if from < to then
+		self.items.shade.alpha = from
+		self.fadeTo = to
+		self.fadeIncrement = (to - from)/ time
+		self.fadeTime = time
+		self.fadeIn = true
+	else 
+		self.items.shade.alpha = from
+		self.fadeTo = to
+		self.fadeIncrement = (from - to)/ time
+		self.fadeTime = time
+		self.fadeOut = true
+	end
+end
+
+function roundNumber(number, decimalDigits) 	
+	local t_shift = 10 ^ decimalDigits
+	
+	return (_G.math.floor( number*t_shift + 0.5 ) / t_shift)
+end
+
+EditorJointPage = Page:new()
+
+fEditorJointPage = Page:new()
+
+function EditorJointPage:init()
+	self.m_selectedAnchor = nil
+end
+
+function EditorJointPage:onEntry()
+	
+	self:insertItem("shade", RectItem:new({alpha = 0.0, renderState = true}))
+	
+	self.jointTexts = { "Distance Joint", "Weld Joint", "Revolute Joint", "Prismatic Joint", "\"Destroy-attached\" -joint" }
+	self.motorTexts = { "Motor: disabled", "Motor: enabled" }
+	self.limitTexts = { "Limits: disabled", "Limits: enabled" }
+	self.backAndForthTexts = { "Back-and-forth: disabled", "Back-and-forth: enabled"}
+	self.xTexts = { "x: 0", "x: 1" }
+	self.yTexts = { "y: 0", "y: 1" }
+	self.collideTexts = { "Collide connected: disabled", "Collide connected: enabled" }
+	
+	setFont("FONT_BASIC")
+	local fl = _G.res.getFontLeading()
+	fl = fl * 1.5
+	self:insertItem("name", TextItem:new({name = "name", text = "", visible = false, font = "FONT_BASIC", x = 0, y = (80 / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("type", TextItem:new({name = "type", text = "", visible = false, font = "FONT_BASIC", x = 0, y = ((80 + fl) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("motor", TextItem:new({name = "motor", text = "", visible = false, font = "FONT_BASIC", x = 0, y = ((80 + fl * 2) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("motorSpeed", TextItem:new({name = "motorSpeed", text = "", visible = false, font = "FONT_BASIC", x = (20 / 480) * screenWidth, y = ((80 + fl * 3) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("maxTorque", TextItem:new({name = "maxTorque", text = "", visible = false, font = "FONT_BASIC", x = (20 / 480) * screenWidth, y = ((80 + fl * 4) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("limit", TextItem:new({name = "limit", text = "", visible = false, font = "FONT_BASIC", x = 0, y = ((80 + fl * 5) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("lowerLimit", TextItem:new({name = "lowerLimit", text = "", visible = false, font = "FONT_BASIC", x = (20 / 480) * screenWidth, y = ((80 + fl * 6) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("upperLimit", TextItem:new({name = "upperLimit", text = "", visible = false, font = "FONT_BASIC", x = (20 / 480) * screenWidth, y = ((80 + fl * 7) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("backAndForth", TextItem:new({name = "backAndForth", text = "", visible = false, font = "FONT_BASIC", x = 0, y = ((80 + fl * 8) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("ok", TextItem:new({name = "ok", text = "OK", visible = false, font = "FONT_BASIC", x = (40 / 480) * screenWidth, y = ((80 + fl * 4) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("x", TextItem:new({name = "x", text = "", visible = false, font = "FONT_BASIC", x = (10 / 480) * screenWidth, y = ((80 + fl * 3) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("y", TextItem:new({name = "y", text = "", visible = false, font = "FONT_BASIC", x = (60 / 480) * screenWidth, y = ((80 + fl * 3) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("frequency", TextItem:new({name = "frequency", text = "", visible = false, font = "FONT_BASIC", x = 0, y = ((80 + fl * 2) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("damping", TextItem:new({name = "damping", text = "", visible = false, font = "FONT_BASIC", x = 0, y = ((80 + fl * 3) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("collide", TextItem:new({name = "collide", text = "", visible = false, font = "FONT_BASIC", x = 0, y = ((80 + fl * 2) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("destroyTimer", TextItem:new({name = "destroyTimer", text = "", visible = false, font = "FONT_BASIC", x = 0, y = ((80 + fl * 2) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	
+	self:insertItem("anchor1", TextItem:new({name = "anchors1", text = "Anchors 1", visible = false, font = "FONT_BASIC", x = 0, y = ((80 + fl * 9) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("anchor2", TextItem:new({name = "anchors1", text = "Anchors 2", visible = false, font = "FONT_BASIC", x = 0, y = ((80 + fl * 10) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	
+	self:insertItem("anchorX1", TextItem:new({name = "anchorX1", text = "x:", visible = false, font = "FONT_BASIC", x = 100, y = ((80 + fl * 9) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("anchorY1", TextItem:new({name = "anchorY1", text = "y:", visible = false, font = "FONT_BASIC", x = 200, y = ((80 + fl * 9) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	
+	self:insertItem("anchorX2", TextItem:new({name = "anchorX2", text = "x:", visible = false, font = "FONT_BASIC", x = 100, y = ((80 + fl * 10) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	self:insertItem("anchorY2", TextItem:new({name = "anchorY2", text = "y:", visible = false, font = "FONT_BASIC", x = 200, y = ((80 + fl * 10) / 480) * screenHeight, hanchor = "LEFT", vanchor = "TOP"}))
+	
+	
+	self.selectedJoint = nil
+	for k, v in _G.pairs(objects.joints) do
+		self:addJoint(v.name)
+	end
+	self:updatePositions()
+	self:prepareTexts()
+end	
+
+function EditorJointPage:hideAllNonCommonItems()
+	
+	self.items.motor.visible = false
+	self.items.motorSpeed.visible = false
+	self.items.maxTorque.visible = false
+	self.items.limit.visible = false
+	self.items.lowerLimit.visible = false
+	self.items.upperLimit.visible = false
+	self.items.backAndForth.visible = false
+	
+	self.items.x.visible = false
+	self.items.y.visible = false
+	self.items.frequency.visible = false
+	self.items.damping.visible = false
+	self.items.collide.visible = false
+	self.items.destroyTimer.visible = false
+	
+	
+end
+
+function EditorJointPage:onExit()
+	for i = 1, #self.items do
+		self:removeItem(self.items[i])
+	end
+end
+
+function EditorJointPage:addJoint(joint)
+
+	self:insertItem(joint, SpriteItem:new({ sprite = "TRAIL_FLOWER_1",spriteIdle = "TRAIL_FLOWER_1", spriteClick="TRAIL_FLOWER_3", inWorld = true }))
+	self:insertItem(joint .. "_ANCHOR_1", SpriteItem:new({ sprite = "TRAIL_WHITE_1",spriteIdle = "TRAIL_WHITE_1", spriteClick="TRAIL_FLOWER_3", inWorld = true }))
+	self:insertItem(joint .. "_ANCHOR_2", SpriteItem:new({ sprite = "TRAIL_WHITE_1",spriteIdle = "TRAIL_WHITE_1", spriteClick="TRAIL_FLOWER_3", inWorld = true }))
+	
+end
+
+function EditorJointPage:create_joint()
+	if editor.newJoint.type == 4 then
+		if self.items.x.text == self.xTexts[1] then
+			editor.newJoint.worldAxisX = 0
+		else
+			editor.newJoint.worldAxisX = 1
+		end
+		if self.items.y.text == self.yTexts[1] then
+			editor.newJoint.worldAxisY = 0
+		else
+			editor.newJoint.worldAxisY = 1
+		end
+		self.items.x.visible = false
+		self.items.y.visible = false
+	end
+	
+	--makes all anchors coordinates in object's local space
+	editor.newJoint.coordType = 2
+
+	createJoint(editor.newJoint)
+	self:addJoint(editor.newJoint.name)
+	selectedObjects = {}
+	self.selectedJoint = objects.joints[editor.newJoint.name]
+	--self.items[self.selectedJoint.name].sprite = "TRAIL_FLOWER_3"
+	self.items[self.selectedJoint.name].sprite = self.items[self.selectedJoint.name].spriteClick
+	editor.newJoint = nil
+	levelSaved = false
+	self.items.ok.visible = false
+	self:prepareTexts()
+end
+
+function EditorJointPage:update(dt, time) 
+	
+	self:updatePositions()
+	
+	if self.newJoint then
+		if not self.fadeIn and self.items.shade.alpha <= 0 then 
+			OverlayPage.fade(self, 0, 0.5, 0.2)
+			self.fadeIn = true
+		end
+	--	self.items.ok.visible = true
+		self:prepareTexts()
+		self.newJoint = false
+	end
+	
+	local itm = self:checkClicks()
+	if itm and (self.selectedJoint or editor.newJoint) then
+		local joint = self.selectedJoint
+		-- toggle motor for revolute and prismatic joints
+		if itm.name == "motor" then
+			if joint.motor ~= nil then
+				setJointParameters({name = joint.name, motor = not joint.motor})
+				if not joint.motor then
+					joint.backAndForth = false
+				end	
+				self:prepareTexts()
+				levelSaved = false
+			end
+		-- toggle limits
+		elseif itm.name == "limit" then
+			if joint.limit ~= nil then
+				setJointParameters({name = joint.name, limit = not joint.limit})
+				if not joint.limit then
+					joint.backAndForth = false
+				end
+				self:prepareTexts()
+				levelSaved = false
+			end
+		-- toggle back-and-forth
+		elseif itm.name == "backAndForth" then
+			if joint.motor ~= nil and joint.limit ~= nil then
+				joint.backAndForth = not joint.backAndForth
+				if joint.backAndForth then
+					self.items.backAndForth.text = self.backAndForthTexts[2]
+				else
+					self.items.backAndForth.text = self.backAndForthTexts[1]
+				end
+				levelSaved = false
+			end
+		elseif itm.name == "x" then
+			if itm.text == self.xTexts[1] then
+				itm.text = self.xTexts[2]
+			else
+				itm.text = self.xTexts[1]
+			end
+		elseif itm.name == "y" then
+			if itm.text == self.yTexts[1] then
+				itm.text = self.yTexts[2]
+			else
+				itm.text = self.yTexts[1]
+			end
+		elseif not joint and itm.name == "collide" then
+			editor.newJoint.collideConnected = not editor.newJoint.collideConnected
+			if itm.text == self.collideTexts[1] then
+				itm.text = self.collideTexts[2]
+			else
+				itm.text = self.collideTexts[1]
+			end
+		elseif itm.name == "type" and not joint and editor.newJoint then
+			editor.newJoint.type = editor.newJoint.type + 1
+			if editor.newJoint.type == 6 then
+				editor.newJoint.type = 1
+			end
+			if editor.newJoint.type == 4 then
+				self.items.x.visible = true
+				self.items.y.visible = true
+				self.items.x.text = self.xTexts[1]
+				self.items.y.text = self.yTexts[1]
+			else
+				self.items.x.visible = false
+				self.items.y.visible = false
+			end
+			if editor.newJoint.type == 5 then 
+				self.items.collide.visible = false
+			else
+				self.items.collide.visible = true
+			end
+			self.items.type.text = self.jointTexts[editor.newJoint.type]
+		-- create new joint
+		elseif not joint and editor.newJoint and itm.name == "ok" then
+			self:create_joint()
+		end
+	end
+	
+	if keyPressed["RETURN"] then
+		if not self.selectedJoint and editor.newJoint then
+			self:create_joint()
+		elseif self.selectedJoint ~= nil then
+			self.disableSelectedJoint = true
+		end
+	end
+
+	-- change joint parameters
+	if (keyHold["LBUTTON"] or keyHold["RBUTTON"] or (keyHold["CONTROL"] and cursor.wheel and cursor.wheelTriggered and (cursor.wheel == -1 or cursor.wheel == 1)))
+		and (self.selectedJoint or editor.newJoint) then
+		
+		local itms = self:getHoveredItems()
+		local offset = 1
+		if keyHold["RBUTTON"] then
+			offset = -1
+		end
+		if keyHold["CONTROL"] and cursor.wheel and (cursor.wheel == -1 or cursor.wheel == 1) and cursor.wheelTriggered then
+			offset = cursor.wheel
+		end
+		if itms then 
+			if keyHold["SHIFT"] then 
+				offset = offset * 10
+			end
+			for k, v in _G.pairs(itms) do
+				if v == "motorSpeed" then
+					setJointParameters({name = self.selectedJoint.name, motorSpeed = self.selectedJoint.motorSpeed + offset / 10 })--+ cursor.wheel / 10})
+					self.items.motorSpeed.text = "Speed: " .. self.selectedJoint.motorSpeed
+					levelSaved = false
+				elseif v == "maxTorque" then
+					setJointParameters({name = self.selectedJoint.name, maxTorque = self.selectedJoint.maxTorque + offset * 100})--cursor.wheel * 100})
+					self.items.maxTorque.text = "MaxTorque: " .. self.selectedJoint.maxTorque
+					levelSaved = false
+				elseif v == "lowerLimit" then
+					local newLowLimit = _G.math.min(self.selectedJoint.lowerLimit + (offset / 360) * (_G.math.pi * 2), 0)
+					setJointParameters({name = self.selectedJoint.name, lowerLimit = newLowLimit })
+					if self.selectedJoint.type == 3 then
+						self.items.lowerLimit.text = "Lower: " .. (self.selectedJoint.lowerLimit / (2 * _G.math.pi)) * 360
+					elseif self.selectedJoint.type == 4 then
+						self.items.lowerLimit.text = "Lower: " .. self.selectedJoint.lowerLimit
+					end
+					levelSaved = false
+				elseif v == "upperLimit" then
+					local newHighLimit = _G.math.max(0, self.selectedJoint.upperLimit + (offset / 360) * (_G.math.pi * 2))
+					setJointParameters({name = self.selectedJoint.name, upperLimit = newHighLimit})
+					if self.selectedJoint.type == 3 then
+						self.items.upperLimit.text = "Upper: " .. (self.selectedJoint.upperLimit / (2 * _G.math.pi)) * 360
+					elseif self.selectedJoint.type == 4 then
+						self.items.upperLimit.text = "Upper: " .. self.selectedJoint.upperLimit
+					end
+					levelSaved = false
+				elseif v == "frequency" then
+					setJointParameters({name = self.selectedJoint.name, frequency = self.selectedJoint.frequency + offset / 10 })
+					self.items.frequency.text = "Frequency: " .. self.selectedJoint.frequency
+					levelSaved = false
+				elseif v == "damping" then
+					local newDamping = _G.math.max(0, _G.math.min(self.selectedJoint.dampingRatio + offset / 100, 1))
+					setJointParameters({name = self.selectedJoint.name, dampingRatio = newDamping })
+					self.items.damping.text = "Damping: " .. self.selectedJoint.dampingRatio
+					levelSaved = false
+				elseif v == "destroyTimer" then
+					self.selectedJoint.destroyTimer = _G.math.max(0, self.selectedJoint.destroyTimer + offset / 100)
+					self.items.destroyTimer.text = "Annihilation(!) timer: " .. self.selectedJoint.destroyTimer
+					levelSaved = false				
+				elseif v == "anchorX1" then
+					self.selectedJoint.x1 = self.selectedJoint.x1 + (offset / 100)
+					self.items.anchorX1.text = "x: " .. roundNumber(self.selectedJoint.x1, 2)
+					levelSaved = false				
+				elseif v == "anchorY1" then
+					self.selectedJoint.y1 = self.selectedJoint.y1 + (offset / 100)
+					self.items.anchorY1.text = "y: " .. roundNumber(self.selectedJoint.y1,2)
+					levelSaved = false
+				elseif v == "anchorX2" then
+					self.selectedJoint.x2 = self.selectedJoint.x2 + (offset / 100)
+					self.items.anchorX2.text = "x: " .. roundNumber(self.selectedJoint.x2,2)
+					levelSaved = false				
+				elseif v == "anchorY2" then
+					self.selectedJoint.y2 = self.selectedJoint.y2 + (offset / 100)
+					self.items.anchorY2.text = "y: " .. roundNumber(self.selectedJoint.y2,2)
+					levelSaved = false
+				end
+			end
+		end
+	end
+	
+	if keyPressed["RBUTTON"] then
+		local t_clickedOnAJointElement = false
+		local t_clickedOnAnEditorItem = false
+		local t_jointSelectedBefore = self.selectedJoint ~= nil
+		
+		local t_items = self:getHoveredItems()
+		
+		if not t_items then
+			t_clickedOnAnEditorItem = false
+		else
+			t_clickedOnAnEditorItem = true
+		end		
+		
+		--checks if the user has clicked any joint elements
+		for k, v in _G.pairs(objects.joints) do							
+					
+			if 	(self.items[v.name] and self.items[v.name]:checkBounds(cursor.x, cursor.y)) or 
+				(self.items[v.name .. "_ANCHOR_1"] and self.items[v.name  .. "_ANCHOR_1"]:checkBounds(cursor.x, cursor.y)) or
+				(self.items[v.name .. "_ANCHOR_2"] and self.items[v.name  .. "_ANCHOR_2"]:checkBounds(cursor.x, cursor.y)) then
+				
+				--brings the selected joint to the idle state
+				if self.selectedJoint then
+					self.items[self.selectedJoint.name  .. "_ANCHOR_1"].sprite = self.items[self.selectedJoint.name  .. "_ANCHOR_1"].spriteIdle
+					self.items[self.selectedJoint.name  .. "_ANCHOR_2"].sprite = self.items[self.selectedJoint.name  .. "_ANCHOR_2"].spriteIdle
+					self.items[self.selectedJoint.name].sprite = self.items[self.selectedJoint.name].spriteIdle
+				end		
+				
+				selectedObjects = {}
+				
+				self.selectedJoint = v
+				
+				editor.newJoint = false
+				
+				t_clickedOnAJointElement = true								
+				
+				--sets clicked joint with the click sprite
+				self.items[v.name].sprite = self.items[v.name].spriteClick
+					
+				--if an anchor was clicked, put also the click sprite
+				if self.items[v.name  .. "_ANCHOR_1"]:checkBounds(cursor.x, cursor.y) then
+					self.items[v.name  .. "_ANCHOR_1"].sprite = self.items[v.name  .. "_ANCHOR_1"].spriteClick
+					self.items[v.name  .. "_ANCHOR_2"].sprite = self.items[v.name  .. "_ANCHOR_1"].spriteIdle
+					self.m_selectedAnchor = self.items[v.name  .. "_ANCHOR_1"]
+				elseif self.items[v.name  .. "_ANCHOR_2"]:checkBounds(cursor.x, cursor.y) then
+					self.items[v.name  .. "_ANCHOR_2"].sprite = self.items[v.name  .. "_ANCHOR_2"].spriteClick
+					self.items[v.name  .. "_ANCHOR_1"].sprite = self.items[v.name  .. "_ANCHOR_2"].spriteIdle
+					self.m_selectedAnchor = self.items[v.name  .. "_ANCHOR_2"]
+				end		
+
+			
+				self:hideAllNonCommonItems()
+				self:prepareTexts()
+				
+				break
+			end
+		end
+		
+		if not editor.newJoint then
+		
+			--user has clicked outside the editing buttons or joints
+			if (not t_clickedOnAnEditorItem) and (not t_clickedOnAJointElement) then
+				--print("\nclick outside")
+				--there was a joint selected, wil disable this joint
+				if self.selectedJoint ~= nil then
+					self.disableSelectedJoint = true
+				end
+			end
+			
+			--new joint has been selected outside the editing page
+			if (t_clickedOnAJointElement) and not t_jointSelectedBefore then
+				OverlayPage.fade(self, 0, 0.5, 0.2)
+				self.fadeIn = true
+			end
+			
+		end
+		
+	end	
+	
+	--moving joint anchors
+	if self.selectedJoint and self.m_selectedAnchor and keyHold["LBUTTON"] then
+		if self.items[self.selectedJoint.name .. "_ANCHOR_1"]:checkBounds(cursor.x, cursor.y) then
+			
+			local t_worldPosX = 0
+			local t_worldPosY = 0
+			
+			local t_localPosX = 0
+			local t_localPosY = 0						
+			
+			t_worldPosX, t_worldPosY = screenToPhysicsTransform(cursor.x, cursor.y)												
+			t_localPosX , t_localPosY = getLocalPoint(objects.joints[self.selectedJoint.name].end1, t_worldPosX, t_worldPosY);						
+			
+			objects.joints[self.selectedJoint.name].x1 = t_localPosX
+			objects.joints[self.selectedJoint.name].y1 = t_localPosY
+			
+			self.items.anchorX1.text = "x: " .. roundNumber(t_localPosX, 2)
+			self.items.anchorY1.text = "y: " .. roundNumber(t_localPosY, 2)
+			
+			self:updatePositions()
+			
+			levelSaved = false
+			
+		elseif self.items[self.selectedJoint.name .. "_ANCHOR_2"]:checkBounds(cursor.x, cursor.y) then
+			local t_worldPosX = 0
+			local t_worldPosY = 0
+			
+			local t_localPosX = 0
+			local t_localPosY = 0						
+			
+			t_worldPosX, t_worldPosY = screenToPhysicsTransform(cursor.x, cursor.y)												
+			t_localPosX , t_localPosY = getLocalPoint(objects.joints[self.selectedJoint.name].end2, t_worldPosX, t_worldPosY);						
+			
+			objects.joints[self.selectedJoint.name].x2 = t_localPosX
+			objects.joints[self.selectedJoint.name].y2 = t_localPosY
+			
+			self.items.anchorX2.text = "x: " .. roundNumber(t_localPosX, 2)
+			self.items.anchorY2.text = "y: " .. roundNumber(t_localPosY, 2)
+			
+			self:updatePositions()
+			
+			levelSaved = false
+		end
+	
+	end
+	
+	if keyPressed["DELETE"] and self.selectedJoint and not physicsEnabled then
+		self:removeItem(self.selectedJoint.name)
+		self:removeItem(self.selectedJoint.name .. "_ANCHOR_1")
+		self:removeItem(self.selectedJoint.name .. "_ANCHOR_2")
+		destroyJoint(self.selectedJoint.name)
+		self.selectedJoint = nil
+		self.disableSelectedJoint = true
+	end
+	
+	if self.disableSelectedJoint then
+		if self.selectedJoint then
+			--self.items[self.selectedJoint.name].sprite = "TRAIL_FLOWER_1"
+			self.items[self.selectedJoint.name].sprite = self.items[self.selectedJoint.name].spriteIdle
+			
+			
+			self.items[self.selectedJoint.name .. "_ANCHOR_1"].sprite = self.items[self.selectedJoint.name .. "_ANCHOR_1"].spriteIdle
+			self.items[self.selectedJoint.name .. "_ANCHOR_2"].sprite = self.items[self.selectedJoint.name .. "_ANCHOR_2"].spriteIdle
+			
+			self.m_selectedAnchor = nil			
+			self.selectedJoint = nil
+		end
+		if not self.fadeOut and self.items.shade.alpha >= 0.5 then
+			self.fadeOut = true
+			OverlayPage.fade(self, 0.5, 0, 0.2)
+		end
+		editor.newJoint = nil
+		self:prepareTexts()
+		self.disableSelectedJoint = false
+	end
+
+
+	if self.fadeIn then
+		OverlayPage.update(self, dt)
+		if self.items.shade.alpha >= 0.5 then
+			self.fadeIn = false
+		end
+	elseif self.fadeOut then
+		OverlayPage.update(self, dt)
+		if self.items.shade.alpha <= 0 then
+			self.fadeOut = false
+		end 
+	end
+	
+end
+
+function EditorJointPage:setJointSelection()
+	
+
+end
+
+function EditorJointPage:prepareTexts()
+	
+	local joint = self.selectedJoint or editor.newJoint
+	
+	if joint then
+		self.items.name.text = "Name: " .. joint.name		
+		self.items.type.text = self.jointTexts[joint.type]
+		if joint.collideConnected then
+			self.items.collide.text = self.collideTexts[2]
+		else
+			self.items.collide.text = self.collideTexts[1]
+		end
+		self.items.type.visible = true
+		self.items.name.visible = true
+		
+		if self.selectedJoint then
+			self.items.anchor1.visible = true
+			self.items.anchor2.visible = true
+			self.items.anchorX1.visible = true
+			self.items.anchorY1.visible = true
+			self.items.anchorX2.visible = true
+			self.items.anchorY2.visible = true
+			
+			
+		
+			self.items.anchorX1.text = "x: " .. roundNumber(joint.x1,2)
+			self.items.anchorY1.text = "y: " .. roundNumber(joint.y1, 2)
+			self.items.anchorX2.text = "x: " .. roundNumber(joint.x2,2)
+			self.items.anchorY2.text = "y: " .. roundNumber(joint.y2,2)
+		end
+	
+		
+		
+		if editor.newJoint and not self.selectedJoint then
+			self.items.ok.visible = true
+			if editor.newJoint.type ~= 5 then
+				self.items.collide.visible = true
+			end
+			return
+		else
+			self.items.ok.visible = false	
+			self.items.collide.visible = false
+		end
+		if joint.type == 3 or joint.type == 4 then -- revolute and prismatic joint
+			
+			if joint.motor then
+				self.items.motor.text = self.motorTexts[2]
+			else
+				self.items.motor.text = self.motorTexts[1]
+			end
+			if joint.limit then
+				self.items.limit.text = self.limitTexts[2]
+			else
+				self.items.limit.text = self.limitTexts[1]
+			end
+			
+			if joint.backAndForth then
+				self.items.backAndForth.text = self.backAndForthTexts[2]
+			else
+				self.items.backAndForth.text = self.backAndForthTexts[1]
+			end
+			
+			self.items.motorSpeed.text = "Speed: " .. joint.motorSpeed
+			self.items.maxTorque.text = "MaxTorque: " .. joint.maxTorque
+			if joint.type == 3 then
+				self.items.lowerLimit.text = "Lower: " .. (joint.lowerLimit / (2 * _G.math.pi)) * 360
+				self.items.upperLimit.text = "Upper: " .. (joint.upperLimit / (2 * _G.math.pi)) * 360
+			else
+				self.items.lowerLimit.text = "Lower: " .. joint.lowerLimit
+				self.items.upperLimit.text = "Upper: " .. joint.upperLimit
+			end
+			
+			self.items.motor.visible = true
+			self.items.limit.visible = true
+			if joint.motor then
+				self.items.motorSpeed.visible = true
+				self.items.maxTorque.visible = true
+			else
+				self.items.motorSpeed.visible = false
+				self.items.maxTorque.visible = false
+			end
+			if joint.limit then
+				self.items.lowerLimit.visible = true
+				self.items.upperLimit.visible = true
+			else
+				self.items.lowerLimit.visible = false
+				self.items.upperLimit.visible = false
+			end
+			
+			if joint.motor and joint.limit then
+				self.items.backAndForth.visible = true	
+			else
+				self.items.backAndForth.visible = false
+			end
+		elseif joint.type == 1 then
+			self.items.frequency.text = "Frequency: " .. joint.frequency
+			self.items.damping.text = "Damping: " .. joint.dampingRatio
+			self.items.frequency.visible = true
+			self.items.damping.visible = true
+		elseif joint.type == 5 then
+			self.items.destroyTimer.text = "Annihilation(!) timer: " .. joint.destroyTimer
+			self.items.destroyTimer.visible = true
+			self.items.collide.visible = false
+		end
+	elseif not joint then
+		self.items.name.visible = false
+		self.items.type.visible = false
+		self.items.motor.visible = false	
+		self.items.motorSpeed.visible = false
+		self.items.maxTorque.visible = false
+		self.items.limit.visible = false
+		self.items.lowerLimit.visible = false
+		self.items.upperLimit.visible = false
+		self.items.backAndForth.visible = false
+		self.items.x.visible = false
+		self.items.y.visible = false
+		self.items.damping.visible = false
+		self.items.frequency.visible = false
+		self.items.ok.visible = false
+		self.items.collide.visible = false
+		self.items.destroyTimer.visible = false
+		
+		self.items.anchor1.visible = false
+		self.items.anchor2.visible = false
+		self.items.anchorX1.visible = false
+		self.items.anchorY1.visible = false
+		self.items.anchorX2.visible = false
+		self.items.anchorY2.visible = false
+	end
+
+end
+
+
+function EditorJointPage:draw()
+	if editor.drawOneLayer then
+		return
+	end
+	
+	self.items["shade"]:draw()	
+	
+	if self.selectedJoint or editor.newJoint then 
+		local joint = self.selectedJoint or editor.newJoint
+		local obj1 = objects.world[joint.end1]
+		local obj2 = objects.world[joint.end2]
+		local xCoord, yCoord = physicsToWorldTransform(obj1.x, obj1.y)
+		setRenderState(-screen.left, -screen.top, worldScale, worldScale, obj1.angle, _G.res.getSpritePivot("", obj1.sprite))
+		_G.res.drawSprite("", obj1.sprite, xCoord, yCoord)
+		setRenderState(-screen.left, -screen.top, worldScale, worldScale, obj2.angle, _G.res.getSpritePivot("", obj2.sprite))
+		xCoord, yCoord = physicsToWorldTransform(obj2.x, obj2.y)
+		_G.res.drawSprite("", obj2.sprite, xCoord, yCoord)
+		setRenderState(0, 0, 1, 1, 0, 0, 0)
+		if self.selectedJoint then
+			drawJoint(editor, objects.joints[self.selectedJoint.name], "EDITOR_JOINT")
+		end
+	--	self.items.name:draw()
+	--	self.items[self.selectedJoint.name]:draw()
+	end
+	
+	for k, v in _G.pairs(self.order) do
+		if v ~= "shade" and self.items[v].sprite then
+			--self.items[v]:draw()
+			local xCoord, yCoord = self.items[v].x, self.items[v].y
+			local xs, ys = self.items[v].xs or 1, self.items[v].ys or 1
+			local angle = self.items[v].angle or 0
+			local px, py = self.items[v].pivotX or 0, self.items[v].pivotY or 0
+		
+			setRenderState(-screen.left, -screen.top, worldScale, worldScale, 0, 0, 0)
+			xCoord, yCoord = physicsToWorldTransform(xCoord, yCoord)
+			
+			_G.res.drawSprite(self.items[v].sheet, self.items[v].sprite, xCoord, yCoord)
+			setRenderState(0, 0, 1, 1, 0, 0, 0)
+		else
+			self.items[v]:draw()
+		end
+	end
+	
+	
+
+end
+
+function EditorJointPage:updatePositions()
+	
+	for k, v in _G.pairs(objects.joints) do
+		local joint = v
+		local jointWorldX1 = joint.x1
+		local jointWorldY1 = joint.y1
+		local jointWorldX2 = joint.x2
+		local jointWorldY2 = joint.y2
+	
+		if joint.coordType == 2 then
+			jointWorldX1, jointWorldY1 = getWorldPoint(joint.end1, jointWorldX1, jointWorldY1);
+			jointWorldX2, jointWorldY2 = getWorldPoint(joint.end2, jointWorldX2, jointWorldY2);
+		end
+		local xdif = jointWorldX2 - jointWorldX1
+		local ydif = jointWorldY2 - jointWorldY1
+		local xCoord, yCoord = jointWorldX1 + (xdif / 2), jointWorldY1 + (ydif / 2)
+		self.items[joint.name].x = xCoord
+		self.items[joint.name].y = yCoord
+		
+		
+		self.items[joint.name .. "_ANCHOR_1"].x = jointWorldX1
+		self.items[joint.name .. "_ANCHOR_1"].y = jointWorldY1
+		
+		self.items[joint.name .. "_ANCHOR_2"].x = jointWorldX2
+		self.items[joint.name .. "_ANCHOR_2"].y = jointWorldY2
+		
+		
+	end
+	self.items.shade.x2 = screenWidth
+	self.items.shade.y2 = screenHeight
+	
 end
 
 function returnToEditor()
@@ -16551,6 +18743,10 @@ function returnToEditor()
 	loadLevelInternal(levelFolder .. name)
 	setGameMode(updateEditor)
 	setPhysicsEnabled(false)
+	-- if editorJointPage then
+		-- editorJointPage:onExit()
+		-- editorJointPage = nil
+	-- end
 end
 
 function goToMenu()
@@ -16868,18 +19064,23 @@ end
 
 function ingameHideOrShowHUDButtons(show)
 
-	local t_ingamePause = getItemByName(g_ingamePausePage.items, "ingameButtonPause")
-	local t_ingameRestart = getItemByName(g_ingamePausePage.items, "ingameButtonRestart")
-	
-	t_ingamePause.visible = (show == true)
-	t_ingameRestart.visible = (show == true)
-	
+--	local t_ingamePause = getItemByName(g_ingamePausePage.items, "ingameButtonPause")
+--	local t_ingameRestart = getItemByName(g_ingamePausePage.items, "ingameButtonRestart")
+--	local t_ingameEagle = getItemByName(g_ingamePausePage.items, "ingameButtonEagle")
+--	
+--	t_ingamePause.visible = (show == true)
+--	t_ingameRestart.visible = (show == true)
+--	t_ingameEagle.visible = (show == true)
 end
 
 function cancelBirdDrag()
 	if selectedBird ~= nil then
 		
+        _G.res.playAudio(getObjectDefinition(selectedBird.name).unselectionSound, 1, false)
 		setPosition(selectedBird.name, levelStartPosition.x, levelStartPosition.y)
+		if gameOptions.rotateWhileSlinging then
+			setRotation(selectedBird.name,0)
+		end
 		--setPosition(selectedBird.name, 0,0)
 		g_birdDragOnTouchAttributes.dragging = false
 		selectedBird = nil
@@ -17050,13 +19251,61 @@ function isAnyKeyPressed()
 	return false
 end
 
+function calculate_xOffset(v)
+	return _G.math.cos(getAngle(v.name)) * v.sizeX * 0.5 * physicsScale
+end
 
+function calculate_yOffset(v)
+	return _G.math.sin(getAngle(v.name)) * v.sizeX * 1 * physicsScale
+end
+
+function calculate_relativeForceX(v, shootingForce)
+	return _G.math.cos(getAngle(v.name)) * shootingForce
+end
+
+function calculate_relativeForceY(v, shootingForce)
+	return _G.math.sin(getAngle(v.name)) * shootingForce
+	
+end
 -------------------------------------------------------------------------------
 -- GAME
 --
 currentFrame = 0
-function updateGame(dt, time)
+function updateCannons(dt, time)
 
+
+    for k, v in _G.pairs(cannons) do
+
+        local ObjectDefinition = getObjectDefinition(k)
+  
+        local shootingInterval = ObjectDefinition.shootingInterval --2.5 --how long between shots
+        local shootingForce = -8000
+        v.sizeX, v.sizeY = _G.res.getSpriteBounds("CANNON_1") --gets the bounds of the cannon sprite.
+  
+        local xOffset = calculate_xOffset(v)
+        local yOffset = calculate_yOffset(v)
+  
+        v.g_cannon_timer = (v.g_cannon_timer or -shootingInterval) + dt
+        if v.g_cannon_timer > 0 then
+          if _G.res.isAudioPlaying("cannon_shot_02") == false then
+            _G.res.playAudio("cannon_shot_02", 1, false)
+          end
+          setSprite(v.name, ObjectDefinition.sprite)
+          addParticles(v.name, "explosionBuff", 1)
+          local name = createObject(blockTable, ObjectDefinition.ammo, nil, v.x - xOffset, v.y - yOffset)
+          local relativeForceX = calculate_relativeForceX(v, shootingForce)
+          local relativeForceY = calculate_relativeForceY(v, shootingForce)
+          applyImpulse(name, relativeForceX, relativeForceY, v.x + xOffset ,v.y - yOffset)
+          v.g_cannon_timer = nil
+        elseif v.g_cannon_timer > -shootingInterval/2 then
+          setSprite(v.name, ObjectDefinition.shoot_sprite)
+        end
+  
+      end
+
+end
+function updateGame(dt, time)
+             updateCannons(dt, time)
 	if deviceModel == "roku" and not rokuOnWindows then
 		-- motion sensor capture safe-guards
 		if not selectedBird and isMouseCaptured() then
@@ -17239,6 +19488,8 @@ function updateGame(dt, time)
 	
 	local t_ingameRestart = getItemByName(g_ingamePausePage.items, "ingameButtonRestart")
 	local t_ingamePause = getItemByName(g_ingamePausePage.items, "ingameButtonPause")
+	local t_ingameEagle = getItemByName(g_ingamePausePage.items, "ingameButtonEagle")
+	local t_ingamePu = getItemByName(g_ingamePausePage.items,"ingameButtonPowerups")
 
 	if g_enableMouseOverStates then
 		if deviceModel == "roku" then
@@ -17251,14 +19502,18 @@ function updateGame(dt, time)
 		else
 			updateItemMouseOverState(t_ingameRestart, dt)
 			updateItemMouseOverState(t_ingamePause, dt)
+			updateItemMouseOverState(t_ingameEagle, dt)
+			updateItemMouseOverState(t_ingamePu, dt)
 		end
 	end
 	
 	-- NOTE: these are only used for the press checks, button hover scaling is done elsewhere
 	local t_restartHovered = checkSpriteBoundsWithScaling(t_ingameRestart.sheet, t_ingameRestart.sprite, t_ingameRestart.x,t_ingameRestart.y, t_ingameRestart.xs, t_ingameRestart.ys, cursor.x, cursor.y)
 	local t_pauseHovered   = checkSpriteBoundsWithScaling(t_ingamePause.sheet, t_ingamePause.sprite, t_ingamePause.x,t_ingamePause.y, t_ingamePause.xs, t_ingamePause.ys, cursor.x, cursor.y)
+	local t_eagleHovered   = checkSpriteBoundsWithScaling(t_ingameEagle.sheet, t_ingameEagle.sprite, t_ingameEagle.x,t_ingameEagle.y, t_ingameEagle.xs, t_ingameEagle.ys, cursor.x, cursor.y)
+	local t_puHovered   = checkSpriteBoundsWithScaling(t_ingamePu.sheet, t_ingamePu.sprite, t_ingamePu.x,t_ingamePu.y, t_ingamePu.xs, t_ingamePu.ys, cursor.x, cursor.y)
 	
-	local t_restartPressed, t_pausePressed
+	local t_restartPressed, t_pausePressed, t_eaglePressed, t_puPressed
 	if deviceModel == "roku" and currentGameMode == updateGame then
 		if birdTutorialPopups == nil or birdTutorialPopups and #birdTutorialPopups == 0 then
 			t_restartPressed = keyReleased["F5"]
@@ -17267,20 +19522,22 @@ function updateGame(dt, time)
 	else
 		t_restartPressed = keyPressed["LBUTTON"] and t_restartHovered
 		t_pausePressed   = keyPressed["LBUTTON"] and t_pauseHovered
+		t_eaglePressed   = keyPressed["LBUTTON"] and t_eagleHovered
+		t_puPressed   = keyPressed["LBUTTON"] and t_puHovered
 
-		if t_restartHovered or t_pauseHovered or birdSpecialtyAvailable then
+		if (t_restartHovered and t_ingameRestart.visible ~= false) or (t_pauseHovered and t_ingamePause.visible ~= false) or (t_eagleHovered and t_ingameEagle.visible ~= false) or (t_puHovered and t_ingamePu.visible ~= false) or birdSpecialtyAvailable then
 			g_currentCursorName = "CURSOR_HAND_POINT"
 		end
 	end
 
-	if t_restartPressed then
+	if t_restartPressed and not startedFromEditor and t_ingameRestart.visible ~= false then
 		levelRestartedFrom = "keyboard command"
 		loading = true
 		setGameMode(updateLoading)
 		drawGame()
 		return
 	end
-	if t_pausePressed then
+	if t_pausePressed and t_ingamePause.visible ~= false then
 		if startedFromEditor then
 			returnToEditor()
 		else
@@ -17288,6 +19545,19 @@ function updateGame(dt, time)
 			drawGame()
 		end
 		return
+	end
+	
+	if t_eaglePressed and t_ingameEagle.visible ~= false then--not eagleBaitLaunched and not checkLevelComplete() then
+		launchEagleBaitFromPauseMenu()
+		t_ingameEagle.visible = false
+		t_ingamePu.visible = false
+	end
+	
+	if t_puPressed and t_ingamePu.visible ~= false then--not eagleBaitLaunched and not checkLevelComplete() then
+--		launchEagleBaitFromPauseMenu()
+--		t_ingameEagle.visible = false
+		_G.res.playAudio("menu_confirm",1,false)
+		_G.res.playAudio(getAudioName("red_special"),1,false)
 	end
 
 	if resolutionChanged == true then
@@ -17310,6 +19580,7 @@ function updateGame(dt, time)
 	if cameraShake ~= nil and cameraShake ~= 0 then
 		cameraShakeX = _G.math.floor(_G.math.random(-_G.math.abs(cameraShake), _G.math.abs(cameraShake)))
 		cameraShakeY = _G.math.floor(_G.math.random(-_G.math.abs(cameraShake), _G.math.abs(cameraShake)))
+		cameraShake = _G.math.max(cameraShake - dt*50,0)
 	end
 	
 	if popupPage ~= nil then
@@ -17460,9 +19731,11 @@ function updateGame(dt, time)
 		_G.res.stopAudio("title_theme")
 		currentBirdIndex = 0
 		fillInNextBird = true
+		getItemByName(g_ingamePausePage.items, "ingameButtonEagle").visible = gameOptions.mightyEagle.enabled == true --hack..
+		getItemByName(g_ingamePausePage.items, "ingameButtonPowerups").visible = gameOptions.enablePowerups == true --hack..
 	end
 	
-	local currentMusic = musics[currentThemeNumber]
+	local currentMusic = blockTable.themes[currentTheme].music or musics[currentThemeNumber]
 	if _G.res.isAudioPlaying(currentMusic) == false then
 		_G.res.playAudio(currentMusic, 1, true,7)
 	end
@@ -17689,6 +19962,7 @@ function updateGame(dt, time)
 
 	if levelStartTimer < 1 or levelStartTimer > 6 then
 		levelStartTimer = levelStartTimer + dt
+--		setPhysicsEnabled(true)
 	else
 		setPhysicsEnabled(true)
 		levelStartTimer = 10
@@ -17697,6 +19971,16 @@ function updateGame(dt, time)
 		--nextBirdTimer = 1
 		-- currentBirdName = getNextBird(currentBirdIndex)
 	end
+	
+	local hasLevelGoals = false
+	for k, v in _G.pairs(levelGoals) do
+		if v.levelGoal then
+			hasLevelGoals = true
+			break
+		end
+	end
+	
+	if not hasLevelGoals then getItemByName(g_ingamePausePage.items, "ingameButtonPowerups").visible = false end
 
 	-- check level complete rule
 	if levelCompleteTimer > 0 then
@@ -17775,19 +20059,19 @@ function updateGame(dt, time)
 					levelRestartedFrom = "complete menu"
 					if eagleBaitLaunched == true then
 						-- percentage from mighty eagle points
-						mightyEagleScore = _G.math.min(_G.math.ceil( (score / starTable[levelName].goldScore ) * 100), 100)
+						mightyEagleScore = _G.math.min(_G.math.ceil( (score / (starTable[levelName].eagleScore or 10) ) * 100), 100)
 						-- mighty eagle score is now always 100%
-						mightyEagleScore = 100
+--						mightyEagleScore = 100
 						--print("score: " .. score .. ", goldScore: " .. starTable[levelName].goldScore .. ", percentage: " .. mightyEagleScore .. "\n")
 						-- if mighty eagle was used for passing the level for the first time, mark eagle used and no score
 						if highscores[levelName].score == 0 then
-							if levelSelectionPages == levelSelectionPagesBasic then
+							if levelSelectionPages == episodes[1] then
 								settings.eaglesAvailable.basic = settings.eaglesAvailable.basic - 1
-							elseif levelSelectionPages == levelSelectionPagesExtra then
+							elseif levelSelectionPages == episodes[2] then
 								settings.eaglesAvailable.extra = settings.eaglesAvailable.extra - 1
-							elseif levelSelectionPages == levelSelectionPagesPack3 then 
+							elseif levelSelectionPages == episodes[3] then 
 								settings.eaglesAvailable.pack3 = settings.eaglesAvailable.pack3 - 1
-							elseif levelSelectionPages == levelSelectionPagesPack4 then
+							elseif levelSelectionPages == episodes[4] then
 								settings.eaglesAvailable.pack4 = settings.eaglesAvailable.pack4 - 1							
 							end
 							_G.table.insert(settings.eaglesUsedIn, { world = currentWorldNumber, level = currentLevelNumberInTheme } )
@@ -17802,13 +20086,13 @@ function updateGame(dt, time)
 						-- mighty eagle not used this time, check if it was previously used for this level
 						for k, v in _G.pairs(settings.eaglesUsedIn) do
 							if v.world == currentWorldNumber and v.level == currentLevelNumberInTheme then
-								if levelSelectionPages == levelSelectionPagesBasic then
+								if levelSelectionPages == episodes[1] then
 									settings.eaglesAvailable.basic = settings.eaglesAvailable.basic + 1
-								elseif levelSelectionPages == levelSelectionPagesExtra then
+								elseif levelSelectionPages == episodes[2] then
 									settings.eaglesAvailable.extra = settings.eaglesAvailable.extra + 1
-								elseif levelSelectionPages == levelSelectionPagesPack3 then 
+								elseif levelSelectionPages == episodes[3] then 
 									settings.eaglesAvailable.pack3 = settings.eaglesAvailable.pack3 + 1
-								elseif levelSelectionPages == levelSelectionPagesPack4 then
+								elseif levelSelectionPages == episodes[4] then
 									settings.eaglesAvailable.pack4 = settings.eaglesAvailable.pack4 + 1								
 								end
 								_G.table.remove(settings.eaglesUsedIn, k)
@@ -17846,9 +20130,7 @@ function updateGame(dt, time)
 								newHighScore.sprite = "GOLDEN_EGG_STAR"
 							end
 							
-							if currentLevelNumberInTheme == 20 then
-								newHighScore.sprite = "ICON_BABY_BLU"
-							end
+
 							
 							newHighScore.visible = true
 							
@@ -17996,7 +20278,7 @@ function updateGame(dt, time)
 					local buttonMenu = getItemByName(levelComplete.items, "buttonMenu")					
 					local buttonRestart = getItemByName(levelComplete.items, "buttonRestart")					
 					local buttonNextLevel = getItemByName(levelComplete.items, "buttonNextLevel")					
-					if levelSelectionPages == levelSelectionPagesBasic or levelSelectionPages == levelSelectionPagesExtra or levelSelectionPages == levelSelectionPagesPack3 or levelSelectionPages == levelSelectionPagesPack4 or levelSelectionPages == levelSelectionPagesPack5 or levelSelectionPages == levelSelectionPagesPack6 then
+					if isLevelSelection(levelSelectionPages) then
 						buttonMenu.page = levelSelectionPages
 					else
 						buttonMenu.page = levelSelectionPages[currentPageNumber]
@@ -18009,314 +20291,516 @@ function updateGame(dt, time)
 						buttonNextLevel.visible = true
 					end
 					
-					for i = 1, 17 do
+					for i = 1, 1 do
 						getItemByName(levelComplete.items, "buttonCutscene" .. i).visible = false
 					end
 					
 					levelEndMenuPage = levelComplete
-					
-					if inExtraWorld ~= true then
-						if currentWorldNumber == 1 then
-							worldCompleted = false
 
-							if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
-								worldCompleted = true
-							end
-							
-							if worldCompleted then
-								buttonNextLevel.visible = false
-								getItemByName(levelComplete.items, "buttonCutscene1").visible = true
-								if settings.theme1Completed ~= true then
-									buttonMenu.visible = false
-									buttonRestart.visible = false
-									settings.theme1Completed = true
-									if isLiteVersion then
-										settings.gameCompleted = true
-										addToAchievementUnlockQueue("Ready For More")
-									else
-										addToAchievementUnlockQueue("Herr Helmet")
-									end
-								end
-							end
-						elseif currentWorldNumber == 2 then
-							worldCompleted = false
-							
-							if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
-								worldCompleted = true
-							end
-							
-							if worldCompleted then
-								buttonNextLevel.visible = false
-								getItemByName(levelComplete.items, "buttonCutscene2").visible = true
-								if settings.theme2Completed ~= true then
-									buttonMenu.visible = false
-									buttonRestart.visible = false
-									settings.theme2Completed = true
-									addToAchievementUnlockQueue("Mr Moustache")
-								end
-							end
-						elseif currentWorldNumber == 3 then
-							worldCompleted = false
-							
-							if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
-								worldCompleted = true
-							end
-							
-							if worldCompleted then
-								buttonNextLevel.visible = false
-								getItemByName(levelComplete.items, "buttonCutscene3").visible = true
-								if settings.gameCompleted ~= true then
-									buttonMenu.visible = false
-									buttonRestart.visible = false
-									settings.gameCompleted = true
-									addToAchievementUnlockQueue("Defeat of The King")
-									levelEndMenuPage = gameFinished
-									
-									if threeStars and settings.threeStars ~= true then
-										settings.threeStars = true
-										goldenEggAchieved("Level4")
-										--getItemByName(gameFinished.items, "buttonYes").page = gameFinishedThreeStars
-										levelEndMenuPage = gameFinishedThreeStars
-									end
-								end
-							end
-						elseif currentWorldNumber == 4 then
-							worldCompleted = false
-							
-							if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
-								worldCompleted = true
-							end
-							
-							if worldCompleted then
-								buttonNextLevel.visible = false
-								getItemByName(levelComplete.items, "buttonCutscene4").visible = true
-								if settings.theme4Completed ~= true then
-									buttonMenu.visible = false
-									buttonRestart.visible = false
-									settings.theme4Completed = true
-									addToAchievementUnlockQueue("The Imposter")
-								end
-							end
-						elseif currentWorldNumber == 5 then
-							worldCompleted = false
-							
-							if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
-								worldCompleted = true
-							end
-							
-							if worldCompleted then
-								buttonNextLevel.visible = false
-								getItemByName(levelComplete.items, "buttonCutscene5").visible = true
-								if settings.theme5Completed ~= true then
-									buttonMenu.visible = false
-									buttonRestart.visible = false
-									settings.theme5Completed = true
-									addToAchievementUnlockQueue("The Mysterious Escape")
-									levelEndMenuPage = gameFinishedLP2
-									if threeStars and settings.threeStarsLP2 ~= true then
-										settings.threeStarsLP2 = true
-										goldenEggAchieved("Level7")
-										--getItemByName(gameFinishedLP2.items, "buttonYes").page = gameFinishedThreeStarsLP2
-										levelEndMenuPage = gameFinishedThreeStarsLP2
-									end
-								end
-							end
-						elseif currentWorldNumber == 6 then
-							worldCompleted = false
-							
-							if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
-								worldCompleted = true
-							end
-							
-							if worldCompleted then
-								buttonNextLevel.visible = false
-								getItemByName(levelComplete.items, "buttonCutscene6").visible = true
-								if settings.theme6Completed ~= true then
-									buttonMenu.visible = false
-									buttonRestart.visible = false
-									settings.theme6Completed = true
-									addToAchievementUnlockQueue("Hovering Helmet")
-								end
-							end
-						elseif currentWorldNumber == 7 then
-							worldCompleted = false
-							
-							if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
-								worldCompleted = true
-							end
-							
-							if worldCompleted then
-								buttonNextLevel.visible = false
-								getItemByName(levelComplete.items, "buttonCutscene7").visible = true
-								if settings.theme7Completed ~= true then
-									buttonMenu.visible = false
-									buttonRestart.visible = false
-									settings.theme7Completed = true
-									addToAchievementUnlockQueue("Mounting Moustache")
-								end
-							end
-						elseif currentWorldNumber == 8 then
-							worldCompleted = false
-							
-							if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
-								worldCompleted = true
-							end
-							
-							if worldCompleted then
-								buttonNextLevel.visible = false
-								getItemByName(levelComplete.items, "buttonCutscene8").visible = true
-								if settings.theme8Completed ~= true then
-									buttonMenu.visible = false
-									buttonRestart.visible = false
-									settings.theme8Completed = true
-									addToAchievementUnlockQueue("Green Baron")
-									levelEndMenuPage = gameFinishedLP3
-									if threeStars and settings.threeStarsLP3 ~= true then
-										settings.threeStarsLP3 = true
-										goldenEggAchieved("Level12")
-										--getItemByName(gameFinishedLP3.items, "buttonYes").page = gameFinishedThreeStarsLP3
-										levelEndMenuPage = gameFinishedThreeStarsLP3
-										
-									end
-								end
-							end
-						elseif currentWorldNumber == 9 then
-							worldCompleted = false
-							
-							if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
-								worldCompleted = true
-							end
-							
-							if worldCompleted then
-								buttonNextLevel.visible = false
-								getItemByName(levelComplete.items, "buttonCutscene9").visible = true
-								if settings.theme9Completed ~= true then
-									buttonMenu.visible = false
-									buttonRestart.visible = false
-									settings.theme9Completed = true
-									addToAchievementUnlockQueue("Hardhat Hidalgo")
-								end
-							end
-						elseif currentWorldNumber == 10 then
-							worldCompleted = false
-							
-							if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
-								worldCompleted = true
-							end
-							
-							if worldCompleted then
-								buttonNextLevel.visible = false
-								getItemByName(levelComplete.items, "buttonCutscene10").visible = true
-								if settings.theme10Completed ~= true then
-									buttonMenu.visible = false
-									buttonRestart.visible = false
-									settings.theme10Completed = true
-									addToAchievementUnlockQueue("Mason Moustache")
-								end
-							end
-						elseif currentWorldNumber == 11 then
-							worldCompleted = false
-							
-							if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
-								worldCompleted = true
-							end
-							
-							if worldCompleted then
-								buttonNextLevel.visible = false
-								getItemByName(levelComplete.items, "buttonCutscene11").visible = true
-								if settings.theme11Completed ~= true then
-									buttonMenu.visible = false
-									buttonRestart.visible = false
-									settings.theme11Completed = true
-									addToAchievementUnlockQueue("Royal Ringleader") 
-									levelEndMenuPage = gameFinishedLP4
-									if threeStars and settings.threeStarsLP4 ~= true then
-										settings.threeStarsLP4 = true
-										goldenEggAchieved("Level17") 
-										--getItemByName(gameFinishedLP4.items, "buttonYes").page = gameFinishedThreeStarsLP4
-										levelEndMenuPage = gameFinishedThreeStarsLP4
-									end
-								end
-							end
-						end
-						
-						-- check if the player completes the "three stars in every level" after (s)he
-						-- improves the star ratings of earlier levels
-						if threeStars then
-							if not settings.threeStars and currentWorldNumber >= 1 and currentWorldNumber <= 3 then
-								settings.threeStars = true
-								if not isLiteVersion then
-									goldenEggAchieved("Level4")
-									levelEndMenuPage = gameFinishedThreeStars
-								else
-									addToAchievementUnlockQueue("Total Destruction Lite")
-								end
-							elseif not settings.threeStarsLP2 and currentWorldNumber >= 4 and currentWorldNumber <= 5 then
-								settings.threeStarsLP2 = true
-								goldenEggAchieved("Level7")
-								levelEndMenuPage = gameFinishedThreeStarsLP2
-							elseif not settings.threeStarsLP3 and currentWorldNumber >= 6 and currentWorldNumber <= 8 then
-								settings.threeStarsLP3 = true
-								goldenEggAchieved("Level12")
-								levelEndMenuPage = gameFinishedThreeStarsLP3
-							elseif not settings.threeStarsLP4 and currentWorldNumber >= 9 and currentWorldNumber <= 11 then
-								settings.threeStarsLP4 = true
-								goldenEggAchieved("Level17")
-								levelEndMenuPage = gameFinishedThreeStarsLP4
-							elseif not settings.threeStarsLP5 and currentWorldNumber >= 12 and currentWorldNumber <= 14 then
-								settings.threeStarsLP5 = true
-								goldenEggAchieved("Level21")
-								levelEndMenuPage = gameFinishedThreeStarsLP5
-							--[[elseif not settings.threeStarsLP6 and currentWorldNumber >= 15 and currentWorldNumber <= 17 then
-								settings.threeStarsLP6 = true
-								goldenEggAchieved("Level25")
-								levelEndMenuPage = gameFinishedThreeStarsLP6]]
-							end
-						end
-						
-						if currentWorldNumber >= 1 and currentWorldNumber <= 3 then
-							if settings.lastOpenLevel <= currentLevelNumber then
-								settings.lastOpenLevel = currentLevelNumber + 1
-								saveLuaFileWrapper("settings.lua", "settings", true)
-							end
-						end
-						
-						if currentWorldNumber >= 4 and currentWorldNumber <= 5 then
-							if settings.lastOpenLevelLP2 <= currentLevelNumber then
-								settings.lastOpenLevelLP2 = currentLevelNumber + 1
-								saveLuaFileWrapper("settings.lua", "settings", true)
-							end
-						end
-						
-						if currentWorldNumber >= 6 and currentWorldNumber <= 8 then
-							if settings.lastOpenLevelLP3 <= currentLevelNumber then
-								settings.lastOpenLevelLP3 = currentLevelNumber + 1
-								saveLuaFileWrapper("settings.lua", "settings", true)
-							end
-						end
-						
-						if currentWorldNumber >= 9 and currentWorldNumber <= 11 then
-							if settings.lastOpenLevelLP4 <= currentLevelNumber then
-								settings.lastOpenLevelLP4 = currentLevelNumber + 1
-								saveLuaFileWrapper("settings.lua", "settings", true)
-							end
-						end
-						
-						if currentWorldNumber >= 12 and currentWorldNumber <= 14 then
-							if settings.lastOpenLevelLP5 <= currentLevelNumber then
-								settings.lastOpenLevelLP5 = currentLevelNumber + 1
-								saveLuaFileWrapper("settings.lua", "settings", true)
-							end
-						end
-						
-						if currentWorldNumber >= 15 and currentWorldNumber <= 17 then
-							if settings.lastOpenLevelLP6 <= currentLevelNumber then
-								settings.lastOpenLevelLP6 = currentLevelNumber + 1
-								settings.lastOpenLevelLP6 = _G.math.min(30, settings.lastOpenLevelLP6)
-								saveLuaFileWrapper("settings.lua", "settings", true)
+					-- if currentLevelNumberInTheme == levelSelectionPages.themes[currentThemeNumber].amount then
+						--themes = 
+					local levelitem = levelSelectionPages.items[currentLevelNumber+levelSelectionPages.firstLevelIndex-1]
+					if levelitem.endcut then
+						getItemByName(levelComplete.items, "buttonCutscene1").visible = true
+						getItemByName(levelComplete.items, "buttonCutscene1").page = cutscenes[levelitem.endcut]
+
+						if not settings["theme"..currentWorldNumber.."Completed"] then
+							buttonMenu.visible = false
+							buttonRestart.visible = false
+							settings["theme"..currentWorldNumber.."Completed"] = true
+							if levelSelectionPages.themes[currentWorldNumber].clear_ach then
+								addToAchievementUnlockQueue(levelSelectionPages.themes[currentWorldNumber].clear_ach)
 							end
 						end
 					end
+					
+					-- check if the player completes the "three stars in every level" after (s)he
+					-- improves the star ratings of earlier levels
+					if threeStars then
+						if not settings.threeStars and currentWorldNumber >= 1 and currentWorldNumber <= 3 then
+							settings.threeStars = true
+							goldenEggAchieved(levelSelectionPages.star_egg)
+							levelEndMenuPage = gameFinishedThreeStars
+						elseif not settings.threeStarsLP2 and currentWorldNumber >= 4 and currentWorldNumber <= 5 then
+							settings.threeStarsLP2 = true
+							goldenEggAchieved(levelSelectionPages.star_egg)
+							levelEndMenuPage = gameFinishedThreeStarsLP2
+						elseif not settings.threeStarsLP3 and currentWorldNumber >= 6 and currentWorldNumber <= 8 then
+							settings.threeStarsLP3 = true
+							goldenEggAchieved(levelSelectionPages.star_egg)
+							levelEndMenuPage = gameFinishedThreeStarsLP3
+						elseif not settings.threeStarsLP4 and currentWorldNumber >= 9 and currentWorldNumber <= 11 then
+							settings.threeStarsLP4 = true
+							goldenEggAchieved(levelSelectionPages.star_egg)
+							levelEndMenuPage = gameFinishedThreeStarsLP4
+						elseif not settings.threeStarsLP5 and currentWorldNumber >= 12 and currentWorldNumber <= 14 then
+							settings.threeStarsLP5 = true
+							goldenEggAchieved(levelSelectionPages.star_egg)
+							levelEndMenuPage = gameFinishedThreeStarsLP5
+						end
+					end
+					
+					if currentWorldNumber >= 1 and currentWorldNumber <= 3 then
+						if settings.lastOpenLevel <= currentLevelNumber then
+							settings.lastOpenLevel = currentLevelNumber + 1
+							saveLuaFileWrapper("settings.lua", "settings", true)
+						end
+					end
+					
+					if currentWorldNumber >= 4 and currentWorldNumber <= 5 then
+						if settings.lastOpenLevelLP2 <= currentLevelNumber then
+							settings.lastOpenLevelLP2 = currentLevelNumber + 1
+							saveLuaFileWrapper("settings.lua", "settings", true)
+						end
+					end
+					
+					if currentWorldNumber >= 6 and currentWorldNumber <= 8 then
+						if settings.lastOpenLevelLP3 <= currentLevelNumber then
+							settings.lastOpenLevelLP3 = currentLevelNumber + 1
+							saveLuaFileWrapper("settings.lua", "settings", true)
+						end
+					end
+					
+					if currentWorldNumber >= 9 and currentWorldNumber <= 11 then
+						if settings.lastOpenLevelLP4 <= currentLevelNumber then
+							settings.lastOpenLevelLP4 = currentLevelNumber + 1
+							saveLuaFileWrapper("settings.lua", "settings", true)
+						end
+					end
+					
+					if currentWorldNumber >= 12 and currentWorldNumber <= 14 then
+						if settings.lastOpenLevelLP5 <= currentLevelNumber then
+							settings.lastOpenLevelLP5 = currentLevelNumber + 1
+							saveLuaFileWrapper("settings.lua", "settings", true)
+						end
+					end
+					
+					if currentWorldNumber >= 15 and currentWorldNumber <= 17 then
+						if settings.lastOpenLevelLP6 <= currentLevelNumber then
+							settings.lastOpenLevelLP6 = currentLevelNumber + 1
+							settings.lastOpenLevelLP6 = _G.math.min(30, settings.lastOpenLevelLP6)
+							saveLuaFileWrapper("settings.lua", "settings", true)
+						end
+					end
+					
+					-- if inExtraWorld ~= true then
+					-- 	if currentWorldNumber == 1 then
+					-- 		worldCompleted = false
+
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene1").visible = true
+					-- 			if settings.theme1Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme1Completed = true
+					-- 				if isLiteVersion then
+					-- 					settings.gameCompleted = true
+					-- 					addToAchievementUnlockQueue("Ready For More")
+					-- 				else
+					-- 					addToAchievementUnlockQueue("Herr Helmet")
+					-- 				end
+					-- 			end
+					-- 		end
+					-- 	elseif currentWorldNumber == 2 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene2").visible = true
+					-- 			if settings.theme2Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme2Completed = true
+					-- 				addToAchievementUnlockQueue("Mr Moustache")
+					-- 			end
+					-- 		end
+					-- 	elseif currentWorldNumber == 3 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene3").visible = true
+					-- 			if settings.gameCompleted ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.gameCompleted = true
+					-- 				addToAchievementUnlockQueue("Defeat of The King")
+					-- 				levelEndMenuPage = gameFinished
+									
+					-- 				if threeStars and settings.threeStars ~= true then
+					-- 					settings.threeStars = true
+					-- 					goldenEggAchieved("Level4")
+					-- 					--getItemByName(gameFinished.items, "buttonYes").page = gameFinishedThreeStars
+					-- 					levelEndMenuPage = gameFinishedThreeStars
+					-- 				end
+					-- 			end
+					-- 		end
+					-- 	elseif currentWorldNumber == 4 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene4").visible = true
+					-- 			if settings.theme4Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme4Completed = true
+					-- 				addToAchievementUnlockQueue("The Imposter")
+					-- 			end
+					-- 		end
+					-- 	elseif currentWorldNumber == 5 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene5").visible = true
+					-- 			if settings.theme5Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme5Completed = true
+					-- 				addToAchievementUnlockQueue("The Mysterious Escape")
+					-- 				levelEndMenuPage = gameFinishedLP2
+					-- 				if threeStars and settings.threeStarsLP2 ~= true then
+					-- 					settings.threeStarsLP2 = true
+					-- 					goldenEggAchieved("Level7")
+					-- 					--getItemByName(gameFinishedLP2.items, "buttonYes").page = gameFinishedThreeStarsLP2
+					-- 					levelEndMenuPage = gameFinishedThreeStarsLP2
+					-- 				end
+					-- 			end
+					-- 		end
+					-- 	elseif currentWorldNumber == 6 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene6").visible = true
+					-- 			if settings.theme6Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme6Completed = true
+					-- 				addToAchievementUnlockQueue("Hovering Helmet")
+					-- 			end
+					-- 		end
+					-- 	elseif currentWorldNumber == 7 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene7").visible = true
+					-- 			if settings.theme7Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme7Completed = true
+					-- 				addToAchievementUnlockQueue("Mounting Moustache")
+					-- 			end
+					-- 		end
+					-- 	elseif currentWorldNumber == 8 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene8").visible = true
+					-- 			if settings.theme8Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme8Completed = true
+					-- 				addToAchievementUnlockQueue("Green Baron")
+					-- 				levelEndMenuPage = gameFinishedLP3
+					-- 				if threeStars and settings.threeStarsLP3 ~= true then
+					-- 					settings.threeStarsLP3 = true
+					-- 					goldenEggAchieved("Level12")
+					-- 					--getItemByName(gameFinishedLP3.items, "buttonYes").page = gameFinishedThreeStarsLP3
+					-- 					levelEndMenuPage = gameFinishedThreeStarsLP3
+										
+					-- 				end
+					-- 			end
+					-- 		end
+					-- 	elseif currentWorldNumber == 9 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene9").visible = true
+					-- 			if settings.theme9Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme9Completed = true
+					-- 				addToAchievementUnlockQueue("Hardhat Hidalgo")
+					-- 			end
+					-- 		end
+					-- 	elseif currentWorldNumber == 10 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene10").visible = true
+					-- 			if settings.theme10Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme10Completed = true
+					-- 				addToAchievementUnlockQueue("Mason Moustache")
+					-- 			end
+					-- 		end
+					-- 	elseif currentWorldNumber == 11 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene11").visible = true
+					-- 			if settings.theme11Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme11Completed = true
+					-- 				addToAchievementUnlockQueue("Royal Ringleader") 
+					-- 				levelEndMenuPage = gameFinishedLP4
+					-- 				if threeStars and settings.threeStarsLP4 ~= true then
+					-- 					settings.threeStarsLP4 = true
+					-- 					goldenEggAchieved("Level17") 
+					-- 					--getItemByName(gameFinishedLP4.items, "buttonYes").page = gameFinishedThreeStarsLP4
+					-- 					levelEndMenuPage = gameFinishedThreeStarsLP4
+					-- 				end
+					-- 			end
+					-- 		end
+					-- 	elseif currentWorldNumber == 12 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene12").visible = true
+					-- 			if settings.theme12Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme12Completed = true
+					-- 				addToAchievementUnlockQueue("Billy The Pig")
+					-- 			end
+					-- 		end	
+					-- 	elseif currentWorldNumber == 13 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene13").visible = true
+					-- 			if settings.theme13Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme13Completed = true
+					-- 				addToAchievementUnlockQueue("Clint Eastbacon")
+					-- 			end
+					-- 		end	
+					-- 	elseif currentWorldNumber == 14 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene14").visible = true
+					-- 			if settings.theme14Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme14Completed = true
+					-- 				addToAchievementUnlockQueue("Wild Pork Hickok") 
+					-- 				levelEndMenuPage = gameFinishedLP5
+					-- 				if threeStars and settings.threeStarsLP5 ~= true then
+					-- 					settings.threeStarsLP5 = true
+					-- 					goldenEggAchieved("Level27") 
+					-- 					--getItemByName(gameFinishedLP5.items, "buttonYes").page = gameFinishedThreeStarsLP5
+					-- 					levelEndMenuPage = gameFinishedThreeStarsLP5
+					-- 				end
+					-- 			end
+					-- 		end
+					-- 	elseif currentWorldNumber == 15 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene15").visible = true
+					-- 			if settings.theme15Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme15Completed = true
+					-- 				addToAchievementUnlockQueue("Cave Explorer")
+					-- 			end
+					-- 		end	
+					-- 	elseif currentWorldNumber == 16 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene16").visible = true
+					-- 			if settings.theme16Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false							
+					-- 				settings.theme16Completed = true
+					-- 				--addToAchievementUnlockQueue("")
+					-- 			end
+					-- 		end
+					-- 	elseif currentWorldNumber == 17 then
+					-- 		worldCompleted = false
+							
+					-- 		if currentLevelNumberInTheme == levelSelectionPages.levelsPerPage then
+					-- 			worldCompleted = true
+					-- 		end
+							
+					-- 		if worldCompleted then
+					-- 			buttonNextLevel.visible = false
+					-- 			getItemByName(levelComplete.items, "buttonCutscene17").visible = true
+					-- 			if settings.theme17Completed ~= true then
+					-- 				buttonMenu.visible = false
+					-- 				buttonRestart.visible = false
+					-- 				settings.theme17Completed = true
+					-- 				--addToAchievementUnlockQueue("") 
+					-- 				levelEndMenuPage = gameFinishedLP6
+					-- 				if threeStars and settings.threeStarsLP6 ~= true then
+					-- 					settings.threeStarsLP6 = true
+					-- 					goldenEggAchieved("Level25")
+					-- 					--getItemByName(gameFinishedLP6.items, "buttonYes").page = gameFinishedThreeStarsLP6
+					-- 					levelEndMenuPage = gameFinishedThreeStarsLP6
+					-- 				end
+					-- 			end
+					-- 		end
+					-- 	end
+						
+					-- 	-- check if the player completes the "three stars in every level" after (s)he
+					-- 	-- improves the star ratings of earlier levels
+					-- 	if threeStars then
+					-- 		if not settings.threeStars and currentWorldNumber >= 1 and currentWorldNumber <= 3 then
+					-- 			settings.threeStars = true
+					-- 			if not isLiteVersion then
+					-- 				goldenEggAchieved("Level4")
+					-- 				levelEndMenuPage = gameFinishedThreeStars
+					-- 			else
+					-- 				addToAchievementUnlockQueue("Total Destruction Lite")
+					-- 			end
+					-- 		elseif not settings.threeStarsLP2 and currentWorldNumber >= 4 and currentWorldNumber <= 5 then
+					-- 			settings.threeStarsLP2 = true
+					-- 			goldenEggAchieved("Level7")
+					-- 			levelEndMenuPage = gameFinishedThreeStarsLP2
+					-- 		elseif not settings.threeStarsLP3 and currentWorldNumber >= 6 and currentWorldNumber <= 8 then
+					-- 			settings.threeStarsLP3 = true
+					-- 			goldenEggAchieved("Level12")
+					-- 			levelEndMenuPage = gameFinishedThreeStarsLP3
+					-- 		elseif not settings.threeStarsLP4 and currentWorldNumber >= 9 and currentWorldNumber <= 11 then
+					-- 			settings.threeStarsLP4 = true
+					-- 			goldenEggAchieved("Level17")
+					-- 			levelEndMenuPage = gameFinishedThreeStarsLP4
+					-- 		elseif not settings.threeStarsLP5 and currentWorldNumber >= 12 and currentWorldNumber <= 14 then
+					-- 			settings.threeStarsLP5 = true
+					-- 			goldenEggAchieved("Level27")
+					-- 			levelEndMenuPage = gameFinishedThreeStarsLP5
+					-- 		--[[elseif not settings.threeStarsLP6 and currentWorldNumber >= 15 and currentWorldNumber <= 17 then
+					-- 			settings.threeStarsLP6 = true
+					-- 			goldenEggAchieved("Level25")
+					-- 			levelEndMenuPage = gameFinishedThreeStarsLP6]]
+					-- 		end
+					-- 	end
+						
+					-- 	if currentWorldNumber >= 1 and currentWorldNumber <= 3 then
+					-- 		if settings.lastOpenLevel <= currentLevelNumber then
+					-- 			settings.lastOpenLevel = currentLevelNumber + 1
+					-- 			saveLuaFileWrapper("settings.lua", "settings", true)
+					-- 		end
+					-- 	end
+						
+					-- 	if currentWorldNumber >= 4 and currentWorldNumber <= 5 then
+					-- 		if settings.lastOpenLevelLP2 <= currentLevelNumber then
+					-- 			settings.lastOpenLevelLP2 = currentLevelNumber + 1
+					-- 			saveLuaFileWrapper("settings.lua", "settings", true)
+					-- 		end
+					-- 	end
+						
+					-- 	if currentWorldNumber >= 6 and currentWorldNumber <= 8 then
+					-- 		if settings.lastOpenLevelLP3 <= currentLevelNumber then
+					-- 			settings.lastOpenLevelLP3 = currentLevelNumber + 1
+					-- 			saveLuaFileWrapper("settings.lua", "settings", true)
+					-- 		end
+					-- 	end
+						
+					-- 	if currentWorldNumber >= 9 and currentWorldNumber <= 11 then
+					-- 		if settings.lastOpenLevelLP4 <= currentLevelNumber then
+					-- 			settings.lastOpenLevelLP4 = currentLevelNumber + 1
+					-- 			saveLuaFileWrapper("settings.lua", "settings", true)
+					-- 		end
+					-- 	end
+						
+					-- 	if currentWorldNumber >= 12 and currentWorldNumber <= 14 then
+					-- 		if settings.lastOpenLevelLP5 <= currentLevelNumber then
+					-- 			settings.lastOpenLevelLP5 = currentLevelNumber + 1
+					-- 			saveLuaFileWrapper("settings.lua", "settings", true)
+					-- 		end
+					-- 	end
+						
+					-- 	if currentWorldNumber >= 15 and currentWorldNumber <= 17 then
+					-- 		if settings.lastOpenLevelLP6 <= currentLevelNumber then
+					-- 			settings.lastOpenLevelLP6 = currentLevelNumber + 1
+					-- 			settings.lastOpenLevelLP6 = _G.math.min(30, settings.lastOpenLevelLP6)
+					-- 			saveLuaFileWrapper("settings.lua", "settings", true)
+					-- 		end
+					-- 	end
+					-- end
 					
 					--log flurry event
 					if inExtraWorld == true then
@@ -18435,7 +20919,7 @@ function updateGame(dt, time)
 					
 					levelFailed.items[5].text = "" .. _G.string.format("%d", highscores[levelName].score)
 					
-					if levelSelectionPages == levelSelectionPagesBasic or levelSelectionPages == levelSelectionPagesExtra or levelSelectionPages == levelSelectionPagesPack3 or levelSelectionPages == levelSelectionPagesPack4 or levelSelectionPages == levelSelectionPagesPack5 or levelSelectionPages == levelSelectionPagesPack6 then 
+					if isLevelSelection(levelSelectionPages) then 
 						levelFailed.items[6].page = levelSelectionPages
 					else
 						levelFailed.items[6].page = levelSelectionPages[currentPageNumber]
@@ -18446,17 +20930,17 @@ function updateGame(dt, time)
 					levelFailed.items[10].visible = false
 					levelFailed.items[11].visible = false
 					
-					for i = 1, 17 do
+					for i = 1, 1 do
 						getItemByName(levelFailed.items, "buttonCutscene" .. i).visible = false
 					end
 				
 					print("highscore: " .. highscores[levelName].score .. "\n")
 					-- check if mighty eagle is unavailable
 					if inExtraWorld == true or (highscores[levelName].score == 0 and 
-					   ((levelSelectionPages == levelSelectionPagesBasic and settings.eaglesAvailable.basic < 1) or
-						(levelSelectionPages == levelSelectionPagesExtra and settings.eaglesAvailable.extra < 1) or
-						(levelSelectionPages == levelSelectionPagesPack3 and settings.eaglesAvailable.pack3 < 1) or
-						(levelSelectionPages == levelSelectionPagesPack4 and settings.eaglesAvailable.pack4 < 1))) then
+					   ((levelSelectionPages == episodes[1] and settings.eaglesAvailable.basic < 1) or
+						(levelSelectionPages == episodes[2] and settings.eaglesAvailable.extra < 1) or
+						(levelSelectionPages == episodes[3] and settings.eaglesAvailable.pack3 < 1) or
+						(levelSelectionPages == episodes[4] and settings.eaglesAvailable.pack4 < 1))) then
 						getItemByName(levelFailed.items, "buttonEagle").visible = false
 						getItemByName(levelFailed.items, "buttonEagleLost").visible = true
 					end
@@ -18515,6 +20999,7 @@ function updateGame(dt, time)
 				end
 
 				_G.res.stopAudio(musics[currentThemeNumber])
+				_G.res.stopAudio(blockTable.themes[currentTheme].music)
 				--stop looping rolling sounds
 				_G.res.stopAudio("wood_rolling")
 				_G.res.stopAudio("rock_rolling")
@@ -18537,7 +21022,7 @@ function updateGame(dt, time)
 			end
 		end
 	else
-		if (checkLevelComplete() or keyPressed["C"] or quadClick or rokuCheat or keyPressed["K"]) then
+		if (checkLevelComplete() or (keyPressed["C"] and cheatsEnabled) or quadClick or rokuCheat or (keyPressed["K"] and cheatsEnabled )) then
 			--g_mouseOrTouchStates.isUsingMouse = true
 			rubberBandPos.x = levelStartPosition.x
 			rubberBandPos.y = levelStartPosition.y
@@ -18568,11 +21053,12 @@ function updateGame(dt, time)
 				end
 			end
 			
-			 if keyPressed["K"] then
+			 if (keyPressed["K"] and cheatsEnabled ) then
 				scoreTable.cheat = {score = 10000000}
 			 end
 			
 			_G.res.playAudio(getAudioName("level_clear_military"), 1, false)
+			getItemByName(g_ingamePausePage.items, "ingameButtonEagle").visible = false --hack, but less of a hack than my previous implementation yesterday
 			levelCompleteTimer = 1.0
 			if eagleBaitLaunched then
 				levelCompleteTimer = 2.0
@@ -18664,226 +21150,8 @@ function updateGame(dt, time)
 					g_birdDragOnTouchAttributes.disabledForBirdSpecialty = true
 				end
 			end
-			
-			
-			local bDef = getObjectDefinition(flyingBird.name)
-			birdSpecialty = bDef.specialty
-			if birdSpecialty == "BOOST" then
-				local force = boostForce * physicsScale * flyingBird.mass
-				local x, y = vNormalize(flyingBird.xVel, flyingBird.yVel)
-				applyImpulse( flyingBird.name,
-							-x * force,
-							-y * force,
-							flyingBird.x,
-							flyingBird.y )
-				addParticles(flyingBird.name, blockTable.blocks[flyingBird.definition].particles, 10)
-				_G.res.playAudio(getAudioName(blockTable.blocks[flyingBird.definition].specialSound), 1, false)
-				objects.world[flyingBird.name].sprite = "BIRD_YELLOW_SPECIAL"
-				setSprite(flyingBird.name, objects.world[flyingBird.name].sprite)
-				local lx, ly = physicsToWorldTransform(flyingBird.x, flyingBird.y)
-				addPuffToTrajectory(1, lx, ly)
-			end
-			if birdSpecialty == "BOMB" then
-				--birdSpecialtyAvailable = true
-				makeExplosion(flyingBird, bDef, getAudioName(blockTable.blocks[flyingBird.definition].specialSound))
-				
-				removeBird(flyingBird)
-			end
-			if birdSpecialty == "SOUND" then
-				_G.res.playAudio(getAudioName(blockTable.blocks[flyingBird.definition].specialSound), 1, false)
-			end
-			if birdSpecialty == "CLUSTER_BOMB" then
-				
-				local lx, ly = physicsToWorldTransform(flyingBird.x, flyingBird.y)
-				addPuffToTrajectory(1, lx, ly)
-				
-				local x, y = vNormalize(flyingBird.yVel, -flyingBird.xVel)
-				local newName = flyingBird.name .. "a"
-				createCircle(newName, flyingBird.sprite, flyingBird.x - x, flyingBird.y - y, flyingBird.radius, flyingBird.density, flyingBird.friction, flyingBird.restitution, flyingBird.controllable, flyingBird.z_order)
-				objects.world[newName].definition = flyingBird.definition
-				objects.world[newName].controllable = flyingBird.controllable
-				objects.world[newName].strength = flyingBird.strength
-				objects.world[newName].defence = flyingBird.defence
-				objects.world[newName].material = flyingBird.material
-				objects.world[newName].levelGoal = flyingBird.levelGoal
-				objects.world[newName].damageFactors = flyingBird.damageFactors
-				objects.world[newName].spritePivotX = flyingBird.spritePivotX
-				objects.world[newName].spritePivotY = flyingBird.spritePivotY
-				objects.world[newName].damageSprite = flyingBird.damageSprite
-				objects.world[newName].useLegacyCollisionPath = flyingBird.useLegacyCollisionPath
-				objects.world[newName].shot = true
-				objects.world[newName].sleeping = false
-				objects.world[newName].hasCollided = false
-				objects.world[newName].parentName = flyingBird.name
-				objects.world[newName].xVel = flyingBird.xVel - x*7
-				objects.world[newName].yVel = flyingBird.yVel - y*7
-				setSprite(newName, flyingBird.damageSprite)
-				setRotation(newName, flyingBird.angle)
-				setVelocity(newName, flyingBird.xVel - x*7, flyingBird.yVel - y*7)
-				--_G.table.insert(extraObjects, newName)
-				birds[newName] = objects.world[newName]
-				
-				newName = flyingBird.name .. "b"
-				createCircle(newName, flyingBird.sprite, flyingBird.x, flyingBird.y, flyingBird.radius, flyingBird.density, flyingBird.friction, flyingBird.restitution, flyingBird.controllable, flyingBird.z_order)
-				objects.world[newName].definition = flyingBird.definition
-				objects.world[newName].controllable = flyingBird.controllable
-				objects.world[newName].strength = flyingBird.strength
-				objects.world[newName].defence = flyingBird.defence
-				objects.world[newName].material = flyingBird.material
-				objects.world[newName].levelGoal = flyingBird.levelGoal
-				objects.world[newName].damageFactors = flyingBird.damageFactors
-				objects.world[newName].spritePivotX = flyingBird.spritePivotX
-				objects.world[newName].spritePivotY = flyingBird.spritePivotY
-				objects.world[newName].damageSprite = flyingBird.damageSprite				
-				objects.world[newName].useLegacyCollisionPath = flyingBird.useLegacyCollisionPath
-				objects.world[newName].shot = true
-				objects.world[newName].sleeping = false
-				objects.world[newName].hasCollided = false
-				objects.world[newName].parentName = flyingBird.name
-				objects.world[newName].xVel = flyingBird.xVel
-				objects.world[newName].yVel = flyingBird.yVel
-				setSprite(newName, flyingBird.damageSprite)				
-				setRotation(newName, flyingBird.angle)
-				setVelocity(newName, flyingBird.xVel, flyingBird.yVel)
-				--_G.table.insert(extraObjects, newName)
-				birds[newName] = objects.world[newName]
-				
-				newName = flyingBird.name .. "c"
-				createCircle(newName, flyingBird.sprite, flyingBird.x + x, flyingBird.y + y, flyingBird.radius, flyingBird.density, flyingBird.friction, flyingBird.restitution, flyingBird.controllable, flyingBird.z_order)
-				objects.world[newName].definition = flyingBird.definition
-				objects.world[newName].controllable = flyingBird.controllable
-				objects.world[newName].strength = flyingBird.strength
-				objects.world[newName].defence = flyingBird.defence
-				objects.world[newName].material = flyingBird.material
-				objects.world[newName].levelGoal = flyingBird.levelGoal
-				objects.world[newName].damageFactors = flyingBird.damageFactors
-				objects.world[newName].spritePivotX = flyingBird.spritePivotX
-				objects.world[newName].spritePivotY = flyingBird.spritePivotY
-				objects.world[newName].damageSprite = flyingBird.damageSprite				
-				objects.world[newName].useLegacyCollisionPath = flyingBird.useLegacyCollisionPath
-				objects.world[newName].shot = true
-				objects.world[newName].sleeping = false
-				objects.world[newName].hasCollided = false
-				objects.world[newName].parentName = flyingBird.name
-				objects.world[newName].xVel = flyingBird.xVel + x*7
-				objects.world[newName].yVel = flyingBird.yVel + y*7
-				setSprite(newName, flyingBird.damageSprite)				
-				setRotation(newName, flyingBird.angle)
-				setVelocity(newName, flyingBird.xVel + x*7, flyingBird.yVel + y*7)
-				birds[newName] = objects.world[newName]
-				
-				otherBirds = { flyingBird.name .. "a", flyingBird.name .. "b" }
-				removeBird(flyingBird)
-				--objects.world[flyingBird.name] = nil
-				flyingBird = objects.world[newName]
-				cameraTargetObject = flyingBird
-
-				_G.res.playAudio(blockTable.blocks[flyingBird.definition].specialSound, 1, false)
-
-			end
-			-- drop explosive
-			if birdSpecialty == "GRENADE" then
-				local x, y = vNormalize(flyingBird.yVel, -flyingBird.xVel)
-				local newName = flyingBird.name .. "a"
-				objects.world[flyingBird.name].sprite = "BIRD_GREEN_SPECIAL"
-				setSprite(flyingBird.name, objects.world[flyingBird.name].sprite)
-				
-				createCircle(newName, "DROPPABLE_EGG", flyingBird.x, flyingBird.y + flyingBird.radius*2, flyingBird.radius, flyingBird.density, flyingBird.friction, flyingBird.restitution, true, flyingBird.z_order)
-				objects.world[newName].definition = "EggGranade"
-				objects.world[newName].controllable = true
-				objects.world[newName].strength = flyingBird.strength
-				objects.world[newName].defence = flyingBird.defence
-				objects.world[newName].material = flyingBird.material
-				objects.world[newName].damageFactors = blockTable.blocks[objects.world[newName].definition].damageFactors
-				objects.world[newName].useLegacyCollisionPath = flyingBird.useLegacyCollisionPath
-				objects.world[newName].levelGoal = false
-				local xp, yp = _G.res.getSpritePivot("INGAME_BIRDS_1","DROPPABLE_EGG")
-				objects.world[newName].spritePivotX = xp
-				objects.world[newName].spritePivotY = yp
-				objects.world[newName].damageSprite = "DROPPABLE_EGG"
-				objects.world[newName].xVel = 0 --flyingBird.xVel * 0.5
-				objects.world[newName].yVel = 100 --flyingBird.yVel * 0.5
-				setSprite(newName, objects.world[newName].damageSprite)
-				setRotation(newName, flyingBird.angle)
-				--setVelocity(newName, flyingBird.xVel*0.5, flyingBird.yVel*0.5)
-				setVelocity(newName, objects.world[newName].xVel, objects.world[newName].yVel)
-				--objects.world[newName].specialty = "BOMB"
-				_G.table.insert(flyingGrenades, { name = newName, timer = 5 })
-				--_G.table.insert(extraObjects, newName)
-				_G.res.playAudio(getAudioName(blockTable.blocks[flyingBird.definition].specialSound), 1, false)
-				--_G.res.playAudio(getAudioName("bird_pushing_egg_out"), 1, false)
-				cameraTargetObject = objects.world[newName]
-				
-				applyImpulse( flyingBird.name,
-							-0.04*defaultForce * flyingBird.mass,
-							0.08*defaultForce * flyingBird.mass,
-							flyingBird.x-0.5,
-							flyingBird.y )
-				local lx, ly = physicsToWorldTransform(flyingBird.x, flyingBird.y)
-				addPuffToTrajectory(1, lx, ly)
-			end
-			if birdSpecialty == "BOOMERANG" then
-				flyingBird.boomerangActive = true
-				if flyingBird.xVel ~= 0 then
-					yForceCoeff = 2 - _G.math.min(_G.math.abs(flyingBird.yVel / flyingBird.xVel), 2)
-				else
-					yForceCoeff = 0
-				end
-				
-				flyingBird.boomerangXForce = flyingBird.xVel * physicsScale * flyingBird.mass * blockTable.blocks[flyingBird.definition].boomerangHorizontalForce
-				flyingBird.boomerangYForce = yForceCoeff * physicsScale * flyingBird.mass * blockTable.blocks[flyingBird.definition].boomerangVerticalForce
-				flyingBird.boomerangMinXVel = -blockTable.blocks[flyingBird.definition].boomerangMaxHorizontalSpeed
-				flyingBird.boomerangMaxXVel = blockTable.blocks[flyingBird.definition].boomerangMaxHorizontalSpeed
-				
-				--flyingBird.angularVelocity = 0
-				objects.world[flyingBird.name].sprite = "BIRD_BOOMERANG_SPECIAL"
-				setSprite(flyingBird.name, objects.world[flyingBird.name].sprite)
-				
-				_G.res.playAudio(getAudioName(blockTable.blocks[flyingBird.definition].specialSound), 1, false)
-				
-				local lx, ly = physicsToWorldTransform(flyingBird.x, flyingBird.y)
-				addPuffToTrajectory(1, lx, ly)
-			end
-			-- Be Mighty
-			--[[if birdSpecialty == "MIGHTY_EAGLE" then
-				local x, y = vNormalize(flyingBird.yVel, -flyingBird.xVel)
-				local newName = "MightyEagle_a"
-				
-				local blockDef = blockTable.blocks["MightyEagleBird"]
-				
-				createCircle(newName, blockDef.sprite, flyingBird.x, flyingBird.y - blockDef.radius*20, blockDef.radius, blockDef.density, blockDef.friction, blockDef.restitution, true, 6)
-				objects.world[newName].definition = "MightyEagleBird"
-				objects.world[newName].controllable = blockDef.controllable
-				objects.world[newName].strength = blockDef.strength
-				objects.world[newName].defence = blockDef.defence
-				objects.world[newName].material = blockDef.material
-				objects.world[newName].damageFactors = blockDef.damageFactors
-				objects.world[newName].useLegacyCollisionPath = blockDef.useLegacyCollisionPath
-				objects.world[newName].levelGoal = false
-				local xp, yp = _G.res.getSpritePivot("INGAME_BIRDS_2",blockDef.sprite)
-				objects.world[newName].spritePivotX = xp
-				objects.world[newName].spritePivotY = yp
-				objects.world[newName].damageSprite = blockDef.sprite
-				objects.world[newName].xVel = 0 --flyingBird.xVel * 0.5
-				objects.world[newName].yVel = 1000 --flyingBird.yVel * 0.5
-				setSprite(newName, objects.world[newName].damageSprite)
-				setRotation(newName, flyingBird.angle)
-				--setVelocity(newName, flyingBird.xVel*0.5, flyingBird.yVel*0.5)
-				setVelocity(newName, objects.world[newName].xVel, objects.world[newName].yVel)
-				--objects.world[newName].specialty = "BOMB"
-				--_G.table.insert(flyingGrenades, { name = newName, timer = 5 })
-				--_G.table.insert(extraObjects, newName)
-				_G.res.playAudio(getAudioName(blockTable.blocks[flyingBird.definition].specialSound), 1, false)
-				--_G.res.playAudio(getAudioName("bird_pushing_egg_out"), 1, false)
-				
-				local lx, ly = physicsToWorldTransform(flyingBird.x, flyingBird.y)
-				addPuffToTrajectory(1, lx, ly)
-				
-				flyingBird.eagleTimer = 0
-				flyingBird.eagleMoving = false
-			end	--]]
-		else
-			
+			triggerBirdSpecialty(dt)
+		else--if not flyingBird then--if not birdSpecialtyAvailable then -- in webgames you cannot shoot a bird while another is flying.
 			dragStarted = true
 			dragCursorTable = {}
 			dragCursorIndex = 1
@@ -19303,7 +21571,9 @@ function updateGame(dt, time)
 
 			local vecToRest = {}
 			if deviceModel ~= "roku" then
-				vecToRest.x, vecToRest.y = draggingStartPosPhysics.x - cursorPhysics.x, draggingStartPosPhysics.y - cursorPhysics.y
+				local bx = (gameOptions.slingshotCanceling.downwards and selectedBird) and selectedBird.x or cursorPhysics.x
+				local by = (gameOptions.slingshotCanceling.downwards and selectedBird) and selectedBird.y or cursorPhysics.y
+				vecToRest.x, vecToRest.y = draggingStartPosPhysics.x - bx, draggingStartPosPhysics.y - by--draggingStartPosPhysics.x - cursorPhysics.x, draggingStartPosPhysics.y - cursorPhysics.y
 			else
 				if not rokuOnWindows then captureMouse(false) end
 				vecToRest.x, vecToRest.y = screenToPhysicsVectorTransform(-rokuDragVector.x, -rokuDragVector.y)
@@ -19314,13 +21584,13 @@ function updateGame(dt, time)
 			if (shootMaxLength == nil) or (shootMaxLength <= 0) or (rubberBandLength <= 0) or (rubberBandLength == nil) or (distToRest <= 0) then
 				selectedBird = nil
 
-			elseif distToRest <= g_birdDragOnTouchAttributes.shootMinLength then
+			elseif distToRest <= g_birdDragOnTouchAttributes.shootMinLength and gameOptions.slingshotCanceling.enabled then
 				cancelBirdDrag()
 
 			elseif selectedBird ~= nil and not levelCompleted  then
 				shootSelectedBird(vecToRest)
 
-			else
+			end if gameOptions.enableSweeping then--lse
 				local i = 1
 				local dxSum = 0
 				local dtSum = 0
@@ -19415,11 +21685,11 @@ function updateGame(dt, time)
 		end
 	end
 
-	if releaseBuild ~= true then
+	if releaseBuild ~= true or cheatsEnabled == true then
 		
 		
 		if deviceModel == "roku" then
-			if keyPressed["KEY_GAMING_A"] then
+			if cheatsEnabled and keyPressed["KEY_GAMING_A"] then
 				if rokuClickTimer > 0 then
 					rokuClickCounter = rokuClickCounter + 1
 					rokuClickTimer = 0.5
@@ -19430,7 +21700,7 @@ function updateGame(dt, time)
 				end
 			end
 			
-			if rokuClickTimer <= 0 and rokuClickCounter > 0 then
+			if cheatsEnabled and rokuClickTimer <= 0 and rokuClickCounter > 0 then
 				rokuCheat = true
 			end
 		end
@@ -19530,6 +21800,16 @@ function updateGame(dt, time)
 				addToAchievementUnlockQueue("Space Invader", true)
 			end
 			previousSpaceInvaderY = flyingBird.y
+		end
+		
+		if not flyingBird.collision then
+			if gameOptions.rotateWhileFlying.enabled and not flyingBird.noRotation then
+				if flyingBird.yVel ~= 0 and flyingBird.xVel ~= 0 then
+					setRotation(flyingBird.name,_G.math.atan2(flyingBird.yVel,flyingBird.xVel))
+				end
+			elseif gameOptions.rotateWhileSlinging and not flyingBird.noRotation then
+				setRotation(flyingBird.name,0)
+			end
 		end
 	end
 	
@@ -19642,6 +21922,141 @@ function updateGame(dt, time)
 				v.damageSprite = "BIRD_GREY_2"
 				setSprite(v.name, v.damageSprite)
 			end
+		elseif v.globeTimer ~= nil then
+			v.globeTimer = v.globeTimer - dt
+			-- i switched the parent from flyingBird to v as it puts off and clashes with the sagging of one another
+			if v.globeTimer < 0 and globeExplodeDone then
+				local name = "a" .. v.name .. "a"
+				--self:makeClusterBird(name, 0, 0, 0, 0, false, 1.8)
+				makeExplosion(v, getObjectDefinition(k), getAudioName("bubbles_activation"))
+				
+				local def = blockTable.blocks.GlobeBirdBig
+				createCircle(name, def.sprite, v.x, v.y, def.radius, def.density, def.friction, def.restitution, v.controllable, v.z_order)
+				
+				objects.world[name].definition = "GlobeBirdBig"
+				objects.world[name].controllable = def.controllable
+				objects.world[name].strength = def.strength
+				objects.world[name].defence = def.defence
+				objects.world[name].material = def.material
+				objects.world[name].levelGoal = def.levelGoal
+				objects.world[name].damageFactors = def.damageFactors
+				
+				local xp, yp = _G.res.getSpritePivot("", def.sprite)
+				objects.world[name].spritePivotX = xp
+				objects.world[name].spritePivotY = yp
+				objects.world[name].damageSprite = def.damageSprite
+				objects.world[name].useLegacyCollisionPath = def.useLegacyCollisionPath
+				objects.world[name].shot = true
+				objects.world[name].finalGlobe = true
+				objects.world[name].pufferLifeTimeTimer = 2--4
+				objects.world[name].xVel = v.xVel
+				objects.world[name].yVel = v.yVel
+				objects.world[name].shotSound = true
+				setRotation(name, v.angle)
+				setVelocity(name, v.xVel, v.yVel)
+				birds[name] = objects.world[name]
+										
+				removeBird(v,true)
+				v = objects.world[name] 
+				objects.world[v.name].sprite = def.sprite
+				--setSprite(flyingBird.name, objects.world[flyingBird.name].sprite)
+				--v.sprite = def.sprite
+				cameraTargetObject = v
+				globeExplodeDone = nil
+			elseif v.globeTimer <= dt then
+				local name = v.name .. "a"
+				--self:makeClusterBird(name, 0, 0, 0, 0, false, 1.8)
+				--makeExplosion(v, bDef, getAudioName(blockTable.blocks[v.definition].specialSound))
+				
+				local def = blockTable.blocks.GlobeBirdBig
+				createCircle(name, def.sprite, v.x, v.y, def.radius/2, def.density, def.friction, def.restitution, v.controllable, v.z_order)
+				
+				objects.world[name].definition = "GlobeBirdBig"
+				objects.world[name].controllable = def.controllable
+				objects.world[name].strength = def.strength
+				objects.world[name].defence = def.defence
+				objects.world[name].material = def.material
+				objects.world[name].levelGoal = def.levelGoal
+				objects.world[name].damageFactors = def.damageFactors
+				
+				local xp, yp = _G.res.getSpritePivot("", def.sprite)
+				objects.world[name].spritePivotX = xp
+				objects.world[name].spritePivotY = yp
+				objects.world[name].damageSprite = def.damageSprite
+				objects.world[name].useLegacyCollisionPath = def.useLegacyCollisionPath
+				objects.world[name].shot = true
+				objects.world[name].xVel = v.xVel
+				objects.world[name].yVel = v.yVel
+				objects.world[name].globeTimer = v.globeTimer
+				setRotation(name, v.angle)
+				setVelocity(name, v.xVel, v.yVel)
+				birds[name] = objects.world[name]
+				removeBird(v,true)
+				v = objects.world[name] 
+				objects.world[v.name].sprite = def.sprite
+				--setSprite(v.name, objects.world[flyingBird.name].sprite)
+				--v.sprite = def.sprite
+				cameraTargetObject = v
+				globeExplodeDone = true
+			end
+		elseif v.isGlobeDeath == true then
+			if v.deathTimer > 0 then
+				v.deathTimer = v.deathTimer - dt
+				v.directionChangeTimer = v.directionChangeTimer - dt
+				if v.directionChangeTimer <= 0 then
+					v.directionChangeTimer = 0.05
+					v.xVelChange = _G.math.random(-50, 50)
+					v.yVelChange = _G.math.random(-50, 50)
+				end
+				v.scale = v.deathTimer / v.deathTimerFull * 1
+				v.updateCount = v.updateCount + 1
+				setObjectParameter(v.name, 5, v.scale)
+				if v.updateCount % 3 == 0 then
+					resizeCircle(v.name, 7.5 * v.scale)
+				end
+			else
+				allowResetToBirdCamera = true
+				removeBird(v, false, false)
+			end
+		elseif v.pufferLifeTimeTimer ~= nil then
+			v.pufferLifeTimeTimer = v.pufferLifeTimeTimer - dt
+			if v.pufferLifeTimeTimer < 0 then
+				removeBird(v)
+			end
+		elseif v.updateFunction then
+			v.updateFunction(v, dt)
+		elseif v.pinkTimer ~= nil then
+			v.pinkTimer = v.pinkTimer - dt
+			if v.pinkTimer < particleTable.particles.sonicBoom.lifeTime then
+				if not v.sonicBoom then
+					birdSpecialtyAvailable = false
+					v.sonicBoom = true
+					setVelocity(v.name, 0, 0)
+					addParticles(v.name, "sonicBoom", 1, false, false, true)
+					_G.res.playAudio(getAudioName(blockTable.blocks[flyingBird.definition].specialSound), 1, false)
+				end
+				applyForce(v.name, 0, -20 * v.mass + 1, v.x, v.y)
+			end
+			if v.pinkTimer < 0 then
+				v.pinkTimer = nil
+				addParticles(v.name, "bubblePop", 1, false, false, true)
+				local def = getObjectDefinition(v.name)
+				for k1, v1 in _G.pairs(objects.world) do
+					local vDef = getObjectDefinition(v1.name)
+					if not vDef.controllable and vDef.materialName ~= "immovable" and distance(v.x, v.y, v1.x, v1.y) < def.explosionRadius and k1 ~= v.name then
+						v1.inBubble = true
+						v1.bubbleSprite = "P_BIRDBUBBLE_" .. _G.math.floor(_G.math.random(1, 3))
+						v1.bubbleAntiGravityTimer = bubbleAntiGravityTime
+						v1.bubbleAntiGravityFloat = (v1.x - v.x) * 1.3
+						v1.popBubble = true
+					end
+				end
+				setVelocity(v.name, 0, 0)
+				v.inBubble = true
+				v.bubbleAntiGravityTimer = bubbleAntiGravityTime
+				v.bubbleSprite = "P_BIRDBUBBLE_" .. _G.math.floor(_G.math.random(1, 3))
+				v.popBubble = true
+			end
 		elseif v.isEagleBait == true and eagleTimer ~= nil then
 			if eagleTimer < 6.2 and eagleMoving == true then
 				birdSpecialtyAvailable = false
@@ -19672,7 +22087,7 @@ function updateGame(dt, time)
 				setRotation(v.name, angle)
 			elseif v.hitGround == true then
 				setVelocity(v.name, v.initVelX * speed, -v.initVelY * speed)
-				setAngularVelocity(v.name, _G.math.pi * 4)
+				setAngularVelocity(v.name, _G.math.pi * 16)
 			end
 		else
 			if v.controllable and v.shot == true then
@@ -19683,7 +22098,7 @@ function updateGame(dt, time)
 					v.isReadyForRemoveTimer = 1.0
 				end
 				
-				if v.isReadyForRemoveTimer < 0 and cameraTargetObject == nil then
+				if v.isReadyForRemoveTimer < 0 and cameraTargetObject == nil and not v.isEagleBait then
 					--print(currentFrame .. " Removing stopped bird.\n")
 					removeBird(v)
 					v = nil
@@ -19691,6 +22106,29 @@ function updateGame(dt, time)
 			end
 		end
 		
+		-- float all objects inside bubbles
+		if v ~= nil and v.inBubble then
+			if 0 < v.bubbleAntiGravityTimer then
+				v.bubbleAntiGravityTimer = v.bubbleAntiGravityTimer - dt
+				local xVel = v.xVel
+				local yVel = v.yVel
+				if distance(0, 0, xVel, yVel) < antiGravityMaxVelocity then
+					applyForce(v.name, (v.bubbleAntiGravityFloat or 0) * v.mass, -18 * v.mass * bubbleAntiGravity, v.x, v.y)
+				end
+			else
+				v.bubbleAntiGravityTimer = nil
+				v.bubbleAntiGravityFloat = nil
+				v.inBubble = nil
+				if v.popBubble == true then
+					addParticles(v.name, "bubblePop", 1, false, false, true)
+				end
+				if v.controllable then
+					removeBird(v)
+					v = nil
+				end
+			end
+		end
+
 		-- remove all frozen objects
 		if v ~= nil and v.frozen then
 			
@@ -19707,12 +22145,13 @@ function updateGame(dt, time)
 					removeBird(v)
 				end
 				if v.isMightyEagle and v.hitGround ~= true then
+--					shakeCamera()
 					cameraShake = 100
-					_G.res.playAudio("mighty_eagle_thump", 1, false)
+					_G.res.playAudio("mighty_eagle_bounce", 2, false)
 					for k2, v2 in _G.pairs(objects.world) do
 						if v2 ~= nil then
 							if v2.strength ~= nil and v2.levelGoal then
-								local force = -v2.mass * 15
+								local force = -v2.mass * 18
 								applyImpulse( v2.name,
 											0,
 											force,
@@ -19729,6 +22168,7 @@ function updateGame(dt, time)
 				removeObject(k)
 				objects.world[k] = nil
 				levelGoals[k] = nil
+				cannons[k] = nil
 			end
 			v = nil
 		end
@@ -19746,13 +22186,10 @@ function updateGame(dt, time)
 			createMightyEagle((wx1 + wx2) * 0.5, (wy1 + wy2) * 0.5)--]]
 			createMightyEagle(eagleX, eagleY)
 		elseif eagleTimer < 7.7 and eagleSoundPlayed ~= true then
-			_G.res.playAudio("mighty_eagle_yell", 1, false)
+			_G.res.playAudio("mighty_eagle_yell", 0.7, false)
+			_G.res.playAudio("mighty_eagle_fly", 0.7, false)
 			eagleSoundPlayed = true
 		
-		end
-		if cameraShake ~= nil and cameraShake > 0 then
-			--cameraShake = _G.math.max(cameraShake - 200 * dt, 0)
-			cameraShake = _G.math.max(cameraShake - cameraShake*dt*2.2, 0)
 		end
 		if eagleTimer < 0 then
 			for k, v in _G.pairs(objects.world) do
@@ -19760,6 +22197,15 @@ function updateGame(dt, time)
 					v.strength = 0
 				end
 			end
+		end
+		-- Delete all joints when eagle hits ground, joints cannot be destroyed from BirdCollision
+		if destroyJoints then
+			if objects.joints ~= nil then
+				for k, v in _G.pairs(objects.joints) do
+					destroyJoint(v.name)
+				end
+			end
+			destroyJoints = nil
 		end
 	end
 
@@ -19856,6 +22302,10 @@ function updateGame(dt, time)
 	for k,v in _G.pairs(birds) do
 		bird = v
 		if bird.shot == true and bird.definition == "BoomerangBird" then
+			if not gameOptions.rotateWhileFlying.allBirds then
+				bird.noRotation = true
+			end
+			
 			if v.boomerangActive == true then
 				
 				if bird.prevAngle ~= nil then
@@ -19872,21 +22322,28 @@ function updateGame(dt, time)
 					end
 				end
 				bird.prevAngle = bird.angle
-				
-				if bird.xVel >= bird.boomerangMinXVel and bird.xVel <= bird.boomerangMaxXVel then
-					applyForce( bird.name,
-										bird.boomerangXForce,
-										0,
-										bird.x,
-										bird.y )
-				end
-				
-				if bird.yVel > 5 then
-					applyForce( bird.name,
-										0,
-										bird.boomerangYForce,
-										bird.x,
-										bird.y )
+				local bDef = getObjectDefinition(k)
+				if bDef.facebookBoomerangMode then
+					if bird.boomerangTargetXVel ~= 0 then
+						if bird.boomerangTargetXVel < bird.xVel then
+							setVelocity(bird.name, bird.xVel - dt * 1000 / 10, bird.yVel)
+							if bird.boomerangTargetXVel >= bird.xVel then
+								bird.boomerangTargetXVel = 0
+							end
+						elseif bird.boomerangTargetXVel > bird.xVel then
+							setVelocity(bird.name, bird.xVel + dt * 1000 / 10, bird.yVel)
+							if bird.boomerangTargetXVel <= bird.xVel then
+								bird.boomerangTargetXVel = 0
+							end
+						end
+					end
+				else
+					if bird.xVel >= bird.boomerangMinXVel and bird.xVel <= bird.boomerangMaxXVel then
+						applyForce(bird.name, bird.boomerangXForce, 0, bird.x, bird.y)
+					end
+					if bird.yVel > 5 then
+						applyForce(bird.name, 0, bird.boomerangYForce, bird.x, bird.y)
+					end
 				end
 				
 				bird.angularVelocity = bird.angularVelocity + dt * 20
@@ -19914,6 +22371,10 @@ function updateGame(dt, time)
 				setAngularVelocity(bird.name, bird.angularVelocity)
 			end
 		elseif bird.shot == true and bird.definition == "BaitSardine" then
+			if not gameOptions.rotateWhileFlying.allBirds then
+				bird.noRotation = true
+			end
+			
 			if bird.angularVelocity == nil then
 				bird.angularVelocity = 0
 			end
@@ -19929,7 +22390,11 @@ function updateGame(dt, time)
 	end
 	
 	--updateParticles(dt)
-
+	for k, v in _G.pairs(objects.joints) do
+		if v.backAndForth then
+			checkJointLimits(v.name)
+		end
+	end
 	updateCharacterAnimations(dt)
 	
 	updateFloatingScores(dt)
@@ -19957,11 +22422,239 @@ function updateGame(dt, time)
 		g_gesturePausePage.backgroundOverlay.shade = elementAnimations["ingameGesturePausePageScroll"].percentage / 100 * 0.65
 		drawMenuPage(g_gesturePausePage)
 	end
-	
-	
-	
 end
 
+function duplicateObjectProperties(obj1,obj2)
+	objects.world[obj1].definition = obj2.definition
+	objects.world[obj1].controllable = obj2.controllable
+	objects.world[obj1].strength = obj2.strength
+	objects.world[obj1].defence = obj2.defence
+	objects.world[obj1].materialName = obj2.materialName
+	objects.world[obj1].levelGoal = obj2.levelGoal
+	objects.world[obj1].damageFactors = obj2.damageFactors
+	objects.world[obj1].spritePivotX = obj2.spritePivotX
+	objects.world[obj1].spritePivotY = obj2.spritePivotY
+	objects.world[obj1].damageSprite = obj2.damageSprite
+	objects.world[obj1].useLegacyCollisionPath = obj2.useLegacyCollisionPath
+	objects.world[obj1].parentName = obj2.name
+	objects.world[obj1].collider = obj2.collider
+	setRotation(obj1, obj2.angle)
+end
+
+function triggerBirdSpecialty(dt)
+	local bDef = getObjectDefinition(flyingBird.name)
+	birdSpecialty = bDef.specialty
+	local lx, ly = physicsToWorldTransform(flyingBird.x, flyingBird.y)
+	if birdSpecialty == "BOOST" then
+		local force = boostForce * physicsScale * flyingBird.mass
+		local x, y = vNormalize(flyingBird.xVel, flyingBird.yVel)
+		applyImpulse( flyingBird.name,
+					-x * force,
+					-y * force,
+					flyingBird.x,
+					flyingBird.y )
+		addParticles(flyingBird.name, blockTable.blocks[flyingBird.definition].particles, 10)
+		_G.res.playAudio(getAudioName(blockTable.blocks[flyingBird.definition].specialSound), 1, false)
+		objects.world[flyingBird.name].sprite = bDef.spriteSpecial or "BIRD_YELLOW_SPECIAL"
+		setSprite(flyingBird.name, objects.world[flyingBird.name].sprite)
+		addPuffToTrajectory(1, lx, ly)
+	end
+	if birdSpecialty == "BOMB" then
+		--birdSpecialtyAvailable = true
+		makeExplosion(flyingBird, bDef, getAudioName(blockTable.blocks[flyingBird.definition].specialSound))
+		
+		removeBird(flyingBird)
+	end
+	if birdSpecialty == "GLOBE" then
+		flyingBird.globeTimer = dt*2
+		addPuffToTrajectory(1, lx, ly)
+	end
+	if birdSpecialty == "BUBBLES" then
+		flyingBird.noRotation = true
+		
+		flyingBird.pinkTimer = particleTable.particles["sonicBoom"].lifeTime
+		addPuffToTrajectory(1, lx, ly)
+	end
+	if birdSpecialty == "SOUND" then
+		_G.res.playAudio(getAudioName(blockTable.blocks[flyingBird.definition].specialSound), 1, false)
+		setSprite(flyingBird.name, bDef.spriteSpecial)
+	end
+	if birdSpecialty == "CLUSTER_BOMB" then
+		local lx, ly = physicsToWorldTransform(flyingBird.x, flyingBird.y)
+		addPuffToTrajectory(1, lx, ly)
+		
+		local x, y = vNormalize(flyingBird.yVel, -flyingBird.xVel)
+		local newName = flyingBird.name .. "a"
+		createCircle(newName, flyingBird.sprite, flyingBird.x - x, flyingBird.y - y, flyingBird.radius, flyingBird.density, flyingBird.friction, flyingBird.restitution, flyingBird.controllable, flyingBird.z_order)
+		duplicateObjectProperties(newName,flyingBird)
+		objects.world[newName].shot = true
+		objects.world[newName].sleeping = false
+		objects.world[newName].hasCollided = false
+		objects.world[newName].collision = true
+		objects.world[newName].xVel = flyingBird.xVel - x*7
+		objects.world[newName].yVel = flyingBird.yVel - y*7
+		setSprite(newName, bDef.spriteSpecial)
+		setVelocity(newName, flyingBird.xVel - x*7, flyingBird.yVel - y*7)
+		--_G.table.insert(extraObjects, newName)
+		birds[newName] = objects.world[newName]
+		
+		if flyingBird.powerup_scale then
+			setObjectParameter(newName, 5, flyingBird.powerup_scale)
+			setObjectParameter(newName, 6, 1)			
+		end
+		
+		newName = flyingBird.name .. "b"
+		createCircle(newName, flyingBird.sprite, flyingBird.x, flyingBird.y, flyingBird.radius, flyingBird.density, flyingBird.friction, flyingBird.restitution, flyingBird.controllable, flyingBird.z_order)
+		duplicateObjectProperties(newName,flyingBird)
+		objects.world[newName].shot = true
+		objects.world[newName].sleeping = false
+		objects.world[newName].hasCollided = false
+		objects.world[newName].collision = true
+		objects.world[newName].xVel = flyingBird.xVel
+		objects.world[newName].yVel = flyingBird.yVel
+		setSprite(newName, bDef.spriteSpecial)
+		setVelocity(newName, flyingBird.xVel, flyingBird.yVel)
+		--_G.table.insert(extraObjects, newName)
+		birds[newName] = objects.world[newName]
+		
+		if flyingBird.powerup_scale then
+			setObjectParameter(newName, 5, flyingBird.powerup_scale)
+			setObjectParameter(newName, 6, 1)			
+		end
+		
+		newName = flyingBird.name .. "c"
+		createCircle(newName, flyingBird.sprite, flyingBird.x + x, flyingBird.y + y, flyingBird.radius, flyingBird.density, flyingBird.friction, flyingBird.restitution, flyingBird.controllable, flyingBird.z_order)
+		duplicateObjectProperties(newName,flyingBird)
+		objects.world[newName].shot = true
+		objects.world[newName].sleeping = false
+		objects.world[newName].hasCollided = false
+		objects.world[newName].xVel = flyingBird.xVel + x*7
+		objects.world[newName].yVel = flyingBird.yVel + y*7
+		setSprite(newName, bDef.spriteSpecial)
+		setVelocity(newName, flyingBird.xVel + x*7, flyingBird.yVel + y*7)
+		birds[newName] = objects.world[newName]
+
+		otherBirds = { flyingBird.name .. "a", flyingBird.name .. "b" }
+		removeBird(flyingBird)
+		--objects.world[flyingBird.name] = nil
+		flyingBird = objects.world[newName]
+		cameraTargetObject = flyingBird
+
+		_G.res.playAudio(getAudioName(blockTable.blocks[flyingBird.definition].specialSound), 1, false)
+	end
+	-- drop explosive
+	if birdSpecialty == "GRENADE" then
+		flyingBird.noRotation = true
+		
+		local x, y = vNormalize(flyingBird.yVel, -flyingBird.xVel)
+		local newName = flyingBird.name .. "a"
+--		setSprite(flyingBird.name, "BIRD_GREEN_SPECIAL")
+		setSprite(flyingBird.name, bDef.spriteSpecial)
+--		blockTable.blocks[flyingBird.definition].spriteCollision = "BIRD_GREEN_SPECIAL"
+		
+		createCircle(newName, "DROPPABLE_EGG", flyingBird.x, flyingBird.y + (flyingBird.radius or 2)*2, flyingBird.radius or 2, flyingBird.density, flyingBird.friction, flyingBird.restitution, true, flyingBird.z_order)
+		objects.world[newName].definition = "EggGranade"
+		objects.world[newName].controllable = true
+		objects.world[newName].strength = flyingBird.strength
+		objects.world[newName].defence = flyingBird.defence
+		objects.world[newName].material = flyingBird.material
+		objects.world[newName].damageFactors = blockTable.blocks[objects.world[newName].definition].damageFactors
+		objects.world[newName].useLegacyCollisionPath = flyingBird.useLegacyCollisionPath
+		objects.world[newName].levelGoal = false
+		local xp, yp = _G.res.getSpritePivot("INGAME_BIRDS_1","DROPPABLE_EGG")
+		objects.world[newName].spritePivotX = xp
+		objects.world[newName].spritePivotY = yp
+		objects.world[newName].damageSprite = "DROPPABLE_EGG"
+		objects.world[newName].xVel = 0 --flyingBird.xVel * 0.5
+		objects.world[newName].yVel = 100 --flyingBird.yVel * 0.5
+		setSprite(newName, objects.world[newName].damageSprite)
+		setRotation(newName, flyingBird.angle)
+		--setVelocity(newName, flyingBird.xVel*0.5, flyingBird.yVel*0.5)
+		setVelocity(newName, objects.world[newName].xVel, objects.world[newName].yVel)
+		--objects.world[newName].specialty = "BOMB"
+		_G.table.insert(flyingGrenades, { name = newName, timer = 5 })
+		--_G.table.insert(extraObjects, newName)
+		_G.res.playAudio(getAudioName(blockTable.blocks[flyingBird.definition].specialSound), 1, false)
+		--playAudio(getAudioName("bird_pushing_egg_out"), 1, false)
+		cameraTargetObject = objects.world[newName]
+		
+		applyImpulse( flyingBird.name,
+					-0.04*defaultForce * flyingBird.mass,
+					0.08*defaultForce * flyingBird.mass,
+					flyingBird.x-0.5,
+					flyingBird.y )
+		addPuffToTrajectory(1, lx, ly)
+	end
+	if birdSpecialty == "BOOMERANG" then
+		flyingBird.noRotation = true
+		
+		flyingBird.boomerangActive = true
+		if bDef.facebookBoomerangMode then
+			flyingBird.boomerangTargetXVel = -1.5 * flyingBird.xVel
+		else
+			if flyingBird.xVel ~= 0 then
+				yForceCoeff = 2 - _G.math.min(_G.math.abs(flyingBird.yVel / flyingBird.xVel), 2)
+			else
+				yForceCoeff = 0
+			end
+			
+			flyingBird.boomerangXForce = flyingBird.xVel * physicsScale * flyingBird.mass * blockTable.blocks[flyingBird.definition].boomerangHorizontalForce
+			flyingBird.boomerangYForce = yForceCoeff * physicsScale * flyingBird.mass * blockTable.blocks[flyingBird.definition].boomerangVerticalForce
+			flyingBird.boomerangMinXVel = -blockTable.blocks[flyingBird.definition].boomerangMaxHorizontalSpeed
+			flyingBird.boomerangMaxXVel = blockTable.blocks[flyingBird.definition].boomerangMaxHorizontalSpeed
+		end
+		
+		--flyingBird.angularVelocity = 0
+		objects.world[flyingBird.name].sprite = bDef.spriteSpecial or "BIRD_BOOMERANG_SPECIAL"
+		setSprite(flyingBird.name, objects.world[flyingBird.name].sprite)
+		
+		_G.res.playAudio(getAudioName(blockTable.blocks[flyingBird.definition].specialSound), 1, false)
+		addPuffToTrajectory(1, lx, ly)
+		
+	end
+		-- Be Mighty
+		--[[if birdSpecialty == "MIGHTY_EAGLE" then
+			local x, y = vNormalize(flyingBird.yVel, -flyingBird.xVel)
+			local newName = "MightyEagle_a"
+			
+			local blockDef = blockTable.blocks["MightyEagleBird"]
+			
+			createCircle(newName, blockDef.sprite, flyingBird.x, flyingBird.y - blockDef.radius*20, blockDef.radius, blockDef.density, blockDef.friction, blockDef.restitution, true, 6)
+			objects.world[newName].definition = "MightyEagleBird"
+			objects.world[newName].controllable = blockDef.controllable
+			objects.world[newName].strength = blockDef.strength
+			objects.world[newName].defence = blockDef.defence
+			objects.world[newName].material = blockDef.material
+			objects.world[newName].damageFactors = blockDef.damageFactors
+			objects.world[newName].useLegacyCollisionPath = blockDef.useLegacyCollisionPath
+			objects.world[newName].levelGoal = false
+			local xp, yp = _G.res.getSpritePivot("INGAME_BIRDS_2",blockDef.sprite)
+			objects.world[newName].spritePivotX = xp
+			objects.world[newName].spritePivotY = yp
+			objects.world[newName].damageSprite = blockDef.sprite
+			objects.world[newName].xVel = 0 --flyingBird.xVel * 0.5
+			objects.world[newName].yVel = 1000 --flyingBird.yVel * 0.5
+			setSprite(newName, objects.world[newName].damageSprite)
+			setRotation(newName, flyingBird.angle)
+			--setVelocity(newName, flyingBird.xVel*0.5, flyingBird.yVel*0.5)
+			setVelocity(newName, objects.world[newName].xVel, objects.world[newName].yVel)
+			--objects.world[newName].specialty = "BOMB"
+			--_G.table.insert(flyingGrenades, { name = newName, timer = 5 })
+			--_G.table.insert(extraObjects, newName)
+			_G.res.playAudio(getAudioName(blockTable.blocks[flyingBird.definition].specialSound), 1, false)
+			--playAudio(getAudioName("bird_pushing_egg_out"), 1, false)
+			
+			local lx, ly = physicsToWorldTransform(flyingBird.x, flyingBird.y)
+			addPuffToTrajectory(1, lx, ly)
+			
+			flyingBird.eagleTimer = 0
+			flyingBird.eagleMoving = false
+		end	--]]
+--			  local _ENV = _G.getfenv(1)
+--			  if bDef.onTriggerSpecialty then
+--				_ENV[bDef.onTriggerSpecialty](flyingBird)
+--			  end
+end
 function closeMightyEaglePurchasePage()
 	setGameMode(updateMenu)
 	popupPage = nil
@@ -19982,7 +22675,6 @@ function openExitPage()
 end
 
 function closeResolutionWarningPage()
-	
 	if invalidResolutionPage.fromMainMenu == false then		
 		setPhysicsEnabled(true)
 		popupPage = nil
@@ -20048,6 +22740,8 @@ function unlockLevels()
 	settings.lastOpenLevelLP2 = 200
 	settings.lastOpenLevelLP3 = 200
 	settings.lastOpenLevelLP4 = 200
+	settings.lastOpenLevelLP5 = 200
+	settings.lastOpenLevelLP6 = 200
 	settings.theme1Completed = true
 	settings.theme2Completed = true
 	settings.gameCompleted = true
@@ -20059,16 +22753,22 @@ function unlockLevels()
 	settings.theme9Completed = true
 	settings.theme10Completed = true
 	settings.theme11Completed = true
+	settings.theme12Completed = true
+	settings.theme13Completed = true
+	settings.theme14Completed = true
+	settings.theme15Completed = true
+	settings.theme16Completed = true
+	settings.theme17Completed = true
 	
 	--prepareMenuPage(mainMenu)
 	prepareMenuPage(episodeSelectionPage)
-	prepareMenuPage(levelSelectionPagesBasic)
-	prepareMenuPage(levelSelectionPagesExtra)
+	prepareMenuPage(episodes[1])
+	prepareMenuPage(episodes[2])
 	prepareMenuPage(levelSelectionPagesGoldenEggs[1])
-	prepareMenuPage(levelSelectionPagesPack3)
-	prepareMenuPage(levelSelectionPagesPack4)
-	prepareMenuPage(levelSelectionPagesPack5)
-	prepareMenuPage(levelSelectionPagesPack6)
+	prepareMenuPage(episodes[3])
+	prepareMenuPage(episodes[4])
+	prepareMenuPage(episodes[5])
+	prepareMenuPage(episodes[6])
 	
 	setActiveMenuPage(mainMenu, true)
 	setGameMode(updateMenu)
@@ -20078,10 +22778,12 @@ end
 
 function lockLevels()
 	releaseBuild = true
-	settings.lastOpenLevel = 200
+	settings.lastOpenLevel = 1
 	settings.lastOpenLevelLP2 = 1
 	settings.lastOpenLevelLP3 = 1
 	settings.lastOpenLevelLP4 = 1
+	settings.lastOpenLevelLP5 = 1
+	settings.lastOpenLevelLP6 = 1
 	settings.theme1Completed = nil
 	settings.theme2Completed = nil
 	settings.gameCompleted = nil
@@ -20093,6 +22795,12 @@ function lockLevels()
 	settings.theme9Completed = nil
 	settings.theme10Completed = nil
 	settings.theme11Completed = nil
+	settings.theme12Completed = nil
+	settings.theme13Completed = nil
+	settings.theme14Completed = nil
+	settings.theme15Completed = nil
+	settings.theme16Completed = nil
+	settings.theme17Completed = nil
 	settings.threeStars = nil
 	settings.threeStarsLP2 = nil
 	settings.threeStarsLP3 = nil
@@ -20131,12 +22839,12 @@ function lockLevels()
 	--prepareMenuPage(mainMenu, true)
 	prepareMenuPage(episodeSelectionPage)
 	--prepareMenuPage(levelSelectionPagesBasic)
-	prepareMenuPage(levelSelectionPagesExtra)
+	prepareMenuPage(episodes[2])
 	prepareMenuPage(levelSelectionPagesGoldenEggs[1])
-	prepareMenuPage(levelSelectionPagesPack3)
-	prepareMenuPage(levelSelectionPagesPack4)
-	prepareMenuPage(levelSelectionPagesPack5)
-	prepareMenuPage(levelSelectionPagesPack6)
+	prepareMenuPage(episodes[3])
+	prepareMenuPage(episodes[4])
+	prepareMenuPage(episodes[5])
+	prepareMenuPage(episodes[6])
 	
 	setActiveMenuPage(mainMenu)
 	setGameMode(updateMenu)
@@ -20216,16 +22924,21 @@ function removeBlocks()
 					scoreToAdd = pigletteDestroyedScoreIncrement
 					_G.res.playAudio(getAudioName("piglette_damage"), 1, false)
 					_G.table.insert(floatingScores, { x = v.x, y = v.y, sprite = "5K_GREEN", score = scoreToAdd, time = 0, lifetime = 0.9, maxScale = 1, xs = 0  } )
-					-- check if only one piglette is still alive and play level complete sound if so
-					-- local anyPiglettesAlive = 0
-					-- for k, v in _G.pairs(levelGoals) do
-						-- if v.levelGoal then
-							-- anyPiglettesAlive = anyPiglettesAlive + 1
-						-- end
-					-- end
-					-- if anyPiglettesAlive == 1 then
-						-- _G.res.playAudio(getAudioName("level_clear_military"), 1, false)
-					-- end
+					-- check if only one piglette is still alive 
+					--local anyPiglettesAlive = 0
+					--for k2, v2 in _G.pairs(levelGoals) do
+						--if v2.levelGoal then
+							--anyPiglettesAlive = anyPiglettesAlive + 1
+						--end						
+					--end
+					
+					--if anyPiglettesAlive == 1 then
+						--_G.res.playAudio(getAudioName("good_shot"), 1, false)
+					--end
+				elseif bDef.spriteScore ~= nil then
+					_G.table.insert(floatingScores, {x = v.x, y = v.y, sprite = bDef.spriteScore, score = scoreToAdd, time = 0, lifetime = 0.9, maxScale = 0.65, xs = 0})
+				elseif blockTable.materials[v.material].spriteScore ~= nil then
+					_G.table.insert(floatingScores, {x = v.x, y = v.y, sprite = blockTable.materials[v.material].spriteScore, score = scoreToAdd, time = 0, lifetime = 0.9, maxScale = 0.65, xs = 0})
 				else
 					_G.table.insert(floatingScores, { x = v.x, y = v.y, text = "" .. scoreToAdd, score = scoreToAdd, time = 0, lifetime = 0.6, maxScale = 0.25 + scoreToAdd / 3000, xs = 0 } )
 				end
@@ -20239,7 +22952,7 @@ function removeBlocks()
 
 				local destroySound = blockTable.materials[v.material].destroyedSound
 				local particleAmount = 12
-				if particle == "smokeBuff" then
+				if particle == "smokeBuff" or particle == "explosionBuff" then
 					particleAmount = 1
 				end
 				if bDef.specialty == "BOMB" then
@@ -20250,6 +22963,7 @@ function removeBlocks()
 					_G.res.playAudio(getAudioName(destroySound), 0.7, false, 3)
 				end
 				
+	
 				if deviceModel == "iphone" or deviceModel == "ipad" or deviceModel == "iphone4" then
 					if v.material ~= nil then
 						if v.material == "wood" then
@@ -20374,12 +23088,55 @@ function removeBlocks()
 						end
 					end
 					
+					if currentLevelNumberInTheme == 12 and currentWorldNumber == 12 then
+						if v.name == "ExtraHolyGrail_4" then
+							g_releaseGEOnPopupExit = true
+							goldenEggAchieved("Level18")
+						end
+					end
+					
+					if currentLevelNumberInTheme == 10 and currentWorldNumber == 13 then
+						if v.name == "ExtraGoldenEgg_1" then
+							g_releaseGEOnPopupExit = true
+							goldenEggAchieved("Level19")
+						end
+					end		
+
+					if currentLevelNumberInTheme == 4 and currentWorldNumber == 14 and g_newEpisodeScreen.lastSetEnabled == true then
+						if v.name == "ExtraGoldenEgg_1" then
+							g_releaseGEOnPopupExit = true
+							goldenEggAchieved("Level22")
+						end
+					end
+					
+					if currentLevelNumberInTheme == 12 and currentWorldNumber == 13 then
+						if v.name == "ExtraSuperBowl_2" then
+							g_releaseGEOnPopupExit = true
+							goldenEggAchieved("Level20")
+						end
+					end
+					
+					if currentLevelNumberInTheme == 12 and currentWorldNumber == 15 then
+						if v.name == "ExtraGoldenEgg_1" then
+							g_releaseGEOnPopupExit = true
+							goldenEggAchieved("Level23")
+						end
+					end
+					
+					if currentLevelNumberInTheme == 9 and currentWorldNumber == 16 then
+						if v.name == "ExtraGoldenEgg_1" then
+							g_releaseGEOnPopupExit = true
+							goldenEggAchieved("Level24")
+						end
+					end
+					
 				end
 				
 				addParticles(k, particle, particleAmount)
 				removeObject(k)
 				levelGoals[k] = nil				
 				objects.world[k] = nil
+				cannons[k] = nil
 			end
 		end
 	end
@@ -20402,6 +23159,93 @@ function initPictureLevel()
 		eaglePage = EaglePage:new()
 	end
 	
+end
+
+
+-------------
+--Scene-class
+-------------
+
+Scene = {}
+
+function Scene:new(o)
+	o = o or {}
+	o.pages = {}
+	o.order = {}
+	_G.setmetatable(o, self)
+	self.__index = self
+	o:init()
+	return o
+end
+
+function Scene:init() end
+
+function Scene:onEntry() 
+	for i = 1, #self.order do
+		self.pages[self.order[i]]:onEntry()
+	end
+end
+
+function Scene:onExit() 
+	for i = 1, #self.order do	
+		self.pages[self.order[i]]:onExit()
+	end
+end
+
+function Scene:insertPage(key, page, pushback)
+	--self:setPageDefaults(page)
+	if not pushback then
+		_G.table.insert(self.order, key)
+		self.pages[key] = page
+	else
+		local index = self:getIndexOfPage(pushback)
+		if index then
+			_G.table.insert(self.order, index, key)
+			self.pages[key] = page
+		end
+	end	
+end
+
+function Scene:removePage(key)
+	local index = self:getIndexOfPage(key)
+	if index then
+		_G.table.remove(self.order, index)
+		for i, v in _G.ipairs(self.pages) do
+			if v == self.pages.key then
+				_G.table.remove(self.pages, i)
+				return
+			end
+		end
+	end
+end
+
+function Scene:getIndexOfPage(name)
+	for i = 1, #self.order do
+		if self.order[i] == name then
+			return i
+		end
+	end
+	return false
+end
+
+function Scene:update(dt, time)
+	if self.visible ~= false then
+		for k, v in _G.pairs(self.order) do
+			if self.pages[v].visible ~= false then				
+				self.pages[v]:update(dt, time)
+			end
+		end
+	end
+end
+
+function Scene:draw()
+	if self.visible ~= false then
+		for k, v in _G.pairs(self.order) do
+			if self.pages[v].visible ~= false then
+				self.pages[v]:draw()
+			end
+		end
+	end
 end
 
 
@@ -20505,6 +23349,24 @@ function Page:getActivatedItems()
 	end
 end
 
+function Page:getHoveredItems()
+	local hoveredItems = {}
+	for key, value in _G.pairs(self.items) do
+		if value.visible ~= false and value.selectable ~= false 
+		  and value:checkBounds(cursor.x, cursor.y) then
+			if #hoveredItems == 0 or #hoveredItems >= 1 and hoveredItems[1] ~= key then
+				_G.table.insert(hoveredItems, key)
+			end
+		end
+	end
+
+	if #hoveredItems >= 1 then
+		return hoveredItems
+	else
+		return false
+	end
+end	
+
 function Page:getHoveredItemKey()
 	-- TODO: selectionCandidate functionality for overlapping sprites, texts and/or touch areas.
 	-- Needs to take pivot and anchor into account.
@@ -20517,6 +23379,27 @@ function Page:getHoveredItemKey()
 	end
 	return false
 end
+
+
+function Page:checkClicks()
+	-- TODO: selectionCandidate functionality for overlapping sprites, texts and/or touch areas.
+	-- Needs to take pivot and anchor into account.
+
+	for k, v in _G.pairs(self.items) do
+		if v.visible ~= false and v.selectable ~= false 
+		 and (v.activateOnRelease ~= true and keyPressed["LBUTTON"] or v.activateOnRelease and keyReleased["LBUTTON"])
+		 and v:checkBounds(cursor.x, cursor.y) then 
+			if v.action then
+				for key, value in _G.pairs(v.action) do
+					key(value)
+				end
+			end
+			return v
+		end
+	end
+	return false
+end
+
 
 function Page:getClickedItem()
 	-- TODO: selectionCandidate functionality for overlapping sprites, texts and/or touch areas.
@@ -20551,7 +23434,11 @@ function Item:new(o)
 	o.x, o.y = o.x or 0, o.y or 0
 	_G.setmetatable(o, self)
 	self.__index = self
+	o:init()
 	return o
+end
+
+function Item:init()
 end
 
 function Item:checkBounds(xCoord, yCoord)
@@ -20559,11 +23446,37 @@ function Item:checkBounds(xCoord, yCoord)
 		return false -- Height and width for click area must be set.
 	else
 		return yCoord >= self.y and yCoord <= self.y + self.h and
-			xCoord >= self.x and xCoord <= self.x + self.h
+			xCoord >= self.x and xCoord <= self.x + self.w
 	end
 end
 
 
+
+----------------------------------
+--RectItem-class, inherits Item
+----------------------------------
+
+RectItem = Item:new()
+
+function RectItem:init()
+	self.red = self.red or 0
+	self.green = self.green or 0
+	self.blue = self.blue or 0
+	self.alpha = self.alpha or 0
+	self.x1 = self.x1 or 0
+	self.x2 = self.x2 or screenWidth
+	self.y1 = self.y1 or 0
+	self.y2 = self.y2 or screenHeight
+	self.inWorld = self.inWorld or false
+end
+					  
+function RectItem:draw()
+	if self.renderState then
+		setRenderState(-screen.left, -screen.top, worldScale, worldScale, 0, 0, 0)
+	end
+	drawRect(self.red, self.green, self.blue, self.alpha, self.x1, self.y1, self.x2, self.y2, self.inWorld)
+	setRenderState(0, 0, 1, 1, 0, 0, 0)
+end
 
 ----------------------------------
 --SpriteItem-class, inherits Item
@@ -20596,6 +23509,23 @@ function SpriteItem:checkBounds(xCoord, yCoord)
 
 		return yCoord >= (self.y - pivotY - scaleCorrectionY) and yCoord <= (self.y - pivotY + height + scaleCorrectionY)
 			and xCoord >= (self.x - pivotX - scaleCorrectionX) and xCoord <= (self.x - pivotX + width + scaleCorrectionX)
+	elseif self.inWorld then
+		local scaleCorrectionX, scaleCorrectionY = 0, 0
+		local xs, ys = self.xs or 1, self.ys or 1
+		if self.scale ~= nil then
+			xs, ys = self.scale, self.scale
+		end
+		worldScale = worldScale or 1
+		--if xs > 1 then
+			scaleCorrectionX = ((width * xs * worldScale) - width) / 2
+		--end
+		--if ys > 1 then
+			scaleCorrectionY = ((height * ys * worldScale) - height) / 2
+		--end
+	
+		local tmpx, tmpy = physicsToScreenTransform(self.x, self.y)	
+		return yCoord >= (tmpy - pivotY - scaleCorrectionY) and yCoord <= (tmpy - pivotY + height + scaleCorrectionY)
+			and xCoord >= (tmpx - pivotX - scaleCorrectionX) and xCoord <= (tmpx - pivotX + width + scaleCorrectionX)
 	end
 	
 	return yCoord >= (self.y - pivotY) and yCoord <= (self.y - pivotY + height) and
@@ -20603,10 +23533,7 @@ function SpriteItem:checkBounds(xCoord, yCoord)
 end
 
 function SpriteItem:draw()
-	if(self.mouseState ~= nil) then
-		drawMouseScalingItem(self.sheet, self, self.x, self.y)
-		
-	elseif self.renderState then
+	if self.renderState then
 
 		local xCoord, yCoord = self.x, self.y
 		local xs, ys = self.xs or 1, self.ys or 1
@@ -20627,23 +23554,21 @@ function SpriteItem:draw()
 			local width = screenHeight * aspect
 			local px, py = _G.res.getSpritePivot(self.sheet, self.sprite)
 			
-			if screenHeight <= sh and screenWidth <= sw then			
-				_G.res.drawSprite("", self.sprite, xCoord, yCoord)				
-			elseif screenHeight > sh and screenWidth <= sw then
-				_G.res.drawSprite("", self.sprite, (sw - width) / 2, 0, "LEFT", "TOP", width, screenHeight)
-			else
-				_G.res.drawSprite("", self.sprite, 0, 0, "LEFT", "TOP", screenWidth, screenHeight)
-			end
+		
+		--	if screenHeight > sh and screenWidth <= sw then
+		--		_G.res.drawSprite(self.sheet, self.sprite, (sw - width) / 2, 0, "LEFT", "TOP", width, screenHeight)
+		--	else
+				_G.res.drawSprite(self.sheet, self.sprite, 0, 0, "LEFT", "TOP", screenWidth, screenHeight)
+		--	end
 			
 			
-			--_G.res.drawSprite("", self.sprite, _G.math.floor(xCoord), _G.math.floor(yCoord) - screenHeight / 2, hAnchor, vAnchor, sw * screenHeight / sh, screenHeight)
+			--_G.res.drawSprite(self.sheet, self.sprite, _G.math.floor(xCoord), _G.math.floor(yCoord) - screenHeight / 2, hAnchor, vAnchor, sw * screenHeight / sh, screenHeight)
 		else
-			_G.res.drawSprite("", self.sprite, _G.math.floor(xCoord), _G.math.floor(yCoord))
+			_G.res.drawSprite(self.sheet, self.sprite, _G.math.floor(xCoord), _G.math.floor(yCoord))
 		end
 		setRenderState(0, 0, 1, 1, 0, 0, 0)
-	
 	else
-		_G.res.drawSprite("", self.sprite, self.x, self.y)
+		_G.res.drawSprite(self.sheet, self.sprite, self.x, self.y)
 	end
 end
 
@@ -20653,8 +23578,93 @@ end
 
 TextItem = Item:new({text = "", group = "TEXTS_BASIC", textBoxSize = screenWidth, hanchor = "HCENTER", vanchor = "VCENTER"})
 
+-- function TextItem:draw()
+	-- _G.res.drawString(self.group, self.text, self.x, self.y, self.hanchor, self.vanchor )
+-- end
+
+function TextItem:init()
+	self.text = self.text or ""
+	self.group = self.group or "TEXTS_BASIC"
+	self.textBoxSize = self.textBoxSize or screenWidth
+	self.hanchor = self.hanchor or "HCENTER"
+	self.vanchor = self.vanchor or "VCENTER"
+
+	self.width = _G.res.getStringWidth(_G.res.getString(self.group, self.text))
+end
+
+function TextItem:clip()
+	setFont(self.font)
+	clipText(self.group, self.text, self.textBoxSize)
+	local fl = _G.res.getFontLeading()
+	self.textBlockHeight = #clippedText.lines * fl
+	self.widestLine = clippedText.widestLine
+	self.lines = {}
+	
+	local k = 1
+	local yCorrection = 0
+	if self.vanchor == "VCENTER" then
+		yCorrection = (-self.textBlockHeight / 2) + (fl / 2)
+	elseif self.vanchor == "BOTTOM" then
+		yCorrection = -self.textBlockHeight + fl
+	end
+	while  k <= #clippedText.lines do
+		local l = clippedText.lines[k]
+		local tmpItm = TextItem:new({font = self.font, text = l, x = self.x, y = self.y + yCorrection, hanchor = self.hanchor, vanchor = self.vanchor})
+		_G.table.insert(self.lines, tmpItm)
+		k = k + 1
+		yCorrection = yCorrection + fl
+	end
+	self.clipped = true
+end
+
+function TextItem:checkBounds(xCoord, yCoord)
+	local w = _G.res.getStringWidth(_G.res.getString(self.group, self.text))
+	if w > self.width then
+		self.width = w
+	end
+	
+	if self.clipped then
+		for i = 1, #self.lines do
+			if self.lines[i]:checkBounds(xCoord, yCoord) then
+				return true
+			end
+		end
+	else	
+		local fl = _G.res.getFontLeading()
+		local xCorrection, yCorrection = 0, 0
+		if self.hanchor == "HCENTER" then
+			xCorrection = -self.width / 2
+		elseif self.hanchor == "RIGHT" then
+			xCorrection = -self.width
+		elseif self.hanchor == "LEFT" then
+			xCorrection = 0
+		end
+
+		if self.vanchor == "VCENTER" then
+			yCorrection = -fl / 2
+		elseif self.vanchor == "BOTTOM" then
+			yCorrection = -fl
+		elseif self.vanchor == "TOP" then
+			yCorrection = 0
+		end
+	
+		return yCoord >= self.y + yCorrection and yCoord <= self.y + yCorrection + fl and
+			xCoord >= self.x + xCorrection and xCoord <= self.x + xCorrection + self.width
+	end
+end
+
 function TextItem:draw()
-	_G.res.drawString(self.group, self.text, self.x, self.y, self.hanchor, self.vanchor )
+	if self.visible ~= false then
+
+		setFont(self.font)
+		if self.clipped then
+			for i = 1, #self.lines do
+				self.lines[i]:draw()
+			end
+		else
+			_G.res.drawString(self.group, self.text, self.x, self.y, self.hanchor, self.vanchor )
+		end
+	end
 end
 
 --------------------------------
@@ -21281,13 +24291,13 @@ function SequencerPage:init()
 	for i = 0, 7 do
 		self:insertItem("pigLineOne_"..i+1, SpriteItem:new({ sheet = "", sprite = "SOUNDBOARD_4_PIG_1", spriteOn = "PIGLETTE_BIG_01", 
 		spriteDefault = "SOUNDBOARD_4_PIG_1", spriteActive = "PIGLETTE_BIG_01_SMILE", spriteSleep = "PIGLETTE_BIG_01_BLINK", x = (i * screenWidth / 8) + ((23 * screenWidth) / 480) + ((10 * screenWidth) / 480), 
-		y = (screenHeight * 0.15) + ((30 * self.barHeight) / 166) , selectable = true, renderState = true, xOns = 0.45 * phw1 / 42, yOns = 0.45 * phh1 / 44, xs = 1.0, ys = 1.0}))
+		y = (screenHeight * 0.15) + ((30 * self.barHeight) / 166) , selectable = true, sound = "menu_confirm", renderState = true, xOns = 0.45 * phw1 / 42, yOns = 0.45 * phh1 / 44, xs = 1.0, ys = 1.0}))
 		self:insertItem("pigLineTwo_"..i+1, SpriteItem:new({ sheet = "", sprite = "SOUNDBOARD_4_PIG_2", spriteOn = "PIGLETTE_HELMET_01", 
 		spriteDefault = "SOUNDBOARD_4_PIG_2", spriteActive = "PIGLETTE_HELMET_01_SMILE", spriteSleep = "PIGLETTE_HELMET_01_BLINK", x = (i * screenWidth / 8) + ((23 * screenWidth) / 480) + ((10 * screenWidth) / 480), 
-		y = (screenHeight * 0.15) + (((30 * self.barHeight) / 166) + ((50 * self.barHeight) / 166)) , selectable = true, renderState = true, xOns = 0.5 * phw2 / 46, yOns = 0.5 * phh2 / 44, xs = 1.0, ys = 1.0}))
+		y = (screenHeight * 0.15) + (((30 * self.barHeight) / 166) + ((50 * self.barHeight) / 166)) , selectable = true, sound = "menu_confirm", renderState = true, xOns = 0.5 * phw2 / 46, yOns = 0.5 * phh2 / 44, xs = 1.0, ys = 1.0}))
 		self:insertItem("pigLineThree_"..i+1, SpriteItem:new({ sheet = "", sprite = "SOUNDBOARD_4_PIG_3", spriteOn = "PIGLETTE_GRANDPA_01", 
 		spriteDefault = "SOUNDBOARD_4_PIG_3", spriteActive = "PIGLETTE_GRANDPA_04_SMILE", spriteSleep = "PIGLETTE_GRANDPA_01_BLINK", x = (i * screenWidth / 8) + ((23 * screenWidth) / 480) + ((10 * screenWidth) / 480), 
-		y = (screenHeight * 0.15) + (((30 * self.barHeight) / 166) + ((100 * self.barHeight) / 166)) , selectable = true, renderState = true, xOns = 0.45 * phw3 / 49, yOns = 0.45 * phh3 / 46, xs = 1.0, ys = 1.0}))
+		y = (screenHeight * 0.15) + (((30 * self.barHeight) / 166) + ((100 * self.barHeight) / 166)) , selectable = true, sound = "menu_confirm", renderState = true, xOns = 0.45 * phw3 / 49, yOns = 0.45 * phh3 / 46, xs = 1.0, ys = 1.0}))
 		
 		local t_pig1Button = self.items["pigLineOne_"..i+1]
 		prepareItemForMouseScalingStates(t_pig1Button)
@@ -21476,8 +24486,9 @@ function SequencerPage:checkComplete()
 		levelComplete = levelComplete and (self.items["pigLineThree_"..i].sprite == self.items["pigLineThree_"..i].spriteOn)
 	end
 	
-	if levelComplete and settings.openGoldenEggLevels["Level" .. currentLevelNumberInTheme] ~= 2 and self.maxTempo then
+	if levelComplete and not(self.starAchieved) and self.maxTempo then
 		self.isPlaying = false
+		self.starAchieved = true
 		self.items["birdPlay"].sprite = self.items["birdPlay"].spriteDefault
 		self.items["birdPlay"].angle = 0
 		self.timerTempo = 0
@@ -21610,14 +24621,14 @@ function KeyboardPage:init()
 	self:insertItem("shadow6", SpriteItem:new( { sprite = "SOUNDBOARD_3_SHADOW", x = 212 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 234 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), selectable = false, renderState = true, xs = 0.9, ys = 0.9 } ))
 	self:insertItem("shadow7", SpriteItem:new( { sprite = "SOUNDBOARD_3_SHADOW", x = 315 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 245 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), selectable = false } ))
 	self:insertItem("shadow8", SpriteItem:new( { sprite = "SOUNDBOARD_3_SHADOW", x = 420 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 249 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), selectable = false, renderState = true, xs = 0.85, ys = 0.85 } ))
-	self:insertItem("C", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "BIRD_BLUE", sprite2 = "BIRD_BLUE_YELL", defaultSprite = "BIRD_BLUE", x = 39 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 221 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 221 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)} ))
-	self:insertItem("Cis", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "BIRD_GREY", sprite2 = "BIRD_GREY_YELL", defaultSprite = "BIRD_GREY", x = 72 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 132 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 132 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)} ))
-	self:insertItem("D", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "BIRD_RED", sprite2 = "BIRD_RED_YELL", defaultSprite = "BIRD_RED", x = 123 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 218 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 218 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)}))
-	self:insertItem("dis", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "BIRD_GREY_BLINK", sprite2 = "BIRD_GREY_YELL", defaultSprite = "BIRD_GREY_BLINK", x = 168 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 132 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 132 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)} ))
-	self:insertItem("E", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "BIRD_YELLOW", sprite2 = "BIRD_YELLOW_YELL", defaultSprite = "BIRD_YELLOW", x = 212 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 218 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 218 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)} ))
-	self:insertItem("F", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "BIRD_GREEN", sprite2 = "BIRD_GREEN_YELL", defaultSprite = "BIRD_GREEN", x = 315 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 215 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 215 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)} ))
-	self:insertItem("Fis", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "BIRD_GREY_FLYING", sprite2 = "BIRD_GREY_YELL", defaultSprite = "BIRD_GREY_FLYING", x = 392 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 134 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 134 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)} ))
-	self:insertItem("G", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "BIRD_BOOMERANG", sprite2 = "BIRD_BOOMERANG_YELL", defaultSprite = "BIRD_BOOMERANG", x = 434 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 222 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 222 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)} ))
+	self:insertItem("C", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "GOLDEN_EGGS_BIRD_BLUE", sprite2 = "GOLDEN_EGGS_BIRD_BLUE_YELL", defaultSprite = "GOLDEN_EGGS_BIRD_BLUE", x = 39 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 221 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 221 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)} ))
+	self:insertItem("Cis", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "GOLDEN_EGGS_BIRD_BLACK", sprite2 = "GOLDEN_EGGS_BIRD_BLACK_YELL", defaultSprite = "GOLDEN_EGGS_BIRD_BLACK", x = 72 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 132 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 132 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)} ))
+	self:insertItem("D", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "GOLDEN_EGGS_BIRD_RED", sprite2 = "GOLDEN_EGGS_BIRD_RED_YELL", defaultSprite = "GOLDEN_EGGS_BIRD_RED", x = 123 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 218 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 218 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)}))
+	self:insertItem("dis", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "GOLDEN_EGGS_BIRD_BLACK_BLINK", sprite2 = "GOLDEN_EGGS_BIRD_BLACK_YELL", defaultSprite = "GOLDEN_EGGS_BIRD_BLACK_BLINK", x = 168 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 132 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 132 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)} ))
+	self:insertItem("E", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "GOLDEN_EGGS_BIRD_YELLOW", sprite2 = "GOLDEN_EGGS_BIRD_YELLOW_YELL", defaultSprite = "GOLDEN_EGGS_BIRD_YELLOW", x = 212 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 218 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 218 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)} ))
+	self:insertItem("F", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "GOLDEN_EGGS_BIRD_WHITE", sprite2 = "GOLDEN_EGGS_BIRD_WHITE_YELL", defaultSprite = "GOLDEN_EGGS_BIRD_WHITE", x = 315 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 215 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 215 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)} ))
+	self:insertItem("Fis", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "GOLDEN_EGGS_BIRD_BLACK_FLYING", sprite2 = "GOLDEN_EGGS_BIRD_BLACK_YELL", defaultSprite = "GOLDEN_EGGS_BIRD_BLACK_FLYING", x = 392 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 134 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 134 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)} ))
+	self:insertItem("G", SpriteItem:new( { sheet = "INGAME_BIRDS_1", sprite = "GOLDEN_EGGS_BIRD_GREEN", sprite2 = "GOLDEN_EGGS_BIRD_GREEN_YELL", defaultSprite = "GOLDEN_EGGS_BIRD_GREEN", x = 434 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), y = 222 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), defaultY = 222 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)} ))
 	
 	self.items.C.clickArea = {xLeft = 10 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), xRight = 70 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), yBot = 241 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), yTop = 185 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)}
 	self.items.D.clickArea = {xLeft = 77 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), xRight = 160 * (boundingBoxWidth / 480) + ((screenWidth - boundingBoxWidth) / 2), yBot = 250 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2), yTop = 175 * (boundingBoxHeight / 320)+ ((screenHeight - boundingBoxHeight) / 2)}
@@ -21642,14 +24653,6 @@ function KeyboardPage:init()
 	local t_fButton = self.items["F"]
 	local t_fisButton = self.items["Fis"]
 	local t_gButton = self.items["G"]
-	prepareItemForMouseScalingStates(t_cButton)
-	prepareItemForMouseScalingStates(t_cisButton)
-	prepareItemForMouseScalingStates(t_dButton)
-	prepareItemForMouseScalingStates(t_disButton)
-	prepareItemForMouseScalingStates(t_eButton)
-	prepareItemForMouseScalingStates(t_fButton)
-	prepareItemForMouseScalingStates(t_fisButton)
-	prepareItemForMouseScalingStates(t_gButton)
 	
 	
 	addSoundBoardMenuButtons(self)
@@ -21839,7 +24842,7 @@ function KeyboardPage:pressKey(key)
 	item.renderState = true
 	local _, h = _G.res.getSpriteBounds(item.sheet, item.sprite)
 	if item.alwaysRender and item.defaultYs then
-		item.ys = item.ys * 0.85
+		item.ys = 0.85
 		item.y = _G.math.floor(item.y + ((h * item.defaultYs - (h * item.ys)) / 2))
 	else
 		item.ys = 0.85
@@ -21930,6 +24933,11 @@ function AccordionPage:update(dt)
 	
 	if self:getClickedItem() == t_backButton then
 		gotoGoldenEggs()
+				_G.res.stopAllAudio()
+				setEffectsVolume(1)
+				setMusicVolume(1)
+				setGameOn(false) -- enable screen saver
+				setGameMode(gotoLevelSelectionGoldenEggs)
 		return
 	elseif self:getClickedItem() == t_sfxButton or self:getClickedItem() == t_sfxOffButton then
 		--t_sfxOffButton.visible = not t_sfxOffButton.visible
@@ -21939,6 +24947,11 @@ function AccordionPage:update(dt)
 	
 	if keyPressed["ESCAPE"] or deviceModel == "roku" and keyReleased["KEY_BACK"] then
 		gotoGoldenEggs()
+				_G.res.stopAllAudio()
+				setEffectsVolume(1)
+				setMusicVolume(1)
+				setGameOn(false) -- enable screen saver
+				setGameMode(gotoLevelSelectionGoldenEggs)
 		return
 	end
 	
@@ -22284,7 +25297,7 @@ function drawPictureLevel(page)
 			--[[
 			local w, h = _G.res.getSpriteBounds(sheet, v.sprite)
 			setRenderState(0, 0, 1, 1, v.angle, w / 2, h / 2)
-			_G.res.drawSprite("", v.sprite, xCoord, yCoord)
+			_G.res.drawSprite(v.sprite, xCoord, yCoord)
 			setRenderState(0, 0, 1, 1, 0)
 			]]
 			
@@ -22295,17 +25308,17 @@ function drawPictureLevel(page)
 		elseif v.name == "bird" then
 			local tmpWidth, tmpHeight = _G.res.getSpriteBounds(sheet, v.sprite)
 			setRenderState(0, 0, 1, 1, v.angle, tmpWidth / 2, tmpHeight)
-			_G.res.drawSprite("", v.sprite, xCoord, yCoord)
+			_G.res.drawSprite(v.sprite, xCoord, yCoord)
 			setRenderState(0, 0, 1, 1, 0)
 		else
 			if i == 1 then -- background
-				_G.res.drawSprite("", v.sprite, xCoord - screenWidth / 2, yCoord - screenHeight / 2, "TOP", "LEFT", screenWidth, screenHeight)
+				_G.res.drawSprite(v.sprite, xCoord - screenWidth / 2, yCoord - screenHeight / 2, "TOP", "LEFT", screenWidth, screenHeight)
 			else
-				_G.res.drawSprite("", v.sprite, xCoord, yCoord)
+				_G.res.drawSprite(v.sprite, xCoord, yCoord)
 			end
 		end
 	end
-	--_G.res.drawSprite("", "LS_BACK_BUTTON", 0, screenHeight)
+	--_G.res.drawSprite("LS_BACK_BUTTON", 0, screenHeight)
 
 end
 
@@ -22548,7 +25561,7 @@ function drawSoundboardButton(sheet, sprite, pressed, x, y)
 		y = (y / scale) + (py - (h / 2)) * (1 - (1 / scale))
 	end
 	
-	_G.res.drawSprite("", sprite, x, y)
+	_G.res.drawSprite(sprite, x, y)
 	if pressed == true then
 		setRenderState(0, 0, 1, 1, 0)
 	end
@@ -22790,7 +25803,7 @@ function updateSoundboard(dt)
 					soundPage.currentBird = 0
 				end
 			
-			-- black bird
+			--bomb gird
 			--elseif cursorOnSoundboardSprite(soundPage.items[14]) then
 			elseif cursorOnSoundboardSprite(soundPage.items["blockBirdBlack"]) then
 				soundPage.buttonPressTimes[13] = time
@@ -22945,14 +25958,14 @@ function updateSoundboard(dt)
 			if i >= 2 then
 				drawSoundboardButton(sheet, soundPage.items[i].sprite, time - soundPage.buttonPressTimes[i - 1] < 0.2, soundPage.items[i].x, soundPage.items[i].y)
 			else
-				_G.res.drawSprite("", soundPage.items[i].sprite, soundPage.items[i].x - screenWidth / 2, soundPage.items[i].y - screenHeight / 2,  "LEFT", "TOP", screenWidth, screenHeight)
+				_G.res.drawSprite(soundPage.items[i].sprite, soundPage.items[i].x - screenWidth / 2, soundPage.items[i].y - screenHeight / 2,  "LEFT", "TOP", screenWidth, screenHeight)
 			end
 		end
 		]]
 		
 		
 		local t_sheet = soundPage.items[1].sheet or soundPage.defaultSheet
-		_G.res.drawSprite("", soundPage.items[1].sprite, soundPage.items[1].x - screenWidth / 2, soundPage.items[1].y - screenHeight / 2,  "LEFT", "TOP", screenWidth, screenHeight)
+		_G.res.drawSprite(soundPage.items[1].sprite, soundPage.items[1].x - screenWidth / 2, soundPage.items[1].y - screenHeight / 2,  "LEFT", "TOP", screenWidth, screenHeight)
 		
 		local t_block = soundPage.items["blockIce"]
 		drawMouseScalingItem(t_block.sheet or soundPage.defaultSheet, t_block, t_block.x, t_block.y)
@@ -22988,7 +26001,7 @@ function updateSoundboard(dt)
 		drawMouseScalingItem(t_block.sheet or soundPage.defaultSheet, t_block, t_block.x, t_block.y)
 		
 		
-		--_G.res.drawSprite("", "LS_BACK_BUTTON", 0, screenHeight)
+		--_G.res.drawSprite("LS_BACK_BUTTON", 0, screenHeight)
 
 		drawSoundBoardButtonsFromTable(soundPage)
 		
@@ -23165,9 +26178,9 @@ function updateSoundboard(dt)
 	local t_soundButtonPivotX, t_soundButtonPivotY = _G.res.getSpritePivot("", "MENU_SFX")
 	
 	--[[
-	_G.res.drawSprite("", "MENU_SFX", t_soundButtonPivotX -t_pauseButtonPivotX, t_soundButtonPivotY -t_pauseButtonPivotY)
+	_G.res.drawSprite("MENU_SFX", t_soundButtonPivotX -t_pauseButtonPivotX, t_soundButtonPivotY -t_pauseButtonPivotY)
 	if settings.audioEnabled == false then	
-		_G.res.drawSprite("", "BUTTON_OFF", t_soundButtonPivotX -t_pauseButtonPivotX, t_soundButtonPivotY -t_pauseButtonPivotY)
+		_G.res.drawSprite("BUTTON_OFF", t_soundButtonPivotX -t_pauseButtonPivotX, t_soundButtonPivotY -t_pauseButtonPivotY)
 	end
 	if keyPressed["LBUTTON"] and popupPage == nil then
 		local width, height = _G.res.getSpriteBounds("", "MENU_SFX")
@@ -23349,6 +26362,12 @@ function animateBirdToSlingShot(dt)
 end
 
 function updateCharacterAnimations(dt)
+
+for k1, v1 in _G.pairs(objects.world) do
+        if getObjectDefinition(k1).animationSprites then
+            playAnimation(k1, dt)
+        end
+    end
 	
 	-- make piglets laugh when there are no birds left
 	if checkLevelFailed() then
@@ -23383,7 +26402,7 @@ function updateCharacterAnimations(dt)
 			local dist = vLength(screen.x - lsx, screen.y - lsy)
 			local volume = 1 - dist / 1000
 			if volume > 0 then 
-				_G.res.playAudio(getAudioName("piglette"), volume, false, 0) 
+				_G.res.playAudio(getAudioName(g_sound_pigs), volume, false, 0) 
 			end
 		end
 	end	
@@ -23410,7 +26429,7 @@ function updateCharacterAnimations(dt)
 						local dist = vLength(screen.x - lsx, screen.y - lsy)
 						local volume = 1 - dist / 1000
 						if volume > 0 then 
-							_G.res.playAudio(getAudioName("bird_misc"), volume, false, 0) 
+							_G.res.playAudio(getAudioName(g_sound_birds), volume, false, 0) 
 						end
 						--end
 					else
@@ -23877,14 +26896,14 @@ function drawGame()
 	
 	--if currentGameMode == updateGame then
 	setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0)
-	_G.res.drawSprite("", "SLING_SHOT_01_BACK", lsx, lsy)
+	_G.res.drawSprite("SLING_SHOT_01_BACK", lsx, lsy)
 	local lsx1, lsy1 = lsx + 20, lsy
 	
 	
 	local lsx2, lsy2 = lsx - 21, lsy - 3
 	
 	if selectedBird == nil then
-		--_G.res.drawSprite("", "SLING_HOLDER", rbx1, rby1)
+		--_G.res.drawSprite("SLING_HOLDER", rbx1, rby1)
 		
 		drawLine2D(lsx1, lsy1, lsx2, lsy2, rbw, 48, 23, 8, 255)
 	else
@@ -23893,6 +26912,20 @@ function drawGame()
 	--end
 	drawGameNative()
 	
+	drawIngameBubbles()
+
+	-- the more back it is the better
+	for k, v in _G.pairs(objects.world) do
+		if v.scale then
+			local sprite, scale = v.sprite or v.damageSprite, v.scale
+			-- turns out getAngle is more on point at tracking back angles than fetching the angle right away, eureka!
+			setRenderState((-screen.left - cameraShakeX)/scale, (-screen.top - cameraShakeY)/scale, worldScale*scale, worldScale*scale, getAngle(v.name), _G.res.getSpritePivot("", sprite))
+			_G.res.drawSprite("", sprite, v.x*physicsToWorld/scale, v.y*physicsToWorld/scale)
+			setRenderState(0, 0, 1, 1, 0)
+			v.damageSprite = ""
+			setSprite(v.name, v.damageSprite)
+		end
+	end
 	if showBG then
 		drawForegroundNative()
 	end
@@ -23900,8 +26933,8 @@ function drawGame()
 	setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0, 0, 0)
 			
 	-- local bcd = objects.birdCameraData[deviceModel]			
-	-- _G.res.drawSprite("", "SLING_HOLDER", bcd.px, bcd.py)
-	-- _G.res.drawSprite("", "HUD_ARROW_UP", 0, 0)
+	-- _G.res.drawSprite("SLING_HOLDER", bcd.px, bcd.py)
+	-- _G.res.drawSprite("HUD_ARROW_UP", 0, 0)
 	
 	
 	
@@ -23913,17 +26946,17 @@ function drawGame()
 	
 	if selectedBird ~= nil and not t_skipDrawing then
 		setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, rubberBandAngle, _G.res.getSpritePivot("INGAME_BIRDS_1", "SLING_HOLDER"))
-		_G.res.drawSprite("", "SLING_HOLDER", rbx1, rby1)
+		_G.res.drawSprite("SLING_HOLDER", rbx1, rby1)
 	end
 	setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0, 0, 0)
-	_G.res.drawSprite("", "SLING_SHOT_01_FRONT", lsx, lsy)
+	_G.res.drawSprite("SLING_SHOT_01_FRONT", lsx, lsy)
 	
 	if useLevelLimits then
 		if cameraTargetObject ~= nil then
 			local ct = cameraTargetObject
 			if ct.y*physicsToWorld < screen.top then
 				setRenderState(-screen.left, -screen.top, worldScale, worldScale, 0, ct.spritePivotX, ct.spritePivotY)
-				_G.res.drawSprite("", "HUD_ARROW_UP", _G.math.floor(ct.x*physicsToWorld), _G.math.floor(screen.top))
+				_G.res.drawSprite("HUD_ARROW_UP", _G.math.floor(ct.x*physicsToWorld), _G.math.floor(screen.top))
 			end
 		end
 	end	
@@ -23939,50 +26972,48 @@ function drawGame()
 		
 			
 		if drawHud then
+			setFont("FONT_SCORE")
+			local yAdd = 0
+			local scoreString = _G.string.format("%d", score)
+			local scoreLen = _G.res.getStringWidth(scoreString)
+			if deviceModel == "iphone4" and ((changeResolution ~= true and wantedResolution == "FULL") or (changeResolution == true and wantedResolution == "HALF")) then
+				setRenderState(-screenWidth * 0.5, 0, 2, 2, 0)
+			else
+				setRenderState(0, 0, 1, 1, 0)
+			end
+			scoreLen = _G.math.max( scoreLen, oldScoreLen)
+			oldScoreLen = scoreLen
+			
+			
+			
+			setFont("FONT_SCORE")
+			
+			
+			
+			local t_targetLowestResolutionHighScoreScaleFactor = 0.6
+			local t_targetHighScoreLowestResolutionWidth = 1024
+			local t_targetHighScoreHighestResolutionWidth = 1920				
+			
+			local t_resolutionBasedScaleFactorHighScore = (screenWidth - t_targetHighScoreLowestResolutionWidth) / (t_targetHighScoreHighestResolutionWidth - t_targetHighScoreLowestResolutionWidth)
+			t_resolutionBasedScaleFactorHighScore = _G.math.max(t_resolutionBasedScaleFactorHighScore, 0)
+			t_resolutionBasedScaleFactorHighScore = _G.math.min(t_resolutionBasedScaleFactorHighScore, 1)
+			
+			t_resolutionBasedScaleFactorHighScore = t_targetLowestResolutionHighScoreScaleFactor + ((1 - t_targetLowestResolutionHighScoreScaleFactor) * t_resolutionBasedScaleFactorHighScore)
+			
+			local t_fontRightSpacing = 18
+			local t_fontTopSpacing = 15
+			
+			if deviceModel == "roku" then
+				t_fontRightSpacing = screenWidth * 0.03
+				t_fontTopSpacing   = t_fontRightSpacing
+			end
+			
+			setRenderState(0, 0, t_resolutionBasedScaleFactorHighScore, t_resolutionBasedScaleFactorHighScore, 0)
+				
+			local t_maxScoreLen = 	_G.res.getStringWidth("" .. 999999)
+			local t_modifiedMaxScoreLen = t_maxScoreLen * t_resolutionBasedScaleFactorHighScore
+			
 			if eagleBaitLaunched ~= true then
-				setFont("FONT_SCORE")
-				local yAdd = 0
-				local scoreString = _G.string.format("%d", score)
-				local scoreLen = _G.res.getStringWidth(scoreString)
-				if deviceModel == "iphone4" and ((changeResolution ~= true and wantedResolution == "FULL") or (changeResolution == true and wantedResolution == "HALF")) then
-					setRenderState(-screenWidth * 0.5, 0, 2, 2, 0)
-				else
-					setRenderState(0, 0, 1, 1, 0)
-				end
-				scoreLen = _G.math.max( scoreLen, oldScoreLen)
-				oldScoreLen = scoreLen
-				
-				
-				
-				setFont("FONT_SCORE")
-				
-				
-				
-				local t_targetLowestResolutionHighScoreScaleFactor = 0.6
-				local t_targetHighScoreLowestResolutionWidth = 1024
-				local t_targetHighScoreHighestResolutionWidth = 1920				
-				
-				local t_resolutionBasedScaleFactorHighScore = (screenWidth - t_targetHighScoreLowestResolutionWidth) / (t_targetHighScoreHighestResolutionWidth - t_targetHighScoreLowestResolutionWidth)
-				t_resolutionBasedScaleFactorHighScore = _G.math.max(t_resolutionBasedScaleFactorHighScore, 0)
-				t_resolutionBasedScaleFactorHighScore = _G.math.min(t_resolutionBasedScaleFactorHighScore, 1)
-				
-				t_resolutionBasedScaleFactorHighScore = t_targetLowestResolutionHighScoreScaleFactor + ((1 - t_targetLowestResolutionHighScoreScaleFactor) * t_resolutionBasedScaleFactorHighScore)
-				
-				
-				
-				
-				local t_fontRightSpacing = 18
-				local t_fontTopSpacing = 15
-				
-				if deviceModel == "roku" then
-					t_fontRightSpacing = screenWidth * 0.03
-					t_fontTopSpacing   = t_fontRightSpacing
-				end
-				
-				setRenderState(0, 0, t_resolutionBasedScaleFactorHighScore, t_resolutionBasedScaleFactorHighScore, 0)
-					
-				local t_maxScoreLen = 	_G.res.getStringWidth("" .. 999999)
-				local t_modifiedMaxScoreLen = t_maxScoreLen * t_resolutionBasedScaleFactorHighScore
 					
 				if highscores[levelName] ~= nil and highscores[levelName].score > 0 then
 					local highScoreLen = _G.res.getStringWidth("" .. highscores[levelName].score)
@@ -24059,8 +27090,63 @@ function drawGame()
 					if fs.sprite ~= nil then 
 						xs = fs.xs * t_spriteScaleMultiplier
 						setRenderState(0, 0, xs, xs)
-						_G.res.drawSprite("", fs.sprite, _G.math.floor(fx/xs), _G.math.floor(fy/xs), "BOTTOM", "HCENTER")
+						_G.res.drawSprite(fs.sprite, _G.math.floor(fx/xs), _G.math.floor(fy/xs), "BOTTOM", "HCENTER")
 					end
+				end
+			else
+				local eagleHighScore = highscores[levelName] and highscores[levelName].eagleScore or 0
+				local highScoreLen = _G.res.getStringWidth("" .. eagleHighScore)
+				
+				--highScoreLen = highScoreLen * t_resolutionBasedScaleFactorHighScore
+				if scoreLen < highScoreLen then
+					scoreLen = highScoreLen
+				end
+				
+				
+				
+				--local t_modifiedScoreLen = scoreLen * t_resolutionBasedScaleFactorHighScore
+				
+				--scoreLen = scoreLen * t_resolutionBasedScaleFactorHighScore
+				
+				
+				
+				if gameOptions.mightyEagle.showHighScore then
+					yAdd = yAdd + _G.res.getFontHeight()
+					local highscoreStr = _G.res.getString("TEXTS_BASIC", "MI_HIGH_SCORE")
+					--local t_x = (screenWidth - t_fontRightSpacing - t_modifiedScoreLen) / t_resolutionBasedScaleFactorHighScore
+					local t_x = (screenWidth - t_fontRightSpacing - t_modifiedMaxScoreLen) / t_resolutionBasedScaleFactorHighScore
+					_G.res.drawString("TEXTS_BASIC", "Eagle Highscore: ", t_x, t_fontTopSpacing, "TOP", "RIGHT")
+					t_x = (screenWidth - t_fontRightSpacing) / t_resolutionBasedScaleFactorHighScore
+					_G.res.drawString("TEXTS_BASIC", _G.string.format("%d", eagleHighScore).."%", t_x, t_fontTopSpacing, "TOP", "RIGHT")
+					--_G.res.drawString("TEXTS_BASIC", _G.string.format("%d", highscores[levelName].score), (screenWidth - t_scoreLen - t_fontRightSpacing) / t_resolutionBasedScaleFactorHighScore , t_fontTopSpacing , "TOP", "LEFT")
+				end
+
+				if gameOptions.mightyEagle.showEagleScore then
+					local mightyEagleScore = _G.math.min(_G.math.ceil( (score / (starTable[levelName].eagleScore or 10) ) * 100), 100)
+					local scoreString = _G.string.format("%d", mightyEagleScore).."%"
+					local scoreLen = _G.res.getStringWidth(scoreString)
+					local t_modifiedScoreLen = scoreLen * t_resolutionBasedScaleFactorHighScore
+					
+					local scoreStr = _G.res.getString("TEXTS_BASIC", "MI_SCORE")
+					--local t_x = (screenWidth - t_fontRightSpacing - t_modifiedScoreLen) / t_resolutionBasedScaleFactorHighScore
+					local t_x = (screenWidth - t_fontRightSpacing - t_modifiedMaxScoreLen) / t_resolutionBasedScaleFactorHighScore
+					_G.res.drawString("TEXTS_BASIC", "Eagle Score: ", t_x, t_fontTopSpacing + yAdd, "TOP", "RIGHT")
+					t_x = (screenWidth - t_fontRightSpacing) / t_resolutionBasedScaleFactorHighScore
+					_G.res.drawString("TEXTS_BASIC", scoreString, t_x, t_fontTopSpacing + yAdd, "TOP", "RIGHT")
+					yAdd = yAdd + _G.res.getFontHeight()
+				end
+
+				if gameOptions.mightyEagle.showRegularScore then
+					local scoreString = _G.string.format("%d", score)
+					local scoreLen = _G.res.getStringWidth(scoreString)
+					local t_modifiedScoreLen = scoreLen * t_resolutionBasedScaleFactorHighScore
+					
+					local scoreStr = _G.res.getString("TEXTS_BASIC", "MI_SCORE")
+					--local t_x = (screenWidth - t_fontRightSpacing - t_modifiedScoreLen) / t_resolutionBasedScaleFactorHighScore
+					local t_x = (screenWidth - t_fontRightSpacing - t_modifiedMaxScoreLen) / t_resolutionBasedScaleFactorHighScore
+					_G.res.drawString("TEXTS_BASIC", scoreStr.." ", t_x, t_fontTopSpacing + yAdd, "TOP", "RIGHT")
+					t_x = (screenWidth - t_fontRightSpacing) / t_resolutionBasedScaleFactorHighScore
+					_G.res.drawString("TEXTS_BASIC", scoreString, t_x, t_fontTopSpacing + yAdd, "TOP", "RIGHT")
 				end
 			end
 			setFont(fontBasic)
@@ -24085,26 +27171,52 @@ function drawGame()
 			
 			local t_ingamePause = getItemByName(g_ingamePausePage.items, "ingameButtonPause")
 			local t_ingameRestart = getItemByName(g_ingamePausePage.items, "ingameButtonRestart")				
+			local t_ingameEagle = getItemByName(g_ingamePausePage.items, "ingameButtonEagle")				
+			local t_ingamePu = getItemByName(g_ingamePausePage.items,"ingameButtonPowerups")
 				
 			if g_enableMouseOverStates then
 				
 				setRenderState(0, 0, 1, 1)
-				drawMouseScalingItem(t_ingamePause.sheet, t_ingamePause, t_ingamePause.x, t_ingamePause.y)
-				drawMouseScalingItem(t_ingameRestart.sheet, t_ingameRestart, t_ingameRestart.x, t_ingameRestart.y)
+				if t_ingamePause.visible ~= false then--not eagleBaitLaunched and not checkLevelComplete() then
+					drawMouseScalingItem(t_ingamePause.sheet, t_ingamePause, t_ingamePause.x, t_ingamePause.y)
+				end
+				if t_ingameRestart.visible ~= false then--not eagleBaitLaunched and not checkLevelComplete() then
+					drawMouseScalingItem(t_ingameRestart.sheet, t_ingameRestart, t_ingameRestart.x, t_ingameRestart.y)
+				end
+				if t_ingameEagle.visible ~= false then--not eagleBaitLaunched and not checkLevelComplete() then
+					drawMouseScalingItem(t_ingameEagle.sheet, t_ingameEagle, t_ingameEagle.x, t_ingameEagle.y)
+				end
+				if t_ingamePu.visible ~= false then--not eagleBaitLaunched and not checkLevelComplete() then
+					drawMouseScalingItem(t_ingamePu.sheet, t_ingamePu, t_ingamePu.x, t_ingamePu.y)
+				end
 			else
 			--[[
 				setRenderState(0, 0, t_hudButtonsScale, t_hudButtonsScale)
-				_G.res.drawSprite("", "MENU_BUTTON", 0, 0)
+				_G.res.drawSprite("MENU_BUTTON", 0, 0)
 				
-				_G.res.drawSprite("", "BUTTON_INGAME_RESTART", 0, 0 )
+				_G.res.drawSprite("BUTTON_INGAME_RESTART", 0, 0 )
 				
 				setRenderState(0, 0, 1, 1)
 				]]--
-				setRenderState(t_ingamePause.x / t_ingamePause.xs, t_ingamePause.y / t_ingamePause.ys, t_ingamePause.xs, t_ingamePause.ys)
-				_G.res.drawSprite("", t_ingamePause.sprite, 0, 0)
+				if t_ingamePause.visible then
+					setRenderState(t_ingamePause.x / t_ingamePause.xs, t_ingamePause.y / t_ingamePause.ys, t_ingamePause.xs, t_ingamePause.ys)
+					_G.res.drawSprite(t_ingamePause.sprite, 0, 0)
+				end
 				
-				setRenderState(t_ingameRestart.x / t_ingameRestart.xs, t_ingameRestart.y / t_ingameRestart.ys, t_ingameRestart.xs, t_ingameRestart.ys)
-				_G.res.drawSprite("", t_ingameRestart.sprite, 0, 0)
+				if t_ingameRestart.visible then
+					setRenderState(t_ingameRestart.x / t_ingameRestart.xs, t_ingameRestart.y / t_ingameRestart.ys, t_ingameRestart.xs, t_ingameRestart.ys)
+					_G.res.drawSprite(t_ingameRestart.sprite, 0, 0)
+				end
+				
+				if t_ingameEagle.visible then
+					setRenderState(t_ingameEagle.x / t_ingameEagle.xs, t_ingameEagle.y / t_ingameEagle.ys, t_ingameEagle.xs, t_ingameEagle.ys)
+					_G.res.drawSprite(t_ingameEagle.sprite, 0, 0)
+				end
+				
+				if t_ingamePu.visible then
+					setRenderState(t_ingamePu.x / t_ingamePu.xs, t_ingamePu.y / t_ingamePu.ys, t_ingamePu.xs, t_ingamePu.ys)
+					_G.res.drawSprite(t_ingamePu.sprite, 0, 0)
+				end
 			end
 			
 			
@@ -24124,7 +27236,7 @@ function drawGame()
 				drawBox(box.sprites, "", box.x, box.y, box.width, box.height, box.hanchor, box.vanchor)
 			end
 			
-			_G.res.drawCompoSprite("", tutorial.sprite, tutorial.x, tutorial.y)
+			_G.res.drawCompoSprite(tutorial.sprite, tutorial.x, tutorial.y)
 			
 			if showTutorialGoldenEgg == true and birdTutorialPopups[1] == settings.tutorials["BIRD_GREEN"].sprite and settings.openGoldenEggLevels["Level1"] == nil then
 				setRenderState(0, 0, 0.65, 0.65)
@@ -24252,41 +27364,23 @@ function drawGame()
 	
 	if currentGameMode == updateEditor then
 		setRenderState(0, 0, 1, 1, 0)
-		_G.res.drawString("TEXTS_BASIC", levelName, 0, 0, "TOP", "LEFT")
+--		_G.res.drawString("TEXTS_BASIC", levelName, 0, 0, "TOP", "LEFT")
 
-		if selectionRectActive then
-			local x1, y1 = draggingStartPosWorld.x, draggingStartPosWorld.y
-			local x2, y2 = cursorWorld.x, cursorWorld.y
-			if x1 > x2 then	x1, x2 = x2, x1	end
-			if y1 > y2 then	y1, y2 = y2, y1	end
-			setRenderState(-screen.left, -screen.top, worldScale, worldScale, 0)
-			drawRect(1, 0, 0, 0.5, x1, y1, x2, y2, true)
-		end		
 
 		setRenderState(0, 0, 1, 1, 0)
 		for k, v in _G.pairs(objects.joints) do
 			drawJoint(v, "EDITOR_JOINT")
 		end
 
-		if selectedObjects[1] ~= nil then
-			if selectedObjects[1].controllable then
-				if selectedObjects[1].startNumber ~= nil then
-					_G.res.drawString("TEXTS_BASIC", "Start: " .. selectedObjects[1].startNumber, 0, 35, "TOP", "LEFT")
-				end
-			end
-		end
+--		if selectedObjects[1] ~= nil then
+--			if selectedObjects[1].controllable then
+--				if selectedObjects[1].startNumber ~= nil then
+--					_G.res.drawString("TEXTS_BASIC", "Start: " .. selectedObjects[1].startNumber, 0, 35, "TOP", "LEFT")
+--				end
+--			end
+--		end
 
-		for k, v in _G.pairs(selectedObjects) do
-			if v.sprite ~= nil and v.sprite ~= "" then
-				local w, h = _G.res.getSpriteBounds("", v.sprite)
-				w, h = w*0.5, h*0.5
-				local x, y = physicsToWorldTransform(v.x, v.y)
-				local x1, y1 = x - w, y - h
-				local x2, y2 = x + w, y + h
-				setRenderState(-screen.left, -screen.top, worldScale, worldScale, v.angle, v.spritePivotX, v.spritePivotY)
-				drawRect(1, 0, 0, 0.5, x1, y1, x2, y2, true)
-			end
-		end
+		
 		
 		--debug camera
 		if g_cameraToDraw ~= nil then			
@@ -24358,7 +27452,6 @@ function drawGame()
 					local x1, y1 = x - w, y - h
 					local x2, y2 = x + w, y + h
 					setRenderState(-screen.left, -screen.top, worldScale, worldScale, v.angle, v.spritePivotX, v.spritePivotY)
-					drawRect(1, 0, 0, 0.5, x1, y1, x2, y2, true)
 				end
 			end
 		end
@@ -24369,13 +27462,13 @@ function drawGame()
 		else
 			setRenderState(-screen.left, -screen.top, worldScale, worldScale, 0, 0, 0)
 		end
-		_G.res.drawSprite("", "ORIGO", 0, 0)
+		_G.res.drawSprite("ORIGO", 0, 0)
 		setRenderState(0, 0, 1, 1, 0)
 
 		if objectToAdd ~= nil then
 			local sprite = blockTable.blocks[objectToAdd].sprite
 			setRenderState(-screen.left, -screen.top, worldScale, worldScale, objectToAddAngle, _G.res.getSpritePivot("", sprite))
-			_G.res.drawSprite("", sprite, _G.math.floor(cursorWorld.x), _G.math.floor(cursorWorld.y))
+			_G.res.drawSprite(sprite, _G.math.floor(cursorWorld.x), _G.math.floor(cursorWorld.y))
 			setRenderState(0, 0, 1, 1, 0)
 		end
 
@@ -24384,33 +27477,33 @@ function drawGame()
 				local sprite = objects.world[v.name].sprite
 				setRenderState(-screen.left, -screen.top, worldScale, worldScale, v.angle, _G.res.getSpritePivot("", sprite))
 				local x, y = physicsToWorldTransform(v.x + cursorPhysics.x, v.y + cursorPhysics.y)
-				_G.res.drawSprite("", sprite, _G.math.floor(x), _G.math.floor(y))
+				_G.res.drawSprite(sprite, _G.math.floor(x), _G.math.floor(y))
 			end
 			setRenderState(0, 0, 1, 1, 0)
 		end
 		
 		if levelSaved then
-			_G.res.drawSprite("", "EDITOR_SAVED", screenWidth, 0)
+			_G.res.drawSprite("EDITOR_SAVED", screenWidth, 0)
 		else
-			_G.res.drawSprite("", "EDITOR_NOT_SAVED", screenWidth, 0)
+			_G.res.drawSprite("EDITOR_NOT_SAVED", screenWidth, 0)
 		end
 
 		if physicsEnabled then
-			_G.res.drawSprite("", "EDITOR_PHYSICS_ON", screenWidth, 0)
+			_G.res.drawSprite("EDITOR_PHYSICS_ON", screenWidth, 0)
 		else
-			_G.res.drawSprite("", "EDITOR_PHYSICS_OFF", screenWidth, 0)
+			_G.res.drawSprite("EDITOR_PHYSICS_OFF", screenWidth, 0)
 		end
 
 		if objects.castleCameraData and objects.castleCameraData[deviceModel] then
-			_G.res.drawSprite("", "EDITOR_C_CAMERA_ON", screenWidth, 0)
+			_G.res.drawSprite("EDITOR_C_CAMERA_ON", screenWidth, 0)
 		else
-			_G.res.drawSprite("", "EDITOR_C_CAMERA_OFF", screenWidth, 0)
+			_G.res.drawSprite("EDITOR_C_CAMERA_OFF", screenWidth, 0)
 		end
 
 		if objects.birdCameraData and objects.birdCameraData[deviceModel] then
-			_G.res.drawSprite("", "EDITOR_B_CAMERA_ON", screenWidth, 0)
+			_G.res.drawSprite("EDITOR_B_CAMERA_ON", screenWidth, 0)
 		else
-			_G.res.drawSprite("", "EDITOR_B_CAMERA_OFF", screenWidth, 0)
+			_G.res.drawSprite("EDITOR_B_CAMERA_OFF", screenWidth, 0)
 		end
 		
 		if objects.doNotWaitForMovingObjects ~= nil then
@@ -24437,7 +27530,7 @@ function drawGame()
 	oldZoomLevel = zoomLevel
 	
 	if deviceModel == "android" and isBetaVersion and currentGameMode == updateGame and #birdTutorialPopups == 0 then
-		_G.res.drawSprite("", "BETA_BOTTOM_RIGHT", screenWidth, screenHeight)
+		_G.res.drawSprite("BETA_BOTTOM_RIGHT", screenWidth, screenHeight)
 	end
 	
 	if objects.world["MightyEagle_a"] ~= nil then
@@ -24505,7 +27598,7 @@ function drawJoint(joint, sprite)
 	local vlen = 0
 	while vlen <= tlen do
 		sx, sy = physicsToScreenTransform(jointWorldX1 + x, jointWorldY1 + y )
-		_G.res.drawSprite("", sprite, sx, sy)
+		_G.res.drawSprite(sprite, sx, sy)
 		x = x + xdif * 0.13
 		y = y + ydif * 0.13
 		vlen = vLength(x, y)
@@ -25146,7 +28239,12 @@ function birdCollision(object1, object2, force, damage)
 		
 		local bDef = getObjectDefinition(flyingBird.name)
 		local birdSpecialty = bDef.specialty
-		if birdSpecialty ~= "BOMB" then
+--		local _ENV = _G.getfenv(1)
+--		if not flyingBird.collision and bDef.onFlyingBirdCollided then
+--			_ENV[bDef.onFlyingBirdCollided](flyingBird)
+--		end
+		
+		if birdSpecialty ~= "BOMB" and birdSpecialty ~= "BUBBLES" and birdSpecialty ~= "GLOBE" and not bDef.specialtyAvailableAfterCollision and not bDef.onFlyingBirdCollided then
 			if bDef.spriteCollision ~= nil then
 				if birdSpecialty == "GRENADE" then
 					if birdSpecialtyAvailable then
@@ -25168,11 +28266,24 @@ function birdCollision(object1, object2, force, damage)
 				end
 			end
 		else
-			if flyingBird.collision ~= true then
+			if flyingBird.collision ~= true and birdSpecialty == "BOMB" then
 				objects.world[flyingBird.name].bombTimer = 1.5			
 				objects.world[flyingBird.name].damageSprite = "BIRD_GREY_1"
 				objects.world[flyingBird.name].sprite = objects.world[flyingBird.name].damageSprite
 				setSprite(flyingBird.name, objects.world[flyingBird.name].sprite)
+				birdSpecialtyAvailable = true
+			end
+		end
+		
+		if birdSpecialty == "GLOBE" then
+			if flyingBird.collision ~= true then
+				objects.world[flyingBird.name].globeTimer = 1.5
+				birdSpecialtyAvailable = true
+			end
+		end
+		if birdSpecialty == "BUBBLES" then
+			if flyingBird.collision ~= true then
+				objects.world[flyingBird.name].pinkTimer = 1.5
 				birdSpecialtyAvailable = true
 			end
 		end
@@ -25246,7 +28357,7 @@ function birdCollision(object1, object2, force, damage)
 			bDef.spriteCollision = "BIRD_MIGHTY_EAGLE_RADIAL"
 			objects.world[object1].sprite = bDef.spriteCollision
 			setSprite(object1, objects.world[object1].sprite)						
-			_G.res.playAudio("mighty_eagle_thump", 1, false)
+			_G.res.playAudio("mighty_eagle_bounce", 1, false)
 			for k, v in _G.pairs(objects.world) do
 				if v.strength ~= nil and v.levelGoal then
 					local force = -v.mass * 15
@@ -25321,6 +28432,136 @@ function birdCollision(object1, object2, force, damage)
 		obj2.smileSprite = sprites.smile
 	end
 end
+function find_key(table, item)
+	for k, v in _G.pairs(table) do
+		if item == v then
+			return k
+		end
+	end
+	return nil
+end
+function contains(table, item)
+	return find_key(table, item) ~= nil
+end
+function addObjectUpdateFunction(object, f)
+	if object.updateFunction == nil then
+		object.updateFunction = f
+	elseif _G.type(object.updateFunction) == "table" and not contains(object.updateFunction, f) then
+		_G.table.insert(object.updateFunction, f)
+	elseif _G.type(object.updateFunction) == "function" then
+		local old = object.updateFunction
+		object.updateFunction = {old, f}
+		local meta = {
+			__call = function(fl, o, dt)
+				for _, v in _G.ipairs(fl) do
+					v(o, dt)
+				end
+			end
+		}
+		_G.setmetatable(object.updateFunction, meta)
+	else
+		--_G.assert(false)
+	end
+end
+function removeObjectUpdateFunction(object, f)
+	if object.updateFunction == f then
+		object.updateFunction = nil
+	elseif _G.type(object.updateFunction) == "table" then
+		local k = find_key(object.updateFunction, f)
+		if k then
+			_G.table.remove(object.updateFunction, k)
+			if #object.updateFunction == 1 then
+				object.updateFunction = object.updateFunction[1]
+			end
+		end
+	else
+		--_G.assert(false)
+	end
+end
+function setFriction(name, friction) getObject(name).friction = friction end
+function setDensity(name, density) getObject(name).density = density end
+
+function resizeCircle(name, radius)
+	if time % 2 == 1 then
+		return
+	end
+	local object = objects.world[name] 
+	removeBird(object, true, true)
+	local newName = name
+	createCircle(newName, object.sprite, object.x, object.y, object.radius * (object.deathTimer / object.deathTimerFull * 1), object.density, object.friction, object.restitution, object.controllable, object.z_order)
+	for k, v in _G.pairs(object) do
+		objects.world[newName][k] = v
+	end
+	objects.world[newName].radius = radius
+	objects.world[newName].animTimer = 9999
+	objects.world[newName].jumpTimer = 9999
+	objects.world[newName].animOn = false
+	setSprite(newName, objects.world[newName].damageSprite)
+	setObjectParameter(newName, 6, 1)
+	setRotation(newName, object.angle)
+	addParticles(newName, "yellowBuff", 3)
+	objects.world[name].directionChangeTimer = object.directionChangeTimer
+	objects.world[name].xVelChange = object.xVelChange or 0
+	objects.world[name].yVelChange = object.yVelChange or -50
+	objects.world[name].xVel = object.xVel + objects.world[name].xVelChange
+	objects.world[name].yVel = object.yVel + objects.world[name].yVelChange
+	setRotation(name, _G.math.atan2(-objects.world[name].xVel, objects.world[name].yVel) - _G.math.pi / 2)
+	setVelocity(newName, objects.world[newName].xVel, objects.world[newName].yVel)
+	cameraTargetObject = birds[newName]
+end
+
+function globeBirdDeath(object)
+	_G.res.playAudio(getAudioName("bubbles_deflating"), 1, false)
+	local name = "GlobeDeath"
+	local def = getObjectDefinition(object.name)
+	local xp, yp = _G.res.getSpritePivot("", def.sprite)
+	createCircle(name, def.sprite, object.x, object.y, def.radius * 1, 1.0E-6, 0, def.restitution, object.controllable, object.z_order)
+	objects.world[name].definition = object.definition
+	objects.world[name].controllable = def.controllable
+	objects.world[name].strength = def.strength
+	objects.world[name].defence = def.defence
+	objects.world[name].material = def.material
+	objects.world[name].levelGoal = def.levelGoal
+	objects.world[name].damageFactors = def.damageFactors
+	objects.world[name].isPuffed = true
+	objects.world[name].spritePivotX = xp
+	objects.world[name].spritePivotY = yp
+	objects.world[name].damageSprite = def.damageSprite
+	objects.world[name].useLegacyCollisionPath = def.useLegacyCollisionPath
+	objects.world[name].shot = true
+	objects.world[name].isGlobeDeath = true
+	objects.world[name].updateCount = 0
+	objects.world[name].deathTimerFull = 1.5
+	objects.world[name].deathTimer = object.deathTimer or objects.world[name].deathTimerFull
+	--objects.world[name].scale = object.powerup_scale or 1
+	objects.world[name].directionChangeTimer = object.directionChangeTimer or 0
+	objects.world[name].xVel = object.xVel
+	objects.world[name].yVel = object.yVel
+	--objects.world[name].powerup_scale = object.powerup_scale
+	--setRenderState(0, 0, 0, 0)
+	setRotation(name, object.angle)
+	setVelocity(name, object.xVel, object.yVel)
+	--setObjectParameter(name, 5, object.powerup_scale or 1)
+	--setObjectParameter(name, 6, 1)
+	birds[name] = objects.world[name]
+	local k = object.name
+	if cameraTargetObject == object then
+		cameraTargetObject = nil
+	end
+	if currentBirdName == k then
+		currentBirdName = nil
+	end
+	if flyingBird == object then
+		flyingBird = nil
+		birdSpecialtyAvailable = false
+	end
+	removeObject(k)
+	objects.world[k] = nil
+	birds[k] = nil
+	otherBirds[k] = nil
+	_G.res.playAudio(getAudioName(def.removeSound or "Globe_Bird_Death_remove_1"), 1, false)
+end
+
 
 function blockCollision(object1, object2, force, wasDamageDone)
 	--[[
@@ -25408,17 +28649,19 @@ function stretchRubberBand(displacement)
 		_G.res.playAudio(getObjectDefinition(selectedBird.name).selectionSound, 1, false)
 		birdSelected = true
 	end
+	
+	if gameOptions.rotateWhileSlinging then
+		setRotation(selectedBird.name,rubberBandAngle)
+	end
 
 	-- limit the rubber band stretching in certain angles (collision with sling shot fork)
 	local factor = 1
 	if rubberBandAngle >= -1.9 and rubberBandAngle < -1.75 then
-		factor = -(rubberBandAngle + 1.75) / 0.15
-	end
-	if rubberBandAngle >= -1.75 and rubberBandAngle < -1.5 then
+		factor = _G.math.max(0.25, -(rubberBandAngle + 1.75) / 0.15)
+	elseif rubberBandAngle >= -1.75 and rubberBandAngle < -1.5 then
 		factor = 0.25
-	end
-	if rubberBandAngle >= -1.5 and rubberBandAngle < -1.35 then
-		factor = (1.5 + rubberBandAngle) / 0.15
+	elseif rubberBandAngle >= -1.5 and rubberBandAngle < -1.35 then
+		factor = _G.math.max(0.25, (1.5 + rubberBandAngle) / 0.15)
 	end
 
 	if rubberBandLength > factor * shootMaxLength then 
@@ -25532,13 +28775,28 @@ function addParticlesToPosition(px, py, particle, amount)
 	newParticles(particle, amount, x, y, w, h, getAngle(obj.name))
 end
 
-function removeBird(object)
+function removeBird(object, nosound, ignoreParticles)
 	local k = object.name
-	
-	addParticles(k, getObjectDefinition(k).particles , 10)
-
+	if object.finalGlobe then
+		globeBirdDeath(object)
+		return
+	end
+	local bDef = getObjectDefinition(k)
+--	local _ENV = _G.getfenv(1)
+--	if bDef.onBirdRemoved then
+--		_ENV[bDef.onBirdRemoved](object)
+--	end
+	object.impactForce = 4
+	if ignoreParticles ~= true and not object.isMightyBait then
+		addParticles(k, bDef.removeParticles or bDef.particles , 3, false, globeDeath)
+		if object.definition ~= "GlobeBird" and object.definition ~= "BlackBird" then
+			--addParticles(k, "smokeBuff", 1, false)
+			addParticles(k, "birdBuff", _G.math.floor(3), true)
+			--addParticles(k, particle, _G.math.floor(4), true)
+		end
+	end
 	if cameraTargetObject == object then
-		--print("Remove bird: setting camera target object to nil\n")
+		--printToLog("Remove bird: setting camera target object to nil\n")
 		cameraTargetObject = nil
 	end
 	
@@ -25554,15 +28812,20 @@ function removeBird(object)
 	objects.world[k] = nil
 	birds[k] = nil
 	otherBirds[k] = nil
-
-	_G.res.playAudio(getAudioName("bird_destroyed"), 1, false)
+	if nosound ~= true then
+		_G.res.playAudio(getAudioName("bird_destroyed"), 1, false)
+	end
 end
 
 -- This function finds the definition of the given level object based on its name
 function getObjectDefinition(name)
 	return blockTable.blocks[objects.world[name].definition]
 end
-
+function getObject(name)
+	if name ~= nil then
+		return objects.world[name]
+	end
+end
 -- returns the next bird name or nil if bird not found
 function getNextBird(index)
 	--print("Getting next bird: " .. index .. "\n")
@@ -25579,7 +28842,7 @@ end
 
 -- TODO: parse piglettes to own table
 function checkLevelComplete()
-	if hasMovingObjects and objects.doNotWaitForMovingObjects ~= true then
+	if (hasMovingObjects and objects.doNotWaitForMovingObjects ~= true) or (eagleTimer and eagleTimer > 0) or objects.world["MightyEagle_a"] or (eagleBaitLaunched and getNextBird(birdsCounter)) then
 		return false
 	end
 	for k, v in _G.pairs(levelGoals) do
@@ -26168,92 +29431,92 @@ end
 -------------------------------------------------------------------------------
 -- Particle engine
 
-function newParticles(type, amount, x, y, w, h, angle)
-	local pt = particleTable.particles[type]
-	if pt == nil then
-		return
-	end
+-- function newParticles(type, amount, x, y, w, h, angle)
+-- 	local pt = particleTable.particles[type]
+-- 	if pt == nil then
+-- 		return
+-- 	end
 	
-	_G.particles.addParticles(type, amount, x, y, w, h, angle)
+-- 	_G.particles.addParticles(type, amount, x, y, w, h, angle)
 
---[[	
-	if softLimitSimultaneousParticles < particleAmount + amount then
-		amount = amount * 0.5
-	end
+-- --[[	
+-- 	if softLimitSimultaneousParticles < particleAmount + amount then
+-- 		amount = amount * 0.5
+-- 	end
 	
-	for i = 1, amount, 1 do
-		if particleAmount < hardLimitSimultaneousParticles then
-			particleAmount = particleAmount + 1
-			local p = { }
-			p.x = x + (_G.math.random(0, w) - 0.5*w ) -- * cos(angle)
-			p.y = y + (_G.math.random(0, h) - 0.5*h ) -- * sin(angle)
-			p.xVel = _G.math.random(pt.minVel, pt.maxVel)
-			p.yVel = _G.math.random(pt.minVel, pt.maxVel)
-			p.angle = _G.math.random(1, 3.14)
-			p.angleVel = _G.math.random(pt.minAngleVel, pt.maxAngleVel)
-			p.scaleBegin = _G.math.random(pt.minScaleBegin, pt.maxScaleBegin)
-			p.scaleEnd = _G.math.random(pt.minScaleEnd, pt.maxScaleEnd)
-			p.scale = p.scaleBegin
-			p.type = type
-			p.sprite = pt.sprites[_G.math.random(1, #pt.sprites)]
-			p.sheet = pt.sheet
-			p.time = 0
-			p.lifeTime = pt.lifeTime
-			p.lifeTimeAnimation = pt.animation == "lifeTime"
+-- 	for i = 1, amount, 1 do
+-- 		if particleAmount < hardLimitSimultaneousParticles then
+-- 			particleAmount = particleAmount + 1
+-- 			local p = { }
+-- 			p.x = x + (_G.math.random(0, w) - 0.5*w ) -- * cos(angle)
+-- 			p.y = y + (_G.math.random(0, h) - 0.5*h ) -- * sin(angle)
+-- 			p.xVel = _G.math.random(pt.minVel, pt.maxVel)
+-- 			p.yVel = _G.math.random(pt.minVel, pt.maxVel)
+-- 			p.angle = _G.math.random(1, 3.14)
+-- 			p.angleVel = _G.math.random(pt.minAngleVel, pt.maxAngleVel)
+-- 			p.scaleBegin = _G.math.random(pt.minScaleBegin, pt.maxScaleBegin)
+-- 			p.scaleEnd = _G.math.random(pt.minScaleEnd, pt.maxScaleEnd)
+-- 			p.scale = p.scaleBegin
+-- 			p.type = type
+-- 			p.sprite = pt.sprites[_G.math.random(1, #pt.sprites)]
+-- 			p.sheet = pt.sheet
+-- 			p.time = 0
+-- 			p.lifeTime = pt.lifeTime
+-- 			p.lifeTimeAnimation = pt.animation == "lifeTime"
 
-			if p.lifeTimeAnimation then
-				p.sprite = pt.sprites[1]
-			end
-			p.oldSprite = p.sprite
-			p.spritePivotX, p.spritePivotY = _G.res.getSpritePivot(p.sheet, p.sprite)
+-- 			if p.lifeTimeAnimation then
+-- 				p.sprite = pt.sprites[1]
+-- 			end
+-- 			p.oldSprite = p.sprite
+-- 			p.spritePivotX, p.spritePivotY = _G.res.getSpritePivot(p.sheet, p.sprite)
 
-			_G.table.insert(particles, p)
-		end
-	end
---]]
-end
+-- 			_G.table.insert(particles, p)
+-- 		end
+-- 	end
+-- --]]
+-- end
 
-function updateParticles(dt)
-	for k, v in _G.pairs(particles) do
-		local p = v
-		p.time = p.time + dt
-		if p.time > p.lifeTime then
-			_G.table.remove(particles, k)
-			particleAmount = particleAmount - 1
-		else
-			pt = particleTable.particles[p.type]
-			p.xVel = p.xVel + pt.gravityX * dt
-			p.yVel = p.yVel + pt.gravityY * dt
-			p.x = p.x + p.xVel * dt
-			p.y = p.y + p.yVel * dt
-			p.angle = p.angle + p.angleVel * dt
-			p.scale = p.scaleBegin + (p.scaleEnd - p.scaleBegin) * (p.time / p.lifeTime)
+-- function updateParticles(dt)
+-- 	for k, v in _G.pairs(particles) do
+-- 		local p = v
+-- 		p.time = p.time + dt
+-- 		if p.time > p.lifeTime then
+-- 			_G.table.remove(particles, k)
+-- 			particleAmount = particleAmount - 1
+-- 		else
+-- 			pt = particleTable.particles[p.type]
+-- 			p.xVel = p.xVel + pt.gravityX * dt
+-- 			p.yVel = p.yVel + pt.gravityY * dt
+-- 			p.x = p.x + p.xVel * dt
+-- 			p.y = p.y + p.yVel * dt
+-- 			p.angle = p.angle + p.angleVel * dt
+-- 			p.scale = p.scaleBegin + (p.scaleEnd - p.scaleBegin) * (p.time / p.lifeTime)
 			
-			if p.lifeTimeAnimation then
-				index = _G.math.ceil(#pt.sprites * (p.time / p.lifeTime))
-				if index < 1 then index = 1 end
-				if index > #pt.sprites then index = #pt.sprites end
-				p.sprite = pt.sprites[index]
-				if p.oldSprite ~= p.sprite then
-					p.spritePivotX, p.spritePivotY = _G.res.getSpritePivot(p.sheet, p.sprite)
-					p.oldSprite = p.sprite
-				end
-			end
-		end
-	end
-end
+-- 			if p.lifeTimeAnimation then
+-- 				index = _G.math.ceil(#pt.sprites * (p.time / p.lifeTime))
+-- 				if index < 1 then index = 1 end
+-- 				if index > #pt.sprites then index = #pt.sprites end
+-- 				p.sprite = pt.sprites[index]
+-- 				if p.oldSprite ~= p.sprite then
+-- 					p.spritePivotX, p.spritePivotY = _G.res.getSpritePivot(p.sheet, p.sprite)
+-- 					p.oldSprite = p.sprite
+-- 				end
+-- 			end
+-- 		end
+-- 	end
+-- end
 
 
-function drawParticles()
-	--local counter = 0
-	for k, v in _G.pairs(particles) do
-		--counter = counter + 1
-		local p = v
-		setRenderState(-screen.left/p.scale, -screen.top/p.scale, worldScale*p.scale, worldScale*p.scale, p.angle, p.spritePivotX, p.spritePivotY)
-		_G.res.drawSprite("", p.sprite, p.x/p.scale, p.y/p.scale)
-	end
-	--print("Particles: " .. particleAmount .. "\n")
-end
+-- function drawParticles()
+-- 	--local counter = 0
+-- 	for k, v in _G.pairs(particles) do
+-- 		--counter = counter + 1
+-- 		local p = v
+-- 		setRenderState(-screen.left/p.scale, -screen.top/p.scale, worldScale*p.scale, worldScale*p.scale, p.angle, p.spritePivotX, p.spritePivotY)
+-- 		_G.res.drawSprite(p.sprite, p.x/p.scale, p.y/p.scale)
+-- 	end
+-- 	--print("Particles: " .. particleAmount .. "\n")
+-- end
 
 -------------------------------
 
@@ -26464,25 +29727,25 @@ function drawBoxWithTiledBorders( borderSprites, sheet, x1, y1, width, height, h
 		yPivot = 0
 	end
 	for i = 0, (horDrawCount-1) * twTopMiddle, twTopMiddle do
-		_G.res.drawSprite("", borderSprites.topMiddle, _G.math.floor(startXTopMiddle + i + horBorderOffset + xPivot), _G.math.floor(correctedY1 + yPivot))
-		_G.res.drawSprite("", borderSprites.bottomMiddle, _G.math.floor(startXTopMiddle + i + horBorderOffset + xPivot) , _G.math.floor(correctedY2 + yPivot + 1))
+		_G.res.drawSprite(borderSprites.topMiddle, _G.math.floor(startXTopMiddle + i + horBorderOffset + xPivot), _G.math.floor(correctedY1 + yPivot))
+		_G.res.drawSprite(borderSprites.bottomMiddle, _G.math.floor(startXTopMiddle + i + horBorderOffset + xPivot) , _G.math.floor(correctedY2 + yPivot + 1))
 	end
 	for i = 0, (verDrawCount-1) * thMiddleLeft, thMiddleLeft do
-		_G.res.drawSprite("", borderSprites.left, _G.math.floor(correctedX1 + xPivot), _G.math.floor(startYMiddleLeft + i + verBorderOffset + yPivot))
-		_G.res.drawSprite("", borderSprites.right, _G.math.floor(correctedX2 + xPivot + 1), _G.math.floor(startYMiddleLeft + i + verBorderOffset + yPivot))
+		_G.res.drawSprite(borderSprites.left, _G.math.floor(correctedX1 + xPivot), _G.math.floor(startYMiddleLeft + i + verBorderOffset + yPivot))
+		_G.res.drawSprite(borderSprites.right, _G.math.floor(correctedX2 + xPivot + 1), _G.math.floor(startYMiddleLeft + i + verBorderOffset + yPivot))
 	end
 	
 	-- draw corners
-	_G.res.drawSprite("", borderSprites.topLeft, _G.math.floor(correctedX1 + xPivot), _G.math.floor(correctedY1 + yPivot))
-	_G.res.drawSprite("", borderSprites.topRight, _G.math.floor(correctedX2 + xPivot + 1), _G.math.floor(correctedY1 + yPivot))
-	_G.res.drawSprite("", borderSprites.bottomLeft, _G.math.floor(correctedX1 + xPivot), _G.math.floor(correctedY2 + yPivot + 1))
-	_G.res.drawSprite("", borderSprites.bottomRight, _G.math.floor(correctedX2 + xPivot + 1), _G.math.floor(correctedY2 + yPivot + 1))
+	_G.res.drawSprite(borderSprites.topLeft, _G.math.floor(correctedX1 + xPivot), _G.math.floor(correctedY1 + yPivot))
+	_G.res.drawSprite(borderSprites.topRight, _G.math.floor(correctedX2 + xPivot + 1), _G.math.floor(correctedY1 + yPivot))
+	_G.res.drawSprite(borderSprites.bottomLeft, _G.math.floor(correctedX1 + xPivot), _G.math.floor(correctedY2 + yPivot + 1))
+	_G.res.drawSprite(borderSprites.bottomRight, _G.math.floor(correctedX2 + xPivot + 1), _G.math.floor(correctedY2 + yPivot + 1))
 	
 	-- if color isn't defined then fill with center sprite
 	if color ~= nil then
 		drawRect(r, g, b, a, _G.math.floor(correctedX1 + xPivot), _G.math.floor(correctedY1 + yPivot), _G.math.floor(correctedX2 + xPivot), _G.math.floor(correctedY2 + yPivot), false)
 	else
-		_G.res.drawSprite("", borderSprites.center, _G.math.floor(correctedX1 + xPivot), _G.math.floor(correctedY1 + yPivot), "TOP", "LEFT", _G.math.floor(correctedX2 - correctedX1 + 1), _G.math.floor(correctedY2 - correctedY1 + 1))
+		_G.res.drawSprite(borderSprites.center, _G.math.floor(correctedX1 + xPivot), _G.math.floor(correctedY1 + yPivot), "TOP", "LEFT", _G.math.floor(correctedX2 - correctedX1 + 1), _G.math.floor(correctedY2 - correctedY1 + 1))
 	end
 	
 	local correctedWidth = correctedX2 - correctedX1 + 1
@@ -26637,22 +29900,22 @@ function drawBox( borderSprites, sheet, x1, y1, width, height, hAnchor, vAnchor,
 	end
 		
 	-- draw borders
-	_G.res.drawSprite("", boxSprites.topMiddle, _G.math.floor(startXTopMiddle + xPivot) , _G.math.floor(y1Top + yPivot) , "TOP", "LEFT", _G.math.floor(stopXTopMiddle - startXTopMiddle), _G.math.floor(thTopMiddle))
-	_G.res.drawSprite("", boxSprites.bottomMiddle, _G.math.floor(startXBottomMiddle + xPivot) , _G.math.floor(y1Bottom + yPivot), "TOP", "LEFT", _G.math.floor(stopXBottomMiddle - startXBottomMiddle), _G.math.floor(thBottomMiddle))
-	_G.res.drawSprite("", boxSprites.left, _G.math.floor(x1Left + xPivot) , _G.math.floor(startYMiddleLeft + yPivot) , "TOP", "LEFT", _G.math.floor(twMiddleLeft), _G.math.floor(stopYMiddleLeft - startYMiddleLeft))
-	_G.res.drawSprite("", boxSprites.right, _G.math.floor(x1Right + xPivot), _G.math.floor(startYMiddleRight + yPivot) , "TOP", "LEFT", _G.math.floor(twMiddleRight), _G.math.floor(stopYMiddleRight - startYMiddleRight))
+	_G.res.drawSprite(boxSprites.topMiddle, _G.math.floor(startXTopMiddle + xPivot) , _G.math.floor(y1Top + yPivot) , "TOP", "LEFT", _G.math.floor(stopXTopMiddle - startXTopMiddle), _G.math.floor(thTopMiddle))
+	_G.res.drawSprite(boxSprites.bottomMiddle, _G.math.floor(startXBottomMiddle + xPivot) , _G.math.floor(y1Bottom + yPivot), "TOP", "LEFT", _G.math.floor(stopXBottomMiddle - startXBottomMiddle), _G.math.floor(thBottomMiddle))
+	_G.res.drawSprite(boxSprites.left, _G.math.floor(x1Left + xPivot) , _G.math.floor(startYMiddleLeft + yPivot) , "TOP", "LEFT", _G.math.floor(twMiddleLeft), _G.math.floor(stopYMiddleLeft - startYMiddleLeft))
+	_G.res.drawSprite(boxSprites.right, _G.math.floor(x1Right + xPivot), _G.math.floor(startYMiddleRight + yPivot) , "TOP", "LEFT", _G.math.floor(twMiddleRight), _G.math.floor(stopYMiddleRight - startYMiddleRight))
 	
 	-- draw corners
-	_G.res.drawSprite("", boxSprites.topLeft, _G.math.floor(x1 + xPivot), _G.math.floor(y1 + yPivot))
-	_G.res.drawSprite("", boxSprites.topRight, _G.math.floor(x2 + xPivot), _G.math.floor(y1 + yPivot))
-	_G.res.drawSprite("", boxSprites.bottomLeft, _G.math.floor(x1 + xPivot), _G.math.floor(y2 + yPivot))
-	_G.res.drawSprite("", boxSprites.bottomRight, _G.math.floor(x2 + xPivot), _G.math.floor(y2 + yPivot))
+	_G.res.drawSprite(boxSprites.topLeft, _G.math.floor(x1 + xPivot), _G.math.floor(y1 + yPivot))
+	_G.res.drawSprite(boxSprites.topRight, _G.math.floor(x2 + xPivot), _G.math.floor(y1 + yPivot))
+	_G.res.drawSprite(boxSprites.bottomLeft, _G.math.floor(x1 + xPivot), _G.math.floor(y2 + yPivot))
+	_G.res.drawSprite(boxSprites.bottomRight, _G.math.floor(x2 + xPivot), _G.math.floor(y2 + yPivot))
 	
 	-- if color isn't defined then fill with center sprite
 	if color ~= nil then
 		drawRect(r, g, b, a, _G.math.floor(x1 + xPivot), _G.math.floor(y1 + yPivot), _G.math.floor(x2 + xPivot), _G.math.floor(y2 + yPivot), false)
 	else
-		_G.res.drawSprite("", boxSprites.center, _G.math.floor(x1 + xPivot), _G.math.floor(y1 + yPivot), "TOP", "LEFT", _G.math.floor(width), _G.math.floor(height))
+		_G.res.drawSprite(boxSprites.center, _G.math.floor(x1 + xPivot), _G.math.floor(y1 + yPivot), "TOP", "LEFT", _G.math.floor(width), _G.math.floor(height))
 	end
 end
 
@@ -27048,6 +30311,500 @@ function initCameras()
 	end
 end
 
+function drawIngameBubbles()
+	for k, v in _G.pairs(objects.world) do
+		if v ~= nil and v.inBubble then
+			if v.bubbleAntiGravityTimer > 0 then
+				local width = v.width
+				local height = v.height
+				if width == nil then
+					width = v.radius
+					height = v.radius
+				else
+					width = width * 0.5
+					height = height * 0.5
+				end
+				local lx, ly = physicsToScreenTransform(v.x, v.y)
+				setRenderState(0,0,2*currentZoomedScale,2*currentZoomedScale,0)
+				_G.res.drawSprite(v.bubbleSprite, lx/(2*currentZoomedScale),ly/(2*currentZoomedScale))
+			end
+		end
+	end
+end
+
+-- called from native side
+function clearLuaForceFunctions()
+	g_forceFunctions = {}
+end
+
+-- called from native side
+function applyForcesAtPhysicsStep()
+	for i,v in _G.ipairs(g_forceFunctions) do
+		v()
+	end
+end
+
+function drawEditor()
+	
+	local wScale = worldScale
+	
+	setRenderState(0, 0, 1, 1, 0)
+	
+	if editor.drawOneLayer then
+		drawLayer(editor.currentLayer)				
+		
+		--draws selected objects on current layer
+		for k, v in _G.pairs(selectedObjects) do										
+			if v.definition ~= nil and v.definition ~= "" then
+				local w, h = _G.res.getSpriteBounds("", blockTable.blocks[v.definition].sprite)
+				w, h = w * v.scale.x, h * v.scale.y
+				w, h = w * 0.5, h * 0.5
+				local x, y = physicsToWorldTransform(v.x, v.y)
+				local x1, y1 = x - w, y - h
+				local x2, y2 = x + w, y + h
+				local t_pivotX, t_pivotY = _G.res.getSpritePivot("", blockTable.blocks[v.definition].sprite)
+				t_pivotX, t_pivotY = t_pivotX * v.scale.x, t_pivotY * v.scale.y
+				--setRenderState(-screen.left, -screen.top, worldScale, worldScale, 0, 0, 0)
+				setRenderState(	-screen.left, -screen.top, worldScale, worldScale, 
+								v.angle, t_pivotX, t_pivotY)
+				drawRect(1, 0, 0, 0.5, x1, y1, x2, y2, true)
+			end			
+		end
+		
+		if copiedObjects ~= nil then
+			-- for k, v in _G.pairs(copiedObjects) do
+				-- local sprite = blockTable.blocks[v.definition].sprite
+				-- setRenderState(-screen.left / v.scale.x, -screen.top / v.scale.y, worldScale * v.scale.x, worldScale * v.scale.y, v.angle, res.getSpritePivot("", sprite))
+				
+				-- local x, y = physicsToWorldTransform(v.x + cursorPhysics.x, v.y + cursorPhysics.y)
+				
+				-- x, y = x / v.scale.x, y / v.scale.y
+				
+				-- res.drawSprite("", sprite, _G.math.floor(x), _G.math.floor(y))
+			-- end
+			for k, v in _G.pairs(copiedObjects) do
+				local sprite = blockTable.blocks[v.definition].sprite
+				local blockDefScale = blockTable.blocks[v.definition].scale or 1
+				local pivotX, pivotY = 0, 0
+				local flip = 1
+				if blockTable.blocks[v.definition].horFlip then
+					flip = -flip
+				end
+
+				pivotX, pivotY = _G.res.getSpritePivot(sprite)
+				--setRenderState(-screen.left, -screen.top, worldScale * v.scale.x, worldScale * v.scale.y, v.angle, res.getSpritePivot("", sprite))
+				setRenderState(flip * -screen.left / (v.scale.x * blockDefScale), -screen.top / (v.scale.y * blockDefScale), flip * worldScale * v.scale.x, worldScale * v.scale.y, flip * v.angle, pivotX, pivotY)
+				
+				local x, y = physicsToWorldTransform(v.x + cursorPhysics.x, v.y + cursorPhysics.y)
+				
+				x, y = flip * x / v.scale.x, y / v.scale.y
+				
+				_G.res.drawSprite(sprite, _G.math.floor(x), _G.math.floor(y))
+			end
+			setRenderState(0, 0, 1, 1, 0)
+		end		
+		
+		setRenderState(0, 0, 1, 1, 0)	
+		
+	else
+		--this call will draw all in game elements
+		drawGame()
+		
+		if keyHold["L"] then
+			for k, v in _G.pairs(objects.world) do
+				if v.startNumber then
+					local sprite = blockTable.blocks[v.definition].sprite
+					local blockDefScale = blockTable.blocks[v.definition].scale or 1
+					local pivotX, pivotY = _G.res.getSpritePivot(sprite)
+					setRenderState(-screen.left / blockDefScale, -screen.top / blockDefScale, worldScale, worldScale , v.angle, pivotX, pivotY)
+					local x, y = physicsToWorldTransform(v.x, v.y)
+					_G.res.drawString("TEXTS_BASIC", "" .. v.startNumber, x, y, "HCENTER", "VCENTER")
+				end
+			end
+			setRenderState(0, 0, 1, 1, 0)
+		end
+	end
+	
+	
+	setRenderState(0, 0, 1, 1, 0)
+	_G.res.drawString("TEXTS_BASIC", levelName, gameOptions.editor.textPadding, gameOptions.editor.textPadding, "TOP", "LEFT")
+
+	if selectionRectActive then
+		local x1, y1 = draggingStartPosWorld.x, draggingStartPosWorld.y
+		local x2, y2 = cursorWorld.x, cursorWorld.y
+		if x1 > x2 then	x1, x2 = x2, x1	end
+		if y1 > y2 then	y1, y2 = y2, y1	end
+		setRenderState(-screen.left, -screen.top, wScale, wScale, 0)
+		drawRect(1, 0, 0, 0.5, x1, y1, x2, y2, true)
+	end		
+
+	setRenderState(0, 0, 1, 1, 0)
+	if not editor.drawOneLayer then
+		for k, v in _G.pairs(objects.joints) do
+			drawJoint(v, "EDITOR_JOINT")
+		end
+	end
+	
+	if selectedObjects[1] ~= nil then
+		if selectedObjects[1].controllable then
+			if selectedObjects[1].startNumber ~= nil then
+				_G.res.drawString("TEXTS_BASIC", "Start: " .. selectedObjects[1].startNumber, gameOptions.editor.textPadding, 35+gameOptions.editor.textPadding, "TOP", "LEFT")
+			end
+		end
+	end
+
+	for k, v in _G.pairs(selectedObjects) do
+		if v.sprite ~= nil and v.sprite ~= "" then
+			local w, h = _G.res.getSpriteBounds("", v.sprite)
+			w, h = w*0.5, h*0.5
+			local x, y = physicsToWorldTransform(v.x, v.y)
+			local x1, y1 = x - w, y - h
+			local x2, y2 = x + w, y + h
+			setRenderState(-screen.left, -screen.top, wScale, wScale, v.angle, v.spritePivotX, v.spritePivotY)
+			drawRect(1, 0, 0, 0.5, x1, y1, x2, y2, true)
+		end
+	end
+	
+	if physicsEnabled then
+		for k, v in _G.pairs(objects.world) do
+			if v.sleeping == true and v.sprite ~= "" then
+				local w, h = _G.res.getSpriteBounds("", v.sprite)
+				w, h = w*0.5, h*0.5
+				local x, y = physicsToWorldTransform(v.x, v.y)
+				local x1, y1 = x - w, y - h
+				local x2, y2 = x + w, y + h
+				setRenderState(-screen.left, -screen.top, wScale, wScale, v.angle, v.spritePivotX, v.spritePivotY)
+				drawRect(1, 0, 0, 0.5, x1, y1, x2, y2, true)
+			end
+		end
+	end
+	
+	-- Draw small rect to indicate origin
+	if keyHold["O"] then
+		setRenderState(-screen.left*wScale, -screen.top*wScale, 1, 1, 0, 0, 0)
+	else
+		setRenderState(-screen.left, -screen.top, wScale, wScale, 0, 0, 0)
+	end
+	_G.res.drawSprite("", "ORIGO", 0, 0)
+	setRenderState(0, 0, 1, 1, 0)
+
+	if objectToAdd ~= nil then
+		local sprite = blockTable.blocks[objectToAdd].sprite
+		setRenderState(-screen.left, -screen.top, wScale, wScale, objectToAddAngle, _G.res.getSpritePivot("", sprite))
+		_G.res.drawSprite("", sprite, _G.math.floor(cursorWorld.x), _G.math.floor(cursorWorld.y))
+		setRenderState(0, 0, 1, 1, 0)
+	end
+	
+	if not editor.drawOneLayer then
+		if copiedObjects ~= nil then
+			-- for k, v in _G.pairs(copiedObjects) do
+				-- local sprite = objects.world[v.name].sprite
+				-- setRenderState(-screen.left, -screen.top, wScale, wScale, v.angle, _G.res.getSpritePivot("", sprite))
+				-- local x, y = physicsToWorldTransform(v.x + cursorPhysics.x, v.y + cursorPhysics.y)
+				-- _G.res.drawSprite("", sprite, _G.math.floor(x), _G.math.floor(y))
+			-- end
+			for k, v in _G.pairs(copiedObjects) do
+				local sprite = objects.world[v.name].sprite
+				local blockDefScale = blockTable.blocks[v.definition].scale or 1
+				local pivotX, pivotY = 0, 0
+				local flip = 1
+				if blockTable.blocks[v.definition].horFlip then
+					flip = -flip
+				end
+				pivotX, pivotY = _G.res.getSpritePivot(sprite)
+				setRenderState(flip * -screen.left / blockDefScale, -screen.top / blockDefScale, flip * worldScale * blockDefScale, worldScale * blockDefScale, flip * v.angle, pivotX, pivotY)
+				local x, y = physicsToWorldTransform(v.x + cursorPhysics.x, v.y + cursorPhysics.y)
+				x, y = flip * x / blockDefScale, y / blockDefScale
+				_G.res.drawSprite(sprite, _G.math.floor(x), _G.math.floor(y))
+			end
+			
+			setRenderState(0, 0, 1, 1, 0)
+		end
+		
+		if levelSaved then
+			_G.res.drawSprite("", "EDITOR_SAVED", screenWidth, 0)
+		else
+			_G.res.drawSprite("", "EDITOR_NOT_SAVED", screenWidth, 0)
+		end
+
+		if physicsEnabled then
+			_G.res.drawSprite("", "EDITOR_PHYSICS_ON", screenWidth, 0)
+		else
+			_G.res.drawSprite("", "EDITOR_PHYSICS_OFF", screenWidth, 0)
+		end
+
+		if objects.castleCameraData and objects.castleCameraData[deviceModel] then
+			_G.res.drawSprite("", "EDITOR_C_CAMERA_ON", screenWidth, 0)
+		else
+			_G.res.drawSprite("", "EDITOR_C_CAMERA_OFF", screenWidth, 0)
+		end
+
+		if objects.birdCameraData and objects.birdCameraData[deviceModel] then
+			_G.res.drawSprite("", "EDITOR_B_CAMERA_ON", screenWidth, 0)
+		else
+			_G.res.drawSprite("", "EDITOR_B_CAMERA_OFF", screenWidth, 0)
+		end
+		
+		if objects.doNotWaitForMovingObjects ~= nil then
+			_G.res.drawString("", "QUICK END", screenWidth, screenHeight, "BOTTOM", "RIGHT")
+		end
+	end
+
+end
+
+function drawJoint(joint, sprite)
+	if joint.x1 == nil then
+		return
+	end
+	
+	local jointWorldX1 = joint.x1
+	local jointWorldY1 = joint.y1
+	local jointWorldX2 = joint.x2
+	local jointWorldY2 = joint.y2
+	
+	if joint.coordType == 2 then
+		jointWorldX1, jointWorldY1 = getWorldPoint(joint.end1, jointWorldX1, jointWorldY1);
+		jointWorldX2, jointWorldY2 = getWorldPoint(joint.end2, jointWorldX2, jointWorldY2);
+	end
+	
+	local xdif = jointWorldX2 - jointWorldX1
+	local ydif = jointWorldY2 - jointWorldY1
+	local tlen = vLength(xdif, ydif)
+	local x = 0
+	local y = 0
+
+	--print(k .. " " .. tlen .. " " .. vLength(x, y) .."\n")
+	if tlen == 0 then
+		return
+	end
+
+	local vlen = 0
+	while vlen <= tlen do
+		sx, sy = physicsToScreenTransform(jointWorldX1 + x, jointWorldY1 + y )
+		_G.res.drawSprite("", sprite, sx, sy)
+		x = x + xdif * 0.13
+		y = y + ydif * 0.13
+		vlen = vLength(x, y)
+		--print("vlen: " .. vlen .. " tlen: " .. tlen .. "\n")
+	end
+end
+
+-- XXX: ADD TO OTHERS
+function initCollisionDummy(selectedObject)
+	local name = selectedObject.name
+	--local name = selectedObjects[1].name
+	local selected = objects.world[name]
+	local blockDef = blockTable.blocks[selected.definition]
+	local dir = 1
+			
+	adjustedBlockDef = adjustedBlockDef or {}
+	adjustedBlockDef.objectNames = adjustedBlockDef.objectNames or {}
+						
+	adjustedBlockDef.objectNames[name] = adjustedBlockDef.objectNames[name] or {}
+			
+			-- Initialize dummy
+	if(adjustedBlockDef.objectNames[name].radius == nil and blockDef.radius) then
+		adjustedBlockDef.objectNames[name].radius = blockDef.radius			
+	end
+
+	if(adjustedBlockDef.objectNames[name].spritePivotX == nil and blockDef.spritePivotX) then
+		adjustedBlockDef.objectNames[name].spritePivotX = blockDef.spritePivotX			
+	end
+
+	if(adjustedBlockDef.objectNames[name].spritePivotY == nil and blockDef.spritePivotY) then
+		adjustedBlockDef.objectNames[name].spritePivotY = blockDef.spritePivotY			
+	end
+			
+				
+	if(adjustedBlockDef.objectNames[name].width == nil and blockDef.width) then
+		adjustedBlockDef.objectNames[name].width = blockDef.width			
+	end
+
+	if(adjustedBlockDef.objectNames[name].height == nil and blockDef.height) then
+		adjustedBlockDef.objectNames[name].height = blockDef.height			
+	end
+			
+	if(adjustedBlockDef.objectNames[name].vertices == nil and blockDef.vertices ~= nil) then
+		--adjustedBlockDef.objectName.height = blockDef.height			
+		adjustedBlockDef.objectNames[name].vertices = {}
+		for k,v in _G.pairs(blockDef.vertices) do					
+			_G.table.insert(adjustedBlockDef.objectNames[name].vertices, {x = v.x, y = v.y})
+		end
+	end
+end
+
+-------------------------------------------------------------------------------
+-- Animations
+
+function newAnimation(name, state, page, speedIn, speedOut)
+	local v = {}
+	v.page = page
+	v.state = state
+	v.percentage = 0
+	v.speedIn = speedIn
+	v.speedOut = speedOut
+	v.name = name
+	elementAnimations[name] = v
+end
+
+function updateAnimations(dt)
+	for k, v in _G.pairs(elementAnimations) do
+		if v.state == "ENTERING" then
+			v.percentage = v.percentage + v.speedIn * dt
+			if v.percentage > 100 then
+				v.percentage = 100
+				v.state = "VISIBLE"
+				v.page.state = "READY"
+			end
+		elseif v.state == "VISIBLE" then
+		elseif v.state == "EXITING" then
+			v.percentage = v.percentage - v.speedOut * dt
+			if v.percentage < 0 then
+				v.percentage = 0
+				v.state = "HIDDEN"
+				v.page.state = "DISABLED"
+				if k == "ingamePausePageScroll" then
+					onExitPage(pausePage)
+					
+					-- continue game after pause menu has scrolled out
+					if deviceModel == "iphone4" and (birdTutorialPopups == nil or #birdTutorialPopups == 0) then
+						changeResolution = true
+						wantedResolution = "FULL"
+						resolutionChanged = true
+					end
+					setGameMode(updateGame)
+					setPhysicsEnabled(true)
+				end
+			end
+		end
+	end
+end
+
+function setAnimationState(animation, state)
+	local v = elementAnimations[animation]
+	if state == "ENTERING" then
+		if v.state == "HIDDEN" then
+			v.state = state
+			v.percentage = 0
+			v.page.state = "DISABLED"
+		elseif v.state == "EXITING" then
+			v.state = state
+		end
+	elseif state == "VISIBLE" then
+		if v.state == "ENTERING" or v.state == "HIDDEN" or v.state == "EXITING" then
+			v.state = state
+			v.percentage = 100
+			v.page.state = "READY"			
+		end
+	elseif state == "EXITING" then
+		if v.state == "VISIBLE" then
+			v.state = state
+			v.percentage = 100
+			v.page.state = "READY"			
+		elseif v.state == "ENTERING" then
+			v.state = state
+		end
+	elseif state == "HIDDEN" then
+		if v.state == "ENTERING" or v.state == "VISIBLE" or v.state == "EXITING" then
+			v.state = state
+			v.percentage = 0
+			v.page.state = "DISABLED"
+		end
+	end
+end
+
+-------------------------------------------------------------------------------
+-- Particle engine
+
+function newParticles(type, amount, x, y, w, h, angle, ignoreLimits)
+	local pt = particleTable.particles[type]
+	if pt == nil then
+		return
+	end
+	
+	_G.particles.addParticles(type, amount, x, y, w, h, angle, ignoreLimits)
+
+--[[	
+	if softLimitSimultaneousParticles < particleAmount + amount then
+		amount = amount * 0.5
+	end
+	
+	for i = 1, amount, 1 do
+		if particleAmount < hardLimitSimultaneousParticles then
+			particleAmount = particleAmount + 1
+			local p = { }
+			p.x = x + (_G.math.random(0, w) - 0.5*w ) -- * cos(angle)
+			p.y = y + (_G.math.random(0, h) - 0.5*h ) -- * sin(angle)
+			p.xVel = _G.math.random(pt.minVel, pt.maxVel)
+			p.yVel = _G.math.random(pt.minVel, pt.maxVel)
+			p.angle = _G.math.random(1, 3.14)
+			p.angleVel = _G.math.random(pt.minAngleVel, pt.maxAngleVel)
+			p.scaleBegin = _G.math.random(pt.minScaleBegin, pt.maxScaleBegin)
+			p.scaleEnd = _G.math.random(pt.minScaleEnd, pt.maxScaleEnd)
+			p.scale = p.scaleBegin
+			p.type = type
+			p.sprite = pt.sprites[_G.math.random(1, #pt.sprites)]
+			p.sheet = pt.sheet
+			p.time = 0
+			p.lifeTime = pt.lifeTime
+			p.lifeTimeAnimation = pt.animation == "lifeTime"
+
+			if p.lifeTimeAnimation then
+				p.sprite = pt.sprites[1]
+			end
+			p.oldSprite = p.sprite
+			p.spritePivotX, p.spritePivotY = _G.res.getSpritePivot(p.sheet, p.sprite)
+
+			_G.table.insert(particles, p)
+		end
+	end
+--]]
+end
+
+function updateParticles(dt)
+	for k, v in _G.pairs(particles) do
+		local p = v
+		p.time = p.time + dt
+		if p.time > p.lifeTime then
+			_G.table.remove(particles, k)
+			particleAmount = particleAmount - 1
+		else
+			pt = particleTable.particles[p.type]
+			p.xVel = p.xVel + pt.gravityX * dt
+			p.yVel = p.yVel + pt.gravityY * dt
+			p.x = p.x + p.xVel * dt
+			p.y = p.y + p.yVel * dt
+			p.angle = p.angle + p.angleVel * dt
+			p.scale = p.scaleBegin + (p.scaleEnd - p.scaleBegin) * (p.time / p.lifeTime)
+			
+			if p.lifeTimeAnimation then
+				index = _G.math.ceil(#pt.sprites * (p.time / p.lifeTime))
+				if index < 1 then index = 1 end
+				if index > #pt.sprites then index = #pt.sprites end
+				p.sprite = pt.sprites[index]
+				if p.oldSprite ~= p.sprite then
+					p.spritePivotX, p.spritePivotY = _G.res.getSpritePivot(p.sheet, p.sprite)
+					p.oldSprite = p.sprite
+				end
+			end
+		end
+	end
+end
+
+
+function drawParticles()
+	--local counter = 0
+	for k, v in _G.pairs(particles) do
+		--counter = counter + 1
+		local p = v
+		setRenderState(-screen.left/p.scale, -screen.top/p.scale, worldScale*p.scale, worldScale*p.scale, p.angle, p.spritePivotX, p.spritePivotY)
+		_G.res.drawSprite(p.sheet, p.sprite, p.x/p.scale, p.y/p.scale)
+	end
+	--print("Particles: " .. particleAmount .. "\n")
+end
+
+-------------------------------
+
 --PC build related
 
 function setLevelLoading(buttonAttributes)	
@@ -27222,4 +30979,31 @@ function requestActivation()
 		end
 	
 	end
+end
+function playAnimation(k, dt)
+  local objDef         = getObjectDefinition(k)
+  local object            = objects.world[k]
+  local animationInfo  = objDef.animationSprites    
+  if object.elapsedTime == nil then                
+    object.elapsedTime = animationInfo[1][2]
+    setSprite(object.name, animationInfo[1][1])
+  end                
+  if object.elapsedTime ~= nil then
+      
+    local spritesAmount  = #animationInfo
+    
+    if object.spriteIndex == nil then
+      object.spriteIndex = 2    
+    end
+    
+    object.elapsedTime = object.elapsedTime - dt                    
+    if object.elapsedTime < 0 then
+      if object.spriteIndex > spritesAmount then
+        object.spriteIndex = 1        
+      end
+      setSprite(object.name, animationInfo[object.spriteIndex][1])
+      object.elapsedTime = animationInfo[object.spriteIndex][2]
+      object.spriteIndex = object.spriteIndex+1
+    end
+  end
 end

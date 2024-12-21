@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<spritesheet texture="INGAME_BIRDS_2.png">
+  <sprite name="BIRD_MIGHTY_EAGLE_MOTION" x="61" y="309" width="375" height="155" pivotX="166" pivotY="106" />
+  <sprite name="BAIT_SARDINE" x="504" y="500" width="75" height="53" pivotX="37" pivotY="26" />
+  <sprite name="BIRD_MIGHTY_EAGLE_RADIAL" x="1" y="1" width="324" height="306" pivotX="150" pivotY="154" />
+  <sprite name="BIRD_PUFFER_1" x="62" y="584" width="65" height="70" pivotX="35" pivotY="48" />
+  <sprite name="BIRD_PUFFER_2" x="328" y="2" width="330" height="296" pivotX="175" pivotY="148" />
+  <sprite name="BIRD_PUFFER_YELL" x="131" y="584" width="65" height="70" pivotX="35" pivotY="48" />
+  <sprite name="BIRD_PUFFER_BLINK" x="318" y="552" width="65" height="70" pivotX="35" pivotY="48" />
+  <sprite name="SLING_SHOT_02_BACK" x="1" y="309" width="58" height="210" pivotX="16" pivotY="40" />
+  <sprite name="SLING_SHOT_02_FRONT" x="1" y="521" width="50" height="126" pivotX="43" pivotY="40" />
+  <sprite name="SLINGSHOT_POWERUP" x="61" y="466" width="142" height="115" pivotX="82" pivotY="104" />
+  <sprite name="PARTICLE_SLINGDOT" x="515" y="309" width="66" height="66" pivotX="33" pivotY="33" />
+  <sprite name="SLINGSHOT_POWERUP_SCOPE" x="505" y="442" width="142" height="55" pivotX="52" pivotY="36" />
+  <sprite name="BIRD_PINK" x="439" y="506" width="58" height="44" pivotX="39" pivotY="22" />
+  <sprite name="BIRD_PINK_BLINK" x="439" y="554" width="58" height="44" pivotX="39" pivotY="22" />
+  <sprite name="BIRD_PINK_RELEASE" x="582" y="501" width="57" height="44" pivotX="39" pivotY="22" />
+  <sprite name="PINK_IN_BUBBLE_1" x="506" y="378" width="62" height="60" pivotX="31" pivotY="30" />
+  <sprite name="BIRD_PINK_YELL" x="439" y="602" width="58" height="44" pivotX="39" pivotY="22" />
+  <sprite name="P_BIRDBUBBLE_1" x="572" y="378" width="62" height="60" pivotX="31" pivotY="30" />
+  <sprite name="P_BIRDBUBBLE_2" x="439" y="378" width="63" height="60" pivotX="31" pivotY="30" />
+  <sprite name="P_BIRDBUBBLE_3" x="439" y="442" width="62" height="60" pivotX="31" pivotY="30" />
+  <sprite name="P_BUBBLE_POP_1" x="584" y="310" width="63" height="62" pivotX="31" pivotY="31" />
+  <sprite name="P_BUBBLE_POP_2" x="318" y="467" width="82" height="81" pivotX="41" pivotY="40" />
+  <sprite name="P_BUBBLE_POP_3" x="206" y="467" width="108" height="95" pivotX="54" pivotY="47" />
+  <sprite name="BLOCK_STICKY" x="206" y="566" width="68" height="91" pivotX="34" pivotY="45" />
+  <sprite name="BLOCK_STICKY_PARTICLE" x="277" y="599" width="21" height="27" pivotX="10" pivotY="13" />
+  <sprite name="PARTY_HAT_5" x="387" y="552" width="43" height="56" pivotX="21" pivotY="28" />
+  <sprite name="PARTY_HAT_6" x="439" y="310" width="73" height="64" pivotX="36" pivotY="32" />
+  <sprite name="PARTY_HAT_BLUE" x="277" y="565" width="24" height="32" pivotX="12" pivotY="16" />
+</spritesheet>
