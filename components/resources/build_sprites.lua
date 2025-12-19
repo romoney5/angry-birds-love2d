@@ -8,13 +8,13 @@ function makeImages(force,path)
 	if (love.keyboard.isDown and love.keyboard.isDown("lctrl")) or not checkDirectory("spriteinfo.lua") or force then
 		--load all the spritesheets
 
-	    print("remaking spritesheets..")
+	    print("Remaking spritesheets...")
 		-- love.graphics.print("Remaking spritesheet and composprite list..", screenWidth/16, screenHeight/16)
 		-- love.graphics.present()
 		cachedimgs = {csprites = {}}
 		local its = #love.filesystem.getDirectoryItems(path)
 		for i,sprite in pairs(love.filesystem.getDirectoryItems(path)) do
-			if endswith(sprite,".dat") then
+			if endsWith(sprite,".dat") then
 				local data = love.filesystem.read(path.."/"..sprite)
 				local info = getDatInfo(data,sprite,"SPRT")
 				if info.compos then
@@ -24,8 +24,8 @@ function makeImages(force,path)
 				elseif info.sprites and info.filename then
 					local filename = info.filename
 					local extension = ".png"
-					if endswith(filename,".pvr") then extension = ".pvr.png" filename=filename..".png" end
-					if endswith(filename,".webp") then extension = ".webp.png" filename=filename..".png" end
+					if endsWith(filename,".pvr") then extension = ".pvr.png" filename=filename..".png" end
+					if endsWith(filename,".webp") then extension = ".webp.png" filename=filename..".png" end
 					-- print(sprite)
 					local spritesheet = love.graphics.newImage(path.."/"..filename)
 					for i,spr in pairs(info.sprites) do

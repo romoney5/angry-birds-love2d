@@ -2,8 +2,8 @@
 
 function drawParticlesNative()
 	for _, p in _G.pairs(particles) do
-		setRenderState(-screen.left/p.scale, -screen.top/p.scale, worldScale*p.scale, worldScale*p.scale, p.angle, p.spritePivotX, p.spritePivotY)
-		_G.res.drawSprite(p.sprite, p.x/p.scale, p.y/p.scale)--p.sheet, p.sprite, p.x/p.scale, p.y/p.scale)
+		setRenderState(-screen.left / p.scale, -screen.top / p.scale, worldScale * p.scale, worldScale * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
+		_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
 	end
 end
 
@@ -58,14 +58,19 @@ getAddParticles = {__index = function(self,i)
 						local mivy,mavy = pt.minVel,pt.maxVel
 						if pt.emitter_box then
 							if pt.emitter_box.minVelX then
-								mivx,mavx, mivy,mavy = pt.emitter_box.minVelX,pt.emitter_box.maxVelX,
+								mivx, mavx, mivy, mavy = pt.emitter_box.minVelX,pt.emitter_box.maxVelX,
 														pt.emitter_box.minVelY,pt.emitter_box.maxVelY
 							else
-								mivx,mavx, mivy,mavy = pt.emitter_box.minVel,pt.emitter_box.maxVel,
+								mivx, mavx, mivy, mavy = pt.emitter_box.minVel,pt.emitter_box.maxVel,
 														pt.emitter_box.minVel,pt.emitter_box.maxVel
-							end end
-						if pt.emitter_circle then mivx,mavx, mivy,mavy = pt.emitter_circle.minVel,pt.emitter_circle.maxVel,
-																	pt.emitter_circle.minVel,pt.emitter_circle.maxVel end
+							end
+						end
+						
+						--TODO: that's not a circle.. ..
+						if pt.emitter_circle then
+							mivx,mavx, mivy,mavy = pt.emitter_circle.minVel,pt.emitter_circle.maxVel,
+													pt.emitter_circle.minVel,pt.emitter_circle.maxVel
+						end
 
 						p.xVel,p.yVel = _G.math.random(mivx, mavx), _G.math.random(mivy, mavy)
 						p.angle = _G.math.random(1, 3.14)

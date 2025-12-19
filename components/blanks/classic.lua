@@ -34,12 +34,15 @@ end
 function requestAd()
 	print("Ad requested")
 end
+
 function requestVideoAd()
 	print("Video Ad requested")
 end
+
 function requestAndShowVideo()
 	print("Video requested")
 end
+
 function checkMainMenuAd(url)
 	return
 end
@@ -47,9 +50,11 @@ end
 function native_requestBannerAd()
 	print("Banner Ad requested")
 end
+
 function native_requestExpandableAd()
 	print("Expandable Ad requested")
 end
+
 function native_requestInterstitialAd()
 	requestVideoAd()
 end

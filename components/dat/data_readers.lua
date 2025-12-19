@@ -66,7 +66,7 @@ end
 
 --used by rvio composprites
 function readBool(data, index)
-	return data:byte(index)==0x01
+	return data:byte(index) == 0x01
 end
 
 --this reads a string
@@ -83,4 +83,6 @@ end
 
 
 --skip bytes
-function skip(length)pos = pos + length end
+function skip(length)
+	pos = pos + length
+end

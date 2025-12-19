@@ -16,6 +16,6 @@ function enableSmoothZooming(smoothzooming)
 	print("Smooth zooming is now set to "..tostring(smoothzooming))
 end
 
-function updateBackgroundAndForegroundScrollingNative(dt,_bool) --what the DARN is this name
+function updateBackgroundAndForegroundScrollingNative(dt, _bool)
 	return
 end

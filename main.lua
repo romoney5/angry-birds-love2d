@@ -2,14 +2,14 @@
 
 io.stdout:setvbuf('no')
 
-dataPath = "/data"--""
+dataPath = "/data"
 scriptPath = "/scripts"
 commonScriptPath = "/scripts_common"
 audioPath = "/audio"
-levelPath = "/levels"--_dec"
+levelPath = "/levels"
 imagePath = "/images"
 localizationPath = "/localization"
-fontPath = "/fonts"--..(gameOptions.ui.useNewFonts and "/angrybirds" or "/onomatoshark")
+fontPath = "/fonts"
 
 compsPath = "/components"
 
@@ -31,16 +31,16 @@ particleTable = {}
 touches = {}
 touchcount = 0
 
-cursor = {x=0,y=0,wheel=0,wheelTriggered=false, dx=0,dy=0}
+cursor = {x = 0, y = 0, wheel = 0, wheelTriggered = false, dx = 0, dy = 0}
 multitouchZoom = {zoomCoolingTime = 0}
-multitouchSweep = {isSweepping = false} --minor grammar mistake
+multitouchSweep = {isSweepping = false}
 maxWorldScale = 0
 physicsEnabled = false
 physicsWorld = nil
 
 textGroups = {}
 
-trajectory = {{{},{},{}}}
+trajectory = {{{}, {}, {}}}
 alpha = 1
 drawangle = 0
 drawfont = ""
@@ -58,44 +58,48 @@ flurry = {}
 
 dmonitor = nil
 
-enableDebug = not false
+enableDebug = false
 
 local hasLove12 = love._version_major >= 12
 
-function endswith(str,ending)
-	return string.sub(str,-string.len(ending)) == ending
+function endsWith(str,ending)
+	return string.sub(str, -string.len(ending)) == ending
 end
 
 --very important in later codebases
-function loadLuaFileToObject(filename,ctx,envKey,lenient)
-	local lua,e
+function loadLuaFileToObject(filename, ctx, envKey, lenient)
+	local lua, e
 	filename = resolvePath(dataPath.."/"..filename)
-	-- if checkDirectory(filename) then
-	-- 	local code = love.filesystem.read(filename) or ""
-	-- 	code = "--[["..filename.."]]"..code
-	-- 	lua,e = loadstring(code)
-	-- end
-	_,lua,e = pcall(love.filesystem.load,filename)
-	-- lua = love.filesystem.load(filename)
+	_, lua, e = pcall(love.filesystem.load, filename)
 
 	if lua and _ then
 		ctx = ctx or _G
 
 		local env = nil
-		if type(envKey) == "table" then env = envKey
+		if type(envKey) == "table" then
+			env = envKey
 		elseif type(envKey) == "string" and envKey ~= "" then
-			ctx[envKey] = {}--ctx[envKey] or {}
+			ctx[envKey] = {}
 			env = ctx[envKey]
-		else env = ctx
+		else
+			env = ctx
 		end
-
-		-- env._G,env.gamelua = _G,_G
-		-- env.this = env --funny moment
-		setmetatable(env,{__index=function(self,k)
-			if k == "_G" or k == "gamelua" then return _G elseif k == "this" then return env end
-		end,__newindex=function(self,k,v)
-			if k ~= "filename" then rawset(self,k,v) end
-		end})
+		
+		--emulate scope behavior
+		setmetatable(env, {
+			__index = function(self, k)
+				if k == "_G" or k == "gamelua" then
+					return _G
+				elseif k == "this" then
+					return env
+				end
+			end,
+			__newindex = function(self, k, v)
+				if k ~= "filename" then
+					rawset(self, k, v)
+				end
+			end
+		})
 
 	    setfenv(lua, env)
 		lua()
@@ -114,27 +118,25 @@ function loadLuaFileToObject(filename,ctx,envKey,lenient)
 					}
 				) currentPopup.important = true
 		end
-	else return tostring(e)
+	else
+		return tostring(e)
 	end
 end
 
 --also used in some versions
 function loadLuaFile(filename,envKey,lenient)
-	local lua,e
+	local lua, e
 	filename = resolvePath(dataPath.."/"..filename)
-	-- if checkDirectory(filename) then
-	-- 	local code = love.filesystem.read(filename) or ""
-	-- 	code = "--[["..filename.."]]"..code
-	-- 	lua,e = loadstring(code)
-	-- end
-	lua,e = love.filesystem.load(filename)
+	lua, e = love.filesystem.load(filename)
 
 	if lua then
-		setfenv(lua,_G[envKey] or _G)
+		setfenv(lua, _G[envKey] or _G)
 		return lua()
 	elseif not lenient then
 		-- error("Could not load Lua file: "..filename)
-		if not checkDirectory(filename)then e = "Doesn't exist" end
+		if not checkDirectory(filename) then
+			e = "File does not exist."
+		end
 		print("Could not load Lua file: "..filename.." - "..tostring(e))
 	end
 end
@@ -148,14 +150,14 @@ function runLuaFile(filename,lenient)
 		return lua()
 	elseif not lenient then
 		-- error("Could not load Lua file: "..filename)
-		if not checkDirectory(filename)then e = "Doesn't exist" end
+		if not checkDirectory(filename)then e = "File does not exist." end
 		print("Could not load Lua file: "..filename.." - "..tostring(e))
 	end
 end
 
 --also used in some versions
 function requireFile(filename)
-	if not loadLuaFile(scriptPath.."/"..filename,nil,true) then loadLuaFile(commonScriptPath.."/"..filename) end
+	if not loadLuaFile(scriptPath.."/"..filename, nil, true) then loadLuaFile(commonScriptPath.."/"..filename) end
 end
 
 function resolvePath(path)
@@ -180,12 +182,12 @@ function createDirectory(directory)
 end
 
 function requestExit()
-	print("Exiting..")
+	print("Quitting...")
 	love.event.quit()
 end
 
 function string.insert(str1, str2, pos)
-	return str1:sub(1,pos)..str2..str1:sub(pos+1)
+	return str1:sub(1, pos)..str2..str1:sub(pos + 1)
 end
 
 function string.back(str1, pos)
@@ -196,36 +198,43 @@ function string.back(str1, pos)
 	return str1:sub(1, pos - 2)..str1:sub(pos)
 end
 
-function getDeviceID() return "00-00-00-00-00-00;00-00-00-00-00-00" end
-function areDeviceIDsEqual(id1,id2) return id1==id2 end
+function getDeviceID()
+	return "00-00-00-00-00-00;00-00-00-00-00-00"
+end
+function areDeviceIDsEqual(id1, id2)
+	return id1 == id2
+end
 
 
-oprint = print
+local orig_print = print
 
 function print(...)
 	local prints = (... == nil and "nil") or ""
-	for i,v in ipairs({...}) do
+	for i,v in ipairs{...} do
 		prints = prints..tostring(v).."\t"
 	end
 	if debugPrints then
 		debugPrints = prints.."\n"..debugPrints
 	end
-	oprint(prints)
+	orig_print(prints)
 end
 
 function love.load()
-	if love.setDeprecationOutput then love.setDeprecationOutput(false) end --love.filesystem.exists should no longer be deprecated in 12
+	 --love.filesystem.exists should no longer be deprecated in 12
+	if love.setDeprecationOutput then
+		love.setDeprecationOutput(false)
+	end
 
 	runLuaFile(compsPath.."/load_all.lua")
 	
 	uniqueDeviceId = getDeviceID()
-	local loadedImages,errored
+	local loadedImages, errored
 	handleStartArgs()
 
 	love.graphics.setNewFont(24)
 
-	local function loadlua(filename,ctx,env,lenient)
-		local r = loadLuaFileToObject(filename,ctx,env,lenient)
+	local function loadlua(filename, ctx, env, lenient)
+		local r = loadLuaFileToObject(filename, ctx, env, lenient)
 		if r and not errored then
 			print("showing error")
 			errored = true
@@ -250,47 +259,61 @@ function love.load()
 	end
 
 	-- makeImages()
-	loadlua(scriptPath .. "/options.lua", this, nil, true)
+	loadlua(scriptPath.."/options.lua", this, nil, true)
 	--and now start the actual game
-	if checkDirectory(dataPath..scriptPath .. "/gamelogic.lua")then
-		loadlua(scriptPath .. "/gamelogic.lua",this,nil,true)--, settings)
-	elseif checkDirectory(dataPath..commonScriptPath .. "/gamelogic.lua")then
-		loadlua(commonScriptPath .. "/gamelogic.lua", this, nil,true)--, settings)
+	if checkDirectory(dataPath..scriptPath.."/gamelogic.lua") then
+		loadlua(scriptPath.."/gamelogic.lua", this, nil, true)--, settings)
+	elseif checkDirectory(dataPath..commonScriptPath .. "/gamelogic.lua") then
+		loadlua(commonScriptPath.."/gamelogic.lua", this, nil, true)--, settings)
 	end
 
 	-- loadLuaFileToObject(scriptPath .. "/animations.lua", this)
-	loadlua(scriptPath .. "/particles.lua", this, particleTable, true)
-	loadlua(scriptPath .. "/starLimits.lua", this, starTable)
-	blockTable.themes,blockTable.blocks = {},{}
-	loadlua(scriptPath .. "/blocks.lua", this, blockTable, true)
+	loadlua(scriptPath.."/particles.lua", this, particleTable, true)
+	loadlua(scriptPath.."/starLimits.lua", this, starTable)
+	blockTable.themes, blockTable.blocks = {}, {}
+	loadlua(scriptPath.."/blocks.lua", this, blockTable, true)
 
-	loadlua(scriptPath .. "/loadlist.lua", this, assetLoadList, true)
+	loadlua(scriptPath.."/loadlist.lua", this, assetLoadList, true)
 
-	loadLuaFileToObject(scriptPath .. "/episodes.lua", this, "episodes", true)
-	loadLuaFileToObject(scriptPath .. "/cutscenes.lua", this, "cutscenes", true)
+	loadLuaFileToObject(scriptPath.."/episodes.lua", this, "episodes", true)
+	loadLuaFileToObject(scriptPath.."/cutscenes.lua", this, "cutscenes", true)
 
 	local sfp = selectFontProfile
-	selectFontProfile = function()
+	function selectFontProfile()
 		-- deviceModel = "windows"
 		local font = sfp and sfp()
-		if font and not checkDirectory(dataPath..fontPath.."/"..font) then font = "1024x768" end
+		if font and not checkDirectory(dataPath..fontPath.."/"..font) then
+			font = "1024x768"
+		end
 		return font
 	end
 
 	local sap = selectAssetProfile
-	selectAssetProfile = function(a)
+	function selectAssetProfile(a)
 		local asset = sap and sap(a)
-		if asset and not checkDirectory(dataPath..imagePath.."/"..asset) then asset = sap and string.upper(sap(a)) end
-		if not asset or asset == "" then asset = "1024x768" end --hack that i can't do anything about
+		if asset and not checkDirectory(dataPath..imagePath.."/"..asset) then
+			asset = sap and string.upper(sap(a))
+		end
+		
+		if not asset or asset == "" then
+			asset = "1024x768" --hack that i can't do anything about
+		end
 		return asset
 	end
 
-	loadImages = function()if not loadedImages then loadedImages = true makeImages() end end
+	function loadImages()
+		if not loadedImages then
+			loadedImages = true
+			makeImages()
+		end
+	end
 
-	function loadLoadList(a)loadlist[a]={}end
-
+	function loadLoadList(a)
+		loadlist[a] = {}
+	end
 
 	setBGColor(255,255,255)
+
 	if checkDirectory(compsPath.."/icon.png") then
 		love.window.setIcon(love.image.newImageData(compsPath.."/icon.png"))
 	end
@@ -320,11 +343,17 @@ function love.load()
 	showEditor = true
 
 	local uimos = updateItemMouseOverState
-	if uimos then updateItemMouseOverState = function(item,dt) if not gameOptions.ui.enableHoverScaling then return end uimos(item,dt) end end
+	if uimos then
+		function updateItemMouseOverState(item,dt)
+			if not gameOptions.ui.enableHoverScaling then
+				return
+			end
+			uimos(item,dt)
+		end
+	end
+	
 	if errored then return end
 	handlePostStartArgs()
-
-	-- _G.res.createAudio(audioPath .. "/aiz.wav", "sonc")
 end
 
 function clamp(v, max)
@@ -346,16 +375,14 @@ function setTheme(theme)
 	objects.theme = theme
 end
 
-function setGameOn(on) --enable/disable screensaver
+--enable/disable screensaver
+function setGameOn(on)
 	love.window.setDisplaySleepEnabled(not on)
 end
-
 
 function createThemeSprite(name, spr, x, y, speedX, scaleX, scaleY, angle, layer)
 	return
 end
-
---physics
 
 function setTopLeft(left,top)
 	screen.left = left
@@ -368,9 +395,15 @@ function serializeTable(t, indent, noIndexes)
 
 	for key, value in pairs(t) do
 		local formattedKey = tostring(key).." = "
-		if (noIndexes and type(value) ~= "table" and not key:find(" ") and not key:find(";"))or tonumber(key) then formattedKey = key.."="
-		elseif noIndexes or (key:find(" ") or key:find(";")) then formattedKey = "[\""..tostring(key).."\"] = " end
-		if tonumber(key) then formattedKey = "["..key.."] = " end
+		if (noIndexes and type(value) ~= "table" and not key:find(" ") and not key:find(";")) or tonumber(key) then
+			formattedKey = key.."="
+		elseif noIndexes or (key:find(" ") or key:find(";")) then
+			formattedKey = "[\""..tostring(key).."\"] = "
+		end
+		
+		if tonumber(key) then
+			formattedKey = "["..key.."] = "
+		end
 
 		if type(value) == "table" then
 			serialized = serialized..indent..formattedKey.."{\n"..serializeTable(value, indent.."\t", noIndexes)..indent.."}"..(indent==""and""or",").."\n"
@@ -387,7 +420,7 @@ function serializeTable(t, indent, noIndexes)
 					serialized = serialized..indent..formattedKey.."q("..x..","..y..", "..w..","..h..", "..rw..","..rh.."),\n"
 				end
 			else
-				serialized = serialized .. indent .. (tonumber(key)and "" or formattedKey) .. formattedValue .. ""..(indent==""and""or",").."\n"
+				serialized = serialized..indent..(tonumber(key) and "" or formattedKey)..formattedValue..""..(indent == "" and "" or ",").."\n"
 			end
 		end
 	end
@@ -397,42 +430,45 @@ end
 
 function saveLuaFile(fileName, tableName, appData, noIndexes, noWrap)
 	local tableToSave = _G[tableName]
+	assert(tableToSave and type(tableToSave) == "table", "Table "..tableName.." does not exist.")
 	
-	assert(tableToSave and type(tableToSave) == "table", "Table "..tableName.." does not exist")
-
 	local serializedData
 	if not noWrap then
-		serializedData = tableName.." = {\n" .. serializeTable(tableToSave,"\t",noIndexes) .. "}"
+		serializedData = tableName.." = {\n"..serializeTable(tableToSave, "\t", noIndexes).."}"
 	else
-		serializedData = serializeTable(tableToSave,"",noIndexes)
+		serializedData = serializeTable(tableToSave, "", noIndexes)
 	end
 
-	local s1,m1 = love.filesystem.createDirectory(fileName:match(".*/") or "")
-	local s,m = love.filesystem.write(fileName, serializedData)
+	local s1, m1 = love.filesystem.createDirectory(fileName:match(".*/") or "")
+	local s, m = love.filesystem.write(fileName, serializedData)
 	if s then
-		print(tableName.." saved to "..fileName)
+		print("\""..tableName.."\" was saved to "..fileName)
 	else
-		print(tableName.." not saved to "..fileName.. " ("..m..")")
+		print("\""..tableName.."\" failed to save to "..fileName.." ("..(m or "Unknown error")..")")
 	end
 end
 
 function saveLuaFileLocal(fileName, table, tableName, noIndexes, prefix)
 	assert(table and type(table) == "table", "Table "..tableName.." does not exist")
 
-	local serializedData = tableName.." = {\n" .. serializeTable(table,"\t",noIndexes) .. "}"
+	local serializedData = tableName.." = {\n"..serializeTable(table, "\t", noIndexes).."}"
 
-	local s1,m1 = love.filesystem.createDirectory(fileName:match(".*/") or "")
-	local s,m = love.filesystem.write(fileName, (prefix or "")..serializedData)
+	local s1, m1 = love.filesystem.createDirectory(fileName:match(".*/") or "")
+	local s, m = love.filesystem.write(fileName, (prefix or "")..serializedData)
 	if s then
-		print(tableName.." saved to "..fileName)
+		print("\""..tableName.."\" was saved to "..fileName)
 	else
-		print(tableName.." not saved to "..fileName.. " ("..m..")")
+		print("\""..tableName.."\" failed to save to "..fileName.." ("..(m or "Unknown error")..")")
 	end
 end
 
-function savePersistentLuaFile(fileName, tableName)saveLuaFile(fileName, tableName)end
+function savePersistentLuaFile(fileName, tableName)
+	saveLuaFile(fileName, tableName)
+end
 
-function storePersistentData()return end
+function storePersistentData()
+	return
+end
 
 function checkForLuaFile(filename)
 	return love.filesystem.exists(dataPath..filename)
@@ -449,30 +485,32 @@ function openRegistrationDialog(message, validationURL, registrationURL, fullGam
 			{sprite = "TUTORIAL_OK", callback = function()
 				g_isGameUnlocked = true
 				
-				_G.table.insert(settings.license.registeredKeyTypes, g_registrationKeys.fullGame)
-					
+				table.insert(settings.license.registeredKeyTypes, g_registrationKeys.fullGame)
 				
 				settings.license.hardwareID = getDeviceID()
-				if mainMenu and mainMenu.items then
+				if mainMenu and mainMenu.items and getItemByName then
 					local t_button = getItemByName(mainMenu.items, "buttonActivateFullVersion")	
 					if t_button then
 						t_button.visible = (g_isGameUnlocked == false)
 					end
 				end
 
-				showPopup("Registration","Full game registered.",true)
+				showPopup("Registration", "Full game registered.")
 			end},
 		}
 	)
 	return ""
 end
 
-function flurry.logEvent(self,text,text2)logFlurryEventWithParams(text, text2)end
+function flurry.logEvent(self, text, text2)
+	logFlurryEventWithParams(text, text2)
+end
 
 function isInFullScreenMode()
-	local fs,fst = love.window.getFullscreen()
+	local fs, fst = love.window.getFullscreen()
 	return fs
 end
+
 function setFullScreenMode(mode)
 	love.window.setFullscreen(mode)
 end
@@ -500,19 +538,19 @@ function timeToStamp(t)
 end
 
 function getTimeDifferenceInSeconds(time1, time2)
-	time1,time2 = timeToStamp(time1),timeToStamp(time2)
-
-	return math.abs(time1-time2)
+	time1,time2 = timeToStamp(time1), timeToStamp(time2)
+	
+	return math.abs(time1 - time2)
 end
 
 function getTimeDifference(time1, time2)
-	time1,time2 = timeToStamp(time1),timeToStamp(time2)
+	time1,time2 = timeToStamp(time1), timeToStamp(time2)
 	
-	return getStampTime(math.abs(time1-time2))
+	return getStampTime(math.abs(time1 - time2))
 end
 
 function setWorldGravity(x,y)
-	gravity.x,gravity.y = x,y
+	gravity.x, gravity.y = x, y
 end
 
 function drawRubberband(x1, y1, x2, y2, width, sprite)
@@ -575,10 +613,12 @@ end
 function showPopup(title,desc,buttons,extra,height)
 	keyReleased.LBUTTON = false
 	res.playAudio("noteG",.7)
-	if buttons == true then buttons = {
-						{sprite = "TUTORIAL_OK", callback = function()
-							return true
-						end},
-					} end
+	if buttons == nil then
+		buttons = {
+			{sprite = "TUTORIAL_OK", callback = function()
+				return true
+			end},
+		}
+	end
 	currentPopup = {open = true, title = title, text = desc, buttons = buttons, extra = extra, h = height}
 end

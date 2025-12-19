@@ -5,11 +5,11 @@ function getCurrentLocale()
 end
 
 function getOSName()
-	return "Angry Birds Pro Max XL"
+	return love.system.getOS()
 end
 
 function getOSVersion()
-	return "1.69.1"
+	return "1.0"
 end
 
 function getModel()

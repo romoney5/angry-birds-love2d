@@ -3,7 +3,7 @@ function love.conf(t)
     t.modules.thread = false
     t.modules.video = false
 
-    t.window.title = "Loading.."
+    t.window.title = "Loading..."
 
     t.window.width = 1024--864
     t.window.height = 600--480
@@ -11,7 +11,7 @@ function love.conf(t)
     t.window.minheight = 320--480
     t.window.resizable = true
 
-    t.window.usedpiscale = false
+    t.window.usedpiscale = true
     t.accelerometerjoystick = false
     -- love.window.fullscreen = true
     t.window.msaa = 8

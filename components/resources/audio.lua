@@ -1,7 +1,7 @@
 --resources: sounds
 
 function res.createAudioOutput(channels,bitrate,samplerate)
-	print("Audio selection: "..(channels==1 and "Mono" or "Stereo")..", "..(samplerate/1000).."kHz, "..bitrate.."-bit")
+	print("Audio selection: "..(channels == 1 and "Mono" or "Stereo")..", "..(samplerate / 1000).."kHz, "..bitrate.."-bit")
 	accurateAudioSpeed._hz = samplerate
 end
 
@@ -14,7 +14,9 @@ function res.createCompositeAudio(name,list) --star wars.. not sure why they had
 end
 
 function res.isAudioPlaying(audio)
-	if audios[audio] and cachedaudios[audio] and cachedaudios[audio] ~= 0 then return cachedaudios[audio]:isPlaying() end
+	if audios[audio] and cachedaudios[audio] and cachedaudios[audio] ~= 0 then
+		return cachedaudios[audio]:isPlaying()
+	end
 	return false
 end
 
@@ -26,8 +28,7 @@ local function playAudio(audio, volume, loop, track) --TODO multi play and chann
 		if not checkDirectory(audios[audio]) then
 			cachedaudios[audio] = 0
 			showPopup("Warning",
-				"Audio "..audios[audio].." not found.",
-				true
+				"Audio "..audios[audio].." not found."
 			) currentPopup.important = true
 			return
 		end
@@ -36,7 +37,7 @@ local function playAudio(audio, volume, loop, track) --TODO multi play and chann
 
 	cachedaudios[audio]:setLooping(loop or false)
 	if accurateAudioSpeed.on then
-		cachedaudios[audio]:setPitch(audioSpeed*(accurateAudioSpeed._hz/(cachedaudios[audio]:getDuration("samples")/cachedaudios[audio]:getDuration("seconds"))))
+		cachedaudios[audio]:setPitch(audioSpeed * (accurateAudioSpeed._hz / (cachedaudios[audio]:getDuration("samples") / cachedaudios[audio]:getDuration("seconds"))))
 	else
 		cachedaudios[audio]:setPitch(audioSpeed)
 	end

@@ -8,6 +8,7 @@ function love.keypressed(key)
 	-- keyHoldTime[string.upper(key)] = 0.01
 	keyHold[string.upper(key)] = true
 end
+
 function love.keyreleased(key, scancode)
 	if key == "lshift" then key = "shift" end
 	if key == "lctrl" then key = "control" end
@@ -16,6 +17,7 @@ function love.keyreleased(key, scancode)
 	-- keyHoldTime[string.upper(key)] = 0
 	keyHold[string.upper(key)] = false
 end
+
 function love.mousepressed(x, y, button, istouch, presses)
 	if button == 1 then
 		keyPressed.LBUTTON = true
@@ -28,6 +30,7 @@ function love.mousepressed(x, y, button, istouch, presses)
 		keyHold.MBUTTON = true
 	end
 end
+
 function love.mousereleased(x, y, button, istouch, presses)
 	if button == 1 then
 		keyReleased.LBUTTON = true
@@ -43,13 +46,13 @@ end
 
 
 function love.wheelmoved(x, y)
-	cursor.wheelTriggered = y~=0--true
+	cursor.wheelTriggered = y ~= 0--true
 	-- cursor.wheelTriggered = -y ~= 0
 	cursor.wheel = y
 
 	if not optionsOpen then
 		-- zoomLevel = zoomLevel + y/16
-		wantedZoomLevel = wantedZoomLevel + y/16
+		wantedZoomLevel = wantedZoomLevel + y / 16
 
 		-- if zoomLevel > 1.5 then zoomLevel = 1.5 end
 		-- if wantedZoomLevel > 1.5 then wantedZoomLevel = 1.5 end

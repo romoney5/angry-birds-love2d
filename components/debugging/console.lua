@@ -10,7 +10,7 @@ debugPrints = ""
 debugPadding = 50
 
 function checkDebugOpen()
-	if (keyHold["SHIFT"] and keyPressed["D"]) or (keyPressed["LBUTTON"] and cursor.x >= screenWidth-20 and cursor.y >= screenHeight-20) or (debugOpen and keyPressed["ESCAPE"]) then
+	if (keyHold["SHIFT"] and keyPressed["D"]) or (keyPressed["LBUTTON"] and cursor.x >= screenWidth - 20 and cursor.y >= screenHeight - 20) or (debugOpen and keyPressed["ESCAPE"]) then
 		keyPressed["ESCAPE"] = nil
 		debugOpen = not debugOpen
 		debugText = ""
@@ -31,13 +31,13 @@ function updateDebug(dt)
 	
 	if keyPressed["BACKSPACE"] then
 		res.playAudio("menu_back", 1, false)
-		debugText = string.back(debugText,debugCursorPosition)
+		debugText = string.back(debugText, debugCursorPosition)
 		debugCursorPosition = math.max(debugCursorPosition - 1, 0)
 		debugCursorBlink = 0
 	end
 	if keyPressed["DELETE"] then
 		res.playAudio("menu_back", 1, false)
-		debugText = string.back(debugText,debugCursorPosition + 1)
+		debugText = string.back(debugText, debugCursorPosition + 1)
 		-- debugCursorPosition = math.max(debugCursorPosition, 0)
 		debugCursorBlink = 0
 	end
@@ -114,30 +114,30 @@ function updateDebug(dt)
 
 	-- love.graphics.printf(debugText, debugPadding, debugPadding, screenWidth - debugPadding * 2)
 	res.useFont("FONT_BASIC")
-	res.drawString("",debugText,debugPadding,debugPadding)
+	res.drawString("", debugText,debugPadding,debugPadding)
 	-- love.graphics.printf((debugCursorBlink%.5 <= .25 and "|" or ""), res.getStringWidth(debugText:sub(1, debugCursorPosition)) + debugPadding - 3, (debugPadding + 0.5), screenWidth)-- + (textLines * font:getHeight()), screenWidth)
-	res.drawString("",(debugCursorBlink%.5 <= .25 and "|" or ""), res.getStringWidth(debugText:sub(1, debugCursorPosition)) + debugPadding, (debugPadding+3))
+	res.drawString("", (debugCursorBlink % .5 <= .25 and "|" or ""), res.getStringWidth(debugText:sub(1, debugCursorPosition)) + debugPadding, (debugPadding + 3))
 
 	-- love.graphics.printf(debugPrints, debugPadding, debugPadding * 2 + 70, screenWidth - debugPadding*2)-- + (#linesTotal * font:getHeight()), screenWidth - debugPadding * 2)
-	res.drawString("",debugPrints, debugPadding, debugPadding * 2 + 70)
+	res.drawString("", debugPrints, debugPadding, debugPadding * 2 + 70)
 
 	local boxsprites = tutorialBoxSprites
 	if boxsprites then
 		local tl = checkAndLoadSprite(boxsprites.topLeft)
 		if not tl then return end
-		local tlw,tlh = tl.w,tl.h
-		local x,y = screenWidth-125,65
-		local w,h = 75*.9,75*.4
+		local tlw, tlh = tl.w, tl.h
+		local x, y = screenWidth - 125, 65
+		local w, h = 75 * .9, 75 * .4
 		local s = 1
-		if checkBounds(x-tlw*2,y-tlh*1.5,w+tlw*2,h+tlh*2,cursor.x,cursor.y)then
-			if keyHold["LBUTTON"]then
+		if checkBounds(x - tlw*2, y - tlh * 1.5, w + tlw*2, h + tlh*2, cursor.x, cursor.y) then
+			if keyHold["LBUTTON"] then
 				s = .8
 			elseif (gameOptions.ui and gameOptions.ui.enableHoverScaling) or not gameOptions.ui then
 				s = 1.2
 			end
-			w,h = w * s, h * s
+			w, h = w * s, h * s
 			
-			if keyReleased["LBUTTON"]then
+			if keyReleased["LBUTTON"] then
 				res.playAudio("menu_confirm", 1, false)
 				debugOpen = false
 				-- optionsOpen = true
@@ -145,25 +145,25 @@ function updateDebug(dt)
 				return
 			end
 		end
-		drawBox(boxsprites or {},"",x - w*.5,y - h*.5,w,h)
+		drawBox(boxsprites or {}, "", x - w*.5, y - h*.5, w, h)
 		love.graphics.translate(x, y)
 		love.graphics.scale(s)
-		res.drawString("","Files",0,0,"HCENTER","VCENTER")
-
+		res.drawString("", "Files", 0, 0, "HCENTER", "VCENTER")
 
 		setRenderState(0,0,1,1)
-		local w,h = 75*.9,75*.4
-		local x,y = screenWidth-145-w-w,65
+
+		local w, h = 75 * .9, 75 * .4
+		local x, y = screenWidth - 145 - w*2, 65
 		local s = 1
-		if checkBounds(x-tlw*2,y-tlh*1.5,w+tlw*2,h+tlh*2,cursor.x,cursor.y)then
-			if keyHold["LBUTTON"]then
+		if checkBounds(x - tlw*2, y - tlh*1.5, w + tlw*2, h + tlh*2, cursor.x, cursor.y)then
+			if keyHold["LBUTTON"] then
 				s = .8
 			elseif (gameOptions.ui and gameOptions.ui.enableHoverScaling) or not gameOptions.ui then
 				s = 1.2
 			end
-			w,h = w * s, h * s
+			w, h = w * s, h * s
 			
-			if keyReleased["LBUTTON"]then
+			if keyReleased["LBUTTON"] then
 				res.playAudio("menu_confirm", 1, false)
 				debugOpen = false
 				optionsOpen = true
@@ -171,10 +171,10 @@ function updateDebug(dt)
 				return
 			end
 		end
-		drawBox(boxsprites or {},"",x - w*.5,y - h*.5,w,h)
+		drawBox(boxsprites or {}, "", x - w*.5, y - h*.5, w, h)
 		love.graphics.translate(x, y)
 		love.graphics.scale(s)
-		res.drawString("","Options",0,0,"HCENTER","VCENTER")
+		res.drawString("", "Options", 0, 0, "HCENTER", "VCENTER")
 	end
 end
 
@@ -182,9 +182,10 @@ function love.textinput(key)
 	-- print(key)
 	if debugOpen then
 		res.playAudio("menu_confirm", 1, false)
-		debugText = string.insert(debugText,key,debugCursorPosition)
+		debugText = string.insert(debugText, key, debugCursorPosition)
 		debugCursorPosition = debugCursorPosition + 1
 		debugCursorBlink = 0
-	elseif somethingTextInput then somethingTextInput = key
+	elseif somethingTextInput then
+		somethingTextInput = key
 	end
 end

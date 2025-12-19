@@ -13,7 +13,7 @@ local deviceModelMapping = {
 	Horizon = "windows", --switch/3ds (lovepotion)
 	Cafe = "windows", --wiiu (lovepotion)
 }
-deviceModel = deviceModelMapping[love._os] or "windows"
+deviceModel = deviceModelMapping[love.system.getOS()] or "windows"
 
 displayScale = 1
 autoScale = 0 --0 to disable, anything else as a target screen height
@@ -27,11 +27,11 @@ accurateAudioSpeed = {on = false, _hz = 0}
 gameOptions = {}
 
 worldgravity = {x = 0, y = 20}
-gravity = setmetatable({},{__newindex = function(_,i,v)
+gravity = setmetatable({}, {__newindex = function(_, i, v)
 	if tonumber(v) then
-		rawset(worldgravity,i,v)
+		rawset(worldgravity, i, v)
 		if physicsWorld then
-			physicsWorld:setGravity(worldgravity.x,worldgravity.y)
+			physicsWorld:setGravity(worldgravity.x, worldgravity.y)
 		end
 	end
 end})
