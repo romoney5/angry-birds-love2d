@@ -1,6 +1,5 @@
 -- load global options from separate file
 loadLuaFileToObject(scriptPath .. "/options.lua", this, "options")
-loadLuaFileToObject(scriptPath .. "/episodes.lua", this, "episodes")
 
 postHighscores = true
 g_forceFunctions = {}
@@ -4968,6 +4967,7 @@ function createMenuPages()
 			pageCount = pages,
 			-- levelsPerPage = levelCount,
 			themes = {},
+			themes2 = {},
 			folders = {},
 			level_buttons = {},
 			level_buttons_hd = {},
@@ -5001,6 +5001,7 @@ function createMenuPages()
 			
 		for i,v in _G.pairs(episode.pages) do
 			page.themes[i] = {num = v.world_number, amount = #v.levels, clear_ach = v.clear_achievement}
+			page.themes2[v.world_number] = {num = v.world_number, amount = #v.levels, clear_ach = v.clear_achievement}
 			page.folders[i] = v.folder_name
 			page.level_buttons[v.world_number] = v.level_button
 			page.level_buttons_hd[v.world_number] = v.level_button:gsub("%OPEN","OPEN_HD")
@@ -14254,10 +14255,10 @@ function loadNextLevel(dt)
 	
 	--drawGame()
 	--drawMenu()
-	local amount = levelSelectionPages.themes[currentWorldNumber].amount
+	local amount = levelSelectionPages.themes2[currentWorldNumber].amount
 
 	if isLevelSelection(levelSelectionPages) then
-		if currentLevelNumberInTheme >= levelSelectionPages.themes[currentWorldNumber].amount then
+		if currentLevelNumberInTheme >= levelSelectionPages.themes2[currentWorldNumber].amount then
 			levelSelectionPages.currentPage = levelSelectionPages.currentPage + 1
 			if levelSelectionPages.currentPage > levelSelectionPages.pageCount then
 				if levelSelectionPages == episodes[6] then
@@ -20308,9 +20309,9 @@ function updateGame(dt, time)
 							buttonMenu.visible = false
 							buttonRestart.visible = false
 							settings["theme"..currentWorldNumber.."Completed"] = true
-							if levelSelectionPages.themes[currentWorldNumber].clear_ach then
-								addToAchievementUnlockQueue(levelSelectionPages.themes[currentWorldNumber].clear_ach)
-							end
+							-- if levelSelectionPages.themes[currentWorldNumber].clear_ach then
+							-- 	addToAchievementUnlockQueue(levelSelectionPages.themes[currentWorldNumber].clear_ach)
+							-- end
 						end
 					end
 					

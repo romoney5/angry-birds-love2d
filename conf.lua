@@ -1,13 +1,20 @@
-function love.conf(love)
-    -- love.modules.joystick = false
-    love.window.width = 1024--864
-    love.window.height = 640--480
-    love.window.minwidth = 512--864
-    love.window.minheight = 320--480
-    love.window.resizable = true
+function love.conf(t)
+    t.modules.math = false
+    t.modules.thread = false
+    t.modules.video = false
 
-    love.window.usedpiscale = false
-    love.accelerometerjoystick = false
+    t.window.title = "Loading.."
+
+    t.window.width = 1024--864
+    t.window.height = 600--480
+    t.window.minwidth = 480--864
+    t.window.minheight = 320--480
+    t.window.resizable = true
+
+    t.window.usedpiscale = false
+    t.accelerometerjoystick = false
     -- love.window.fullscreen = true
-    love.window.msaa = 8
+    t.window.msaa = 8
+    
+--     t.version = "11.5" 11.5 and 12.0 are supported
 end
