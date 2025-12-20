@@ -12,3 +12,5 @@ If you are on Linux, you should be able to download a LÖVE Flatpak, then go int
 - `--skipintro`/`-si` skips the splashscreen of the game.
 - `--model`/`-m` overrides the `deviceModel`. Handy for testing for other devices, such as Android or Roku.
 - `--deletedata`/`-dd` prompts to delete all save data (settings.lua and highscores.lua).
+
+Running of compiled Lua uses [FiOne](https://github.com/Rerumu/FiOne) with some edits.

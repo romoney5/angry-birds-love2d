@@ -66,11 +66,27 @@ function endsWith(str,ending)
 	return string.sub(str, -string.len(ending)) == ending
 end
 
+--load either plain text lua or a precompiled chunk with fione
+function makeChunk(src)
+	if not src then
+		print("makeChunk: src is nil")
+		return
+	end
+	if src:sub(1, 4) == "\27Lua" then --it's bytecode!
+		return pcall(loadbytecode, src)
+	else --that's just plain old lua.. boring..
+		return pcall(loadstring, src)
+	end
+end
+
 --very important in later codebases
 function loadLuaFileToObject(filename, ctx, envKey, lenient)
 	local lua, e
 	filename = resolvePath(dataPath.."/"..filename)
-	_, lua, e = pcall(love.filesystem.load, filename)
+	print(filename)
+	_, lua, e = makeChunk(love.filesystem.read(filename))
+	
+	print(lua)
 
 	if lua and _ then
 		ctx = ctx or _G
@@ -125,9 +141,9 @@ end
 
 --also used in some versions
 function loadLuaFile(filename,envKey,lenient)
-	local lua, e
+	local _, lua, e
 	filename = resolvePath(dataPath.."/"..filename)
-	lua, e = love.filesystem.load(filename)
+	_, lua, e = makeChunk(love.filesystem.read(filename))
 
 	if lua then
 		setfenv(lua, _G[envKey] or _G)

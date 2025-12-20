@@ -48,3 +48,4 @@ runLuaFile(compsPath.."/something.lua")						--something
 runLuaFile(compsPath.."/iap.lua")							--in app purchases functions
 runLuaFile(compsPath.."/game_loop.lua")						--main game loop, calls update
 runLuaFile(compsPath.."/gamepad.lua")						--controller related functions
+loadbytecode = runLuaFile(compsPath.."/fione.lua")			--run lua bytecode because loadstring
