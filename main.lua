@@ -68,10 +68,6 @@ end
 
 --load either plain text lua or a precompiled chunk with fione
 function makeChunk(src)
-	if not src then
-		print("makeChunk: src is nil")
-		return
-	end
 	if src:sub(1, 4) == "\27Lua" then --it's bytecode!
 		return pcall(loadbytecode, src)
 	else --that's just plain old lua.. boring..
@@ -83,10 +79,7 @@ end
 function loadLuaFileToObject(filename, ctx, envKey, lenient)
 	local lua, e
 	filename = resolvePath(dataPath.."/"..filename)
-	print(filename)
 	_, lua, e = makeChunk(love.filesystem.read(filename))
-	
-	print(lua)
 
 	if lua and _ then
 		ctx = ctx or _G
