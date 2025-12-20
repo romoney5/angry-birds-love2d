@@ -28,8 +28,8 @@ function handleStartArgs()
 				currentPopup.important = true
 			elseif v == "--model" or v == "-m" then --override deviceModel
 				deviceModel = arg[i + 1] or deviceModel
-			elseif v == "--makeimages" or v == "-mi" then --remake image cache (same as deletecache?) TODO: sprite groups were implemented in the og game for a reason
-				makeImages(true, arg[i + 1])
+			--elseif v == "--makeimages" or v == "-mi" then --remake image cache (same as deletecache?) TODO: sprite groups were implemented in the og game for a reason
+				--makeImages(true, arg[i + 1])
 			end
 		end
 	end

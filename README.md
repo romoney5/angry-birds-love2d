@@ -11,5 +11,4 @@ If you are on Linux, you should be able to download a LÖVE Flatpak, then go int
 ## Command line arguments
 - `--skipintro`/`-si` skips the splashscreen of the game.
 - `--model`/`-m` overrides the `deviceModel`. Handy for testing for other devices, such as Android or Roku.
-- `--makeimages`/`-mi` clears and recreates all cached sprite data.
 - `--deletedata`/`-dd` prompts to delete all save data (settings.lua and highscores.lua).

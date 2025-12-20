@@ -21,7 +21,6 @@ runLuaFile(compsPath.."/dat/read.lua")						--read dat
 
 --_G.res
 runLuaFile(compsPath.."/resources/res.lua")					--misc resources
-runLuaFile(compsPath.."/resources/build_sprites.lua")		--make images
 runLuaFile(compsPath.."/resources/graphics.lua")			--graphics functions
 runLuaFile(compsPath.."/resources/draw_box.lua")			--drawboxnative
 runLuaFile(compsPath.."/resources/audio.lua")				--audio functions

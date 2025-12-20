@@ -2,11 +2,11 @@
 
 function drawDebugButton(sprite,x,y,scale,call,enabled,sound)
 	local image = checkAndLoadSprite(sprite)
-	if not image then image = {w=100, h=100} end
+	if not image then image = {width = 100, height = 100} end
 	
 	love.graphics.push()
 	
-	local w,h = image.w * scale, image.h * scale
+	local w,h = image.width * scale, image.height * scale
 	local s = 1
 	if enabled and checkBounds(x - w/2, y - h/2, w, h, cursor.x, cursor.y)then
 		if keyHold["LBUTTON"] then

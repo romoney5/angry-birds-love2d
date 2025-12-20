@@ -52,7 +52,7 @@ function res.getSpriteBounds(sheet, sprite)
 	if not sprite then sprite = sheet end
 	sprite = checkAndLoadSprite(sprite)
 	if sprite then
-		return sprite.w, sprite.h
+		return sprite.width, sprite.height
 	end
 	return 0, 0
 end
@@ -68,10 +68,10 @@ end
 
 function drawSprite(sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
 	if sprite == g_currentCursorName and gameOptions and gameOptions.ui and (not gameOptions.ui.enableCursor or false) then return end
-	local image = type(sprite) == "string" and checkAndLoadSprite(sprite) or {spsh = sprite.spritesheet, q = sprite.quad}
+	local image = type(sprite) == "string" and checkAndLoadSprite(sprite) or {spsh = sprite.spritesheet, quad = sprite.quad}
 
-	if image and image.q and image.spsh then
-		local w, h = iwidth or image.w, iheight or image.h
+	if image and image.quad and image.spsh then
+		local w, h = iwidth or image.width, iheight or image.height
 		
 		--tiny margin for non-integer scales
 		--x = x + .01
@@ -79,16 +79,16 @@ function drawSprite(sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
 		--w = w - .01 - .01
 		--h = h - .01 - .01
 		
-		local wm = w / image.w
-		local hm = h / image.h
+		local wm = w / image.width
+		local hm = h / image.height
 
 		local xpr, ypr = drawxp or image.px, drawyp or image.py
 
 		if hanchor == "LEFT" or vanchor == "LEFT" then xpr = 0 end
-		if hanchor == "RIGHT" or vanchor == "RIGHT" then xpr = image.w end
+		if hanchor == "RIGHT" or vanchor == "RIGHT" then xpr = quad_width end
 		
 		if vanchor == "TOP" or hanchor == "TOP" then ypr = 0 end
-		if vanchor == "BOTTOM" or hanchor == "BOTTOM" then ypr = image.h end
+		if vanchor == "BOTTOM" or hanchor == "BOTTOM" then ypr = quad_height end
 		
 		-- if vanchor == "HCENTER" or hanchor == "HCENTER" then xpr = image.w/2 end
 		-- if vanchor == "VCENTER" or hanchor == "VCENTER" then ypr = image.h/2 end
@@ -100,7 +100,7 @@ function drawSprite(sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
 		
 		love.graphics.draw(
 			image.spsh,	--spritesheet
-			image.q,	--quad
+			image.quad,	--quad
 			x,			--x
 			y,			--y
 			drawangle,	--angle
@@ -132,37 +132,6 @@ function setAlpha(a)
 end
 
 function checkAndLoadSprite(sprite)
-	if not cachedimgs[sprite] and not cachedcs[sprite] and sprite and cachedimgs2 then
-		if cachedimgs2[sprite] then
-			-- print("Debug: Creating image "..sprite.." from "..cachedimgs2[sprite][7])
-			local image = cachedimgs2[sprite]
-			if not cachedspshs[image.src] then
-				cachedspshs[image.src] = love.graphics.newImage(image.src)
-			end
-			image.spsh = cachedspshs[image.src]
-			local _, _, w, h = image.q:getViewport()
-			image.w, image.h = w, h
-			cachedimgs[sprite] = image
-			return image
-		elseif cachedimgs2.csprites[sprite] then
-			local image = cachedimgs2.csprites[sprite]
-			local newimage = {w = image.bounds.x, px = image.bounds.x0, h = image.bounds.y, py = image.bounds.y0, sprites={}}
-
-			for i,v in pairs(image) do
-				if i ~= "bounds" then
-					newimage.sprites[tonumber(i)] = v
-				end
-			end
-			cachedcs[sprite] = newimage
-			return newimage
-		else
-			cachedimgs[sprite] = 0
-			print("Warning: Sprite "..sprite.." not found")
-			return nil
-		end
-	end
-
-	if cachedimgs[sprite] == 0 then return nil end
 	return cachedcs[sprite] or cachedimgs[sprite]
 end
 
@@ -198,6 +167,45 @@ function drawLine2D(lx1, ly1, lx2, ly2, lz, r, g, b, a) --unfinished
 	love.graphics.setColor(r2,y2,b2,a2)
 	love.graphics.pop()
 end
+
+local loadedSheets = {}
+function res.releaseSpriteSheet(sheet)return end
+function res.createSpriteSheet(sheet)
+	--print("res.createSpriteSheet: loading "..tostring(sheet))
+	local sprite = sheet
+	local dat_suffix = ".dat"
+	if endsWith(sprite, dat_suffix) then
+		if loadedSheets[sheet] then return end
+		loadedSheets[sheet] = true
+		
+		local data = love.filesystem.read(dataPath..sheet)
+		local info = getDatInfo(data,sprite,"SPRT")
+		if info.compos then
+			--TODO: fix composprites
+			for i,v in pairs(info.compos) do
+				cachedimgs.csprites[i] = v
+			end
+		elseif info.sprites and info.filename then
+			local filename = info.filename
+			local extension = ".png"
+			if endsWith(filename,".pvr") then extension = ".pvr.png" filename=filename..".png" end
+			if endsWith(filename,".webp") then extension = ".webp.png" filename=filename..".png" end
+			-- print(sprite)
+			local spritesheet = love.graphics.newImage(dataPath..string.sub(sheet, 1, -string.len(dat_suffix) - 1)..extension)
+			for i,spr in pairs(info.sprites) do
+				-- if i:sub(1,21)=="THEME_GROUND_TEXTURE_"then print(filename:sub(1,-5))end
+				--print("res.createSpriteSheet: adding sprite "..tostring(i))
+				cachedimgs[i] = {quad = love.graphics.newQuad(spr.x, spr.y, spr.width, spr.height,spritesheet:getWidth(),spritesheet:getHeight()),
+					spsh=spritesheet,px=spr.pivotX,py=spr.pivotY, width = spr.width, height = spr.height}--,src=path.."/"..sprite:sub(1,-5)..extension}--imagePath.."/img/"..sprite:sub(1,-5)..".png"}
+			end
+		end
+		if love.keyboard.isDown("escape") then print("abort") error()return end
+	end
+end
+function res.releaseCompoSpriteSet(sheet)return end
+function res.createCompoSpriteSet(sheet)return end
+
+function res.releaseFont(font)return end
 
 function getRokuImagePath(dat)
 	return ""

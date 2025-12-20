@@ -273,7 +273,7 @@ function love.load()
 	blockTable.themes, blockTable.blocks = {}, {}
 	loadlua(scriptPath.."/blocks.lua", this, blockTable, true)
 
-	loadlua(scriptPath.."/loadlist.lua", this, assetLoadList, true)
+	loadlua(scriptPath.."/loadlist.lua", this, _G, true)
 
 	loadLuaFileToObject(scriptPath.."/episodes.lua", this, "episodes", true)
 	loadLuaFileToObject(scriptPath.."/cutscenes.lua", this, "cutscenes", true)
@@ -301,18 +301,19 @@ function love.load()
 		return asset
 	end
 
-	function loadImages()
-		if not loadedImages then
-			loadedImages = true
-			makeImages()
-		end
-	end
+	--function loadImages()
+		--if not loadedImages then
+			--loadedImages = true
+			--makeImages()
+		--end
+	--end
 
-	function loadLoadList(a)
-		loadlist[a] = {}
-	end
+	--function loadLoadList(a)
+		--loadlist[a] = {}
+	--end
 
 	setBGColor(255,255,255)
+	love.graphics.setBlendMode("alpha","premultiplied")
 
 	if checkDirectory(compsPath.."/icon.png") then
 		love.window.setIcon(love.image.newImageData(compsPath.."/icon.png"))
@@ -335,7 +336,7 @@ function love.load()
 
 	if createStartUpAssets then createStartUpAssets() end
 
-	if not loadedImages then loadImages() end
+	--if not loadedImages then loadImages() end
 
 	gpcx,gpcy = love.mouse.getPosition()
 
