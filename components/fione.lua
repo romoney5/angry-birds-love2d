@@ -29,6 +29,9 @@ if not table.move then
 	end
 end
 
+local table = table
+local pcall = pcall
+
 local lua_bc_to_state
 local lua_wrap_state
 local stm_lua_func
@@ -479,7 +482,7 @@ function stm_lua_func(S, psrc)
 	return proto
 end
 
-function lua_bc_to_state(src)
+function lua_bc_to_state(src, name)
 	-- func reader
 	local rdr_func
 
@@ -522,7 +525,7 @@ function lua_bc_to_state(src)
 		error('unsupported float size')
 	end
 
-	return stm_lua_func(stream, '@virtual')
+	return stm_lua_func(stream, name)--'@virtual')
 end
 
 local function close_lua_upvalues(list, index)
@@ -1090,6 +1093,6 @@ end
 --	OPCODE_M = OPCODE_M,
 --}
 --imported from vLua
-return function(bCode, env)
-	return lua_wrap_state(lua_bc_to_state(bCode), env or getfenv(0))
+return function(bCode, env, name)
+	return lua_wrap_state(lua_bc_to_state(bCode, name), env or getfenv(0))
 end

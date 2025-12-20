@@ -7,11 +7,14 @@ function loadLevel(filename)
 	if physicsWorld then physicsWorld:destroy() end --clear all the objects before continuing
 
 	physicsWorld = love.physics.newWorld(worldgravity.x, worldgravity.y, true)
-	physicsWorld:setCallbacks(nil,nil,physicsPreSolve,physicsPostSolve)
+	--physicsWorld:setCallbacks(nil,nil,physicsPreSolve,physicsPostSolve)
+	physicsWorld:setCallbacks(physicsBeginContact, nil, nil, nil)
 	collisionsList = {}
 	loadedObjects = {}
-	loadLuaFileToObject(filename..".lua",this,loadedObjects)
-	table.sort(loadedObjects.world,function(a,b)return (a.z_order or 0)<(b.z_order or 0)end)
+	loadLuaFileToObject(filename..".lua", this, loadedObjects)
+	table.sort(loadedObjects.world, function(a,b)
+		return (a.z_order or 0) < (b.z_order or 0)
+	end)
 end
 
 function saveLevel(filename)
