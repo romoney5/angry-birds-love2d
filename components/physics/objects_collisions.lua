@@ -1,21 +1,19 @@
---objects and collisions
+--functions related to objects and collisions
 
 function removeObject(name)
 	local obj = objects.world[name]
 	obj.body:destroy()
 	
 	objects.world[name] = nil
-	--if not toremove then toremove = {} end
-	--if obj then toremove[obj.name] = {name = obj.name, body = obj.body} end
 end
 
-function setSleeping(object,dozing)
+function setSleeping(object, dozing)
 	if objects.world[object].body then
 		objects.world[object].body:setAwake(not dozing)
 	end
 end
 
-function setRotation(object,rotation)
+function setRotation(object, rotation)
 	objects.world[object].angle = rotation % (math.pi * 2)
 	if objects.world[object].body then
 		objects.world[object].body:setAngle(rotation)
@@ -27,7 +25,7 @@ function getAngle(object)
 	return objects.world[object].angle
 end
 
-function setPosition(object,x,y)
+function setPosition(object, x, y)
 	if not objects.world[object] then return end
 	objects.world[object].x = x
 	objects.world[object].y = y
@@ -37,7 +35,7 @@ function setPosition(object,x,y)
 	end
 end
 
-function setVelocity(object,x,y)
+function setVelocity(object, x, y)
 	if not objects.world[object] then return end
 	objects.world[object].xVel = x
 	objects.world[object].yVel = y
@@ -46,14 +44,14 @@ function setVelocity(object,x,y)
 	end
 end
 
-function applyImpulse(object,x,y,xp,yp)
+function applyImpulse(object, x, y, xp, yp)
 	local obj = objects.world[object]
 	if obj.body then
-		obj.body:applyLinearImpulse(x / 100, y / 100, xp or obj.x, yp or obj.y)
+		obj.body:applyLinearImpulse(x / 100, y / 100, xp or obj.x, yp or obj.y) --TODO: no division?
 	end
 end
 
-function applyForce(object,x,y,xp,yp)
+function applyForce(object, x, y, xp, yp)
 	local obj = objects.world[object]
 	if obj.body then
 		local mass = obj.mass
@@ -61,79 +59,68 @@ function applyForce(object,x,y,xp,yp)
 	end
 end
 
-function setAngularVelocity(object,a)
+function setAngularVelocity(object, a)
 	local obj = objects.world[object]
 	if obj and obj.body then
 		obj.body:setAngularVelocity(a)
 	end
 end
 
-function setMaterial(object,material)
+function setMaterial(object, material)
 	objects.world[object].material = material
 end
 
-function setTexture(object,texture)
+function setTexture(object, texture)
 	return
 end
 
-function setSprite(object,sprite)
+function setSprite(object, sprite)
 	objects.world[object].sprite = sprite
 end
 
-function setRollingSound(object,rollingSound) --3.0.1 only
+function setRollingSound(object, rollingSound) --3.0.1 only
 	objects.world[object].rollingSound = rollingSound
 end
 
-function setColliderType(object,collider) --3.0.1 only
+function setColliderType(object, collider) --3.0.1 only
 	objects.world[object].collider = collider
 end
 
 function setSensor(object,sensor)
-	objects.world[object].sensor = sensor
-end
-
--- function physicsPreSolve(obj1,obj2,contact) --most work in progress thing ever
--- 	local b1 = obj1:getBody()
--- 	local b2 = obj2:getBody()
--- 	local o1,o2 = obj1:getUserData(),obj2:getUserData() --to get the physics.world object
--- 	if toremove and (toremove[o1.name] or toremove[o2.name]) then contact:setEnabled(false) return end
--- end
-
-
---vastly improved damage system, credits to halo
---[[
-	TODO LIST :
-	
-	- fix contacts so that the birds no longer bounce off
-	- tune damage handling to be game accurate
-	- fix damage scores
-]]
-
-function getImpactForce(obj1, obj2)
-	local vx, vy = obj1:getLinearVelocity()
-	local m1 = obj1:getMass() * 100
-	local velocityA = {x = vx * m1, y = vy * m1}
-	
-	local vx1, vy1 = obj2:getLinearVelocity()
-	local m2 = obj2:getMass() * 100
-	local velocityB = {x = vx1 * m2, y = vy1 * m2}
-	
-	local relativeSpeed = { x = velocityA.x - velocityB.x, y = velocityA.y - velocityB.y }
-	local rawDamage = _G.math.sqrt(relativeSpeed.x^2 + relativeSpeed.y^2)
-	
-	return rawDamage
-end
-
-function applyDamage(obj, force)
-	local defence = obj.defence or 0
-	if force > defence then
-		local damage = force - defence
-		obj.strength = obj.strength - damage
+	local obj = objects.world[object]
+	if obj and obj.fixture then
+		obj.sensor = sensor
+		obj.fixture:setSensor(sensor)
 	end
 end
 
+function setObjectParameter(object, parameter, value)
+	local obj = objects.world[object]
+	if obj then
+		--NOTE: the c code subtracts 1 from parameter
+		--1 = is level goal?
+		--2 = is body dynamic?
+		--3 = nothing
+		--4 = nothing
+		--5 = ?
+		--6 = ?
+		--print("setObjectParameter: "..object.." "..parameter.." "..value)
+		if parameter == 1 then
+		
+		elseif parameter == 2 then
+			if obj.body then
+				--obj.body:setActive(value ~= 0 and true or false) --disables collision as well
+				obj.body:setType(value == 0 and "static" or "dynamic")
+			end
+		end
+	end
+end
+
+
+--vastly improved damage system, credits to halo
+
 --used to be postsolve
-function physicsBeginContact(obj1,obj2,contact)
+function physicsBeginContact(obj1, obj2, contact)
 	local b1 = obj1:getBody()
 	local b2 = obj2:getBody()
 	
@@ -141,50 +128,70 @@ function physicsBeginContact(obj1,obj2,contact)
 	local o2 = obj2:getUserData()
 	
 	if not objects.world[o1.name] or not objects.world[o2.name] then return end
+	updateObjectMomentum(o1.name)
+	updateObjectMomentum(o2.name)
+	--contact:setRestitution(1)
+	--contact:setFriction(1)
 	
 	if not o1.controllable and not o2.controllable then -- object to object collision
 		
 		local vx, vy = b1:getLinearVelocity()
 		local m1 = b1:getMass() * 100
-		local velocityA = {x = vx * m1, y = vy * m1}
 		
 		local vx1, vy1 = b2:getLinearVelocity()
 		local m2 = b2:getMass() * 100
-		local velocityB = {x = vx1 * m2, y = vy1 * m2}
 		
-		local relativeSpeed = { x =  velocityB.x - velocityA.x, y =  velocityB.x - velocityA.y}
-		local linearForce = math.abs(_G.math.sqrt(relativeSpeed.x^2 + relativeSpeed.y^2)) * 0.1
+		local diffx = m2 * vx1 - m1 * vx
+		local diffy = m2 * vy1 - m1 * vy
+		
+		local linearForce = _G.math.sqrt(diffx * diffx + diffy * diffy) * 0.1
 		
 		local currentScore = scoreTable.blocks.score
 		
 		local damage = 0
 		local block1Destroyed = true
 		if o2.strength then
-			if o2.defence and linearForce < o2.defence then
+			local defence = o2.defence or 0
+			if linearForce < defence or o2.defence >= 1000 then
 				block1Destroyed = false
+			else
+				local finalDamage = linearForce - defence
+				local newStrength = o2.strength - finalDamage
+				o2.strength = newStrength
+				
+				damage = newStrength
+				if newStrength >= 0 then damage = finalDamage end
 			end
-			
-			local finalDamage = linearForce - o2.defence
-			local newStrength = o2.strength - finalDamage
-			o2.strength = newStrength
-			
-			if newStrength >= 0 then damage = newStrength end
 		end
 		
 		local block2Destroyed = true
 		if o1.strength then
-			if o1.defence and linearForce < o1.defence then
+			local defence = o1.defence or 0
+			if linearForce < defence or o1.defence >= 1000 then
 				block2Destroyed = false
+			else
+				local finalDamage = linearForce - defence
+				local newStrength = o1.strength - finalDamage
+				o1.strength = newStrength
+				
+				if newStrength >= 0 then
+					damage = damage + finalDamage
+				else
+					damage = damage + newStrength
+				end
 			end
-			
-			local finalDamage = linearForce - o1.defence
-			local newStrength = o1.strength - finalDamage
-			o1.strength = newStrength
-			
-			if newStrength >= 0 then damage = damage + newStrength end
 		end
 		
 		local damageDone = block1Destroyed or block2Destroyed
+		
+		if enableDebug and damageDone then
+			table.insert(collisionsList, 1, {o1 = o1.name, o2 = o2.name, veloc = math.floor(linearForce * 10) / 10,
+				damage = damage, m1 = math.floor((o1.strength + damage or -1) * 10) / 10,
+				m2 = math.floor((o2.strength + damage or -1) * 10) / 10})
+		end
+		
+		--assert(damage >= 0, "damage < 0 "..o1.name..", "..o2.name)
+		
 		blockCollision(o1.name, o2.name, linearForce, damageDone)
 		
 		if damage > 0 then
@@ -193,7 +200,7 @@ function physicsBeginContact(obj1,obj2,contact)
 		end
 		
 	elseif o1.controllable ~= o2.controllable then -- bird to object collision
-	
+		
 		local bird = o1
 		local block = o2
 		
@@ -233,11 +240,13 @@ function physicsBeginContact(obj1,obj2,contact)
 				end	
 				
 				if damageDealt > 0 then
-					local newStrength = block.strength - damageDealt
+					local strength = block.strength
+					local newStrength = strength - damageDealt
 					block.strength = newStrength
 					
 					if newStrength < 0 then
-						-- NOTE : there exists a false case here, however since it's unused i didn't bother adding it.
+						contact:setEnabled(false)
+						
 						if bird.useLegacyCollisionPath then
 							local overkillDamage = ((-newStrength / birdMass) / effectiveDamage) * 10.0 * 1.75
 							if overkillDamage > 1.0 then
@@ -247,17 +256,30 @@ function physicsBeginContact(obj1,obj2,contact)
 							local birdVelocityX = vx * overkillDamage
 							local birdVelocityY = vy * overkillDamage
 							setVelocity(bird.name, birdVelocityX, birdVelocityY)
-							block.fixture:setSensor(true)
+						else
+							local overkillDamage = ((effectiveDamage - strength) / effectiveDamage) * velocityMultiplier
+							if overkillDamage > 1.0 then
+								overkillDamage = 1.0
+							end
+							
+							local birdVelocityX = vx * overkillDamage
+							local birdVelocityY = vy * overkillDamage
+							setVelocity(bird.name, birdVelocityX, birdVelocityY)
 						end
+						
+						damage = math.min(damageDealt, strength)
 					end
-					
-					damage = damageDealt
 				end
 			
 			end
 		end
 		
 		birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage))
+		if joystick and effectiveDamage >= 6 then
+			--TODO: test this on not a 2 year-old offbrand switch pro controller
+			joystick:setVibration(math.min(effectiveDamage / 30, 1), math.min(effectiveDamage / 20, 1), .1) --deliberately stronger on the right side
+		end
+			
 	else -- bird to bird collision 
 	
 		local vx, vy = b1:getLinearVelocity()
@@ -279,5 +301,4 @@ function physicsBeginContact(obj1,obj2,contact)
 		birdCollision(o1.name, o2.name, force, 0)
 	end
 	
-	removeBlocks()
 end

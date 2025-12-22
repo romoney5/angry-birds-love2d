@@ -1,7 +1,7 @@
 --resources: sounds
 
 function res.createAudioOutput(channels,bitrate,samplerate)
-	print("Audio selection: "..(channels == 1 and "Mono" or "Stereo")..", "..(samplerate / 1000).."kHz, "..bitrate.."-bit")
+	print("Created audio output: "..(channels == 1 and "Mono" or "Stereo")..", "..bitrate.."-bit, "..(samplerate / 1000).."kHz")
 	accurateAudioSpeed._hz = samplerate
 end
 
@@ -20,7 +20,7 @@ function res.isAudioPlaying(audio)
 	return false
 end
 
-local function playAudio(audio, volume, loop, track) --TODO multi play and channels
+local function playAudio(audio, volume, loop, track) --TODO: multi play/channels, maybe free music
 	if not audios[audio] then return end
 	if cachedaudios[audio] == 0 then return end
 	
@@ -44,7 +44,8 @@ local function playAudio(audio, volume, loop, track) --TODO multi play and chann
 	cachedaudios[audio]:setVolume(volume)
 	res.stopAudio(audio)
 	cachedaudios[audio]:play()
-end res.playAudio = playAudio
+end
+res.playAudio = playAudio
 
 function ResourceManager.native_playAudio(audio, volume, flag, channel)
 	playAudio(audio,volume)

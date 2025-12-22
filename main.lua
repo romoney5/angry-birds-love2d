@@ -70,23 +70,25 @@ end
 function makeChunk(filename)
 	local src = love.filesystem.read(filename)
 	if not src then
-		return
+		return nil, nil, "No source"
 	end
 	
 	if src:sub(1, 4) == "\27Lua" then --it's bytecode!
+		print("Loading compiled Lua \""..filename.."\"...")
 		return pcall(loadbytecode, src, nil, filename)
 	else --that's just plain old lua.. boring..
+		print("Loading Lua \""..filename.."\"...")
 		return pcall(love.filesystem.load, filename)
 	end
 end
 
 --very important in later codebases
 function loadLuaFileToObject(filename, ctx, envKey, lenient)
-	local lua, e
+	local loaded, lua
 	filename = resolvePath(dataPath.."/"..filename)
-	_, lua, e = makeChunk(filename)
+	loaded, lua = makeChunk(filename)
 
-	if lua and _ then
+	if lua and loaded then
 		ctx = ctx or _G
 
 		local env = nil
@@ -121,10 +123,11 @@ function loadLuaFileToObject(filename, ctx, envKey, lenient)
 		-- local _,r = pcall(loadstring(love.filesystem.read(filename)))
 		-- print()
 		if checkDirectory(filename) then
-			error("Could not load Lua file: "..filename.."\n"..tostring(e))
+			error("Could not load Lua file: "..filename.."\n"..tostring(lua))
 		else
+			print("Could not load Lua file: "..filename.."\n"..tostring(lua))
 			showPopup("Warning",
-					"Could not load Lua file: "..filename.."\n"..tostring(e),
+					"Could not load Lua file: "..filename.."\n"..tostring(lua),
 					{
 						{sprite = "TUTORIAL_OK", callback = function()
 							return true
@@ -133,39 +136,41 @@ function loadLuaFileToObject(filename, ctx, envKey, lenient)
 				) currentPopup.important = true
 		end
 	else
-		return tostring(e)
+		return tostring(lua)
 	end
 end
 
 --also used in some versions
-function loadLuaFile(filename,envKey,lenient)
-	local _, lua, e
+function loadLuaFile(filename, envKey, lenient)
+	local loaded, lua
 	filename = resolvePath(dataPath.."/"..filename)
-	_, lua, e = makeChunk(filename)
+	loaded, lua = makeChunk(filename)
 
-	if lua then
+	if loaded and lua then
 		setfenv(lua, _G[envKey] or _G)
 		return lua()
 	elseif not lenient then
 		-- error("Could not load Lua file: "..filename)
 		if not checkDirectory(filename) then
-			e = "File does not exist."
+			lua = "File does not exist."
 		end
-		print("Could not load Lua file: "..filename.." - "..tostring(e))
+		print("Could not load Lua file: "..filename.."\n"..tostring(lua))
 	end
 end
 
-function runLuaFile(filename,lenient)
-	local lua,e
+function runLuaFile(filename, lenient)
+	local loaded, lua
 	filename = resolvePath(filename)
-	lua,e = love.filesystem.load(filename)
+	loaded, lua = makeChunk(filename)
 
-	if lua then
+	if loaded and lua then
 		return lua()
 	elseif not lenient then
 		-- error("Could not load Lua file: "..filename)
-		if not checkDirectory(filename)then e = "File does not exist." end
-		print("Could not load Lua file: "..filename.." - "..tostring(e))
+		if not checkDirectory(filename) then
+			lua = "File does not exist."
+		end
+		error("Could not load Lua file: "..filename.."\n"..tostring(lua))
 	end
 end
 
@@ -248,34 +253,15 @@ function love.load()
 	love.graphics.setNewFont(24)
 
 	local function loadlua(filename, ctx, env, lenient)
-		local r = loadLuaFileToObject(filename, ctx, env, lenient)
-		if r and not errored then
-			print("showing error")
-			errored = true
-			showPopup("Error",
-					"A script could not be loaded.\n"..filename.."\n"..r.."\n\nOpen the decompiler?",
-					{
-						{sprite = "MENU_NO", callback = function()
-							return true
-						end},
-						{sprite = "TUTORIAL_OK", callback = function()
-							showPopup("Decompiler",
-								"														",{},
-								function(x,y,w,h,p)
-									drawDebugText("bir",x,y)
-									drawDebugButton("TUTORIAL_OK",x+w+20,y+h+20,1,function()end,true)
-								end,200)
-							currentPopup.important = true
-						end},
-					}
-				) currentPopup.important = true
-		end
+		local r = loadLuaFileToObject(filename, ctx, env)--, lenient)
 	end
 
 	-- makeImages()
 	loadlua(scriptPath.."/options.lua", this, nil, true)
 	--and now start the actual game
-	if checkDirectory(dataPath..scriptPath.."/gamelogic.lua") then
+	if gamelogicPath then
+		loadlua(gamelogicPath, this, nil, true)
+	elseif checkDirectory(dataPath..scriptPath.."/gamelogic.lua") then
 		loadlua(scriptPath.."/gamelogic.lua", this, nil, true)--, settings)
 	elseif checkDirectory(dataPath..commonScriptPath .. "/gamelogic.lua") then
 		loadlua(commonScriptPath.."/gamelogic.lua", this, nil, true)--, settings)
@@ -285,6 +271,7 @@ function love.load()
 	loadlua(scriptPath.."/particles.lua", this, particleTable, true)
 	loadlua(scriptPath.."/starLimits.lua", this, starTable)
 	blockTable.themes, blockTable.blocks = {}, {}
+	
 	loadlua(scriptPath.."/blocks.lua", this, blockTable, true)
 
 	loadlua(scriptPath.."/loadlist.lua", this, _G, true)
@@ -315,17 +302,6 @@ function love.load()
 		return asset
 	end
 
-	--function loadImages()
-		--if not loadedImages then
-			--loadedImages = true
-			--makeImages()
-		--end
-	--end
-
-	--function loadLoadList(a)
-		--loadlist[a] = {}
-	--end
-
 	setBGColor(255,255,255)
 	love.graphics.setBlendMode("alpha","premultiplied")
 
@@ -348,11 +324,16 @@ function love.load()
 		enableDebug = false
 	end
 
+	--[[setmetatable(_G, {__index = function(_, i)
+		print("tried to index "..tostring(i))
+		--print(debug.traceback())
+		--return rawget(_, i)
+	end})]]
 	if createStartUpAssets then createStartUpAssets() end
 
 	--if not loadedImages then loadImages() end
 
-	gpcx,gpcy = love.mouse.getPosition()
+	gpcx, gpcy = love.mouse.getPosition()
 
 	releaseBuild = false
 	showEditor = true
@@ -363,18 +344,11 @@ function love.load()
 			if not gameOptions.ui.enableHoverScaling then
 				return
 			end
-			uimos(item,dt)
+			uimos(item, dt)
 		end
 	end
 	
-	if errored then return end
 	handlePostStartArgs()
-end
-
-function clamp(v, max)
-	if v > max then return max end
-	if v < -max then return -max end
-	return v
 end
 
 function setMusicVolume(vol)
@@ -530,10 +504,10 @@ function setFullScreenMode(mode)
 	love.window.setFullscreen(mode)
 end
 
-function setResolution(w,h)
+function setResolution(w, h)
 	screenWidth = w
 	screenHeight = h
-	love.window.updateMode(w, h)
+	love.window.updateMode(w * displayScale * love.graphics.getDPIScale(), h * displayScale * love.graphics.getDPIScale())
 end
 
 --classic 3.0.1 only

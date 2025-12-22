@@ -58,7 +58,7 @@ function updateDebug(dt)
 			else
 				local su,re = pcall(loadstring(debugText))
 				if not su then
-					print("Error while running command: "..re)
+					print("Error while running command: "..tostring(re))
 				else
 					if re then
 						print(re)--"Ran command successfully with result: "..re)

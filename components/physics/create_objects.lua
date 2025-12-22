@@ -2,7 +2,7 @@
 
 --funky
 function createJoint(joint)
-	local name, end1, end2, type, coordType, x1, y1, x2, y2, collideConnected,  limit, motor, maxTorque, lowerLimit, upperLimit, motorSpeed =
+	local name, end1, end2, type, coordType, x1, y1, x2, y2, collideConnected, limit, motor, maxTorque, lowerLimit, upperLimit, motorSpeed =
 		joint.name,joint.end1,joint.end2,joint.type,joint.coordType,joint.x1,joint.y1,joint.x2,joint.y2,joint.collideConnected,
 		joint.limit,joint.motor,joint.maxTorque,joint.lowerLimit,joint.upperLimit,joint.motorSpeed
 	local obj1, obj2 = objects.world[end1],objects.world[end2]
@@ -34,6 +34,16 @@ function clearVertices()
 	polyverts = {}
 end
 
+function updateObjectMass(name)
+	local obj = objects.world[name]
+	if obj and obj.shape then
+		local _, _, mass, _ = obj.shape:computeMass(obj.density)
+		mass = mass * 100
+		--mass = math.floor(mass * 100000) / 100000 --round to the 5th decimal for 32-bit accuracy
+		obj.mass = mass
+	end
+end
+
 function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
 	local verts = polyverts
 	if z_order then --1.6.3.1 and below
@@ -61,8 +71,7 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 	obj.fixture:setFriction(friction)
 	obj.fixture:setUserData(obj)
 
-	_,_,obj.mass,_ = obj.shape:computeMass(density)
-	obj.mass = obj.mass*100
+	updateObjectMass(name)
 end
 
 function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)

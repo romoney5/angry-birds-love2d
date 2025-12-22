@@ -1,22 +1,12 @@
 --draw bg, fg, and game
 
-function drawThemeLayer(v)
+function drawLayer(v)
 	local px, py = res.getSpritePivot("", v[2])
 	local w, h = res.getSpriteBounds("", v[2])
 	local s = worldScale or 1
-	local ext = v[7] or {}
 	local scroll = (v.v or 0) * time
-	ext.color = ext.color or {1, 1, 1, 1}
-	local color = {ext.color[1] * ext.color[4], ext.color[2] * ext.color[4], ext.color[3] * ext.color[4], ext.color[4]} --for premultiply alpha
-	local bcolor
-	if ext.bcolor then
-		bcolor = {ext.bcolor[1] * ext.bcolor[4], ext.bcolor[2] * ext.bcolor[4], ext.bcolor[3] * ext.bcolor[4], ext.bcolor[4]} --for premultiply alpha
-	end
-	ext.y = ext.y or 0
 	
 	if w > 0 and s > .02 then
-		local cr, cg, cb, ca = love.graphics.getColor()
-		love.graphics.setColor(color)
 		for x = -1, math.floor(screenWidth / w / s) do
 			-- local i = #theme.bgLayers - k
 			local xp = w * x + (v[6] or 0)
@@ -27,15 +17,9 @@ function drawThemeLayer(v)
 			setRenderState(xp+left, top, s * v[4], s * v[4], 0, px, py)
 
 			if not (x ~= 0 and v[5] == false) then
-				res.drawSprite(v[2], 0, ext.y)
+				res.drawSprite(v[2], 0, 0)
 			end
 		end
-		love.graphics.setColor(cr, cg, cb, ca)
-	end
-
-	if ext.bcolor then
-		setRenderState(0, -screen.top / v[4] - cameraShakeY, 1, s * v[4], 0, px, py)
-		drawRect2(bcolor[1], bcolor[2], bcolor[3], bcolor[4], 0, ext.y + (h - py - 1), screenWidth, (screenHeight / s) + screen.top)
 	end
 end
 
@@ -44,7 +28,7 @@ function drawBackgroundNative()
 	if not theme then return end
 	setBGColor(theme.color.r, theme.color.g, theme.color.b)
 	for _,v in ipairs(theme.bgLayers) do
-		drawThemeLayer(v)
+		drawLayer(v)
 	end
 end
 
@@ -56,34 +40,24 @@ function drawForegroundNative()
 	drawRect2(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, 0, -screen.top * s,screenWidth, screenHeight + screen.top * s)
 	for _,v in ipairs(theme.fgLayers) do
 		v[3], v[4] = v[3] or 1, v[4] or 1.5
-		drawThemeLayer(v)
+		drawLayer(v)
 	end
 end
 
 function drawGameNative() --work in progress
-	--ab aimbot TODO: by far the worst place to put this
-	if cameraTargetObject then
-		local obj = cameraTargetObject
-		local x, y = 0, 0
-		if keyHold["UP"] then y = y - 1 end
-		if keyHold["DOWN"] then y = y + 1 end
-		if keyHold["LEFT"] then x = x - 1 end
-		if keyHold["RIGHT"] then x = x + 1 end
-
-		if x ~= 0 or y ~= 0 then
-			setVelocity(obj.name, x * 20, y * 20)
-			setRotation(obj.name, math.atan2(obj.yVel or 0, obj.xVel or 1))
-		end
-	end
-
 	love.graphics.push()
 	-- love.graphics.origin()
 	local texture = blockTable.themes[currentTheme].texture
 
+	--TODO: immovable block edges lack translucency (not a stencil?)
 	love.graphics.stencil(function()
 		if res.textureShader then love.graphics.setShader(res.textureShader) end
 		for i,v in pairs(objects.world) do
-			if v.texture then drawangle = v.angle local x, y = physicsToWorldTransform(v.x, v.y) res.drawSprite(v.sprite, x, y) end
+			if v.texture then
+				drawangle = v.angle
+				local x, y = physicsToWorldTransform(v.x, v.y)
+				res.drawSprite(v.sprite, x, y)
+			end
 		end
 		if res.textureShader then love.graphics.setShader() end
 	end, "replace", 1)

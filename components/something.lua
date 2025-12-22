@@ -1,4 +1,5 @@
 --something
+--TODO: remove in accordance to future plans
 
 function sgm()
 	something.pgm = currentGameMode

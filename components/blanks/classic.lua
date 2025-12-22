@@ -27,7 +27,7 @@ end
 
 
 function checkForUpdates()
-	print("Checking for updates..")
+	print("checkForUpdates: No updates")
 end
 
 
@@ -69,6 +69,7 @@ function setEditing(isediting)
 	return
 end
 
-function setObjectParameter(object,parameter,value)
-	return
-end
+--found in ghidra: addNotificationAfter(float,int,string) removeNotification(string) removeAllNotifications()
+--setNotificationCallback(function,string) hasLocationCapability()=0 openProgram(string)=bool
+--canOpenProgram(string)=bool getManufacturer()=? printGlobals() playVideo(string) setMaxTranslation(float)
+--other hatchery functions

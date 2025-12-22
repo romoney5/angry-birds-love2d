@@ -19,7 +19,7 @@ function getLocalizationString(key)
 end
 
 function res.createTextGroupSet(texts)
-	print("Loading text group.. "..texts)
+	print("Loading text group set \""..texts.."\"...")
 	local info = getDatInfo(love.filesystem.read(dataPath.."/"..texts),dataPath.."/"..texts,"TEXT")
 	local filename = "" for i,v in texts:gmatch("([^/]+)")do filename = i end
 

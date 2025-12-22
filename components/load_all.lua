@@ -4,7 +4,6 @@ runLuaFile("highscores.lua", true)--, settings)
 --load components
 
 --debug
-runLuaFile(compsPath.."/debugging/error.lua")				--error handler
 runLuaFile(compsPath.."/debugging/console.lua")				--debug console
 runLuaFile(compsPath.."/debugging/fps.lua")					--debug fps
 runLuaFile(compsPath.."/debugging/collisions.lua")			--debug collisions
@@ -49,3 +48,5 @@ runLuaFile(compsPath.."/iap.lua")							--in app purchases functions
 runLuaFile(compsPath.."/game_loop.lua")						--main game loop, calls update
 runLuaFile(compsPath.."/gamepad.lua")						--controller related functions
 loadbytecode = runLuaFile(compsPath.."/fione.lua")			--run lua bytecode because loadstring
+
+runLuaFile(compsPath.."/debugging/error.lua")				--run the error handler after everything is loaded

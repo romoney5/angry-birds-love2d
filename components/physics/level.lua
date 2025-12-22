@@ -1,9 +1,10 @@
 --level saving and loading and other things
 
+physicsSimulationScale = 0
+
 function loadLevel(filename)
 	print("Loading level: "..filename..".lua")
-	trajectory = {{{},{},{}}}
-	toremove = nil
+	trajectory = {{{}, {}, {}}}
 	if physicsWorld then physicsWorld:destroy() end --clear all the objects before continuing
 
 	physicsWorld = love.physics.newWorld(worldgravity.x, worldgravity.y, true)
@@ -12,7 +13,7 @@ function loadLevel(filename)
 	collisionsList = {}
 	loadedObjects = {}
 	loadLuaFileToObject(filename..".lua", this, loadedObjects)
-	table.sort(loadedObjects.world, function(a,b)
+	table.sort(loadedObjects.world, function(a, b)
 		return (a.z_order or 0) < (b.z_order or 0)
 	end)
 end
@@ -23,7 +24,8 @@ function saveLevel(filename)
 end
 
 function setPhysicsSimulationScale(scale)
-	love.physics.setMeter(scale*.5)
+	physicsSimulationScale = scale
+	love.physics.setMeter(physicsSimulationScale * 0.1*5) --TOD
 end
 
 function setWorldScale(num)
@@ -54,8 +56,9 @@ end
 function addPuffToTrajectory(index, x, y)
 	table.insert(trajectory[#trajectory][index], {x = x, y = y, s = "BIRD_SPECIAL"})
 end
+
 function startNewTrajectory()
-	table.insert(trajectory, {{},{},{}})
+	table.insert(trajectory, {{}, {}, {}})
 	if #trajectory > 2 then
 		table.remove(trajectory, 1)
 	end

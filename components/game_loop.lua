@@ -5,10 +5,24 @@ zoomLevel = 0
 wantedZoomLevel = 0
 local hasfocus = true
 
+function updateDisplayScale()
+	-- displayScale = math.cos((time or 0)*64)*.7 + .9
+	if autoScale > 0 then
+		local targetHeight = autoScale--768--640
+		displayScale = (love.graphics.getHeight() / targetHeight)-- * autoScale
+		if displayScale >= .9 and displayScale <= 1.15 then --snap to 1 if close enough
+			displayScale = 1
+		end
+	end
+	love.graphics.scale(displayScale)
+end
+
 function love.update(dt)
 	if love.window.hasFocus() or enableDebug then
-		local joysticks = love.joystick.getJoysticks()
-		joystick = joysticks[1]
+		if love.joystick then
+			local joysticks = love.joystick.getJoysticks()
+			joystick = joysticks[1]
+		end
 
 		if not hasfocus then
 			for i,v in pairs(pausedaudios) do
@@ -24,19 +38,12 @@ function love.update(dt)
 		end
 
 		love.audio.setVolume(audiovolume)
-
-		-- displayScale = math.cos((time or 0)*64)*.7 + .9
-		if autoScale > 0 then
-			local targetHeight = autoScale--768--640
-			displayScale = (love.graphics.getHeight() / targetHeight)-- * autoScale
-			if displayScale >= .9 and displayScale <= 1.15 then --snap to 1 if close enough
-				displayScale = 1
-			end
-		end
-		love.graphics.scale(displayScale)
-
-		screenWidth = math.floor(love.graphics.getWidth()/displayScale)
-		screenHeight = math.floor(love.graphics.getHeight()/displayScale)
+		
+		updateDisplayScale()
+		screenWidth = math.floor(love.graphics.getWidth() / displayScale)
+		screenHeight = math.floor(love.graphics.getHeight() / displayScale)
+		
+		--update window title
 		love.window.setTitle("Angry Birds ("..screenWidth.."x"..screenHeight..")")
 
 		if particles and not getmetatable(particles) then
@@ -57,7 +64,7 @@ function love.update(dt)
 		if #mttouches > 0 then
 			for i,v in pairs(mttouches)do
 				local x, y = love.touch.getPosition(v)
-				touches[i] = {x = x, y = y}
+				touches[i] = {x = x, y = y, p = love.touch.getPressure(v)} --pressure sensitivity for the two touchscreens that support it
 			end
 		elseif keyHold["LBUTTON"] then
 			touches[1] = {x = cursor.x, y = cursor.y}
@@ -115,14 +122,6 @@ function love.update(dt)
 				res.drawString("", "Invalid debug monitor", 50, 100)
 			end
 		end
-
-		if toremove then
-			for i,v in pairs(toremove) do
-				v.body:destroy()
-				objects.world[v.name] = nil
-			end
-			toremove = nil
-		end
 		
 		keyPressed, keyReleased, keyHold = kp, kr, kh
 		updatePhysics(dt)
@@ -175,9 +174,8 @@ function updatePopup()
 		drawDebugText(currentPopup.title, ox, y, "HCENTER", "FONT_MENU")
 		drawDebugText(currentPopup.text, x + 50, y + 75, "LEFT", "FONT_BASIC")
 
-		-- local b1x,b2x = 0,0
 		local btns = #currentPopup.buttons
-		local sx = w / (btns + 1)-- * math.sin(time*12) --start x
+		local sx = w / (btns + 1) --start x
 		if currentPopup.extra then
 			currentPopup.extra(x + 50, y + 100, w - 50 - 50, h - 50 - 90, currentPopup)
 		end

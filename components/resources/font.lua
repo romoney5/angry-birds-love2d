@@ -4,7 +4,7 @@ function res.createBitmapFont(font, silent)
 	font = dataPath.."/"..font
 	local fontname = font:match("([^/]+)$"):sub(1, -5)
 	if not silent then
-		print("Loading font file: "..font)
+		print("Loading font file \""..font.."\"...")
 	end
 	
 	if not checkDirectory(font) then --attempt to use pc font if current doesn't exist

@@ -2,6 +2,7 @@ function love.conf(t)
     t.modules.math = false
     t.modules.thread = false
     t.modules.video = false
+	t.modules.joystick = true
 
     t.window.title = "Loading..."
 

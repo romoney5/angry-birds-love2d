@@ -1,9 +1,9 @@
 --resources: graphics and sprites
 
-function getBGColor(r,g,b) --not used, but i found it in ghidra
+function getBGColor() --not used, but i found it in ghidra
 	return love.graphics.getBackgroundColor()
 end
-function setBGColor(r,g,b) --set the background color
+function setBGColor(r, g, b) --set the background color
 	love.graphics.setBackgroundColor(r / 255, g / 255, b / 255)
 end
 
@@ -66,6 +66,7 @@ function res.getSpritePivot(sheet, sprite)
 	return 0, 0
 end
 
+--TODO: some golden egg elements do not draw in the right place
 function drawSprite(sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
 	if sprite == g_currentCursorName and gameOptions and gameOptions.ui and (not gameOptions.ui.enableCursor or false) then return end
 	local image = type(sprite) == "string" and checkAndLoadSprite(sprite) or {spsh = sprite.spritesheet, quad = sprite.quad}
@@ -151,52 +152,67 @@ function drawRect2(r, g, b, a, x, y, xs, ys, round)
 	love.graphics.setColor(r2, y2, b2, a2)
 end
 
-function drawLine2D(lx1, ly1, lx2, ly2, lz, r, g, b, a) --unfinished
+function drawLine2D(x0, y0, x1, y1, w, r, g, b, a) --TODO: hitbox (8) rotations center on the origin
 	local r2, y2, b2, a2 = love.graphics.getColor()
 	love.graphics.push()
 	-- love.graphics.origin()
 	love.graphics.setColor(r / 255, g / 255, b / 255, a / 255)
-	love.graphics.setLineWidth(lz * .75)
+	love.graphics.setLineWidth(w * .75)
 	-- setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0)
 	-- love.graphics.scale(worldScale)
 	-- love.graphics.translate(-screen.left - cameraShakeX, -screen.top - cameraShakeY)
 	-- gra
 	love.graphics.rotate(drawangle)
 	-- print(x1,y1,x2,y2)
-	love.graphics.line(lx1, ly1, lx2, ly2)
+	love.graphics.line(x0, y0, x1, y1)
 	love.graphics.setColor(r2,y2,b2,a2)
 	love.graphics.pop()
 end
 
 local loadedSheets = {}
-function res.releaseSpriteSheet(sheet)return end
+
+function res.releaseSpriteSheet(sheet)
+	--print("res.releaseSpriteSheet: unloading "..tostring(sheet))
+	local lsheet = loadedSheets[sheet]
+	if not lsheet then return end --just ignore it if it's already unloaded
+	
+	for i, v in ipairs(lsheet.sprites) do
+		v:release()
+	end
+	
+	lsheet.sheet:release()
+	loadedSheets[sheet] = nil
+end
+
+--TODO: parse pvr images somehow with newImageData
 function res.createSpriteSheet(sheet)
 	--print("res.createSpriteSheet: loading "..tostring(sheet))
-	local sprite = sheet
 	local dat_suffix = ".dat"
-	if endsWith(sprite, dat_suffix) then
-		if loadedSheets[sheet] then return end
-		loadedSheets[sheet] = true
+	if loadedSheets[sheet] then return end
+	
+	if endsWith(sheet, dat_suffix) then
+		loadedSheets[sheet] = {sheet = nil, sprites = {}}
+		local lsheet = loadedSheets[sheet]
 		
 		local data = love.filesystem.read(dataPath..sheet)
-		local info = getDatInfo(data,sprite,"SPRT")
+		local info = getDatInfo(data, sheet, "SPRT")
 		if info.compos then
 			--TODO: fix composprites
-			for i,v in pairs(info.compos) do
+			for i, v in pairs(info.compos) do
 				cachedimgs.csprites[i] = v
 			end
 		elseif info.sprites and info.filename then
 			local filename = info.filename
 			local extension = ".png"
-			if endsWith(filename,".pvr") then extension = ".pvr.png" filename=filename..".png" end
-			if endsWith(filename,".webp") then extension = ".webp.png" filename=filename..".png" end
-			-- print(sprite)
-			local spritesheet = love.graphics.newImage(dataPath..string.sub(sheet, 1, -string.len(dat_suffix) - 1)..extension)
-			for i,spr in pairs(info.sprites) do
-				-- if i:sub(1,21)=="THEME_GROUND_TEXTURE_"then print(filename:sub(1,-5))end
+			if endsWith(filename,".pvr") then extension = ".pvr.png" filename = filename..".png" end
+			if endsWith(filename,".webp") then extension = ".webp.png" filename = filename..".png" end
+			-- print(sheet)
+			lsheet.sheet = love.graphics.newImage(dataPath..string.sub(sheet, 1, -string.len(dat_suffix) - 1)..extension)
+			for i, spr in pairs(info.sprites) do
 				--print("res.createSpriteSheet: adding sprite "..tostring(i))
-				cachedimgs[i] = {quad = love.graphics.newQuad(spr.x, spr.y, spr.width, spr.height,spritesheet:getWidth(),spritesheet:getHeight()),
-					spsh=spritesheet,px=spr.pivotX,py=spr.pivotY, width = spr.width, height = spr.height}--,src=path.."/"..sprite:sub(1,-5)..extension}--imagePath.."/img/"..sprite:sub(1,-5)..".png"}
+				cachedimgs[i] = {quad = love.graphics.newQuad(spr.x, spr.y, spr.width, spr.height,lsheet.sheet:getWidth(),lsheet.sheet:getHeight()),
+					spsh=lsheet.sheet,px=spr.pivotX,py=spr.pivotY, width = spr.width, height = spr.height}--,src=path.."/"..sheet:sub(1,-5)..extension}--imagePath.."/img/"..sprite:sub(1,-5)..".png"}
+				table.insert(lsheet.sprites, cachedimgs[i].quad)
 			end
 		end
 		if love.keyboard.isDown("escape") then print("abort") error()return end
