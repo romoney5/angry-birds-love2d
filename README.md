@@ -1,16 +1,19 @@
 # Angry Birds on LÖVE
 
-To download, head to https://github.com/romoney5/angry-birds-love2d/releases/latest , and download `angrybirds_love2d.love`.
+Accurate work-in-progress port of Angry Birds' engine to LÖVE.
 
-Make sure you have [LÖVE](https://love2d.org/) installed. After that, you can simply double-click the .love file to play.
+To download, first make sure you have [LÖVE](https://love2d.org/) installed. Head to [the latest release](https://github.com/romoney5/angry-birds-love2d/releases/latest) and get `angrybirds_love2d.love`. You can simply double-click the .love file to play.
 
 You can also test from the source code without a .love file. Download and unzip the zip file from the Code dropdown. For Windows, go to C:\Program Files\LOVE\ and copy lovec.exe (or love.exe) to the unzipped folder. Finally drag main.lua to lovec.exe.
 
-If you are on Linux, you should be able to download a LÖVE Flatpak, then go into the project folder, open a terminal, and run `love .`
+If you are on Linux, it's as easy as downloading a LÖVE Flatpak, going into the project folder, and running `love .` in a terminal.
 
 ## Command line arguments
-- `--skipintro`/`-si` skips the splashscreen of the game.
+- `--skipintro`/`-si` automatically skips the game's splash screen.
 - `--model`/`-m` overrides the `deviceModel`. Handy for testing for other devices, such as Android or Roku.
 - `--deletedata`/`-dd` prompts to delete all save data (settings.lua and highscores.lua).
+- `--gamelogic`/`-gl` overrides the path to `scripts/gamelogic.lua`. Handy for testing precompiled Lua support.
 
 Running of compiled Lua uses [FiOne](https://github.com/Rerumu/FiOne) with some edits.
+
+Note: At the moment, PVR images are not supported on most devices. Until support for parsing them is added, PVRs will need to manually be converted to PNGs.

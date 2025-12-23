@@ -98,12 +98,6 @@ function setObjectParameter(object, parameter, value)
 	local obj = objects.world[object]
 	if obj then
 		--NOTE: the c code subtracts 1 from parameter
-		--1 = is level goal?
-		--2 = is body dynamic?
-		--3 = nothing
-		--4 = nothing
-		--5 = ?
-		--6 = ?
 		--print("setObjectParameter: "..object.." "..parameter.." "..value)
 		if parameter == 1 then -- is object enabled
 			if obj.body then
@@ -111,9 +105,14 @@ function setObjectParameter(object, parameter, value)
 			end
 		elseif parameter == 2 then -- set object type
 			if obj.body then
-				--obj.body:setActive(value ~= 0 and true or false) --disables collision as well
 				obj.body:setType(value == 0 and "static" or "dynamic")
 			end
+		elseif parameter == 3 then -- nothing
+		elseif parameter == 4 then -- nothing
+		elseif parameter == 5 then -- ?
+
+		elseif parameter == 6 then -- ?
+
 		end
 	end
 end
