@@ -105,9 +105,11 @@ function setObjectParameter(object, parameter, value)
 		--5 = ?
 		--6 = ?
 		--print("setObjectParameter: "..object.." "..parameter.." "..value)
-		if parameter == 1 then
-		
-		elseif parameter == 2 then
+		if parameter == 1 then -- is object enabled
+			if obj.body then
+				obj.body:setActive(value == 1)
+			end
+		elseif parameter == 2 then -- set object type
 			if obj.body then
 				--obj.body:setActive(value ~= 0 and true or false) --disables collision as well
 				obj.body:setType(value == 0 and "static" or "dynamic")
