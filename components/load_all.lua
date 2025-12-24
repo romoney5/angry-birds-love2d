@@ -49,4 +49,4 @@ runLuaFile(compsPath.."/game_loop.lua")						--main game loop, calls update
 runLuaFile(compsPath.."/gamepad.lua")						--controller related functions
 loadbytecode = runLuaFile(compsPath.."/fione.lua")			--run lua bytecode because loadstring
 
-runLuaFile(compsPath.."/debugging/error.lua")				--run the error handler after everything is loaded
+-- runLuaFile(compsPath.."/debugging/error.lua")				--run the error handler after everything is loaded

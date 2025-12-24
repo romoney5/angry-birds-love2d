@@ -570,7 +570,7 @@ end
 
 --override run function to allow drawing in the update hook
 function love.run()
-	if love.load then love.load(love.arg.parseGameArguments(arg), arg) end
+	-- if love.load then love.load(love.arg.parseGameArguments(arg), arg) end
 	if love.timer then love.timer.step() end
 
 	return function()
