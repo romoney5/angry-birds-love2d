@@ -66,7 +66,7 @@ local textureShader = love.graphics.newShader([[
 function drawGameNative() --work in progress
 
 	for k, v in _G.pairs(objects.world) do
-		local texture = v.texture or blockTable.themes[currentTheme].texture
+		local texture = v.texture --or blockTable.themes[currentTheme].texture
 		
 		if texture then
 			love.graphics.push()
