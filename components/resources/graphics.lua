@@ -136,19 +136,19 @@ function checkAndLoadSprite(sprite)
 	return cachedcs[sprite] or cachedimgs[sprite]
 end
 
-function drawRect(r, g, b, a, x, y, xs, ys, inWorld)
+function drawRect(r, g, b, a, x, y, w, h, inWorld)
 	local r2,y2,b2,a2 = love.graphics.getColor()
 	love.graphics.setColor(r, g, b, a)
-	xs = xs - x
-	ys = ys - y
-	love.graphics.rectangle("fill", x, y, xs, ys)
+	w = w - x
+	h = h - y
+	love.graphics.rectangle("fill", x, y, w, h)
 	love.graphics.setColor(r2, y2, b2, a2)
 end
 
-function drawRect2(r, g, b, a, x, y, xs, ys, round)
+function drawRect2(r, g, b, a, x, y, w, h, round)
 	local r2, y2, b2, a2 = love.graphics.getColor()
 	love.graphics.setColor(r, g, b, a)
-	love.graphics.rectangle("fill", x, y, xs, ys, round)
+	love.graphics.rectangle("fill", x, y, w, h, round)
 	love.graphics.setColor(r2, y2, b2, a2)
 end
 

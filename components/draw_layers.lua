@@ -37,7 +37,12 @@ function drawForegroundNative()
 	if not theme then return end
 	local s = worldScale or 1
 	setRenderState(0, 0, 1, 1)
-	drawRect2(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, 0, -screen.top * s,screenWidth, screenHeight + screen.top * s)
+
+	local _, ground_h = res.getSpriteBounds(theme.fgLayers[1][1], theme.fgLayers[1][2])
+	local rect_x = 0
+	local rect_y = (-screen.top + ground_h) * s
+	drawRect(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, rect_x, rect_y, screenWidth, screenHeight + screen.top * s + rect_y)
+
 	for _,v in ipairs(theme.fgLayers) do
 		v[3], v[4] = v[3] or 1, v[4] or 1.5
 		drawLayer(v)
@@ -65,6 +70,7 @@ local textureShader = love.graphics.newShader([[
 
 function drawGameNative() --work in progress
 
+	--draw textures
 	for k, v in _G.pairs(objects.world) do
 		local texture = v.texture --or blockTable.themes[currentTheme].texture
 		
@@ -120,17 +126,21 @@ function drawGameNative() --work in progress
 end
 
 function drawObject(v)
-	if not v.texture then
-		local x,y = physicsToWorldTransform(v.x, v.y)
-		drawangle = v.angle
-		love.graphics.push()
-		drawxp = v.xp
-		drawyp = v.yp
-		love.graphics.translate(x, y)
-		love.graphics.scale(v.powerup_scale or 1)
-		if v.flipx then love.graphics.scale(-1, 1) end
-		res.drawSprite(v.sprite, 0, 0)
-		love.graphics.pop()
-		drawangle = 0
-	end
+	if v.texture then return end
+
+	local x, y = physicsToWorldTransform(v.x, v.y)
+	love.graphics.push()
+
+	drawxp = v.xp
+	drawyp = v.yp
+	drawangle = v.angle
+
+	love.graphics.translate(x, y)
+	love.graphics.scale(v.powerup_scale or 1)
+	if v.flipx then love.graphics.scale(-1, 1) end
+
+	res.drawSprite(v.sprite, 0, 0)
+
+	drawangle = 0
+	love.graphics.pop()
 end
