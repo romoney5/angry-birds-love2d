@@ -47,6 +47,16 @@ runLuaFile(compsPath.."/something.lua")						--something
 runLuaFile(compsPath.."/iap.lua")							--in app purchases functions
 runLuaFile(compsPath.."/game_loop.lua")						--main game loop, calls update
 runLuaFile(compsPath.."/gamepad.lua")						--controller related functions
-loadbytecode = runLuaFile(compsPath.."/fione.lua")			--run lua bytecode because loadstring
+
+loadbytecode = runLuaFile(compsPath.."/libs/fione.lua")		--run lua bytecode because loadstring (loadbytecode)
+runLuaFile(compsPath.."/libs/aeslua.lua")					--decrypt aes-encrypted (not compiled) lua files (AES_encrypt, AES_decrypt)
+
+local src = love.filesystem.read("gamepad.lua.enc")
+print(src:len())
+-- src = love.data.encode("string", "base64", src, nil)
+local key = "55534361505170413454534E56784D49317639534B39554330795A75416E6232"
+-- key = love.data.decode("string", "hex", key)
+local src_dec = AES_decrypt(key, src, AES256, CBCMODE, "00000000000000000000000000000000")
+print(src_dec:len())
 
 runLuaFile(compsPath.."/debugging/error.lua")				--run the error handler after everything is loaded
