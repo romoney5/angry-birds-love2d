@@ -44,39 +44,58 @@ function drawForegroundNative()
 	end
 end
 
-function drawGameNative() --work in progress
-	love.graphics.push()
-	-- love.graphics.origin()
-	local texture = blockTable.themes[currentTheme].texture
+local textureShader = love.graphics.newShader([[
+	uniform Image textureMask;
+	uniform vec2 textureSize;
+	uniform vec2 camera;
+	extern float worldScale;
 
-	--TODO: immovable block edges lack translucency (not a stencil?)
-	love.graphics.stencil(function()
-		if res.textureShader then love.graphics.setShader(res.textureShader) end
-		for i,v in pairs(objects.world) do
-			if v.texture then
-				drawangle = v.angle
-				local x, y = physicsToWorldTransform(v.x, v.y)
-				res.drawSprite(v.sprite, x, y)
-			end
-		end
-		if res.textureShader then love.graphics.setShader() end
-	end, "replace", 1)
-	love.graphics.setStencilTest("greater", .9)
-	-- love.graphics.scale(2)
-	-- drawangle = 0
-	setRenderState(0, 0, worldScale, worldScale)
-	local w,h = res.getSpriteBounds("", texture)
-	if w > 0 and worldScale > .05 then
-		for i = -1, (screenWidth / worldScale) / w do
-			for ii = -1, (screenHeight / worldScale) / h do
-				local x = (w - screen.left) % (w) + (i * w)
-				local y = (h - screen.top) % (h) + (ii * h)
-				res.drawSprite(texture, x, y)
-			end
+	vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords ){
+			vec2 worldCoords = (screen_coords / worldScale) + camera;
+			
+			vec4 mask = Texel(textureMask, worldCoords / textureSize );
+			vec4 pixel = Texel(texture, texture_coords);
+			
+			pixel.rgb = mix(pixel.rgb, mask.rgb, mask.a);
+			
+			return pixel * color;
+		  
+	}]]
+)
+
+function drawGameNative() --work in progress
+
+	for k, v in _G.pairs(objects.world) do
+		local texture = v.texture or blockTable.themes[currentTheme].texture
+		
+		if texture then
+			love.graphics.push()
+			local b1, b2 = love.graphics.getBlendMode()
+			love.graphics.setBlendMode("alpha", "alphamultiply")
+			
+			local textureImage = checkAndLoadSprite(texture).spsh
+			textureImage:setWrap("repeat", "repeat")
+			
+			textureShader:send("textureMask", textureImage)
+			
+			local w, h = textureImage:getDimensions()
+			textureShader:send("textureSize", {w, h})
+			
+			textureShader:send("worldScale", worldScale)
+			textureShader:send("camera", {screen.left, screen.top})
+			
+			love.graphics.setShader(textureShader)
+			
+			drawangle = v.angle
+			local x, y = physicsToWorldTransform(v.x, v.y)
+			res.drawSprite(v.sprite, x, y)
+			drawangle = 0
+			
+			love.graphics.setBlendMode(b1, b2)
+			love.graphics.setShader()
+			love.graphics.pop()
 		end
 	end
-	love.graphics.setStencilTest()
-	love.graphics.pop()
 
 	--trajectories (thanks again halo)
 	local trSprites = {}

@@ -71,7 +71,7 @@ function setMaterial(object, material)
 end
 
 function setTexture(object, texture)
-	return
+	objects.world[object].texture = texture
 end
 
 function setSprite(object, sprite)
