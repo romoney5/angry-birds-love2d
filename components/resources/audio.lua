@@ -29,7 +29,7 @@ local function playAudio(audio, volume, loop, track) --TODO: multi play/channels
 	if cachedaudios[audio] == 0 then return end
 	
 	local audioStreamAllowed = true
-	local maxChannel = 8
+	local maxChannel = 7
 	local channel = 1
 	
 	if track then
