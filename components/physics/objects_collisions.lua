@@ -131,8 +131,6 @@ function physicsBeginContact(obj1, obj2, contact)
 	if not objects.world[o1.name] or not objects.world[o2.name] then return end
 	updateObjectMomentum(o1.name)
 	updateObjectMomentum(o2.name)
-	--contact:setRestitution(1)
-	--contact:setFriction(1)
 	
 	if not o1.controllable and not o2.controllable then -- object to object collision
 		
