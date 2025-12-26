@@ -37,10 +37,12 @@ function love.update(dt)
 			love.graphics.clear(love.graphics.getBackgroundColor())
 		end
 		
-		for _, c in ipairs(audiochannels) do
-			for i,v in ipairs(c) do
-				if cachedaudios[v]:isPlaying() ~= true then
-					table.remove(c, k)
+		if audiochannels then
+			for _, c in ipairs(audiochannels) do
+				for i, v in ipairs(c) do
+					if cachedaudios[v]:isPlaying() ~= true then
+						table.remove(c, k)
+					end
 				end
 			end
 		end

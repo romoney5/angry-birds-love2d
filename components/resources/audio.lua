@@ -1,9 +1,11 @@
 --resources: sounds
-audiochannels = {}
+audiochannels = nil
 
 function res.createAudioOutput(channels,bitrate,samplerate)
 	print("Created audio output: "..(channels == 1 and "Mono" or "Stereo")..", "..bitrate.."-bit, "..(samplerate / 1000).."kHz")
 	accurateAudioSpeed._hz = samplerate
+
+	audiochannels = {}
 	for i = 1, 10 do
 		table.insert(audiochannels, {})
 	end
@@ -24,7 +26,9 @@ function res.isAudioPlaying(audio)
 	return false
 end
 
-local function playAudio(audio, volume, loop, track) --TODO: multi play/channels, maybe free music
+local function playAudio(audio, volume, loop, track)
+	assert(audiochannels, "Trying to play audio clip but no audio output has been created")
+
 	if not audios[audio] then return end
 	if cachedaudios[audio] == 0 then return end
 	
@@ -34,7 +38,7 @@ local function playAudio(audio, volume, loop, track) --TODO: multi play/channels
 	
 	if track then
 		channel = track + 1
-		assert(audiochannels[channel] ~= nil, "Track " .. channel .. " out of bounds! Range [0-9}]")
+		assert(audiochannels[channel] ~= nil, "Track " .. channel .. " out of bounds! Range [0-9]")
 		if #audiochannels[channel] >= maxChannel then
 			audioStreamAllowed = false
 		end
@@ -60,7 +64,7 @@ local function playAudio(audio, volume, loop, track) --TODO: multi play/channels
 		if not checkDirectory(audios[audio]) then
 			cachedaudios[audio] = 0
 			showPopup("Warning",
-				"Audio "..audios[audio].." not found."
+				"Audio file \""..audios[audio].."\" not found."
 			) currentPopup.important = true
 			return
 		end
@@ -99,7 +103,6 @@ end
 
 function res.setTrackVolume(vol,track)
 	audiovolume = vol
-	-- love.audio.setVolume(vol)
 end
 
 function res.getTrackVolume(track)
