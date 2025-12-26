@@ -30,8 +30,8 @@ function handleStartArgs()
 				deviceModel = arg[i + 1] or deviceModel
 			elseif v == "--gamelogic" or v == "-gl" then --override gamelogic.lua path
 				gamelogicPath = arg[i + 1] or gamelogicPath
-			-- elseif v == "--makeimages" or v == "-mi" then --remake image cache (same as deletecache?)
-			-- 	makeImages(true, arg[i + 1])
+			elseif v == "--datapath" or v == "-dp" then --override datapath
+				datapath = arg[i + 1] or datapath
 			end
 		end
 	end

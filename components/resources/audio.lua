@@ -12,7 +12,7 @@ function res.createAudioOutput(channels,bitrate,samplerate)
 end
 
 function res.createAudio(path,name)
-	audios[name] = dataPath.."/"..path
+	audios[name] = datapath.."/"..path
 end
 
 function res.createCompositeAudio(name,list) --star wars.. not sure why they had to repeat the same audio 59 times
@@ -114,6 +114,14 @@ function res.stopAllAudio()
 	for k, _ in ipairs(audiochannels) do
 		audiochannels[k] = {}
 	end
+end
+
+function setMusicVolume(vol)
+	audiovolume = vol
+end
+
+function setEffectsVolume(vol)
+	audiovolume = vol
 end
 
 function res.stopAudioOutput()

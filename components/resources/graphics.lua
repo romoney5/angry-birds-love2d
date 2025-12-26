@@ -207,7 +207,7 @@ function res.createSpriteSheet(sheet)
 			if endsWith(filename,".pvr") then extension = ".pvr.png" filename = filename..".png" end
 			if endsWith(filename,".webp") then extension = ".webp.png" filename = filename..".png" end
 			-- print(sheet)
-			lsheet.sheet = love.graphics.newImage(dataPath..string.sub(sheet, 1, -string.len(dat_suffix) - 1)..extension)
+			lsheet.sheet = love.graphics.newImage(datapath.."/"..string.sub(sheet, 1, -string.len(dat_suffix) - 1)..extension)
 			for i, spr in pairs(info.sprites) do
 				--print("res.createSpriteSheet: adding sprite "..tostring(i))
 				cachedimgs[i] = {quad = love.graphics.newQuad(spr.x, spr.y, spr.width, spr.height,lsheet.sheet:getWidth(),lsheet.sheet:getHeight()),

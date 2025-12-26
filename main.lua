@@ -2,16 +2,16 @@
 
 io.stdout:setvbuf('no')
 
-dataPath = "/data"
-scriptPath = "/scripts"
-commonScriptPath = "/scripts_common"
-audioPath = "/audio"
-levelPath = "/levels"
-imagePath = "/images"
-localizationPath = "/localization"
-fontPath = "/fonts"
+datapath = "data"
+scriptPath = "scripts"
+commonScriptPath = "scripts_common"
+audioPath = "audio"
+levelPath = "levels"
+imagePath = "images"
+localizationPath = "localization"
+fontPath = "fonts"
 
-compsPath = "/components"
+compsPath = "components"
 
 settings = {}
 highscores = {}
@@ -85,7 +85,7 @@ end
 --very important in later codebases
 function loadLuaFileToObject(filename, ctx, envKey, lenient)
 	local loaded, lua
-	filename = resolvePath(dataPath.."/"..filename)
+	filename = resolvePath(datapath.."/"..filename)
 	loaded, lua = makeChunk(filename)
 
 	if lua and loaded then
@@ -143,7 +143,7 @@ end
 --also used in some versions
 function loadLuaFile(filename, envKey, lenient)
 	local loaded, lua
-	filename = resolvePath(dataPath.."/"..filename)
+	filename = resolvePath(datapath.."/"..filename)
 	loaded, lua = makeChunk(filename)
 
 	if loaded and lua then
@@ -261,9 +261,9 @@ function love.load()
 	--and now start the actual game
 	if gamelogicPath then
 		loadlua(gamelogicPath, this, nil, true)
-	elseif checkDirectory(dataPath..scriptPath.."/gamelogic.lua") then
+	elseif checkDirectory(datapath.."/"..scriptPath.."/gamelogic.lua") then
 		loadlua(scriptPath.."/gamelogic.lua", this, nil, true)--, settings)
-	elseif checkDirectory(dataPath..commonScriptPath .. "/gamelogic.lua") then
+	elseif checkDirectory(datapath.."/"..commonScriptPath .. "/gamelogic.lua") then
 		loadlua(commonScriptPath.."/gamelogic.lua", this, nil, true)--, settings)
 	end
 
@@ -283,7 +283,7 @@ function love.load()
 	function selectFontProfile()
 		-- deviceModel = "windows"
 		local font = sfp and sfp()
-		if font and not checkDirectory(dataPath..fontPath.."/"..font) then
+		if font and not checkDirectory(datapath.."/"..fontPath.."/"..font) then
 			font = "1024x768"
 		end
 		return font
@@ -292,8 +292,8 @@ function love.load()
 	local sap = selectAssetProfile
 	function selectAssetProfile(a)
 		local asset = sap and sap(a)
-		if asset and not checkDirectory(dataPath..imagePath.."/"..asset) then
-			asset = sap and string.upper(sap(a))
+		if asset and not checkDirectory(datapath.."/"..imagePath.."/"..asset) then
+			asset = sap and string.upper(sap(a)) --try uppercase version then..
 		end
 		
 		if not asset or asset == "" then
@@ -303,13 +303,14 @@ function love.load()
 	end
 
 	setBGColor(255,255,255)
-	love.graphics.setBlendMode("alpha","premultiplied")
+	love.graphics.setBlendMode("alpha", "premultiplied")
 
+	--set an icon
 	if checkDirectory(compsPath.."/icon.png") then
 		love.window.setIcon(love.image.newImageData(compsPath.."/icon.png"))
 	end
 
-	--fixes editor's bad coding practices
+	--editor-specific patch
 	keyHold["CONTROL"] = false
 	keyHold["SHIFT"] = false
 	
@@ -318,8 +319,8 @@ function love.load()
 			gameOptions.ui.enableHoverScaling = false
 			gameOptions.ui.enableCursor = false
 		end
+
 		setFullScreenMode(true)
-		-- displayScale = 1.5
 		autoScale = 640
 		enableDebug = false
 	end
@@ -330,8 +331,6 @@ function love.load()
 		--return rawget(_, i)
 	end})]]
 	if createStartUpAssets then createStartUpAssets() end
-
-	--if not loadedImages then loadImages() end
 
 	gpcx, gpcy = love.mouse.getPosition()
 
@@ -349,14 +348,6 @@ function love.load()
 	end
 	
 	handlePostStartArgs()
-end
-
-function setMusicVolume(vol)
-	audiovolume = vol
-end
-
-function setEffectsVolume(vol)
-	audiovolume = vol
 end
 
 function setTheme(theme)
@@ -402,13 +393,7 @@ function serializeTable(t, indent, noIndexes)
 				formattedValue = "\""..formattedValue.."\""
 			end
 
-			if type(value) == "userdata" then
-				if value:type() == "Quad" then
-					local x, y, w, h = value:getViewport()
-					local rw, rh = value:getTextureDimensions()
-					serialized = serialized..indent..formattedKey.."q("..x..","..y..", "..w..","..h..", "..rw..","..rh.."),\n"
-				end
-			else
+			if type(value) ~= "userdata" then
 				serialized = serialized..indent..(tonumber(key) and "" or formattedKey)..formattedValue..""..(indent == "" and "" or ",").."\n"
 			end
 		end
@@ -460,7 +445,7 @@ function storePersistentData()
 end
 
 function checkForLuaFile(filename)
-	return love.filesystem.exists(dataPath..filename)
+	return love.filesystem.exists(datapath.."/"..filename)
 end
 
 function openRegistrationDialog(message, validationURL, registrationURL, fullGame)

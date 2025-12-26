@@ -1,6 +1,6 @@
 # Angry Birds on LÖVE
 
-Accurate work-in-progress port of Angry Birds' engine to LÖVE.
+Accurate work-in-progress port of Angry Birds' engine to LÖVE. Currently, PC version 1.6.3.1 is targeted, but other versions may work with some fixes.
 
 To download, first make sure you have [LÖVE](https://love2d.org/) installed. Head to [the latest release](https://github.com/romoney5/angry-birds-love2d/releases/latest) and get `angrybirds_love2d.love`. You can simply double-click the .love file to play.
 
@@ -13,6 +13,7 @@ If you are on Linux, it's as easy as downloading a LÖVE Flatpak, going into the
 - `--model`/`-m` overrides the `deviceModel`. Handy for testing for other devices, such as Android or Roku.
 - `--deletedata`/`-dd` prompts to delete all save data (settings.lua and highscores.lua).
 - `--gamelogic`/`-gl` overrides the path to `scripts/gamelogic.lua`. Handy for testing precompiled Lua support.
+- `--datapath`/`-dp` overrides the default path to `data/`. Useful for quickly testing different versions of Angry Birds without different folders or symbolic links.
 
 Running of compiled Lua uses [FiOne](https://github.com/Rerumu/FiOne) with some edits.
 

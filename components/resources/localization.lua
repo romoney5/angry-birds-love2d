@@ -20,10 +20,13 @@ end
 
 function res.createTextGroupSet(texts)
 	print("Loading text group set \""..texts.."\"...")
-	local info = getDatInfo(love.filesystem.read(dataPath.."/"..texts),dataPath.."/"..texts,"TEXT")
-	local filename = "" for i,v in texts:gmatch("([^/]+)")do filename = i end
+	local info = getDatInfo(love.filesystem.read(datapath.."/"..texts), datapath.."/"..texts,"TEXT")
+	local filename = ""
+	for i, v in texts:gmatch("([^/]+)") do
+		filename = i
+	end
 
-	textGroups[filename:sub(1,#filename-4)] = info.langs
+	textGroups[filename:sub(1, #filename - 4)] = info.langs
 end
 
 function res.loadLocale(texts,locale)

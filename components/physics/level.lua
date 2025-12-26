@@ -3,7 +3,7 @@
 physicsSimulationScale = 0
 
 function loadLevel(filename)
-	print("Loading level: "..filename..".lua")
+	print("Loading level \""..filename..".lua\"...")
 	trajectory = {{{}, {}, {}}}
 	if physicsWorld then physicsWorld:destroy() end --clear all the objects before continuing
 
@@ -19,8 +19,8 @@ function loadLevel(filename)
 end
 
 function saveLevel(filename)
-	print("Saving level: "..filename..".lua")
-	saveLuaFile(dataPath..filename..".lua","objects",nil,nil,true)
+	print("Saving level \""..filename..".lua\"...")
+	saveLuaFile(datapath.."/"..filename..".lua","objects", nil, nil, true)
 end
 
 function setPhysicsSimulationScale(scale)
@@ -36,7 +36,7 @@ function setMaxWorldScale(s)
 	maxWorldScale = s
 end
 
-function setLevelLimits(minx,miny,maxx,maxy)
+function setLevelLimits(minx, miny, maxx, maxy)
 	objects.limits = {mix = minx, miy = miny, max = maxx, may = maxy}
 end
 

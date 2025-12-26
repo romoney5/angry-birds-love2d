@@ -1,7 +1,7 @@
 --fonts (if no font is present, a fallback is used)
 
 function res.createBitmapFont(font, silent)
-	font = dataPath.."/"..font
+	font = datapath.."/"..font
 	local fontname = font:match("([^/]+)$"):sub(1, -5)
 	if not silent then
 		print("Loading font file \""..font.."\"...")
