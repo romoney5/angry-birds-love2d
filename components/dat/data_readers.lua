@@ -1,45 +1,20 @@
 --functions for reading data types like int, float, etc
 
-hasffi,ffi = pcall(require,"ffi")
---read 16-bit signed int in big-endian, which is what ka3d uses
-function readInt(data, index)
-	local b1, b2 = data:byte(index, index + 1)
-	local unsigned = (b1 * 256) + b2
-	if hasffi then
-		local buffer = ffi.new("int16_t[1]")
-		buffer[0] = ffi.cast("int16_t", unsigned)
+hasffi, ffi = pcall(require,"ffi")
 
-		return buffer[0]
-	else
-		return unsigned - (unsigned>32767 and 65536 or 0)
-	end
-end
-
---read 8 bit signed int? old fonts
+--read 8-bit (1 byte) signed int
 function read8Int(data, index)
-	local b1 = data:byte(index)
-	if hasffi then
-		local buffer = ffi.new("int8_t[1]")
-		buffer[0] = ffi.cast("int8_t", b1)
-		
-		return buffer[0]
-	else
-		return b1 - (b1>127 and 256 or 0)
-	end
+	return love.data.unpack(">i1", data, index)
 end
 
---read 32 bit signed int?! old fonts
-function read32Int(data, index)
-	local b1,b2,b3,b4 = data:byte(index,index+3)
-	local unsigned = (b1 * 16777216) + (b2 * 65536) + (b3 * 256) + b4
-	if hasffi then
-		local buffer = ffi.new("int32_t[1]")
-		buffer[0] = ffi.cast("int32_t", unsigned)
+--read 16-bit (2 byte) signed int in big-endian, primarily used in ka3d
+function readInt(data, index)
+	return love.data.unpack(">i2", data, index)
+end
 
-		return buffer[0]
-	else
-		return unsigned - (unsigned > 2147483647 and 4294967296 or 0)
-	end
+--read 32-bit (4 byte) signed int big-endian
+function read32Int(data, index)
+	return love.data.unpack(">i4", data, index)
 end
 
 --used by rvio composprites
@@ -60,7 +35,7 @@ function readFloat(data, index)
 		bit.band(unsigned, 0xFF),
 	})
 
-	local float_ptr = ffi.cast("float*", buffer)
+	local float_ptr = ffi.cast("float *", buffer)
 	return float_ptr[0]
 end
 
