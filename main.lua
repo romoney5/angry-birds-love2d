@@ -302,7 +302,7 @@ function love.load()
 			asset = sap and string.upper(sap(...)) --try uppercase version then..
 		end
 		
-		if not asset or asset == "" then
+		if not asset or asset == "" or not checkDirectory(datapath.."/"..imagePath.."/"..asset) then
 			asset = "1024x768"
 		end
 		return asset
