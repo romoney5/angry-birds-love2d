@@ -1,5 +1,5 @@
 --resources: graphics and sprites
-local xscale, yscale = 1, 1
+drawxp, drawyp = 0, 0
 
 function getBGColor() --not used, but i found it in ghidra
 	return love.graphics.getBackgroundColor()
@@ -13,7 +13,6 @@ function setRenderState(x, y, xs, ys, angle, xp, yp)
 	love.graphics.origin()
 	love.graphics.scale(xs, ys)
 	love.graphics.scale(displayScale)
-	xscale, yscale = xs, ys
 	love.graphics.translate(x, y)
 
 	drawangle = angle or 0
@@ -36,7 +35,6 @@ function res.drawCompoSprite(sheet, sprite, x, y)
 	end
 	
 	local image = checkSprite(sprite)
-	-- drawxp, drawyp = nil, nil
 
 	if image then
 		for i,v in ipairs(image.items) do
@@ -103,17 +101,13 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 		love.graphics.draw(
 			image.spsh,					--spritesheet
 			image.quad,					--quad
-			x - xpr + (drawxp or 0),	--x position
-			y - ypr + (drawyp or 0),	--y position
+			x - xpr + drawxp,	--x position
+			y - ypr + drawyp,	--y position
 			drawangle,					--angle
 			wm,							--x scale
 			hm,							--y scale
-			(drawxp or 0),				--x rotation pivot
-			(drawyp or 0))				--y rotation pivot
-		-- love.graphics.push()
-		-- love.graphics.rotate(drawangle)
-		-- love.graphics.rectangle("line", x-xpr, y-ypr, w, h, rx, ry, segments)
-		-- love.graphics.pop()
+			drawxp,				--x rotation pivot
+			drawyp)				--y rotation pivot
 		
 		love.graphics.setBlendMode(b1,b2)
 		love.graphics.setColor(r, g, b, a)
@@ -127,8 +121,8 @@ function res.getCompoSpriteBounds(sheet, composprite) --not used in 1.6.3.1
 	composprite = checkSprite(composprite)
 
 	if composprite then
-		local w,h = composprite.width, composprite.height
-		local px,py = composprite.px or 0, composprite.py or 0
+		local w, h = composprite.width, composprite.height
+		local px, py = composprite.px or 0, composprite.py or 0
 		return -px, -py, -px + w, -py + h
 	end
 
