@@ -23,6 +23,24 @@ function checkDebugOpen()
 	end
 end
 
+function debugExecute(text)
+	if text == "clear" then
+		debugPrints = ""
+		res.playAudio("menu_select", 1, false)
+	else
+		local su,re = pcall(loadstring(text))
+		if not su then
+			print("Error while running command: "..tostring(re))
+		else
+			if re then
+				print(re)--"Ran command successfully with result: "..re)
+			else
+				-- print()--"Ran command successfully")
+			end
+		end
+	end
+end
+
 function updateDebug(dt)
 	setRenderState(0,0,1,1)
 
@@ -52,21 +70,7 @@ function updateDebug(dt)
 				table.insert(debugPrevious, 1, debugText)
 			end
 
-			if debugText == "clear" then
-				debugPrints = ""
-				res.playAudio("menu_select", 1, false)
-			else
-				local su,re = pcall(loadstring(debugText))
-				if not su then
-					print("Error while running command: "..tostring(re))
-				else
-					if re then
-						print(re)--"Ran command successfully with result: "..re)
-					else
-						-- print()--"Ran command successfully")
-					end
-				end
-			end
+			debugExecute(debugText)
 			debugText = ""--debugText:sub(1,-2)
 			debugCursorPosition = 0
 			debugPreviousIndex = 0

@@ -12,6 +12,7 @@ If you are on Linux, it's as easy as downloading a LÖVE Flatpak, going into the
 - `--skipintro`/`-si` automatically skips the game's splash screen.
 - `--model`/`-m` overrides the `deviceModel`. Handy for testing for other devices, such as Android or Roku.
 - `--deletedata`/`-dd` prompts to delete all save data (settings.lua and highscores.lua).
+- `--run`/`+..` runs a line of Lua code. Examples: `--run "releaseBuild = true"` `+"autoScale = 240"`
 - `--gamelogic`/`-gl` overrides the path to `scripts/gamelogic.lua`. Handy for testing precompiled Lua support.
 - `--datapath`/`-dp` overrides the default path to `data/` and uses a new save data subfolder. Useful for quickly testing different versions of Angry Birds without different folders or symbolic links.
 
