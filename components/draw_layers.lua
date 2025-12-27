@@ -1,5 +1,7 @@
 --draw bg, fg, and game
 
+trajectory = {{{}, {}, {}}}
+
 function drawLayer(v)
 	local px, py = res.getSpritePivot("", v[2])
 	local w, h = res.getSpriteBounds("", v[2])
@@ -71,16 +73,18 @@ local textureShader = love.graphics.newShader([[
 function drawGameNative() --work in progress
 
 	--draw textures
-	--TODO: non-pc versions (pc <= 1.6.3.1) have different texture names
 	for k, v in _G.pairs(objects.world) do
-		local texture = v.texture --or blockTable.themes[currentTheme].texture
+		local texture = checkSprite(v.texture) --or blockTable.themes[currentTheme].texture
+		if not texture then --try to find based on a png name
+			texture = findSpriteByPNG(v.texture)
+		end
 		
-		if texture and checkSprite(texture) then
+		if texture then
 			love.graphics.push()
 			local b1, b2 = love.graphics.getBlendMode()
 			love.graphics.setBlendMode("alpha", "alphamultiply")
 			
-			local textureImage = checkSprite(texture).spsh
+			local textureImage = texture.spsh
 			textureImage:setWrap("repeat", "repeat")
 			
 			textureShader:send("textureMask", textureImage)
@@ -88,7 +92,7 @@ function drawGameNative() --work in progress
 			local w, h = textureImage:getDimensions()
 			textureShader:send("textureSize", {w, h})
 			
-			textureShader:send("worldScale", worldScale)
+			textureShader:send("worldScale", worldScale * displayScale)
 			textureShader:send("camera", {screen.left, screen.top})
 			
 			love.graphics.setShader(textureShader)

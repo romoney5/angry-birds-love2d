@@ -1,5 +1,10 @@
 --fonts (if no font is present, a fallback is used)
 
+fonts = {}
+textGroups = {}
+
+drawfont = ""
+
 function res.createBitmapFont(font, silent)
 	font = datapath.."/"..font
 	local fontname = font:match("([^/]+)$"):sub(1, -5)
@@ -112,80 +117,80 @@ function drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_scale)
 	love.graphics.pop()
 end
 
-function clipText(group,text,size)
+function clipText(group, text, size)
 	local font = fonts[drawfont]
-	clippedText = { lines = {}, widestLine = 0 }
+	if not font then return end
+
+	clippedText = {lines = {}, widestLine = 0}
 	
-	if font then
-		local cline = ""
-		local clinewidth = 0
-		local widestLine = 0
-		if group and group ~= "" then
-			text = res.getString(group,text)
-		end
+	local cline = ""
+	local clinewidth = 0
+	local widestLine = 0
+	if group and group ~= "" then
+		text = res.getString(group, text)
+	end
 
-		local function getWordWidth(word)
-			local wordWidth = 0
-			for c in word:gmatch(".") do
-				local char = font.chars[string.format("%04x", string.byte(c))]
-				if char then
-					wordWidth = wordWidth + char.width + font.tracking
-				end
+	local function getWordWidth(word)
+		local wordWidth = 0
+		for c in word:gmatch(".") do
+			local char = font.chars[string.format("%04x", string.byte(c))]
+			if char then
+				wordWidth = wordWidth + char.width + font.tracking
 			end
-			return wordWidth - font.tracking
 		end
+		return wordWidth - font.tracking
+	end
 
-		for word in text:gmatch("%S+%s*") do
-			local newlineIndex = word:find("\n")
-			if newlineIndex then
-				local beforeNewline = word:sub(1, newlineIndex - 1)
-				local afterNewline = word:sub(newlineIndex + 1)
+	for word in text:gmatch("%S+%s*") do
+		local newlineIndex = word:find("\n")
+		if newlineIndex then
+			local beforeNewline = word:sub(1, newlineIndex - 1)
+			local afterNewline = word:sub(newlineIndex + 1)
 
-				local wordWidth = getWordWidth(beforeNewline)
-				if clinewidth + wordWidth > size then
-					table.insert(clippedText.lines, cline)
-					widestLine = math.max(widestLine, clinewidth)
-					cline = beforeNewline
-					clinewidth = wordWidth
-				else
-					cline = cline..beforeNewline
-					clinewidth = clinewidth + wordWidth
-				end
-
-				table.insert(clippedText.lines, cline)
-				widestLine = math.max(widestLine, clinewidth)
-				cline = ""
-				clinewidth = 0
-
-				word = afterNewline
-
-				while word:find("\n") do
-					table.insert(clippedText.lines, "")
-					word = word:sub(word:find("\n") + 1)
-				end
-			end
-
-			local wordWidth = getWordWidth(word)
+			local wordWidth = getWordWidth(beforeNewline)
 			if clinewidth + wordWidth > size then
 				table.insert(clippedText.lines, cline)
 				widestLine = math.max(widestLine, clinewidth)
-				cline = word
+				cline = beforeNewline
 				clinewidth = wordWidth
 			else
-				cline = cline..word
+				cline = cline..beforeNewline
 				clinewidth = clinewidth + wordWidth
+			end
+
+			table.insert(clippedText.lines, cline)
+			widestLine = math.max(widestLine, clinewidth)
+			cline = ""
+			clinewidth = 0
+
+			word = afterNewline
+
+			while word:find("\n") do
+				table.insert(clippedText.lines, "")
+				word = word:sub(word:find("\n") + 1)
 			end
 		end
 
-		if cline ~= "" then
+		local wordWidth = getWordWidth(word)
+		if clinewidth + wordWidth > size then
 			table.insert(clippedText.lines, cline)
 			widestLine = math.max(widestLine, clinewidth)
+			cline = word
+			clinewidth = wordWidth
+		else
+			cline = cline..word
+			clinewidth = clinewidth + wordWidth
 		end
-		clippedText.widestLine = widestLine
 	end
+
+	if cline ~= "" then
+		table.insert(clippedText.lines, cline)
+		widestLine = math.max(widestLine, clinewidth)
+	end
+	clippedText.widestLine = widestLine
 end
 
-function res.getStringWidth(text,font)
+function res.getStringWidth(text, font)
 	text = text or ""
 	local font = fonts[font or drawfont]
 	if font then

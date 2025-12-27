@@ -38,33 +38,17 @@ maxWorldScale = 0
 physicsEnabled = false
 physicsWorld = nil
 
-textGroups = {}
-
-trajectory = {{{}, {}, {}}}
-alpha = 1
-drawangle = 0
-drawfont = ""
 audiovolume = 1
 
 currentPopup = {}
 
-cachedspshs = {} --spritesheets
-cachedcs = {} --individual composprites
-cachedimgs = {} --individual sprites
-cachedaudios = {}
-audios = {}
-fonts = {}
 flurry = {}
-
-dmonitor = nil
 
 enableDebug = false
 
 targetFPS = 1000 --love's love.run function uses 0.001 by default
 
-local hasLove12 = love._version_major >= 12
-
-function endsWith(str,ending)
+function endsWith(str, ending)
 	return string.sub(str, -string.len(ending)) == ending
 end
 

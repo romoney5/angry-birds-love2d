@@ -1,5 +1,7 @@
 --resources: sounds
 audiochannels = nil
+cachedaudios = {}
+audios = {}
 
 function res.createAudioOutput(channels,bitrate,samplerate)
 	print("Created audio output: "..(channels == 1 and "Mono" or "Stereo")..", "..bitrate.."-bit, "..(samplerate / 1000).."kHz")

@@ -1,5 +1,11 @@
 --resources: graphics and sprites
+
 drawxp, drawyp = 0, 0
+drawangle = 0
+alpha = 1
+
+cachedcs = {} --individual composprites
+cachedimgs = {} --individual sprites
 
 function getBGColor() --not used, but i found it in ghidra
 	return love.graphics.getBackgroundColor()
@@ -171,6 +177,18 @@ function drawLine2D(x0, y0, x1, y1, w, r, g, b, a) --TODO: hitbox (8) rotations 
 end
 
 local loadedSheets = {}
+pngMapping = {}
+
+function findSpriteByPNG(name)
+	local map = pngMapping[name]
+	if map then
+		local sheet = loadedSheets[map]
+		if sheet then
+			local sprite = sheet.sprites[1]
+			return sprite and cachedimgs[sprite]
+		end
+	end
+end
 
 local function releaseSheet(sheet, usecomposprites)
 	local cache = usecomposprites and cachedcs or cachedimgs
@@ -184,16 +202,24 @@ local function releaseSheet(sheet, usecomposprites)
 			cache[v] = nil
 		end
 	end
+
+	for i, v in pairs(pngMapping) do
+		if v == sheet then
+			pngMapping[i] = nil
+			break
+		end
+	end
 	
 	if lsheet.sheet then lsheet.sheet:release() end
 	loadedSheets[sheet] = nil
 end
 
 local function findCaseInsensitive(dir)
+	local _, paths = resolvePath(dir)
 	if checkDirectory(dir) then
-		return dir
+		table.remove(paths) --omit the old filename
+		return dir, paths
 	elseif dir and dir ~= "" then
-		local _, paths = resolvePath(dir)
 		if #paths == 0 then return "" end
 		local name = paths[#paths] --get the filename before it's too late
 		table.remove(paths) --omit the old filename
@@ -201,25 +227,24 @@ local function findCaseInsensitive(dir)
 
 		for _, f in ipairs(love.filesystem.getDirectoryItems(dir)) do
 			if f:lower() == name:lower() then
-				return dir.."/"..f --and make a new one
+				return dir.."/"..f, paths --and make a new one
 			end
 		end
 	end
 
 	error("no "..dir)
-	return ""
+	return "", nil
 end
 
 --TODO: parse pvr images somehow with newImageData
 local function loadSheet(sheet, usecomposprites)
-	local dat_suffix = ".dat"
 	if loadedSheets[sheet] then return end
 	
-	if endsWith(sheet, dat_suffix) then
+	if endsWith(sheet, ".dat") then
 		loadedSheets[sheet] = {sheet = nil, sprites = {}}
-		local lsheet = loadedSheets[sheet]
 		
-		local data = love.filesystem.read(findCaseInsensitive(datapath.."/"..sheet))
+		local newname, paths = findCaseInsensitive(datapath.."/"..sheet)
+		local data = love.filesystem.read(newname)
 		local info = getDatInfo(data, sheet, "SPRT")
 
 		if usecomposprites and info.compos then
@@ -244,15 +269,25 @@ local function loadSheet(sheet, usecomposprites)
 			end
 		elseif not usecomposprites and info.sprites and info.filename then
 			local filename = info.filename
-			local extension = ".png"
-			if endsWith(filename,".pvr") then extension = ".pvr.png" filename = filename..".png" end
-			if endsWith(filename,".webp") then extension = ".webp.png" filename = filename..".png" end
-			-- print(sheet)
-			lsheet.sheet = love.graphics.newImage(datapath.."/"..string.sub(sheet, 1, -string.len(dat_suffix) - 1)..extension)
+			local extensionlength = 4
+
+			if endsWith(filename,".pvr") then
+				extensionlength = 4 + 4 --.pvr + .png
+				filename = filename..".png"
+			elseif endsWith(filename,".webp") then
+				extensionlength = 5 + 4 --.webp + .png
+				filename = filename..".png"
+			end
+			
+			pngMapping[filename:sub(1, -extensionlength - 1)] = sheet --filename is the index for easy finding in drawGameNative
+
+			local lsheet = loadedSheets[sheet]
+			lsheet.sheet = love.graphics.newImage(table.concat(paths, "/").."/"..filename)
+
 			for i, spr in pairs(info.sprites) do
 				-- print("res.createSpriteSheet: adding sprite "..tostring(i))
 				cachedimgs[i] = {quad = love.graphics.newQuad(spr.x, spr.y, spr.width, spr.height, lsheet.sheet:getWidth(), lsheet.sheet:getHeight()),
-					spsh=lsheet.sheet,px=spr.pivotX,py=spr.pivotY, width = spr.width, height = spr.height}--,src=path.."/"..sheet:sub(1,-5)..extension}--imagePath.."/img/"..sprite:sub(1,-5)..".png"}
+					spsh = lsheet.sheet, px = spr.pivotX, py = spr.pivotY, width = spr.width, height = spr.height}
 				table.insert(lsheet.sprites, i)
 			end
 		end

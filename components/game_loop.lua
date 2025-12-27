@@ -8,6 +8,8 @@ zoomLevel = 0
 wantedZoomLevel = 0
 local hasfocus = true
 
+dmonitor = nil
+
 function updateDisplayScale()
 	if autoScale > 0 then
 		local w, h = love.graphics.getDimensions()
