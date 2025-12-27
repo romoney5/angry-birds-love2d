@@ -14,6 +14,10 @@ function drawLayer(v)
 			local top = (-screen.top / v[4] - cameraShakeY)
 			-- top = (-screen.top * v[3] / v[4] - cameraShakeY)
 
+			if episode4BGCranes and v[2]:find("CRANE") then
+				left = -screen.left * v[3] / v[4] + episode4BGCranes.startX * 0.0625 - cameraShakeX
+			end
+
 			setRenderState(xp+left, top, s * v[4], s * v[4], 0, px, py)
 
 			if not (x ~= 0 and v[5] == false) then
