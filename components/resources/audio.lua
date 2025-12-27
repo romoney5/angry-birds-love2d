@@ -39,7 +39,7 @@ function res.playAudio(audio, volume, loop, track)
 	
 	if track then
 		channel = track + 1
-		assert(audiochannels[channel] ~= nil, "Track " .. channel .. " out of bounds! Range [0-9]")
+		assert(audiochannels[channel] ~= nil, "Track " .. track .. " out of bounds! Range [0-9]")
 		if #audiochannels[channel] >= maxChannel then
 			audioStreamAllowed = false
 		end
