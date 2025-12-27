@@ -1,6 +1,3 @@
-runLuaFile("settings.lua", true)--, settings)
-runLuaFile("highscores.lua", true)--, settings)
-
 --load components
 
 --debug

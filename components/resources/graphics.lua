@@ -1,4 +1,5 @@
 --resources: graphics and sprites
+local xscale, yscale = 1, 1
 
 function getBGColor() --not used, but i found it in ghidra
 	return love.graphics.getBackgroundColor()
@@ -8,24 +9,25 @@ function setBGColor(r, g, b) --set the background color
 end
 
 --quite literally used everywhere
-function setRenderState(x,y,xs,ys,angle,xp,yp)
+function setRenderState(x, y, xs, ys, angle, xp, yp)
 	love.graphics.origin()
 	love.graphics.scale(xs, ys)
 	love.graphics.scale(displayScale)
+	xscale, yscale = xs, ys
 	love.graphics.translate(x, y)
 
 	drawangle = angle or 0
-	drawxp = xp ~= 0 and xp
-	drawyp = yp ~= 0 and yp
+	--drawxp and yp are exclusively used for rotation, they are useless when angle is 0
+	drawxp = xp ~= 0 and xp or 0
+	drawyp = yp ~= 0 and yp or 0
 end
 
 --frontend of drawsprite
-function res.drawSprite(sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma, _)
-	if not tonumber(x) then	--pc 1.0.0?
-		drawSprite(x, y, vanchor, hanchor, iwidth, iheight, nopma, _)
-	else --any other version
-		drawSprite(sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
+function res.drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma) --nopma = no premultiply alpha
+	if tonumber(sprite) then --sprite, x, y, etc.
+		sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma = "", sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight
 	end
+	drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
 end
 
 function res.drawCompoSprite(sheet, sprite, x, y)
@@ -33,11 +35,11 @@ function res.drawCompoSprite(sheet, sprite, x, y)
 		sprite, x, y = sheet, sprite, x
 	end
 	
-	local image = checkAndLoadSprite(sprite)
-	drawxp, drawyp = nil, nil
+	local image = checkSprite(sprite)
+	-- drawxp, drawyp = nil, nil
 
 	if image then
-		for i,v in ipairs(image.sprites) do
+		for i,v in ipairs(image.items) do
 			res.drawSprite(v.n, math.floor(x + v.x), math.floor(y + v.y))
 		end
 	end
@@ -50,7 +52,7 @@ end
 
 function res.getSpriteBounds(sheet, sprite)
 	if not sprite then sprite = sheet end
-	sprite = checkAndLoadSprite(sprite)
+	sprite = checkSprite(sprite)
 	if sprite then
 		return sprite.width, sprite.height
 	end
@@ -59,17 +61,16 @@ end
 
 function res.getSpritePivot(sheet, sprite)
 	if not sprite then sprite = sheet end
-	sprite = checkAndLoadSprite(sprite)
+	sprite = checkSprite(sprite)
 	if sprite then
 		return sprite.px or 0, sprite.py or 0
 	end
 	return 0, 0
 end
 
---TODO: some golden egg elements do not draw in the right place
-function drawSprite(sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
+function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
 	if sprite == g_currentCursorName and gameOptions and gameOptions.ui and (not gameOptions.ui.enableCursor or false) then return end
-	local image = type(sprite) == "string" and checkAndLoadSprite(sprite) or {spsh = sprite.spritesheet, quad = sprite.quad}
+	local image = type(sprite) == "string" and checkSprite(sprite) or {spsh = sprite.spritesheet, quad = sprite.quad}
 
 	if image and image.quad and image.spsh then
 		local w, h = iwidth or image.width, iheight or image.height
@@ -83,13 +84,13 @@ function drawSprite(sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
 		local wm = w / image.width
 		local hm = h / image.height
 
-		local xpr, ypr = drawxp or image.px, drawyp or image.py
+		local xpr, ypr = image.px, image.py
 
 		if hanchor == "LEFT" or vanchor == "LEFT" then xpr = 0 end
-		if hanchor == "RIGHT" or vanchor == "RIGHT" then xpr = quad_width end
+		if hanchor == "RIGHT" or vanchor == "RIGHT" then xpr = image.width end
 		
 		if vanchor == "TOP" or hanchor == "TOP" then ypr = 0 end
-		if vanchor == "BOTTOM" or hanchor == "BOTTOM" then ypr = quad_height end
+		if vanchor == "BOTTOM" or hanchor == "BOTTOM" then ypr = image.height end
 		
 		-- if vanchor == "HCENTER" or hanchor == "HCENTER" then xpr = image.w/2 end
 		-- if vanchor == "VCENTER" or hanchor == "VCENTER" then ypr = image.h/2 end
@@ -100,39 +101,45 @@ function drawSprite(sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
 		if nopma then love.graphics.setBlendMode("alpha") end
 		
 		love.graphics.draw(
-			image.spsh,	--spritesheet
-			image.quad,	--quad
-			x,			--x
-			y,			--y
-			drawangle,	--angle
-			wm,			--x scale
-			hm,			--y scale
-			xpr,		--x pivot
-			ypr)		--y pivot
+			image.spsh,					--spritesheet
+			image.quad,					--quad
+			x - xpr + (drawxp or 0),	--x position
+			y - ypr + (drawyp or 0),	--y position
+			drawangle,					--angle
+			wm,							--x scale
+			hm,							--y scale
+			(drawxp or 0),				--x rotation pivot
+			(drawyp or 0))				--y rotation pivot
+		-- love.graphics.push()
+		-- love.graphics.rotate(drawangle)
+		-- love.graphics.rectangle("line", x-xpr, y-ypr, w, h, rx, ry, segments)
+		-- love.graphics.pop()
 		
 		love.graphics.setBlendMode(b1,b2)
 		love.graphics.setColor(r, g, b, a)
-	elseif image and image.sprites then --composprite used in later versions
+	elseif image and image.items then --composprite used in later versions
 		res.drawCompoSprite(sprite,x,y)
 	end
 end
 
 function res.getCompoSpriteBounds(sheet, composprite) --not used in 1.6.3.1
 	if not composprite then composprite = sheet end
-	composprite = checkAndLoadSprite(composprite)
+	composprite = checkSprite(composprite)
 
 	if composprite then
-		local w,h = composprite.w, composprite.h
+		local w,h = composprite.width, composprite.height
 		local px,py = composprite.px or 0, composprite.py or 0
 		return -px, -py, -px + w, -py + h
 	end
+
+	return 0, 0, 0, 0
 end
 
 function setAlpha(a)
 	alpha = a
 end
 
-function checkAndLoadSprite(sprite)
+function checkSprite(sprite)
 	return cachedcs[sprite] or cachedimgs[sprite]
 end
 
@@ -171,22 +178,25 @@ end
 
 local loadedSheets = {}
 
-function res.releaseSpriteSheet(sheet)
-	--print("res.releaseSpriteSheet: unloading "..tostring(sheet))
+local function releaseSheet(sheet, usecomposprites)
+	local cache = usecomposprites and cachedcs or cachedimgs
 	local lsheet = loadedSheets[sheet]
 	if not lsheet then return end --just ignore it if it's already unloaded
 	
 	for i, v in ipairs(lsheet.sprites) do
-		v:release()
+		if cache[v] then
+			-- print("res.releaseSpriteSheet: freeing sprite "..tostring(v))
+			cache[v].quad:release()
+			cache[v] = nil
+		end
 	end
 	
-	lsheet.sheet:release()
+	if lsheet.sheet then lsheet.sheet:release() end
 	loadedSheets[sheet] = nil
 end
 
 --TODO: parse pvr images somehow with newImageData
-function res.createSpriteSheet(sheet)
-	--print("res.createSpriteSheet: loading "..tostring(sheet))
+local function loadSheet(sheet, usecomposprites)
 	local dat_suffix = ".dat"
 	if loadedSheets[sheet] then return end
 	
@@ -194,14 +204,29 @@ function res.createSpriteSheet(sheet)
 		loadedSheets[sheet] = {sheet = nil, sprites = {}}
 		local lsheet = loadedSheets[sheet]
 		
-		local data = love.filesystem.read(dataPath..sheet)
+		local data = love.filesystem.read(datapath.."/"..sheet)
 		local info = getDatInfo(data, sheet, "SPRT")
-		if info.compos then
-			--TODO: fix composprites
+		if usecomposprites and info.compos then
 			for i, v in pairs(info.compos) do
-				cachedimgs.csprites[i] = v
+				--calculate the bounds here
+				local composprite = {items = v}
+				local x0, x1, y0, y1 = 0,0,0,0
+				
+				for ii, vv in pairs(v) do
+					local sprite = cachedimgs[vv.n]
+					if sprite then
+						local _,_,w,h = sprite.quad:getViewport()
+						x0,x1 = math.min(x0,vv.x - w), math.max(x1,vv.x + w)
+						y0,y1 = math.min(y0,vv.y - h), math.max(y1,vv.y + h)
+					end
+				end
+				
+				composprite.width, composprite.height = x1, y1
+				composprite.px, composprite.py = x0, y0
+
+				cachedcs[i] = composprite
 			end
-		elseif info.sprites and info.filename then
+		elseif not usecomposprites and info.sprites and info.filename then
 			local filename = info.filename
 			local extension = ".png"
 			if endsWith(filename,".pvr") then extension = ".pvr.png" filename = filename..".png" end
@@ -209,17 +234,35 @@ function res.createSpriteSheet(sheet)
 			-- print(sheet)
 			lsheet.sheet = love.graphics.newImage(datapath.."/"..string.sub(sheet, 1, -string.len(dat_suffix) - 1)..extension)
 			for i, spr in pairs(info.sprites) do
-				--print("res.createSpriteSheet: adding sprite "..tostring(i))
-				cachedimgs[i] = {quad = love.graphics.newQuad(spr.x, spr.y, spr.width, spr.height,lsheet.sheet:getWidth(),lsheet.sheet:getHeight()),
+				-- print("res.createSpriteSheet: adding sprite "..tostring(i))
+				cachedimgs[i] = {quad = love.graphics.newQuad(spr.x, spr.y, spr.width, spr.height, lsheet.sheet:getWidth(), lsheet.sheet:getHeight()),
 					spsh=lsheet.sheet,px=spr.pivotX,py=spr.pivotY, width = spr.width, height = spr.height}--,src=path.."/"..sheet:sub(1,-5)..extension}--imagePath.."/img/"..sprite:sub(1,-5)..".png"}
-				table.insert(lsheet.sprites, cachedimgs[i].quad)
+				table.insert(lsheet.sprites, i)
 			end
 		end
-		if love.keyboard.isDown("escape") then print("abort") error()return end
 	end
 end
-function res.releaseCompoSpriteSet(sheet)return end
-function res.createCompoSpriteSet(sheet)return end
+
+function res.releaseSpriteSheet(sheet)
+	-- print("res.releaseSpriteSheet: unloading "..tostring(sheet))
+	releaseSheet(sheet, false)
+end
+
+function res.createSpriteSheet(sheet)
+	-- print("res.createSpriteSheet: loading "..tostring(sheet))
+	loadSheet(sheet, false)
+end
+
+
+function res.releaseCompoSpriteSet(sheet)
+	-- print("res.releaseCompoSpriteSet: unloading "..tostring(sheet))
+	releaseSheet(sheet, true)
+end
+
+function res.createCompoSpriteSet(sheet)
+	-- print("res.createCompoSpriteSet: loading "..tostring(sheet))
+	loadSheet(sheet, true)
+end
 
 function res.releaseFont(font)return end
 

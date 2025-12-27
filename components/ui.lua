@@ -1,7 +1,7 @@
 --some ui components used in more recent menus
 
 function drawDebugButton(sprite,x,y,scale,call,enabled,sound)
-	local image = checkAndLoadSprite(sprite)
+	local image = checkSprite(sprite)
 	if not image then image = {width = 100, height = 100} end
 	
 	love.graphics.push()

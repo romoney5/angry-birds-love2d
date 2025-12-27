@@ -6,7 +6,7 @@ function drawLayer(v)
 	local s = worldScale or 1
 	local scroll = (v.v or 0) * time
 	
-	if w > 0 and s > .02 then
+	if w > 0 and s > .02 then --don't draw if the scale is too low
 		for x = -1, math.floor(screenWidth / w / s) do
 			-- local i = #theme.bgLayers - k
 			local xp = w * x + (v[6] or 0)
@@ -71,15 +71,16 @@ local textureShader = love.graphics.newShader([[
 function drawGameNative() --work in progress
 
 	--draw textures
+	--TODO: non-pc versions (pc <= 1.6.3.1) have different texture names
 	for k, v in _G.pairs(objects.world) do
 		local texture = v.texture --or blockTable.themes[currentTheme].texture
 		
-		if texture then
+		if texture and checkSprite(texture) then
 			love.graphics.push()
 			local b1, b2 = love.graphics.getBlendMode()
 			love.graphics.setBlendMode("alpha", "alphamultiply")
 			
-			local textureImage = checkAndLoadSprite(texture).spsh
+			local textureImage = checkSprite(texture).spsh
 			textureImage:setWrap("repeat", "repeat")
 			
 			textureShader:send("textureMask", textureImage)
@@ -92,10 +93,7 @@ function drawGameNative() --work in progress
 			
 			love.graphics.setShader(textureShader)
 			
-			drawangle = v.angle
-			local x, y = physicsToWorldTransform(v.x, v.y)
-			res.drawSprite(v.sprite, x, y)
-			drawangle = 0
+			drawObject(v)
 			
 			love.graphics.setBlendMode(b1, b2)
 			love.graphics.setShader()
@@ -117,8 +115,10 @@ function drawGameNative() --work in progress
 	end
 
 	--draw objects
-	for i,v in pairs(objects.world) do
-		drawObject(v)
+	for i, v in pairs(objects.world) do
+		if not v.texture then
+			drawObject(v)
+		end
 	end
 
 	--draw particles
@@ -126,20 +126,16 @@ function drawGameNative() --work in progress
 end
 
 function drawObject(v)
-	if v.texture then return end
-
 	local x, y = physicsToWorldTransform(v.x, v.y)
 	love.graphics.push()
 
-	drawxp = v.xp
-	drawyp = v.yp
+	drawxp, drawyp = res.getSpritePivot(v.sprite)
 	drawangle = v.angle
 
-	love.graphics.translate(x, y)
 	love.graphics.scale(v.powerup_scale or 1)
 	if v.flipx then love.graphics.scale(-1, 1) end
 
-	res.drawSprite(v.sprite, 0, 0)
+	res.drawSprite(v.sprite, x, y)
 
 	drawangle = 0
 	love.graphics.pop()

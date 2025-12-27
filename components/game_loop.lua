@@ -6,10 +6,10 @@ wantedZoomLevel = 0
 local hasfocus = true
 
 function updateDisplayScale()
-	-- displayScale = math.cos((time or 0)*64)*.7 + .9
 	if autoScale > 0 then
-		local targetHeight = autoScale--768--640
-		displayScale = (love.graphics.getHeight() / targetHeight)-- * autoScale
+		local w, h = love.graphics.getDimensions()
+		displayScale = (math.min(w, h) / autoScale)
+
 		if displayScale >= .9 and displayScale <= 1.15 then --snap to 1 if close enough
 			displayScale = 1
 		end

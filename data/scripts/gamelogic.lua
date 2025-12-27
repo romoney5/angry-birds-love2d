@@ -15213,6 +15213,8 @@ function drawMenuPage(page)
 	-- end
 	
 	setRenderState(0, 0, 1, 1, 0)
+-- 	setRenderState(500, 0, 1, 1, time)
+-- _G.res.drawSprite("MENU_LOGO", 0, 0)
 	if page.backgroundDrawFunction ~= nil then
 		page.backgroundDrawFunction(page)
 	end

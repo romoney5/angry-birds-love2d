@@ -112,7 +112,7 @@ function updateDebug(dt)
 	res.drawString("",debugPrints, debugPadding, debugPadding * 2 + 70)
 
 	local boxsprites = tutorialBoxSprites
-	local tl = checkAndLoadSprite(boxsprites.topLeft)
+	local tl = checkSprite(boxsprites.topLeft)
 	local tlw,tlh = tl.w,tl.h
 	local x,y = screenWidth-125,65
 	local w,h = 75*.9,75*.4
@@ -159,7 +159,7 @@ function updateOptions(dt)
 	-- res.drawString("",debugText,debugPadding,debugPadding)
 
 	local boxsprites = tutorialBoxSprites
-	-- local tl = checkAndLoadSprite(boxsprites.topLeft)
+	-- local tl = checkSprite(boxsprites.topLeft)
 	-- local tlw,tlh = tl.w,tl.h
 	local x,y = screenWidth/2,screenHeight/2
 	local w,h = screenWidth-debugPadding*7,screenHeight-debugPadding*7
@@ -226,7 +226,7 @@ end
 function drawDebugButton(sprite,x,y,scale,call,enabled,sound)
 	-- love.graphics.origin()
 	love.graphics.push()
-	local image = checkAndLoadSprite(sprite)
+	local image = checkSprite(sprite)
 	local w,h = image.w*scale,image.h*scale
 	local s = 1
 	if enabled and checkBounds(x-w/2,y-h/2,w,h,cursor.x,cursor.y)then

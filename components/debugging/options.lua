@@ -24,7 +24,7 @@ function updateOptions(dt)
 	-- res.drawString("",debugText,debugPadding,debugPadding)
 
 	local boxsprites = tutorialBoxSprites
-	-- local tl = checkAndLoadSprite(boxsprites.topLeft)
+	-- local tl = checkSprite(boxsprites.topLeft)
 	-- local tlw,tlh = tl.w,tl.h
 	local x,y = screenWidth / 2, screenHeight / 2
 	local w,h = screenWidth - debugPadding * 7, screenHeight - debugPadding * 7

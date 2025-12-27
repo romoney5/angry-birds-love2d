@@ -60,6 +60,8 @@ dmonitor = nil
 
 enableDebug = false
 
+targetFPS = 1000 --love's love.run function uses 0.001 by default
+
 local hasLove12 = love._version_major >= 12
 
 function endsWith(str,ending)
@@ -245,15 +247,18 @@ function love.load()
 	end
 
 	runLuaFile(compsPath.."/load_all.lua")
+	handleStartArgs()
+
+	--load save data
+	runLuaFile("settings.lua", true)
+	runLuaFile("highscores.lua", true)
 	
 	uniqueDeviceId = getDeviceID()
-	local loadedImages, errored
-	handleStartArgs()
 
 	love.graphics.setNewFont(24)
 
 	local function loadlua(filename, ctx, env, lenient)
-		local r = loadLuaFileToObject(filename, ctx, env)--, lenient)
+		loadLuaFileToObject(filename, ctx, env)--, lenient)
 	end
 
 	-- makeImages()
@@ -280,29 +285,30 @@ function love.load()
 	loadLuaFileToObject(scriptPath.."/cutscenes.lua", this, "cutscenes", true)
 
 	local sfp = selectFontProfile
-	function selectFontProfile()
+	function selectFontProfile(...)
 		-- deviceModel = "windows"
-		local font = sfp and sfp()
+		local font = sfp and sfp(...)
 		if font and not checkDirectory(datapath.."/"..fontPath.."/"..font) then
-			font = "1024x768"
+			font = "1024x768" --just default to the pc version
 		end
 		return font
 	end
 
 	local sap = selectAssetProfile
-	function selectAssetProfile(a)
-		local asset = sap and sap(a)
+	function selectAssetProfile(...)
+		local asset = sap and sap(...)
 		if asset and not checkDirectory(datapath.."/"..imagePath.."/"..asset) then
-			asset = sap and string.upper(sap(a)) --try uppercase version then..
+			asset = sap and string.upper(sap(...)) --try uppercase version then..
 		end
 		
 		if not asset or asset == "" then
-			asset = "1024x768" --hack that i can't do anything about
+			asset = "1024x768"
 		end
 		return asset
 	end
 
-	setBGColor(255,255,255)
+	--start by setting the background to white and using premultiplied alpha
+	setBGColor(255, 255, 255)
 	love.graphics.setBlendMode("alpha", "premultiplied")
 
 	--set an icon
@@ -314,6 +320,7 @@ function love.load()
 	keyHold["CONTROL"] = false
 	keyHold["SHIFT"] = false
 	
+	--mobile-specific options
 	if deviceModel == "android" then
 		if gameOptions and gameOptions.ui then
 			gameOptions.ui.enableHoverScaling = false
@@ -334,6 +341,7 @@ function love.load()
 
 	gpcx, gpcy = love.mouse.getPosition()
 
+	--override releaseBuild
 	releaseBuild = false
 	showEditor = true
 
@@ -415,20 +423,6 @@ function saveLuaFile(fileName, tableName, appData, noIndexes, noWrap)
 
 	local s1, m1 = love.filesystem.createDirectory(fileName:match(".*/") or "")
 	local s, m = love.filesystem.write(fileName, serializedData)
-	if s then
-		print("\""..tableName.."\" was saved to "..fileName)
-	else
-		print("\""..tableName.."\" failed to save to "..fileName.." ("..(m or "Unknown error")..")")
-	end
-end
-
-function saveLuaFileLocal(fileName, table, tableName, noIndexes, prefix)
-	assert(table and type(table) == "table", "Table "..tableName.." does not exist")
-
-	local serializedData = tableName.." = {\n"..serializeTable(table, "\t", noIndexes).."}"
-
-	local s1, m1 = love.filesystem.createDirectory(fileName:match(".*/") or "")
-	local s, m = love.filesystem.write(fileName, (prefix or "")..serializedData)
 	if s then
 		print("\""..tableName.."\" was saved to "..fileName)
 	else
@@ -523,7 +517,7 @@ function getTimeDifference(time1, time2)
 	return getStampTime(math.abs(time1 - time2))
 end
 
-function setWorldGravity(x,y)
+function setWorldGravity(x, y)
 	gravity.x, gravity.y = x, y
 end
 
@@ -531,13 +525,7 @@ function drawRubberband(x1, y1, x2, y2, width, sprite)
 	return
 end
 
-function requestCurrentTimeOnServer() --hatchery
-	return
-end
-
-function hasLocationCapability()
-	return false
-end
+--hatchery
 
 function wasKeyReleased(key)
 	return keyReleased[key]
@@ -579,14 +567,18 @@ function love.run()
 			if love.draw then love.draw() end
 		end
 
-		if love.timer then love.timer.sleep(0.001) end
+		if love.timer then love.timer.sleep(1 / targetFPS) end
 	end
 end
 
 
 function showPopup(title,desc,buttons,extra,height)
 	keyReleased.LBUTTON = false
-	res.playAudio("noteG",.7)
+
+	if audiochannels then
+		res.playAudio("noteG", .7)
+	end
+
 	if buttons == nil then
 		buttons = {
 			{sprite = "TUTORIAL_OK", callback = function()

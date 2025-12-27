@@ -69,6 +69,26 @@ function setEditing(isediting)
 	return
 end
 
+--hatchery
+
+function requestCurrentTimeOnServer()
+	return
+end
+
+function hasLocationCapability()
+	return false
+end
+
+--1.7.0
+
+function initGameCenter()
+	return
+end
+
+function showLeaderboards()
+	return
+end
+
 --found in ghidra: addNotificationAfter(float,int,string) removeNotification(string) removeAllNotifications()
 --setNotificationCallback(function,string) hasLocationCapability()=0 openProgram(string)=bool
 --canOpenProgram(string)=bool getManufacturer()=? printGlobals() playVideo(string) setMaxTranslation(float)

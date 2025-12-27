@@ -30,8 +30,9 @@ function handleStartArgs()
 				deviceModel = arg[i + 1] or deviceModel
 			elseif v == "--gamelogic" or v == "-gl" then --override gamelogic.lua path
 				gamelogicPath = arg[i + 1] or gamelogicPath
-			elseif v == "--datapath" or v == "-dp" then --override datapath
+			elseif v == "--datapath" or v == "-dp" then --override datapath and set save directory
 				datapath = arg[i + 1] or datapath
+				love.filesystem.setIdentity(love.filesystem.getIdentity().."/DATA_"..datapath)
 			end
 		end
 	end

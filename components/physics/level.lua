@@ -13,9 +13,12 @@ function loadLevel(filename)
 	collisionsList = {}
 	loadedObjects = {}
 	loadLuaFileToObject(filename..".lua", this, loadedObjects)
-	table.sort(loadedObjects.world, function(a, b)
-		return (a.z_order or 0) < (b.z_order or 0)
-	end)
+
+	if loadedObjects.world then
+		table.sort(loadedObjects.world, function(a, b)
+			return (a.z_order or 0) < (b.z_order or 0)
+		end)
+	end
 end
 
 function saveLevel(filename)

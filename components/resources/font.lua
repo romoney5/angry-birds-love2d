@@ -42,6 +42,7 @@ function res.useFont(font)
 	end
 end
 
+--TODO: font y positions are inaccurate
 function res.drawString(group, text, x, y, aligny, alignx)
 	text = tostring(text) or ""
 	if group and group~="" then

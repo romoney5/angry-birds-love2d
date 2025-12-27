@@ -123,7 +123,7 @@ function updateDebug(dt)
 
 	local boxsprites = tutorialBoxSprites
 	if boxsprites then
-		local tl = checkAndLoadSprite(boxsprites.topLeft)
+		local tl = checkSprite(boxsprites.topLeft)
 		if not tl then return end
 		local tlw, tlh = tl.width, tl.height
 		local x, y = screenWidth - 125, 65
