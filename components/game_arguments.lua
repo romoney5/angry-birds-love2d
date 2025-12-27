@@ -2,7 +2,7 @@
 
 function handleStartArgs()
 	if arg then
-		for i,v in pairs(arg) do
+		for i,v in ipairs(arg) do
 			if v == "--deletedata" or v == "-dd" then --delete all save data
 				print("Opening data deletion prompt...")
 				
@@ -40,13 +40,17 @@ end
 
 function handlePostStartArgs()
 	if arg then
-		for i,v in pairs(arg) do
-			if v == "--skipintro" or v == "-si" then
+		for i,v in ipairs(arg) do
+			if v == "--skipintro" or v == "-si" then --skip splash screens
 				local attempts = 20
 				repeat
 					update(1, 1)
 					attempts = attempts - 1
 				until love.audio.getActiveSourceCount() > 0 or currentGameMode ~= updateSplashes or attempts <= 0
+			elseif v == "--run" then --run lua
+				debugExecute(arg[i + 1] or "")
+			elseif v:sub(1, 1) == "+" then --run lua, alt syntax (srb2)
+				debugExecute(v:sub(2))
 			end
 		end
 	end

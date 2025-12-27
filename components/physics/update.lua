@@ -21,6 +21,7 @@ end
 
 function updatePhysics(dt)
 	if not physicsEnabled then return end
+
 	updateParticlesNative(dt2)
 	setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0)
 	
@@ -38,8 +39,7 @@ function updatePhysics(dt)
 	}
 	
 	local cx, cy = cursorPhysics.x, cursorPhysics.y
-	for i,v in pairs(objects.world) do
-		local obj = objects.world[i]
+	for i, obj in pairs(objects.world) do
 		if obj.body then
 			obj.x, obj.y = obj.body:getPosition()
 			
@@ -63,7 +63,7 @@ function updatePhysics(dt)
 			obj.xVel = xVel
 			obj.yVel = yVel
 			hasAwakeObjects = true
-			updateObjectMomentum(v.name)
+			updateObjectMomentum(obj.name)
 			
 			local material = obj.material
 			local volume = (math.abs(angularVelocity) * obj.mass / 400.0) * obj.body:getInertia()
@@ -72,16 +72,14 @@ function updatePhysics(dt)
 				volume = 1.0
 			end
 
-			if rollingVolumes[material] and volume > rollingVolumes[material] then
+			if obj.type == "circle" and rollingVolumes[material] and volume > rollingVolumes[material] then
 				rollingVolumes[material] = volume
 			end
 			
 			--grab objects
-			if checkObjectBounds(obj.x, obj.y, (obj.width or obj.radius) + 5, (obj.height or obj.radius) + 5, obj.angle, cx, cy) then
-				if keyHold["RBUTTON"] then
-					res.drawString("", obj.name, obj.x * 20, obj.y * 20 + 50)
-					obj.body:setLinearVelocity((cx - obj.x) * 4, (cy - obj.y) * 4)
-				end
+			if not releaseBuild and keyHold.RBUTTON and checkObjectBounds(obj.x, obj.y, (obj.width or obj.radius) + 5, (obj.height or obj.radius) + 5, obj.angle, cx, cy) then
+				res.drawString("", obj.name, obj.x * 20, obj.y * 20 + 50)
+				obj.body:setLinearVelocity((cx - obj.x) * 4, (cy - obj.y) * 4)
 			end
 		end
 	end
@@ -103,7 +101,7 @@ function updatePhysics(dt)
 	end
 
 	--ab aimbot
-	if cameraTargetObject then
+	if not releaseBuild and cameraTargetObject then
 		local obj = cameraTargetObject
 		--_G.res.drawString("", _G.tostring(obj.xVel), obj.x * 20, obj.y * 20 + 50)
 		--_G.res.drawString("", _G.tostring(obj.yVel), obj.x * 20, obj.y * 20 + 100)

@@ -1,5 +1,7 @@
 --draw bg, fg, and game
 
+trajectory = {{{}, {}, {}}}
+
 function drawLayer(v)
 	local px, py = res.getSpritePivot("", v[2])
 	local w, h = res.getSpriteBounds("", v[2])
@@ -55,14 +57,14 @@ end
 
 local textureShader = love.graphics.newShader([[
 	uniform Image textureMask;
-	uniform vec2 textureSize;
+	uniform vec2 textureDimensions;
 	uniform vec2 camera;
 	extern float worldScale;
 
 	vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords ){
 			vec2 worldCoords = (screen_coords / worldScale) + camera;
 			
-			vec4 mask = Texel(textureMask, worldCoords / textureSize );
+			vec4 mask = Texel(textureMask, worldCoords / textureDimensions );
 			vec4 pixel = Texel(texture, texture_coords);
 			
 			pixel.rgb = mix(pixel.rgb, mask.rgb, mask.a);
@@ -75,24 +77,26 @@ local textureShader = love.graphics.newShader([[
 function drawGameNative() --work in progress
 
 	--draw textures
-	--TODO: non-pc versions (pc <= 1.6.3.1) have different texture names
 	for k, v in _G.pairs(objects.world) do
-		local texture = v.texture --or blockTable.themes[currentTheme].texture
+		local texture = checkSprite(v.texture) --or blockTable.themes[currentTheme].texture
+		if not texture then --try to find based on a png name
+			texture = findSpriteByPNG(v.texture)
+		end
 		
-		if texture and checkSprite(texture) then
+		if texture then
 			love.graphics.push()
 			local b1, b2 = love.graphics.getBlendMode()
 			love.graphics.setBlendMode("alpha", "alphamultiply")
 			
-			local textureImage = checkSprite(texture).spsh
+			local textureImage = texture.spsh
 			textureImage:setWrap("repeat", "repeat")
 			
 			textureShader:send("textureMask", textureImage)
 			
 			local w, h = textureImage:getDimensions()
-			textureShader:send("textureSize", {w, h})
+			textureShader:send("textureDimensions", {w, h})
 			
-			textureShader:send("worldScale", worldScale)
+			textureShader:send("worldScale", worldScale * displayScale * love.graphics.getDPIScale())
 			textureShader:send("camera", {screen.left, screen.top})
 			
 			love.graphics.setShader(textureShader)
