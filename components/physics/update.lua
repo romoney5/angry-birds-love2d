@@ -65,17 +65,15 @@ function updatePhysics(dt)
 			hasAwakeObjects = true
 			updateObjectMomentum(v.name)
 			
-			if obj.controllable ~= true and obj.radius then
-				local material = obj.material
-				local volume = (math.abs(angularVelocity) * obj.mass / 400.0) * obj.body:getInertia()
-				
-				if volume > 1.0 then
-					volume = 1.0
-				end
+			local material = obj.material
+			local volume = (math.abs(angularVelocity) * obj.mass / 400.0) * obj.body:getInertia()
+			
+			if volume > 1.0 then
+				volume = 1.0
+			end
 
-				if rollingVolumes[material] and volume > rollingVolumes[material] then
-					rollingVolumes[material] = volume
-				end
+			if rollingVolumes[material] and volume > rollingVolumes[material] then
+				rollingVolumes[material] = volume
 			end
 			
 			--grab objects
