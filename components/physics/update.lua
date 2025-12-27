@@ -25,36 +25,45 @@ function updatePhysics(dt)
 	setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0)
 	
 	physicsWorld:update(dt2 * physicsTimeScale, 10, 10) --ab uses 1/30, 10, 10
-	
 	removeBlocks()
+	
 	hasAwakeObjects = false
 	hasMovingObjects = false
+	hasMovingObjectsAboveTolerance = false
 	
 	local cx, cy = cursorPhysics.x, cursorPhysics.y
 	for i,v in pairs(objects.world) do
 		local obj = objects.world[i]
 		if obj.body then
 			obj.x, obj.y = obj.body:getPosition()
-			if obj.x < objects.limits.mix
-			or obj.x > objects.limits.max
-			or obj.y < objects.limits.miy
-			or obj.y > objects.limits.may then
-				removeObject(i)
-			else
-				updateObjectMomentum(i)
-				updateObjectMass(i)
-				--_G.res.drawString("", _G.tostring(obj.density), obj.x * 20, obj.y * 20 + 20)
-				obj.angle = (obj.body:getAngle() + math.pi) % (math.pi * 2) - math.pi
-
-				if not hasMovingObjects and (math.abs(obj.xVel) >= .2 or math.abs(obj.yVel) >= .2) then hasMovingObjects = true end
-				if not hasAwakeObjects and obj.body:isAwake() then hasAwakeObjects = true end
-
-				--grab objects
-				if checkObjectBounds(obj.x, obj.y, (obj.width or obj.radius) + 5, (obj.height or obj.radius) + 5, obj.angle, cx, cy) then
-					if keyHold["RBUTTON"] then
-						res.drawString("", obj.name, obj.x * 20, obj.y * 20 + 50)
-						obj.body:setLinearVelocity((cx - obj.x) * 4, (cy - obj.y) * 4)
-					end
+			
+			local xVel, yVel = obj.body:getLinearVelocity()
+			local velMagnitude = xVel^2 +  yVel^2
+			local angularVelocity = obj.body:getAngularVelocity()
+			
+			if velMagnitude ~= 0 then
+				obj.frozen = obj.y > 20.0 or obj.x < objects.limits.mix or obj.x > objects.limits.max
+			end
+			
+			if velMagnitude >= 0.0005 then
+				hasMovingObjectsAboveTolerance = true
+			end
+			
+			if velMagnitude >= 9.0 or angularVelocity >= 1.0 then
+				hasMovingObjects = true
+			end
+			
+			obj.angle = (obj.body:getAngle() + math.pi) % (math.pi * 2) - math.pi
+			obj.xVel = xVel
+			obj.yVel = yVel
+			hasAwakeObjects = true
+			updateObjectMomentum(v.name)
+			
+			--grab objects
+			if checkObjectBounds(obj.x, obj.y, (obj.width or obj.radius) + 5, (obj.height or obj.radius) + 5, obj.angle, cx, cy) then
+				if keyHold["RBUTTON"] then
+					res.drawString("", obj.name, obj.x * 20, obj.y * 20 + 50)
+					obj.body:setLinearVelocity((cx - obj.x) * 4, (cy - obj.y) * 4)
 				end
 			end
 		end
