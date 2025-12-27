@@ -31,6 +31,12 @@ function updatePhysics(dt)
 	hasMovingObjects = false
 	hasMovingObjectsAboveTolerance = false
 	
+	local rollingVolumes = {
+		light = 0,
+		wood = 0, 
+		rock = 0,
+	}
+	
 	local cx, cy = cursorPhysics.x, cursorPhysics.y
 	for i,v in pairs(objects.world) do
 		local obj = objects.world[i]
@@ -59,12 +65,41 @@ function updatePhysics(dt)
 			hasAwakeObjects = true
 			updateObjectMomentum(v.name)
 			
+			if obj.controllable ~= true and obj.radius then
+				local material = obj.material
+				local volume = (math.abs(angularVelocity) * obj.mass / 400.0) * obj.body:getInertia()
+				
+				if volume > 1.0 then
+					volume = 1.0
+				end
+
+				if rollingVolumes[material] and volume > rollingVolumes[material] then
+					rollingVolumes[material] = volume
+				end
+			end
+			
 			--grab objects
 			if checkObjectBounds(obj.x, obj.y, (obj.width or obj.radius) + 5, (obj.height or obj.radius) + 5, obj.angle, cx, cy) then
 				if keyHold["RBUTTON"] then
 					res.drawString("", obj.name, obj.x * 20, obj.y * 20 + 50)
 					obj.body:setLinearVelocity((cx - obj.x) * 4, (cy - obj.y) * 4)
 				end
+			end
+		end
+	end
+	
+	for material, volume in pairs(rollingVolumes) do
+		local rollingSound = blockTable.materials[material].rollingSound
+		
+		if rollingSound then
+			if volume > 0 then
+				if not res.isAudioPlaying(rollingSound) then
+					res.playAudio(rollingSound, volume, true, 2)
+				else
+					cachedaudios[rollingSound]:setVolume(volume) -- make a standalone function for this?
+				end
+			else
+				res.stopAudio(rollingSound)
 			end
 		end
 	end
