@@ -269,7 +269,7 @@ function physicsBeginContact(obj1, obj2, contact)
 							setVelocity(bird.name, birdVelocityX, birdVelocityY)
 						end
 						
-						damage = math.min(damageDealt, strength)
+						damage = strength--math.min(damageDealt, strength)
 					end
 				end
 			
