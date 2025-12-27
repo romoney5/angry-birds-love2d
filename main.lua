@@ -181,6 +181,7 @@ function requireFile(filename)
 	if not loadLuaFile(scriptPath.."/"..filename, nil, true) then loadLuaFile(commonScriptPath.."/"..filename) end
 end
 
+--strips ..
 function resolvePath(path)
 	local resolved = {}
 	for part in path:gmatch("[^/]+") do
@@ -190,7 +191,7 @@ function resolvePath(path)
 			table.insert(resolved, part)
 		end
 	end
-	return "/"..table.concat(resolved, "/")
+	return "/"..table.concat(resolved, "/"), resolved
 end
 
 

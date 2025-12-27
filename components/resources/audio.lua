@@ -26,9 +26,10 @@ function res.isAudioPlaying(audio)
 	return false
 end
 
-local function playAudio(audio, volume, loop, track)
-	assert(audiochannels, "Trying to play audio clip but no audio output has been created")
+function res.playAudio(audio, volume, loop, track)
+	-- assert(audiochannels, "Trying to play audio clip but no audio output has been created")
 
+	if not audiochannels then return end
 	if not audios[audio] then return end
 	if cachedaudios[audio] == 0 then return end
 	
@@ -84,14 +85,13 @@ local function playAudio(audio, volume, loop, track)
 		table.insert(audiochannels[channel], audio)
 	end
 end
-res.playAudio = playAudio
 
 function ResourceManager.native_playAudio(audio, volume, flag, channel)
-	playAudio(audio,volume)
+	res.playAudio(audio, volume)
 end
 
-function ResourceManager.native_createAudio(path,name)
-	res.createAudio(path,name)
+function ResourceManager.native_createAudio(path, name)
+	res.createAudio(path, name)
 end
 
 function res.stopAudio(audio)

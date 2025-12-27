@@ -2,9 +2,12 @@
 
 function removeObject(name)
 	local obj = objects.world[name]
-	obj.body:destroy()
-	
-	objects.world[name] = nil
+
+	if obj then
+		obj.body:destroy()
+		
+		objects.world[name] = nil
+	end
 end
 
 function setSleeping(object, dozing)

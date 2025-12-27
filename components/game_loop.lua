@@ -1,5 +1,8 @@
 --this massive function runs every frame
 
+--clear key* tables instead of making them {}
+require("table.clear")
+
 local pausedaudios = {} --thanks love 11
 zoomLevel = 0
 wantedZoomLevel = 0
@@ -166,8 +169,9 @@ function love.update(dt)
 		cursor.wheel = 0
 	-- end
 
-	keyPressed = {}
-	keyReleased = {}
+	--clear key* tables instead of making them {}
+	table.clear(keyPressed)
+	table.clear(keyReleased)
 end
 
 function updatePopup()

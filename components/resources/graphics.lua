@@ -189,6 +189,27 @@ local function releaseSheet(sheet, usecomposprites)
 	loadedSheets[sheet] = nil
 end
 
+local function findCaseInsensitive(dir)
+	if checkDirectory(dir) then
+		return dir
+	elseif dir and dir ~= "" then
+		local _, paths = resolvePath(dir)
+		if #paths == 0 then return "" end
+		local name = paths[#paths] --get the filename before it's too late
+		table.remove(paths) --omit the old filename
+		dir = table.concat(paths, "/") --and update dir according to that
+
+		for _, f in ipairs(love.filesystem.getDirectoryItems(dir)) do
+			if f:lower() == name:lower() then
+				return dir.."/"..f --and make a new one
+			end
+		end
+	end
+
+	error("no "..dir)
+	return ""
+end
+
 --TODO: parse pvr images somehow with newImageData
 local function loadSheet(sheet, usecomposprites)
 	local dat_suffix = ".dat"
@@ -198,8 +219,9 @@ local function loadSheet(sheet, usecomposprites)
 		loadedSheets[sheet] = {sheet = nil, sprites = {}}
 		local lsheet = loadedSheets[sheet]
 		
-		local data = love.filesystem.read(datapath.."/"..sheet)
+		local data = love.filesystem.read(findCaseInsensitive(datapath.."/"..sheet))
 		local info = getDatInfo(data, sheet, "SPRT")
+
 		if usecomposprites and info.compos then
 			for i, v in pairs(info.compos) do
 				--calculate the bounds here
