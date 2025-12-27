@@ -53,14 +53,14 @@ end
 
 local textureShader = love.graphics.newShader([[
 	uniform Image textureMask;
-	uniform vec2 textureSize;
+	uniform vec2 textureDimensions;
 	uniform vec2 camera;
 	extern float worldScale;
 
 	vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords ){
 			vec2 worldCoords = (screen_coords / worldScale) + camera;
 			
-			vec4 mask = Texel(textureMask, worldCoords / textureSize );
+			vec4 mask = Texel(textureMask, worldCoords / textureDimensions );
 			vec4 pixel = Texel(texture, texture_coords);
 			
 			pixel.rgb = mix(pixel.rgb, mask.rgb, mask.a);
@@ -90,9 +90,9 @@ function drawGameNative() --work in progress
 			textureShader:send("textureMask", textureImage)
 			
 			local w, h = textureImage:getDimensions()
-			textureShader:send("textureSize", {w, h})
+			textureShader:send("textureDimensions", {w, h})
 			
-			textureShader:send("worldScale", worldScale * displayScale)
+			textureShader:send("worldScale", worldScale * displayScale * love.graphics.getDPIScale())
 			textureShader:send("camera", {screen.left, screen.top})
 			
 			love.graphics.setShader(textureShader)
