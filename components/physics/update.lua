@@ -25,7 +25,19 @@ function updatePhysics(dt)
 	updateParticlesNative(dt2)
 	setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0)
 	
-	physicsWorld:update(dt2 * physicsTimeScale, 10, 10) --ab uses 1/30, 10, 10
+	local timeStep = dt2 * physicsTimeScale
+	local velocityIterations = 10
+	local positionIterations = 10
+	
+	if dt2 > 0.0 then
+		WorldSolve({
+			dt = timeStep,
+			velocityIterations = velocityIterations,
+			positionIterations = positionIterations
+		})
+	end
+	
+	physicsWorld:update(timeStep, velocityIterations, positionIterations) --ab uses 1/30, 10, 10
 	removeBlocks()
 	
 	hasAwakeObjects = false
@@ -116,4 +128,53 @@ function updatePhysics(dt)
 			setRotation(obj.name, math.atan2(obj.yVel or 0, obj.xVel or 1))
 		end
 	end
+end
+
+---- SOLVE FUNCTION ----
+function WorldSolve(step)
+	
+	if step.dt > 0 then
+		step.inv_dt = 1.0 / step.dt
+	else
+		step.inv_dt = 0
+	end
+	
+	local dt = step.dt
+	local inv_dt = step.inv_dt	
+	local velocityIterations = step.velocityIterations
+	local positionIterations = step.positionIterations
+
+	for name, object in pairs(objects.world) do
+		local body = object.body
+		
+		if body:getType() == "dynamic" then
+			local vx, vy = body:getLinearVelocity()
+			
+			--- calculate speed then limit it.
+			local tx = vx * dt
+			local ty = vy * dt
+			local translationSq = tx*tx + ty*ty
+			local EPSILON = 1.1920929e-07
+			
+			if translationSq > b2_maxTranslationSquared then
+				local translationMag = math.sqrt(translationSq)
+				
+				if translationMag > EPSILON then
+					local dirX = tx / translationMag
+					local dirY = ty / translationMag
+					
+					vx = (b2_maxTranslation * dirX) * inv_dt
+					vy = (b2_maxTranslation * dirY) * inv_dt
+					
+					body:setLinearVelocity(vx, vy)
+				end
+			end
+		end
+	end
+
+end
+
+function setMaxTranslation(translation)
+	b2_maxTranslation = translation
+	b2_maxTranslationSquared = b2_maxTranslation * b2_maxTranslation
 end

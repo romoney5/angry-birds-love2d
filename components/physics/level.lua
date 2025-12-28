@@ -13,6 +13,7 @@ function loadLevel(filename)
 	collisionsList = {}
 	loadedObjects = {}
 	loadLuaFileToObject(filename..".lua", this, loadedObjects)
+	setMaxTranslation(2)
 
 	if loadedObjects.world then
 		table.sort(loadedObjects.world, function(a, b)
