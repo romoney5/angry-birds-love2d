@@ -7,13 +7,15 @@ runLuaFile(compsPath.."/debugging/collisions.lua")			--debug collisions
 runLuaFile(compsPath.."/debugging/options.lua")				--debug options
 runLuaFile(compsPath.."/debugging/speed_up.lua")			--debug speed-up with shift+a
 
---ka3d dats
-runLuaFile(compsPath.."/dat/formats/sprt.lua")				--spritesheet format
-runLuaFile(compsPath.."/dat/formats/font.lua")				--font format
-runLuaFile(compsPath.."/dat/formats/comp.lua")				--composprites format
-runLuaFile(compsPath.."/dat/formats/text.lua")				--localization format
-runLuaFile(compsPath.."/dat/data_readers.lua")				--functions for reading
-runLuaFile(compsPath.."/dat/read.lua")						--read dat
+--readers for proprietary formats
+runLuaFile(compsPath.."/data/formats/pvr.lua")				--pvr image format
+
+runLuaFile(compsPath.."/data/formats/ka3d_sprt.lua")		--spritesheet format
+runLuaFile(compsPath.."/data/formats/ka3d_font.lua")		--font format
+runLuaFile(compsPath.."/data/formats/ka3d_comp.lua")		--composprites format
+runLuaFile(compsPath.."/data/formats/ka3d_text.lua")		--localization format
+runLuaFile(compsPath.."/data/data_readers.lua")				--functions for reading
+runLuaFile(compsPath.."/data/read.lua")						--read dat
 
 --_G.res
 runLuaFile(compsPath.."/resources/res.lua")					--misc resources

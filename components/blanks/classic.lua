@@ -89,6 +89,18 @@ function showLeaderboards()
 	return
 end
 
+function requestBannerAd()
+	print("Banner Ad requested")
+end
+
+function requestExpandableAd()
+	print("Expandable Ad requested")
+end
+
+function requestInterstitialAd()
+	requestVideoAd()
+end
+
 --found in ghidra: addNotificationAfter(float,int,string) removeNotification(string) removeAllNotifications()
 --setNotificationCallback(function,string) hasLocationCapability()=0 openProgram(string)=bool
 --canOpenProgram(string)=bool getManufacturer()=? printGlobals() playVideo(string) setMaxTranslation(float)

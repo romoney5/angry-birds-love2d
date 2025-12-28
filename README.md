@@ -17,5 +17,3 @@ If you are on Linux, it's as easy as downloading a LÖVE Flatpak, going into the
 - `--datapath`/`-dp` overrides the default path to `data/` and uses a new save data subfolder. Useful for quickly testing different versions of Angry Birds without different folders or symbolic links.
 
 Running of compiled Lua uses [FiOne](https://github.com/Rerumu/FiOne) with some edits.
-
-Note: At the moment, PVR images are not supported on most devices. Until support for parsing them is added, PVRs will need to manually be converted to PNGs.

@@ -236,7 +236,6 @@ local function findCaseInsensitive(dir)
 	return "", nil
 end
 
---TODO: parse pvr images somehow with newImageData
 local function loadSheet(sheet, usecomposprites)
 	if loadedSheets[sheet] then return end
 	
@@ -276,54 +275,14 @@ local function loadSheet(sheet, usecomposprites)
 			if endsWith(filename,".pvr") then
 				-- extensionlength = 4 + 4 --.pvr + .png
 				-- filename = filename..".png"
+
 				extensionlength = 4
-				--angry birds pvrs are usually listed as R4 G4 B4 A4 UNorm Linear under pvrtextool, so 16bpp
+				--most angry birds pvrs are usually listed as R4 G4 B4 A4 UNorm Linear under pvrtextool, so 16bpp
 				--the file size also lines up, width x height x 2 (bytes per pixel) + 52 bytes of headers = filesize
-				--said headers can differ however
+				--the headers and formats differ however
 				local data = love.filesystem.read(table.concat(paths, "/").."/"..filename)
-				pos = 1
-				local w, h, format = 1, 1, 0
-				local imagedata
-				local rawdata
-				if love.data.unpack("<i4", data, pos) == 52 then --1.6.3
-					skip(4)
-					h = love.data.unpack("<i4", data, pos)
-					skip(4)
-					w = love.data.unpack("<i4", data, pos)
-					skip(4)
-					skip(4)
-					format = love.data.unpack("<i1", data, pos)
 
-					print("loadSheet: pvr file "..tostring(filename).." has w:"..w.." h:"..h.." format:"..format.."")
-					if format == 16 then --r4 g4 b4 a4
-						local expectedSize = w * h * 2 + 52
-						assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize..", got "..data:len())
-						rawdata = string.sub(data, 53)
-						imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
-					elseif format == 19 then --r5 g6 b5
-						local expectedSize = w * h * 2 + 52
-						assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize..", got "..data:len())
-						rawdata = string.sub(data, 53)
-						imagedata = love.image.newImageData(w, h, "rgb565", rawdata)
-					elseif format == 54 then --etc1 compressed, 4bpp
-						-- local expectedSize = w * h / 2 + 52
-						-- assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize..", got "..data:len())
-						-- rawdata = string.sub(data, 53)
-						-- imagedata = love.image.newImageData(w, h, nil, rawdata)
-						-- print(love.data.unpack("<i4", data, 13))
-						local filedata = love.filesystem.newFileData(data, "file.pvr")
-						-- print(love.image.isCompressed(filedata))
-						imagedata = love.image.newCompressedData(filedata)
-					else
-						error("wrong pvr format for \""..filename.."\"")
-					end
-				else
-					error("wrong pvr format for \""..filename.."\"")
-				end
-
-				if imagedata then
-					lsheet.sheet = love.graphics.newImage(imagedata)
-				end
+				lsheet.sheet = love.graphics.newImage(convertImagePVR(data, filename))
 			elseif endsWith(filename,".webp") then
 				extensionlength = 5 + 4 --.webp + .png
 				filename = filename..".png"
