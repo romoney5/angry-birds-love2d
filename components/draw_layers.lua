@@ -12,8 +12,8 @@ function drawLayer(v)
 		for x = -1, math.floor(screenWidth / w / s) do
 			-- local i = #theme.bgLayers - k
 			local xp = w * x + (v[6] or 0)
-			local left = (-screen.left * v[3] / v[4] + scroll - cameraShakeX) % w
-			local top = (-screen.top / v[4] - cameraShakeY)
+			local left = (-screen.left * v[3] / v[4] + scroll - (cameraShakeX or 0)) % w
+			local top = (-screen.top / v[4] - (cameraShakeY or 0))
 			-- top = (-screen.top * v[3] / v[4] - cameraShakeY)
 
 			if episode4BGCranes and v[2]:find("CRANE") then
