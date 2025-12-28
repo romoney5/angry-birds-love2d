@@ -23,8 +23,8 @@ function setRenderState(x, y, xs, ys, angle, xp, yp)
 
 	drawangle = angle or 0
 	--drawxp and yp are exclusively used for rotation, they are useless when angle is 0
-	drawxp = xp ~= 0 and xp or 0
-	drawyp = yp ~= 0 and yp or 0
+	drawxp = xp or 0
+	drawyp = yp or 0
 end
 
 --frontend of drawsprite
@@ -144,12 +144,25 @@ function checkSprite(sprite)
 end
 
 function drawRect(r, g, b, a, x, y, w, h, inWorld)
+	love.graphics.push()
+	if not inWorld then --if the rect is not supposed to be drawn in world space
+		love.graphics.origin()
+	end
+
+	--rotate around the x/y rotation pivot
+	love.graphics.translate(x, y)
+	love.graphics.translate(drawxp, drawyp)
+	love.graphics.rotate(drawangle)
+	love.graphics.translate(-drawxp, -drawyp)
+
 	local r2,y2,b2,a2 = love.graphics.getColor()
 	love.graphics.setColor(r, g, b, a)
 	w = w - x
 	h = h - y
-	love.graphics.rectangle("fill", x, y, w, h)
+	love.graphics.rectangle("fill", 0, 0, w, h)
 	love.graphics.setColor(r2, y2, b2, a2)
+
+	love.graphics.pop()
 end
 
 function drawRect2(r, g, b, a, x, y, w, h, round)
@@ -169,9 +182,14 @@ function drawLine2D(x0, y0, x1, y1, w, r, g, b, a) --TODO: hitbox (8) rotations 
 	-- love.graphics.scale(worldScale)
 	-- love.graphics.translate(-screen.left - cameraShakeX, -screen.top - cameraShakeY)
 	-- gra
+
+	--rotate around the x/y rotation pivot
+	love.graphics.translate(x0, y0)
+	love.graphics.translate(drawxp, drawyp)
 	love.graphics.rotate(drawangle)
+	love.graphics.translate(-drawxp, -drawyp)
 	-- print(x1,y1,x2,y2)
-	love.graphics.line(x0, y0, x1, y1)
+	love.graphics.line(0, 0, x1-x0, y1-y0)
 	love.graphics.setColor(r2,y2,b2,a2)
 	love.graphics.pop()
 end
