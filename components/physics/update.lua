@@ -133,6 +133,10 @@ function WorldSolve(step)
 	local inv_dt = step.inv_dt	
 	local velocityIterations = step.velocityIterations
 	local positionIterations = step.positionIterations
+	
+	if dt <= 0 or dt > 0.1 then
+		return
+	end
 
 	for name, object in pairs(objects.world) do
 		local body = object.body
@@ -141,20 +145,20 @@ function WorldSolve(step)
 			local vx, vy = body:getLinearVelocity()
 			
 			--- calculate speed then limit it.
-			local tx = vx * dt
-			local ty = vy * dt
-			local translationSq = tx*tx + ty*ty
+			local translationSq = vx*vx + vy*vy
 			local EPSILON = 1.1920929e-07
 			
-			if translationSq > b2_maxTranslationSquared then
+			local maxVel = b2_maxTranslation * inv_dt
+			local maxVelSquared = b2_maxTranslationSquared * inv_dt^2
+			
+			if translationSq > maxVelSquared then
 				local translationMag = math.sqrt(translationSq)
 				
 				if translationMag > EPSILON then
-					local dirX = tx / translationMag
-					local dirY = ty / translationMag
+					local dir = maxVel / translationMag
 					
-					vx = (b2_maxTranslation * dirX) * inv_dt
-					vy = (b2_maxTranslation * dirY) * inv_dt
+					vx = vx * dir
+					vy = vy * dir
 					
 					body:setLinearVelocity(vx, vy)
 				end
