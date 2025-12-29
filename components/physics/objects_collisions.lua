@@ -142,8 +142,7 @@ function physicsBeginContact(obj1, obj2, contact)
 	local o2 = obj2:getUserData()
 	
 	if not objects.world[o1.name] or not objects.world[o2.name] then return end
-	updateObjectMomentum(o1.name)
-	updateObjectMomentum(o2.name)
+	solvePhysics()
 	
 	if not o1.controllable and not o2.controllable then -- object to object collision
 		

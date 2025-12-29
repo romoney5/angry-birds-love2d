@@ -6,25 +6,7 @@ local function clamp(v, max)
 	return v
 end
 
-function updateObjectMomentum(name)
-	local obj = objects.world[name]
-	if obj then
-		obj.xVel, obj.yVel = obj.body:getLinearVelocity()
-		--setVelocity(name, clamp(obj.xVel, 56), clamp(obj.yVel, 56))
-		--angry birds limits momentum radially to 60 units
-		local magnitude = math.sqrt(obj.xVel ^ 2 + obj.yVel ^ 2)
-		if magnitude > 60 then
-			setVelocity(name, obj.xVel * 60 / magnitude, obj.yVel * 60 / magnitude)
-		end
-	end
-end
-
-function updatePhysics(dt)
-	if not physicsEnabled then return end
-
-	updateParticlesNative(dt2)
-	setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0)
-	
+function solvePhysics()
 	local timeStep = dt2 * physicsTimeScale
 	local velocityIterations = 10
 	local positionIterations = 10
@@ -37,7 +19,16 @@ function updatePhysics(dt)
 		})
 	end
 	
-	physicsWorld:update(timeStep, velocityIterations, positionIterations) --ab uses 1/30, 10, 10
+	return timeStep, velocityIterations, positionIterations --ab uses 1/30, 10, 10
+end
+
+function updatePhysics(dt)
+	if not physicsEnabled then return end
+
+	updateParticlesNative(dt2)
+	setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0)
+	
+	physicsWorld:update(solvePhysics())
 	removeBlocks()
 	
 	hasAwakeObjects = false
@@ -75,7 +66,6 @@ function updatePhysics(dt)
 			obj.xVel = xVel
 			obj.yVel = yVel
 			hasAwakeObjects = true
-			updateObjectMomentum(obj.name)
 			
 			local material = obj.material
 			local volume = (math.abs(angularVelocity) * obj.mass / 400.0) * obj.body:getInertia()
@@ -175,6 +165,6 @@ function WorldSolve(step)
 end
 
 function setMaxTranslation(translation)
-	b2_maxTranslation = translation * 0.5
+	b2_maxTranslation = translation * 0.5 -- TODO : tune this to be game accurate
 	b2_maxTranslationSquared = b2_maxTranslation * b2_maxTranslation
 end
