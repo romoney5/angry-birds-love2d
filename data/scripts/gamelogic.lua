@@ -22903,8 +22903,8 @@ function createMightyEagle(meX, meY)
 	cameraFunction = gotoCastleCamera
 	flyingBird = objects.world[newName]
 	setMaxTranslation(5)
-	--_G.particles.setHardLimit(250)
-	--_G.particles.setSoftLimit(0, 0.2)
+	_G.particles.setHardLimit(250)
+	_G.particles.setSoftLimit(0, 0.2)
 end
 
 function removeBlocks()

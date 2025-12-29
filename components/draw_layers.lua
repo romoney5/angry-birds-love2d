@@ -121,14 +121,52 @@ function drawGameNative() --work in progress
 			end
 		end
 	end
-
-	--draw objects
+	
+	--[[
+		LAYER HIEARCHY 
+		
+		- objects (z_order <= 4)
+		- birds
+		- objects (z_order >= 5) 
+		- background sprites (the eagle)
+	
+	]]
+	
+	-- TODO : maybe shorten this.
+	local layers = {
+		{},
+		{},
+		{},
+		{}
+	}
+	
 	for i, v in pairs(objects.world) do
 		if not v.texture then
-			drawObject(v)
+			if v.z_order <= 4.0 then
+				if v.controllable ~= true then
+					table.insert(layers[1], i)
+				else
+					table.insert(layers[2], i)
+				end
+			end
+			
+			if v.z_order >= 5.0 then
+				table.insert(layers[3], i)
+			end
+			
+			if v.isBackground then
+				table.insert(layers[4], i)
+			end
 		end
 	end
 
+	--draw objects
+	for i = 1, #layers do
+		for k, v in _G.pairs(layers[i]) do
+			drawObject(objects.world[v])
+		end
+	end
+	
 	--draw particles
 	drawParticlesNative()
 end

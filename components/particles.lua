@@ -95,6 +95,16 @@ getAddParticles = {__index = function(self,i)
 					end
 				end
 			end
+	elseif i == "setHardLimit" then
+		local func = function(n)
+			hardLimitSimultaneousParticles = n
+		end
+		return func
+	elseif i == "setSoftLimit" then
+		local func = function(n, m)
+			softLimitSimultaneousParticles = _G.math.random(n, m)
+		end
+		return func
 	elseif i == "clear" then
 		return function(kind)
 			return
