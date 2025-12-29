@@ -144,18 +144,18 @@ function drawGameNative() --work in progress
 		if not v.texture then
 			if v.z_order <= 4.0 then
 				if v.controllable ~= true then
-					table.insert(layers[1], i)
+					table.insert(layers[1], 1, i)
 				else
-					table.insert(layers[2], i)
+					table.insert(layers[2], 1, i)
 				end
 			end
 			
 			if v.z_order >= 5.0 then
-				table.insert(layers[3], i)
+				table.insert(layers[3], 1, i)
 			end
 			
 			if v.isBackground then
-				table.insert(layers[4], i)
+				table.insert(layers[4], 1, i)
 			end
 		end
 	end
