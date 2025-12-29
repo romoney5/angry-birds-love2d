@@ -122,6 +122,7 @@ end
 
 ---- SOLVE FUNCTION ----
 function WorldSolve(step)
+	step.dt = 1/60
 	
 	if step.dt > 0 then
 		step.inv_dt = 1.0 / step.dt
@@ -134,10 +135,6 @@ function WorldSolve(step)
 	local velocityIterations = step.velocityIterations
 	local positionIterations = step.positionIterations
 	
-	if dt <= 0 or dt > 0.1 then
-		return
-	end
-
 	for name, object in pairs(objects.world) do
 		local body = object.body
 		
@@ -149,7 +146,7 @@ function WorldSolve(step)
 			local EPSILON = 1.1920929e-07
 			
 			local maxVel = b2_maxTranslation * inv_dt
-			local maxVelSquared = b2_maxTranslationSquared * inv_dt^2
+			local maxVelSquared = b2_maxTranslationSquared * inv_dt ^ 2
 			
 			if translationSq > maxVelSquared then
 				local translationMag = math.sqrt(translationSq)
@@ -165,7 +162,6 @@ function WorldSolve(step)
 			end
 		end
 	end
-
 end
 
 function setMaxTranslation(translation)
