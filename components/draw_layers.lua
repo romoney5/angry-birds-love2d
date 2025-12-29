@@ -139,11 +139,14 @@ function drawObject(v)
 
 	drawxp, drawyp = res.getSpritePivot(v.sprite)
 	drawangle = v.angle
+	
+	local scale = v.powerup_scale or 1
+	if v.isBackground then scale = 2 end
 
-	love.graphics.scale(v.powerup_scale or 1)
+	love.graphics.scale(scale)
 	if v.flipx then love.graphics.scale(-1, 1) end
 
-	res.drawSprite(v.sprite, x, y)
+	res.drawSprite(v.sprite, x / scale, y / scale)
 
 	drawangle = 0
 	love.graphics.pop()

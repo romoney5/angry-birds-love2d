@@ -22903,8 +22903,8 @@ function createMightyEagle(meX, meY)
 	cameraFunction = gotoCastleCamera
 	flyingBird = objects.world[newName]
 	setMaxTranslation(5)
-	_G.particles.setHardLimit(250)
-	_G.particles.setSoftLimit(0, 0.2)
+	--_G.particles.setHardLimit(250)
+	--_G.particles.setSoftLimit(0, 0.2)
 end
 
 function removeBlocks()
@@ -28261,7 +28261,7 @@ function birdCollision(object1, object2, force, damage)
 			end
 			birdSpecialtyAvailable = false
 			if birdSpecialty == "SUMMON_MIGHTY_EAGLE" then
-				if flyingBird.collision ~= true and eagleTimer == nil then
+				if eagleTimer == nil then
 					eagleTimer = 8.7
 					eagleMoving = true
 					--birdSpecialtyAvailable = true

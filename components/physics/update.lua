@@ -175,6 +175,6 @@ function WorldSolve(step)
 end
 
 function setMaxTranslation(translation)
-	b2_maxTranslation = translation
+	b2_maxTranslation = translation * 0.5
 	b2_maxTranslationSquared = b2_maxTranslation * b2_maxTranslation
 end

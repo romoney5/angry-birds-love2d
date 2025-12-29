@@ -10,6 +10,16 @@ function removeObject(name)
 	end
 end
 
+function destroyJoint()
+	local obj = objects.joints[name]
+	
+	if obj then
+		obj:destroy()
+		
+		objects.joints[name] = nil
+	end
+end
+
 function setSleeping(object, dozing)
 	if objects.world[object].body then
 		objects.world[object].body:setAwake(not dozing)

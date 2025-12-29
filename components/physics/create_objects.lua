@@ -46,6 +46,10 @@ function updateObjectMass(name)
 	end
 end
 
+local CATEGORY_STATIC = 2
+local CATEGORY_BACKGROUND = 3
+local CATEGORY_NORMAL = 1
+
 function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
 	local verts = polyverts
 	if z_order then --1.6.3.1 and below
@@ -72,6 +76,7 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 	obj.fixture:setRestitution(restitution)
 	obj.fixture:setFriction(friction)
 	obj.fixture:setUserData(obj)
+	obj.fixture:setCategory(CATEGORY_NORMAL)
 
 	obj.body:setAngularDamping(1)
 
@@ -89,12 +94,20 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 	obj.body = love.physics.newBody(physicsWorld, xpos, ypos, density == 0 and "static" or "dynamic") --dynamic is very important!!
 	obj.shape = love.physics.newRectangleShape(w, h)
 	obj.fixture = love.physics.newFixture(obj.body, obj.shape, density)
-	if density == 0 then obj.density = 1 end
+	
+	obj.fixture:setCategory(CATEGORY_NORMAL)
+	if density == 0 then
+		obj.density = 1
+		if name ~= "ground" then
+			obj.fixture:setCategory(CATEGORY_STATIC)
+			obj.fixture:setMask(CATEGORY_BACKGROUND)
+		end
+	end
 
 	obj.fixture:setRestitution(restitution)
 	obj.fixture:setFriction(friction)
 	obj.fixture:setUserData(obj)
-
+	
 	obj.body:setAngularDamping(1)
 
 	--set type
@@ -120,6 +133,14 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	obj.fixture:setUserData(obj)
 
 	obj.body:setAngularDamping(1)
+	
+	if z_order >= 999 then
+		obj.isBackground = true
+		obj.fixture:setCategory(CATEGORY_BACKGROUND)
+		obj.fixture:setMask(CATEGORY_STATIC)
+	else
+		obj.fixture:setCategory(CATEGORY_NORMAL)
+	end
 
 	--set type
 	obj.type = "circle"
