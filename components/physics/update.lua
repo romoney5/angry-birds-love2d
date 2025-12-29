@@ -1,11 +1,5 @@
 --update physics every frame
 
-local function clamp(v, max)
-	if v > max then return max end
-	if v < -max then return -max end
-	return v
-end
-
 function solvePhysics()
 	local timeStep = dt2 * physicsTimeScale
 	local velocityIterations = 10

@@ -103,5 +103,5 @@ end
 
 --found in ghidra: addNotificationAfter(float,int,string) removeNotification(string) removeAllNotifications()
 --setNotificationCallback(function,string) hasLocationCapability()=0 openProgram(string)=bool
---canOpenProgram(string)=bool getManufacturer()=? printGlobals() playVideo(string) setMaxTranslation(float)
+--canOpenProgram(string)=bool getManufacturer()=? printGlobals() playVideo(string)
 --other hatchery functions
