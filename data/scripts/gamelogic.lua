@@ -28260,7 +28260,7 @@ function birdCollision(object1, object2, force, damage)
 				end
 			end
 			birdSpecialtyAvailable = false
-			if birdSpecialty == "SUMMON_MIGHTY_EAGLE" then
+			if flyingBird.collision ~= true and birdSpecialty == "SUMMON_MIGHTY_EAGLE" then
 				if eagleTimer == nil then
 					eagleTimer = 8.7
 					eagleMoving = true
