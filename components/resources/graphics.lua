@@ -150,6 +150,7 @@ function drawRect(r, g, b, a, x, y, w, h, inWorld)
 	end
 
 	--rotate around the x/y rotation pivot
+	love.graphics.scale(displayScale)
 	love.graphics.translate(x, y)
 	love.graphics.translate(drawxp, drawyp)
 	love.graphics.rotate(drawangle)
