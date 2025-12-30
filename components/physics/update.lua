@@ -36,7 +36,7 @@ function updatePhysics(dt)
 	}
 	
 	local cx, cy = cursorPhysics.x, cursorPhysics.y
-	for i, obj in pairs(objects.world) do
+	for _, obj in pairs(objects.world) do
 		if obj.body then
 			obj.x, obj.y = obj.body:getPosition()
 			
@@ -80,29 +80,29 @@ function updatePhysics(dt)
 		end
 	end
 	
-	for _, joint in _G.pairs(objects.joints) do
-		if not joint:isDestroyed() then
-			local userData = joint:getUserData()
-			local jointType = joint:getType()
-			if userData.backAndForth then
-				local angle = joint:getJointTranslation()
+	for _, joint in pairs(objects.joints) do
+		if not joint.joint:isDestroyed() then
+			local physicsJoint = joint.joint
+			local jointType = physicsJoint:getType()
+			if joint.backAndForth then
+				local angle = physicsJoint:getJointTranslation()
 				if jointType == "revolute" then
-					angle = joint:getJointAngle()
+					angle = physicsJoint:getJointAngle()
 				end
 				
-				if userData.direction == 1 and angle >= userData.upperLimit then
-					userData.direction = -1
-					joint:setMotorSpeed(-userData.motorSpeed)
-				elseif userData.direction == -1 and angle <= userData.lowerLimit then
-					userData.direction = 1
-					joint:setMotorSpeed(userData.motorSpeed)
+				if joint.direction == 1 and angle >= joint.upperLimit then
+					joint.direction = -1
+					physicsJoint:setMotorSpeed(-joint.motorSpeed)
+				elseif joint.direction == -1 and angle <= joint.lowerLimit then
+					joint.direction = 1
+					physicsJoint:setMotorSpeed(joint.motorSpeed)
 				end
 			end
 			
-			if userData.destroyTimer then
-				userData.destroyTimer = userData.destroyTimer - dt
-				if userData.destroyTimer <= 0 then
-					destroyJoint(userData.name)
+			if joint.destroyTimer then
+				joint.destroyTimer = joint.destroyTimer - dt
+				if joint.destroyTimer <= 0 then
+					destroyJoint(joint.name)
 				end
 			end
 		end

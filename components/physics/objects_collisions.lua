@@ -3,21 +3,21 @@
 function removeObject(name)
 	local obj = objects.world[name]
 
-	if obj then
+	if obj and obj.body then
 		obj.body:destroy()
-		
-		objects.world[name] = nil
 	end
+	
+	objects.world[name] = nil
 end
 
 function destroyJoint(name)
 	local obj = objects.joints[name]
-	
-	if obj then
-		obj:destroy()
-		
-		objects.joints[name] = nil
+
+	if obj and obj.joint then
+		obj.joint:destroy()
 	end
+	
+	objects.joints[name] = nil
 end
 
 function setSleeping(object, dozing)
@@ -126,6 +126,36 @@ function setObjectParameter(object, parameter, value)
 
 		elseif parameter == 6 then -- ?
 
+		end
+	end
+end
+
+function getWorldPoint(object, x, y)
+	local obj = objects.world[object]
+	if obj and obj.body then
+		return obj.body:getWorldPoint(x, y)
+	end
+
+	return 0, 0
+end
+
+function getLocalPoint(object, x, y)
+	local obj = objects.world[object]
+	if obj and obj.body then
+		return obj.body:getLocalPoint(x, y)
+	end
+
+	return 0, 0
+end
+
+function setJointParameters(params)
+	local obj = params and params.name and objects.joints[params.name]
+
+	if obj then
+		for k, v in pairs(params) do
+			if k ~= "name" then
+				obj[k] = v
+			end
 		end
 	end
 end

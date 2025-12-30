@@ -2,32 +2,20 @@
 
 --funky
 function createJoint(joint)
-	local name, end1, end2, type, coordType, x1, y1, x2, y2, collideConnected, limit, motor, maxTorque, lowerLimit, upperLimit, motorSpeed =
+	local name, end1, end2, type, coordType, x1, y1, x2, y2, collideConnected, limit, motor, maxTorque, lowerLimit, upperLimit, motorSpeed, destroyTimer =
 		joint.name,joint.end1,joint.end2,joint.type,joint.coordType,joint.x1,joint.y1,joint.x2,joint.y2,joint.collideConnected,
-		joint.limit,joint.motor,joint.maxTorque,joint.lowerLimit,joint.upperLimit,joint.motorSpeed
+		joint.limit,joint.motor,joint.maxTorque,joint.lowerLimit,joint.upperLimit,joint.motorSpeed,joint.destroyTimer
 	local obj1, obj2 = objects.world[end1], objects.world[end2]
 
+	if not obj1 or not obj2 then return end
+
 	local newJoint
-	--[[
-	if type == 1 then
-		joint = love.physics.newDistanceJoint(obj1.body, obj2.body, x1, y1, x2, y2, collideConnected)
-	elseif type == 2 then
-		joint = love.physics.newWeldJoint(obj1.body, obj2.body, x1, y1, x2, y2, collideConnected)
-	elseif type == 3 then
-		joint = love.physics.newRevoluteJoint(obj1.body, obj2.body, x1, y1, x2, y2, collideConnected, math.atan2(y2-y1, x2-x1))
-		joint:setLimitsEnabled(limit)
-		joint:setMotorEnabled(motor)
-		joint:setMaxMotorTorque(maxTorque)
-		joint:setLimits(lowerLimit,upperLimit)
-		joint:setMotorSpeed(motorSpeed)
-	end
-	]]
-	if type == 1 then
 	
-		local frequency = joint.frequency or 4.0
-		local dampingRatio = joint.dampingRatio or 0.5
-		
+	if type == 1 then --distance joint
 		local anchorAX, anchorAY, anchorBX, anchorBY
+		
+		joint.frequency = frequency or 4.0
+		joint.dampingRatio = dampingRatio or 0.5
 		
 		if coordType == 0 then
 			anchorAX, anchorAY = obj1.body:getPosition()
@@ -45,10 +33,10 @@ function createJoint(joint)
 			anchorBX, anchorBY, 
 			collideConnected)
 			
-		newJoint:setFrequency(frequency)
-		newJoint:setDampingRatio(dampingRatio)
+		newJoint:setFrequency(joint.frequency)
+		newJoint:setDampingRatio(joint.dampingRatio)
 		
-	elseif type == 2 then
+	elseif type == 2 then --weld joint
 		local anchorAX, anchorAY = obj1.body:getWorldPoint(x1, y1)
 		local anchorBX, anchorBY = obj2.body:getWorldPoint(x2, y2)
 		
@@ -56,31 +44,29 @@ function createJoint(joint)
 		local y = anchorAY + (anchorBY - anchorAY) * 0.5
 		
 		newJoint = love.physics.newWeldJoint(obj1.body, obj2.body, x, y, collideConnected)
-	elseif type == 3 then
+	elseif type == 3 then --revolute joint
 		local anchorX, anchorY = obj1.body:getWorldPoint(x1, y1)
 		
 		newJoint = love.physics.newRevoluteJoint(obj1.body, obj2.body, anchorX, anchorY, collideConnected)
 		
-		local motorSpeed = motorSpeed or 0.0
-		local lowerLimit = lowerLimit or 0.0
-		local upperLimit = upperLimit or math.pi
+		joint.motorSpeed = motorSpeed or 0.0
+		joint.lowerLimit = lowerLimit or 0.0
+		joint.upperLimit = upperLimit or math.pi
+
+		joint.motor = motor or false
+		joint.maxTorque = maxTorque or 10000.0
+		joint.limit = limit or false
 		
-		newJoint:setMotorEnabled(motor or false)
-		newJoint:setMotorSpeed(motorSpeed)
-		newJoint:setMaxMotorTorque(maxTorque or 10000.0)
-		newJoint:setLimitsEnabled(limit or false)
-		newJoint:setLimits(lowerLimit, upperLimit)
+		newJoint:setMotorEnabled(joint.motor)
+		newJoint:setMotorSpeed(joint.motorSpeed)
+		newJoint:setMaxMotorTorque(joint.maxTorque)
+		newJoint:setLimitsEnabled(joint.limit)
+		newJoint:setLimits(joint.lowerLimit, joint.upperLimit)
 		
         if backAndForth then
-            newJoint:setUserData({
-                backAndForth = true,
-                direction = 1,
-                lowerLimit = lowerLimit,
-                upperLimit = upperLimit,
-                motorSpeed = motorSpeed
-            })
+            joint.direction = 1
         end
-	elseif type == 4 then
+	elseif type == 4 then --prismatic joint
 		local anchorX, anchorY = obj1.body:getWorldPoint(x1, y1)
 		
 		newJoint = love.physics.newPrismaticJoint(obj1.body, obj2.body,
@@ -90,48 +76,37 @@ function createJoint(joint)
 			collideConnected
 		)
 		
-		local motorSpeed = motorSpeed or 0.0
-		local lowerLimit = lowerLimit or 0.0
-		local upperLimit = upperLimit or 5.0
+		joint.motorSpeed = motorSpeed or 0.0
+		joint.lowerLimit = lowerLimit or 0.0
+		joint.upperLimit = upperLimit or 5.0
+
+		joint.motor = motor or true
+		joint.maxTorque = maxTorque or 10000.0
+		joint.limit = limit or true
 		
-		newJoint:setMotorEnabled(motor or true)
-		newJoint:setMotorSpeed(motorSpeed)
-		newJoint:setMaxMotorTorque(maxTorque or 10000.0)
-		newJoint:setLimitsEnabled(limit or true)
-		newJoint:setLimits(lowerLimit, upperLimit)
+		newJoint:setMotorEnabled(joint.motor)
+		newJoint:setMotorSpeed(joint.motorSpeed)
+		newJoint:setMaxMotorForce(joint.maxTorque) --equivalent to setMaxMotorTorque?
+		newJoint:setLimitsEnabled(joint.limit)
+		newJoint:setLimits(joint.lowerLimit, joint.upperLimit)
 		
         if backAndForth then
-            newJoint:setUserData({
-                backAndForth = true,
-                direction = 1,
-                lowerLimit = lowerLimit,
-                upperLimit = upperLimit,
-                motorSpeed = motorSpeed
-            })
+            joint.direction = 1
         end
-	
-	elseif type == 5 then
+	elseif type == 5 then --annihilation joint
 		local anchorAX, anchorAY = obj1.body:getWorldPoint(x1, y1)
 		local anchorBX, anchorBY = obj2.body:getWorldPoint(x2, y2)
 		
 		local x = anchorAX + (anchorBX - anchorAX) * 0.5
 		local y = anchorAY + (anchorBY - anchorAY) * 0.5
+
+		joint.destroyTimer = destroyTimer or 1.0
 		
 		newJoint = love.physics.newWeldJoint(obj1.body, obj2.body, x, y, collideConnected)
-		newJoint:setUserData({
-			destroyTimer = joint.destroyTimer
-		})
 	end
 
-	objects.joints[name] = newJoint
-	
-    newJoint:setUserData(newJoint:getUserData() or {})
-    local userData = newJoint:getUserData()
-    userData.name = name
-    userData.type = type
-    userData.end1 = end1
-    userData.end2 = end2
-	
+	objects.joints[name] = joint
+	joint.joint = newJoint
 end
 
 local polyverts = {}
