@@ -74,7 +74,7 @@ end
 
 function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
 	if sprite == g_currentCursorName and gameOptions and gameOptions.ui and (not gameOptions.ui.enableCursor or false) then return end
-	local image = type(sprite) == "string" and checkSprite(sprite) or {spsh = sprite.spritesheet, quad = sprite.quad}
+	local image = type(sprite) == "string" and checkSprite(sprite) or sprite
 
 	if image and image.quad and image.spsh then
 		local w, h = iwidth or image.width, iheight or image.height
@@ -192,6 +192,24 @@ function drawLine2D(x0, y0, x1, y1, w, r, g, b, a) --TODO: hitbox (8) rotations 
 	-- print(x1,y1,x2,y2)
 	love.graphics.line(0, 0, x1-x0, y1-y0)
 	love.graphics.setColor(r2,y2,b2,a2)
+	love.graphics.pop()
+end
+
+function drawRubberband(x1, y1, x2, y2, width, sprite)
+	sprite = checkSprite(sprite)
+	if not sprite then return end
+
+	local dist = math.sqrt((x1 - x2) ^ 2 + (y1 - y2) ^ 2)
+	local angle = math.atan2(y2 - y1, x2 - x1)
+
+	love.graphics.push()
+
+	love.graphics.origin()
+	love.graphics.translate(x1, y1)
+	love.graphics.rotate(angle)
+	love.graphics.scale(dist / sprite.width, width / sprite.height)
+	res.drawSprite(sprite, 0, 0, "LEFT")
+
 	love.graphics.pop()
 end
 

@@ -506,10 +506,6 @@ function setWorldGravity(x, y)
 	gravity.x, gravity.y = x, y
 end
 
-function drawRubberband(x1, y1, x2, y2, width, sprite)
-	return
-end
-
 --hatchery
 
 function wasKeyReleased(key)
