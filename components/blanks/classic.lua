@@ -101,7 +101,19 @@ function requestInterstitialAd()
 	requestVideoAd()
 end
 
---found in ghidra: addNotificationAfter(float,int,string) removeNotification(string) removeAllNotifications()
---setNotificationCallback(function,string) hasLocationCapability()=0 openProgram(string)=bool
+--found in ghidra: --setNotificationCallback(function,string) hasLocationCapability()=0 openProgram(string)=bool
 --canOpenProgram(string)=bool getManufacturer()=? printGlobals() playVideo(string)
 --other hatchery functions
+
+--notifications
+function addNotificationAfter(id, time, text)
+	print("Queue notification \""..tostring(id).."\" after "..(tonumber(time) or 0) / (60).." minutes:\n"..tostring(text))
+end
+
+function removeNotification(id)
+	print("Remove notification \""..tostring(id).."\"")
+end
+
+function removeAllNotifications()
+	print("Remove all notifications")
+end
