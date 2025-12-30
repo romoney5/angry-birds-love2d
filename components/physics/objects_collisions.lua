@@ -13,7 +13,7 @@ end
 function destroyJoint(name)
 	local obj = objects.joints[name]
 
-	if obj and obj.joint then
+	if obj and obj.joint and not obj.joint:isDestroyed() then
 		obj.joint:destroy()
 	end
 	
