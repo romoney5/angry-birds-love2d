@@ -86,6 +86,34 @@ function updatePhysics(dt)
 		end
 	end
 	
+	for _, joint in _G.pairs(objects.joints) do
+		if not joint:isDestroyed() then
+			local userData = joint:getUserData()
+			local jointType = joint:getType()
+			if userData.backAndForth then
+				local angle = joint:getJointTranslation()
+				if jointType == "revolute" then
+					angle = joint:getJointAngle()
+				end
+				
+				if userData.direction == 1 and angle >= userData.upperLimit then
+					userData.direction = -1
+					joint:setMotorSpeed(-userData.motorSpeed)
+				elseif userData.direction == -1 and angle <= userData.lowerLimit then
+					userData.direction = 1
+					joint:setMotorSpeed(userData.motorSpeed)
+				end
+			end
+			
+			if userData.destroyTimer then
+				userData.destroyTimer = userData.destroyTimer - dt
+				if userData.destroyTimer <= 0 then
+					destroyJoint(userData.name)
+				end
+			end
+		end
+	end
+	
 	for material, volume in pairs(rollingVolumes) do
 		local rollingSound = blockTable.materials[material].rollingSound
 		

@@ -7,7 +7,8 @@ function createJoint(joint)
 		joint.limit,joint.motor,joint.maxTorque,joint.lowerLimit,joint.upperLimit,joint.motorSpeed
 	local obj1, obj2 = objects.world[end1], objects.world[end2]
 
-	local joint
+	local newJoint
+	--[[
 	if type == 1 then
 		joint = love.physics.newDistanceJoint(obj1.body, obj2.body, x1, y1, x2, y2, collideConnected)
 	elseif type == 2 then
@@ -20,9 +21,117 @@ function createJoint(joint)
 		joint:setLimits(lowerLimit,upperLimit)
 		joint:setMotorSpeed(motorSpeed)
 	end
+	]]
+	if type == 1 then
+	
+		local frequency = joint.frequency or 4.0
+		local dampingRatio = joint.dampingRatio or 0.5
+		
+		local anchorAX, anchorAY, anchorBX, anchorBY
+		
+		if coordType == 0 then
+			anchorAX, anchorAY = obj1.body:getPosition()
+			anchorBX, anchorBY = obj2.body:getPosition()
+		elseif coordType == 1 then
+			anchorAX, anchorAY = x1, y1
+			anchorBX, anchorBY = x2, y2
+		elseif coordType == 2 then
+			anchorAX, anchorAY = obj1.body:getWorldPoint(x1, y1)
+			anchorBX, anchorBY = obj2.body:getWorldPoint(x2, y2)
+		end
+		
+		newJoint = love.physics.newDistanceJoint(obj1.body, obj2.body, 
+			anchorAX, anchorAY, 
+			anchorBX, anchorBY, 
+			collideConnected)
+			
+		newJoint:setFrequency(frequency)
+		newJoint:setDampingRatio(dampingRatio)
+		
+	elseif type == 2 then
+		local anchorAX, anchorAY = obj1.body:getWorldPoint(x1, y1)
+		local anchorBX, anchorBY = obj2.body:getWorldPoint(x2, y2)
+		
+		local x = anchorAX + (anchorBX - anchorAX) * 0.5
+		local y = anchorAY + (anchorBY - anchorAY) * 0.5
+		
+		newJoint = love.physics.newWeldJoint(obj1.body, obj2.body, x, y, collideConnected)
+	elseif type == 3 then
+		local anchorX, anchorY = obj1.body:getWorldPoint(x1, y1)
+		
+		newJoint = love.physics.newRevoluteJoint(obj1.body, obj2.body, anchorX, anchorY, collideConnected)
+		
+		local motorSpeed = motorSpeed or 0.0
+		local lowerLimit = lowerLimit or 0.0
+		local upperLimit = upperLimit or math.pi
+		
+		newJoint:setMotorEnabled(motor or false)
+		newJoint:setMotorSpeed(motorSpeed)
+		newJoint:setMaxMotorTorque(maxTorque or 10000.0)
+		newJoint:setLimitsEnabled(limit or false)
+		newJoint:setLimits(lowerLimit, upperLimit)
+		
+        if backAndForth then
+            newJoint:setUserData({
+                backAndForth = true,
+                direction = 1,
+                lowerLimit = lowerLimit,
+                upperLimit = upperLimit,
+                motorSpeed = motorSpeed
+            })
+        end
+	elseif type == 4 then
+		local anchorX, anchorY = obj1.body:getWorldPoint(x1, y1)
+		
+		newJoint = love.physics.newPrismaticJoint(obj1.body, obj2.body,
+			anchorX, anchorY,
+			joint.worldAxisX or 0.0,
+			joint.worldAxisY or 0.0,
+			collideConnected
+		)
+		
+		local motorSpeed = motorSpeed or 0.0
+		local lowerLimit = lowerLimit or 0.0
+		local upperLimit = upperLimit or 5.0
+		
+		newJoint:setMotorEnabled(motor or true)
+		newJoint:setMotorSpeed(motorSpeed)
+		newJoint:setMaxMotorTorque(maxTorque or 10000.0)
+		newJoint:setLimitsEnabled(limit or true)
+		newJoint:setLimits(lowerLimit, upperLimit)
+		
+        if backAndForth then
+            newJoint:setUserData({
+                backAndForth = true,
+                direction = 1,
+                lowerLimit = lowerLimit,
+                upperLimit = upperLimit,
+                motorSpeed = motorSpeed
+            })
+        end
+	
+	elseif type == 5 then
+		local anchorAX, anchorAY = obj1.body:getWorldPoint(x1, y1)
+		local anchorBX, anchorBY = obj2.body:getWorldPoint(x2, y2)
+		
+		local x = anchorAX + (anchorBX - anchorAX) * 0.5
+		local y = anchorAY + (anchorBY - anchorAY) * 0.5
+		
+		newJoint = love.physics.newWeldJoint(obj1.body, obj2.body, x, y, collideConnected)
+		newJoint:setUserData({
+			destroyTimer = joint.destroyTimer
+		})
+	end
 
-	objects.joints[name] = joint
-	-- obj.fixture:setUserData(obj)
+	objects.joints[name] = newJoint
+	
+    newJoint:setUserData(newJoint:getUserData() or {})
+    local userData = newJoint:getUserData()
+    userData.name = name
+    userData.type = type
+    userData.end1 = end1
+    userData.end2 = end2
+	
 end
 
 local polyverts = {}

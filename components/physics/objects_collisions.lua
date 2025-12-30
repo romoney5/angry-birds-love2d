@@ -10,7 +10,7 @@ function removeObject(name)
 	end
 end
 
-function destroyJoint()
+function destroyJoint(name)
 	local obj = objects.joints[name]
 	
 	if obj then
