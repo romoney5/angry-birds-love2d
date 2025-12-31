@@ -558,33 +558,37 @@ function setDeltaTimeMultiplier(dt)
 end
 
 --override run function to allow drawing in the update hook
+function loveUpdate(pause)
+	-- Process events.
+	if love.event then
+		love.event.pump()
+		for name, a,b,c,d,e,f in love.event.poll() do
+			if name == "quit" then
+				if not love.quit or not love.quit() then
+					return a or 0
+				end
+			end
+			love.handlers[name](a,b,c,d,e,f)
+		end
+	end
+
+	-- Call update and draw
+	--don't step if the game should be paused while resizing
+	local dt = love.timer.step()
+	if love.update then love.update(pause and 0 or dt) end
+
+	if love.graphics and love.graphics.isActive() then
+		if love.draw then love.draw() end
+	end
+
+	if love.timer then love.timer.sleep(1 / targetFPS) end
+end
+
 function love.run()
 	if love.load then love.load(love.arg.parseGameArguments(arg), arg) end
 	if love.timer then love.timer.step() end
 
-	return function()
-		-- Process events.
-		if love.event then
-			love.event.pump()
-			for name, a,b,c,d,e,f in love.event.poll() do
-				if name == "quit" then
-					if not love.quit or not love.quit() then
-						return a or 0
-					end
-				end
-				love.handlers[name](a,b,c,d,e,f)
-			end
-		end
-
-		-- Call update and draw
-		if love.update then love.update(love.timer.step()) end
-
-		if love.graphics and love.graphics.isActive() then
-			if love.draw then love.draw() end
-		end
-
-		if love.timer then love.timer.sleep(1 / targetFPS) end
-	end
+	return loveUpdate
 end
 
 
