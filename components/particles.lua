@@ -2,7 +2,12 @@
 
 function drawParticlesNative()
 	for _, p in _G.pairs(particles) do
-		setRenderState(-screen.left / p.scale, -screen.top / p.scale, worldScale * p.scale, worldScale * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
+		if p.isWeather then
+			setRenderState(0, 0, worldScale * p.scale, worldScale * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
+		else
+			setRenderState(-screen.left / p.scale, -screen.top / p.scale, worldScale * p.scale, worldScale * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
+		end
+
 		_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
 	end
 end
@@ -40,74 +45,82 @@ end
 --no, love does not run on an iphone 4
 ignoreParticleLimits = true
 
-getAddParticles = {__index = function(self,i)
-	if i == "addParticles" then
-		return function(type, amount, x, y, w, h, angle)
-				local pt = particleTable.particles[type]
-				if softLimitSimultaneousParticles < particleAmount + amount and not ignoreParticleLimits then
-					amount = amount * 0.5
-				end
-				
-				for i = 1, amount, 1 do
-					if particleAmount < hardLimitSimultaneousParticles or ignoreParticleLimits then
-						particleAmount = particleAmount + 1
-						local p = { }
-						p.x = x + (_G.math.random(0, w) - 0.5*w ) -- * cos(angle)
-						p.y = y + (_G.math.random(0, h) - 0.5*h ) -- * sin(angle)
-						local mivx,mavx = pt.minVel,pt.maxVel
-						local mivy,mavy = pt.minVel,pt.maxVel
-						if pt.emitter_box then
-							if pt.emitter_box.minVelX then
-								mivx, mavx, mivy, mavy = pt.emitter_box.minVelX,pt.emitter_box.maxVelX,
-														pt.emitter_box.minVelY,pt.emitter_box.maxVelY
-							else
-								mivx, mavx, mivy, mavy = pt.emitter_box.minVel,pt.emitter_box.maxVel,
-														pt.emitter_box.minVel,pt.emitter_box.maxVel
-							end
-						end
-						
-						--TODO: that's not a circle.. ..
-						if pt.emitter_circle then
-							mivx,mavx, mivy,mavy = pt.emitter_circle.minVel,pt.emitter_circle.maxVel,
-													pt.emitter_circle.minVel,pt.emitter_circle.maxVel
-						end
-
-						p.xVel,p.yVel = _G.math.random(mivx, mavx), _G.math.random(mivy, mavy)
-						p.angle = _G.math.random(1, 3.14)
-						p.angleVel = _G.math.random(pt.minAngleVel, pt.maxAngleVel)
-						p.scaleBegin = _G.math.random(pt.minScaleBegin, pt.maxScaleBegin)
-						p.scaleEnd = _G.math.random(pt.minScaleEnd, pt.maxScaleEnd)
-						p.scale = p.scaleBegin
-						p.type = type
-						p.sprite = pt.sprites[_G.math.random(1, #pt.sprites)]
-						p.sheet = pt.sheet
-						p.time = 0
-						p.lifeTime = pt.lifeTime
-						p.lifeTimeAnimation = pt.animation == "lifeTime"
-
-						if p.lifeTimeAnimation then
-							p.sprite = pt.sprites[1]
-						end
-						p.oldSprite = p.sprite
-						p.spritePivotX, p.spritePivotY = _G.res.getSpritePivot(p.sheet, p.sprite)
-
-						_G.table.insert(particles, p)
-					end
+local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, isWeather)
+	local pt = particleTable.particles[type]
+	if softLimitSimultaneousParticles < particleAmount + amount and not ignoreParticleLimits then
+		amount = amount * 0.5
+	end
+	
+	for i = 1, amount, 1 do
+		if particleAmount < hardLimitSimultaneousParticles or ignoreLimits or ignoreParticleLimits then
+			particleAmount = particleAmount + 1
+			local p = { }
+			p.x = x + (_G.math.random(0, w) - 0.5*w ) -- * cos(angle)
+			p.y = y + (_G.math.random(0, h) - 0.5*h ) -- * sin(angle)
+			local mivx,mavx = pt.minVel,pt.maxVel
+			local mivy,mavy = pt.minVel,pt.maxVel
+			if pt.emitter_box then
+				if pt.emitter_box.minVelX then
+					mivx, mavx, mivy, mavy = pt.emitter_box.minVelX,pt.emitter_box.maxVelX,
+											pt.emitter_box.minVelY,pt.emitter_box.maxVelY
+				else
+					mivx, mavx, mivy, mavy = pt.emitter_box.minVel,pt.emitter_box.maxVel,
+											pt.emitter_box.minVel,pt.emitter_box.maxVel
 				end
 			end
+			
+			--TODO: that's not a circle.. ..
+			if pt.emitter_circle then
+				mivx,mavx, mivy,mavy = pt.emitter_circle.minVel,pt.emitter_circle.maxVel,
+										pt.emitter_circle.minVel,pt.emitter_circle.maxVel
+			end
+
+			p.xVel,p.yVel = _G.math.random(mivx, mavx), _G.math.random(mivy, mavy)
+			p.angle = _G.math.random(1, 3.14)
+			p.angleVel = _G.math.random(pt.minAngleVel, pt.maxAngleVel)
+			p.scaleBegin = _G.math.random(pt.minScaleBegin, pt.maxScaleBegin)
+			p.scaleEnd = _G.math.random(pt.minScaleEnd, pt.maxScaleEnd)
+			p.scale = p.scaleBegin
+			p.type = type
+			p.sprite = pt.sprites[_G.math.random(1, #pt.sprites)]
+			p.sheet = pt.sheet
+			p.time = 0
+			p.lifeTime = pt.lifeTime
+			p.lifeTimeAnimation = pt.animation == "lifeTime"
+
+			p.isWeather = isWeather
+
+			if p.lifeTimeAnimation then
+				p.sprite = pt.sprites[1]
+			end
+			p.oldSprite = p.sprite
+			p.spritePivotX, p.spritePivotY = _G.res.getSpritePivot(p.sheet, p.sprite)
+
+			_G.table.insert(particles, p)
+		end
+	end
+end
+
+local function setHardLimit(limit)
+	hardLimitSimultaneousParticles = limit
+end
+
+local function setSoftLimit(limit, multiplier)
+	softLimitSimultaneousParticles = _G.math.random(limit, multiplier)
+end
+
+local function clear(kind)
+	return
+end
+
+getParticles = {__index = function(self, i)
+	if i == "addParticles" then
+		return addParticles
 	elseif i == "setHardLimit" then
-		local func = function(n)
-			hardLimitSimultaneousParticles = n
-		end
-		return func
+		return setHardLimit
 	elseif i == "setSoftLimit" then
-		local func = function(n, m)
-			softLimitSimultaneousParticles = _G.math.random(n, m)
-		end
-		return func
+		return setSoftLimit
 	elseif i == "clear" then
-		return function(kind)
-			return
-		end
+		return clear
 	end
 end}
