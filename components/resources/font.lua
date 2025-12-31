@@ -51,42 +51,60 @@ function res.useFont(font)
 	end
 end
 
---TODO: font y positions are inaccurate
+--TODO: font positions are inaccurate
+--handy table lifted from 3.0.1
+local pivot_correction = {
+	-- HCENTER = 0.5,
+	VCENTER = 0.5,
+	-- LEFT = 0,
+	-- RIGHT = 1,
+	TOP = 0,
+	BOTTOM = 1
+}
+
 function res.drawString(group, text, x, y, aligny, alignx)
 	text = tostring(text) or ""
 	if group and group~="" then
 		text = res.getString(group,text)
 	end
 
+	-- x = x - 1
+	-- y = y - 1
 	local font = fonts[drawfont]
 	if font then
 		local ay = 0
 		local h = -font.leading
 		
 		for l in text:gmatch("[^\n]+") do h = h + font.leading end
-		if alignx=="VCENTER" or aligny=="VCENTER" then ay = -h * .75 + res.getFontHeight() * .25 end
-		if alignx=="BOTTOM" or aligny=="BOTTOM" then ay = -(h + font.leading) * .5  end
-		if alignx=="TOP" or aligny=="TOP" then ay = h + font.leading * .75 end
+		-- if alignx=="VCENTER" or aligny=="VCENTER" then ay = -h * .75 + res.getFontHeight() * .25 end
+		-- if alignx=="BOTTOM" or aligny=="BOTTOM" then ay = -(h + font.leading) * .5  end
+		-- if alignx=="TOP" or aligny=="TOP" then ay = h + font.leading * .75 end
+		ay = (pivot_correction[aligny] or pivot_correction[alignx] or 0) * h
 		
-		local line = 0
 		local linex = x
+		love.graphics.push()
 		for l in text:gmatch("[^\n]+") do
-			local ax, i = 0, 0
+			local ax = 0
 			if alignx=="HCENTER" or aligny=="HCENTER" then ax = -res.getStringWidth(l) / 2 end
 			if alignx=="RIGHT" or aligny=="RIGHT" then ax = -res.getStringWidth(l) end
 
+			love.graphics.push()
 			for c in l:gmatch(".") do
 				local char = font.chars[string.format("%04x", string.byte(c))]
 				if char then
-					local charX = (x + i + ax)
-					local charY = (y + ay - char.pivoty + (line * font.leading))
+					local charX = (x + ax)
+					local charY = (y + ay - char.pivoty)
 					
-					love.graphics.draw(font.spritesheet, char.quad, math.floor(charX), math.floor(charY), drawangle)
-					i = i + (char.width + font.tracking) --math.floor for crisp text
+					love.graphics.draw(font.spritesheet, char.quad, charX, charY, drawangle)
+					love.graphics.translate(char.width + font.tracking, 0)
+					-- i = i + (char.width + font.tracking) --math.floor for crisp text
 				end
 			end
-			line = line + 1
+			-- line = line + 1
+			love.graphics.pop()
+			love.graphics.translate(0, font.leading)
 		end
+		love.graphics.pop()
 	else
 		--temporarily revert blendmode
 		local bm, am = love.graphics.getBlendMode()
@@ -220,8 +238,6 @@ function res.getStringWidth(text, font)
 			if char then
 				i = i + char.width + font.tracking
 				highscore = math.max(highscore, i)
-			elseif c == "\n" then
-				i = 0
 			end
 		end
 		return highscore

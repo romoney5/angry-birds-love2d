@@ -173,16 +173,13 @@ function drawRect2(r, g, b, a, x, y, w, h, round)
 	love.graphics.setColor(r2, y2, b2, a2)
 end
 
-function drawLine2D(x0, y0, x1, y1, w, r, g, b, a) --TODO: hitbox (8) rotations center on the origin
+function drawLine2D(x0, y0, x1, y1, w, r, g, b, a)
 	local r2, y2, b2, a2 = love.graphics.getColor()
 	love.graphics.push()
 	-- love.graphics.origin()
 	love.graphics.setColor(r / 255, g / 255, b / 255, a / 255)
-	love.graphics.setLineWidth(w * .75)
-	-- setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0)
-	-- love.graphics.scale(worldScale)
-	-- love.graphics.translate(-screen.left - cameraShakeX, -screen.top - cameraShakeY)
-	-- gra
+	love.graphics.setLineWidth(w)
+	love.graphics.setLineStyle("rough")
 
 	--rotate around the x/y rotation pivot
 	love.graphics.translate(x0, y0)
@@ -190,7 +187,7 @@ function drawLine2D(x0, y0, x1, y1, w, r, g, b, a) --TODO: hitbox (8) rotations 
 	love.graphics.rotate(drawangle)
 	love.graphics.translate(-drawxp, -drawyp)
 	-- print(x1,y1,x2,y2)
-	love.graphics.line(0, 0, x1-x0, y1-y0)
+	love.graphics.line(0, 0, math.floor(x1-x0), math.floor(y1-y0))
 	love.graphics.setColor(r2,y2,b2,a2)
 	love.graphics.pop()
 end
