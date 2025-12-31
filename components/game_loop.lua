@@ -100,18 +100,19 @@ function love.update(dt)
 		dt2 = speedUpPre(math.min(dt, .4) * ((debugOpen or optionsOpen) and 0.2 or 1) * timeScale)
 
 		local kp, kr, kh = keyPressed, keyReleased, keyHold
-		if currentPopup.open or debugOpen or fmOpen or optionsOpen then keyPressed, keyReleased, keyHold = {},{},{} end
+		if openPopups[1] or debugOpen or fmOpen or optionsOpen then keyPressed, keyReleased, keyHold = {},{},{} end
 
 		if currentGameMode == updateSomething then
 			currentGameMode(dt2)
 		else
-			if currentPopup and currentPopup.important then
+			--pause the game if there's an important popup
+			if openPopups[1] and openPopups[1].pause then
 				if not alreadyLoadedFonts and loadFonts then
 					alreadyLoadedFonts = true
 					loadFonts()
 				end
 			else
-				update(dt2,dt2)
+				update(dt2, dt2)
 			end
 		end
 
