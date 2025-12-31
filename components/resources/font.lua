@@ -20,10 +20,14 @@ function res.createBitmapFont(font, silent)
 		if not fonts[fontname] then
 			local data = getDatInfo(love.filesystem.read(font), font, "FONT")
 			local spritesheet = data.filename
+			local filepath = (font:match("(.+)/[^/]+$") or "").."/"..spritesheet
 			if endsWith(spritesheet, ".pvr") then
-				spritesheet = spritesheet..".png"
+				-- spritesheet = spritesheet..".png"
+				local data = love.filesystem.read(filepath)
+				spritesheet = love.graphics.newImage(convertImagePVR(data, spritesheet))
+			else
+				spritesheet = love.graphics.newImage(filepath)
 			end
-			spritesheet = love.graphics.newImage((font:match("(.+)/[^/]+$") or "").."/"..spritesheet)
 			
 			--TODO last time i checked, some properties are inaccurate to fusion
 			fonts[fontname] = {leading = data.leading, tracking = data.tracking, spritesheet = spritesheet, chars = {}, height = data.height - data.mbaseline}
