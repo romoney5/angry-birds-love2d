@@ -112,15 +112,30 @@ function drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_scale)
 	love.graphics.push()
 	setRenderState(0, 0, 1, 1)
 	-- res.drawString("",self.hanchor..self.vanchor, self.x+x, self.y+y)
-	love.graphics.translate(math.floor(self.x * hs + x), math.floor(self.y * hs + y))
-	love.graphics.scale(scale_x * self.scaleX * hs, scale_y * self.scaleY * hs)
 	-- print(self.font or "FONT_BASIC")
 	love.graphics.setColor(1 * alpha, 1 * alpha, 1 * alpha, alpha)
-	res.drawString(self.group, self.text, 0, 0, self.hanchor, self.vanchor)
+	love.graphics.translate(math.floor(self.x * hs + x), math.floor(self.y * hs + y))
+	if self.clipped then
+		local font = fonts[drawfont]
+
+		love.graphics.translate(0, math.floor(-font.leading * #self.lines / 2))
+
+		for i, line in ipairs(self.lines) do
+			love.graphics.push()
+			love.graphics.scale(scale_x * self.scaleX * hs, scale_y * self.scaleY * hs)
+			res.drawString(line.group, line.text, 0, 0, line.hanchor, line.vanchor)
+			love.graphics.pop()
+			love.graphics.translate(0, math.floor(font.leading))
+		end
+	else
+		love.graphics.scale(scale_x * self.scaleX * hs, scale_y * self.scaleY * hs)
+		res.drawString(self.group, self.text, 0, 0, self.hanchor, self.vanchor)
+	end
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.pop()
 end
 
+clippedText = {lines = {}, widestLine = 0}
 function clipText(group, text, size)
 	local font = fonts[drawfont]
 	if not font then return end
