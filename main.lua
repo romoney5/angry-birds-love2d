@@ -258,13 +258,13 @@ function love.load()
 	end
 
 	-- loadLuaFileToObject(scriptPath .. "/animations.lua", this)
-	loadlua(scriptPath.."/particles.lua", this, particleTable, true)
+	loadLuaFileToObject(scriptPath.."/particles.lua", this, particleTable, true)
 	loadlua(scriptPath.."/starLimits.lua", this, starTable)
 	blockTable.themes, blockTable.blocks = {}, {}
 	
 	loadlua(scriptPath.."/blocks.lua", this, blockTable, true)
 
-	loadlua(scriptPath.."/loadlist.lua", this, _G, true)
+	loadLuaFileToObject(scriptPath.."/loadlist.lua", this, _G, true)
 
 	loadLuaFileToObject(scriptPath.."/episodes.lua", this, "episodes", true)
 	loadLuaFileToObject(scriptPath.."/cutscenes.lua", this, "cutscenes", true)
