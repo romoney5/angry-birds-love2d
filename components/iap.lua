@@ -1,5 +1,15 @@
 --placeholder stuff related to in-app purchases
 
+iap = {}
+
+function iap.init()
+	print("Initialize IAP")
+end
+
+function iap.update(dt)
+	return
+end
+
 function iapInitItemPurchase(callback) --1.7.0
 	if _G[callback] then
 		_G[callback](mightyEagleItemId, 1, 0) --status: 1=success, 2=failure (error code 2=canceled), 3=restored
