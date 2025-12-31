@@ -57,12 +57,15 @@ function love.update(dt)
 		updateDisplayScale()
 		screenWidth = math.floor(love.graphics.getWidth() / displayScale)
 		screenHeight = math.floor(love.graphics.getHeight() / displayScale)
+
+		g_updatedScreenWidth, g_updatedScreenHeight = screenWidth, screenHeight --4.0.0
 		
 		--update window title
 		love.window.setTitle("Angry Birds ("..screenWidth.."x"..screenHeight..")")
 
+		--restore particle functions
 		if particles and not getmetatable(particles) then
-			setmetatable(particles, getAddParticles)
+			setmetatable(particles, getParticles)
 		end
 
 		if not joystick then

@@ -195,6 +195,7 @@ function drawLine2D(x0, y0, x1, y1, w, r, g, b, a) --TODO: hitbox (8) rotations 
 	love.graphics.pop()
 end
 
+--3.0.1
 function drawRubberband(x1, y1, x2, y2, width, sprite)
 	sprite = checkSprite(sprite)
 	if not sprite then return end
@@ -210,6 +211,15 @@ function drawRubberband(x1, y1, x2, y2, width, sprite)
 	love.graphics.scale(dist / sprite.width, width / sprite.height)
 	res.drawSprite(sprite, 0, -sprite.height / 4, "LEFT")
 
+	love.graphics.pop()
+end
+
+--4.0.0
+function drawFullscreenRect(r, g, b, a)
+	love.graphics.push("all")
+	love.graphics.origin()
+	love.graphics.setColor(r, g, b, a)
+	love.graphics.rectangle("fill", 0, 0, love.graphics.getDimensions())
 	love.graphics.pop()
 end
 

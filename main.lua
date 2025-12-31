@@ -255,6 +255,7 @@ function love.load()
 	runLuaFile("highscores.lua", true)
 	
 	uniqueDeviceId = getDeviceID()
+	uniqueInstallationId = ""
 
 	love.graphics.setNewFont(24)
 
@@ -355,6 +356,13 @@ function love.load()
 			uimos(item, dt)
 		end
 	end
+
+	--4.0.0 patch
+	if RovioAnalytics and RovioAnalytics.logEvent then
+		function RovioAnalytics.logEvent(id, params)
+			return
+		end
+	end
 	
 	handlePostStartArgs()
 end
@@ -362,6 +370,14 @@ end
 function setTheme(theme)
 	currentTheme = theme
 	objects.theme = theme
+end
+
+function setLevelEffects(theme)
+	return
+end
+
+function updateLevelEffects(dt, realDt) --right parameters?
+	return
 end
 
 --enable/disable screensaver
