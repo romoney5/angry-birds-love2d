@@ -40,7 +40,7 @@ physicsWorld = nil
 
 audiovolume = 1
 
-currentPopup = {}
+openPopups = {}
 
 flurry = {}
 
@@ -119,7 +119,7 @@ function loadLuaFileToObject(filename, ctx, envKey, lenient)
 							return true
 						end},
 					}
-				) currentPopup.important = true
+				, true)
 		end
 	else
 		return tostring(lua)
@@ -449,6 +449,8 @@ function openRegistrationDialog(message, validationURL, registrationURL, fullGam
 				end
 
 				showPopup("Registration", "Full game registered.")
+
+				return true
 			end},
 		}
 	)
@@ -553,19 +555,20 @@ function love.run()
 end
 
 
-function showPopup(title,desc,buttons,extra,height)
+function showPopup(title, text, buttons, pause, extra, height)
 	keyReleased.LBUTTON = false
 
 	if audiochannels then
 		res.playAudio("noteG", .7)
 	end
 
-	if buttons == nil then
-		buttons = {
-			{sprite = "TUTORIAL_OK", callback = function()
-				return true
-			end},
-		}
-	end
-	currentPopup = {open = true, title = title, text = desc, buttons = buttons, extra = extra, h = height}
+	--default button set
+	buttons = buttons or {
+		{sprite = "TUTORIAL_OK", callback = function()
+			return true
+		end},
+	}
+
+	--add a popup at the end of the queue
+	table.insert(openPopups, {title = title, text = text, buttons = buttons, extra = extra, h = height, pause = pause})
 end

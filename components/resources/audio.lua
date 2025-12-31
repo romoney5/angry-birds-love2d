@@ -68,7 +68,7 @@ function res.playAudio(audio, volume, loop, track)
 			cachedaudios[audio] = 0
 			showPopup("Warning",
 				"Audio file \""..audios[audio].."\" not found."
-			) currentPopup.important = true
+			, nil, true)
 			return
 		end
 		cachedaudios[audio] = love.audio.newSource(audios[audio], loop and "stream" or "static") --for looping audio, stream from disk rather than in memory

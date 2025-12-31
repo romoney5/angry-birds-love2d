@@ -1,6 +1,6 @@
 --this massive function runs every frame
 
---clear key* tables instead of making them {}
+--clear key* tables instead of remaking them
 require("table.clear")
 
 local pausedaudios = {} --thanks love 11
@@ -23,7 +23,7 @@ function updateDisplayScale()
 end
 
 function love.update(dt)
-	if love.window.hasFocus() or enableDebug then
+	if love.window.hasFocus() then
 		if love.joystick then
 			local joysticks = love.joystick.getJoysticks()
 			joystick = joysticks[1]
@@ -164,22 +164,29 @@ function love.update(dt)
 		hasfocus = false
 		pausedaudios = love.audio.pause()
 
-		gamePaused()
+		--don't keep saving settings.lua every time you defocus
+		if not enableDebug then
+			gamePaused()
+		end
+
 		love.graphics.present()
 	end
 	-- if not cursor.wheelTriggered then
 		cursor.wheel = 0
 	-- end
 
-	--clear key* tables instead of making them {}
+	--clear key* tables instead of remaking them
 	table.clear(keyPressed)
 	table.clear(keyReleased)
 end
 
 function updatePopup()
-	if currentPopup.open then
-		local w, h = math.max(res.getStringWidth(currentPopup.title, "FONT_MENU") - 50, res.getStringWidth(currentPopup.text, "FONT_BASIC") + 50) + 320, 300 + (currentPopup.h or 0)
+	local popup = openPopups[1]
+
+	if popup then
+		local w, h = math.max(res.getStringWidth(popup.title, "FONT_MENU") - 50, res.getStringWidth(popup.text, "FONT_BASIC") + 50) + 320, 300 + (popup.h or 0)
 		w = math.min(w, screenWidth * .9)
+
 		local ox, oy = screenWidth * .5, screenHeight * .5
 		local x, y = ox - w * .5, oy - h * .5
 
@@ -187,20 +194,20 @@ function updatePopup()
 		drawRect2(10 / 255, 10 / 255, 10 / 255, .3, x + 10, y + 10, w, h, 16)
 		drawRect2(24 / 255, 50 / 255, 75 / 255, 1, x, y, w, h, 16)
 
-		drawDebugText(currentPopup.title, ox, y, "HCENTER", "FONT_MENU")
-		drawDebugText(currentPopup.text, x + 50, y + 75, "LEFT", "FONT_BASIC")
+		drawDebugText(popup.title, ox, y, "HCENTER", "FONT_MENU")
+		drawDebugText(popup.text, x + 50, y + 75, "LEFT", "FONT_BASIC")
 
-		local btns = #currentPopup.buttons
+		local btns = #popup.buttons
 		local sx = w / (btns + 1) --start x
-		if currentPopup.extra then
-			currentPopup.extra(x + 50, y + 100, w - 50 - 50, h - 50 - 90, currentPopup)
+		if popup.extra then
+			popup.extra(x + 50, y + 100, w - 50 - 50, h - 50 - 90, popup)
 		end
 
-		for i,v in pairs(currentPopup.buttons) do
+		for i,v in pairs(popup.buttons) do
 			drawDebugButton(v.sprite, ox + (i - (btns + 1) / 2) * sx, oy + h * .5, 1, function()
 				-- optionsOpen = false
 				if v.callback and v.callback() then
-					currentPopup = {}
+					table.remove(openPopups, 1)
 				end
 			end, true, v.sound or "menu_confirm")
 		end

@@ -16,16 +16,16 @@ function handleStartArgs()
 							local success1 = love.filesystem.remove("settings.lua")
 							local success2 = love.filesystem.remove("highscores.lua")
 							if success1 and success2 then
-								showPopup("Data", "Successfully deleted settings and highscores.")
+								showPopup("Data", "Successfully deleted settings and highscores.", nil, true)
 							else
-								showPopup("Data", "Could not properly delete settings and/or highscores.")
+								showPopup("Data", "Could not properly delete settings and/or highscores.", nil, true)
 							end
-							currentPopup.important = true
 							settings, highscores = {}, {}
+
+							return true
 						end},
 					}
-				)
-				currentPopup.important = true
+				, true)
 			elseif v == "--model" or v == "-m" then --override deviceModel
 				deviceModel = arg[i + 1] or deviceModel
 			elseif v == "--gamelogic" or v == "-gl" then --override gamelogic.lua path

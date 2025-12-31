@@ -117,11 +117,8 @@ function love.errorhandler(msg)
 				return 1
 			elseif e == "keypressed" and a == "escape" then
 				return 1
-				-- love.event.quit("restart")
-			elseif e == "keypressed" and a == "c" and love.keyboard.isDown("lctrl", "rctrl") then
-				-- copyToClipboard()
 			elseif e == "touchpressed" or e == "mousepressed" then
-				if not currentPopup.open then
+				if not openPopups[1] then
 					showPopup("Angry Birds", "Exit the game?", {
 						-- {sprite = "BUTTON_RESTART", callback = function()
 						-- 	love.event.quit("restart")
