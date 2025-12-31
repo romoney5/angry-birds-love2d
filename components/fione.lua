@@ -32,6 +32,12 @@ end
 local ffi = ffi
 local table = table
 local pcall = pcall
+local error_blame
+local og_assert = assert
+local function assert(...)
+	og_assert(...)
+	return ...
+end
 
 local lua_bc_to_state
 local lua_wrap_state
@@ -567,6 +573,7 @@ local function on_lua_error(failed, err)
 	local src = failed.source
 	local line = failed.lines[failed.pc - 1]
 
+	print("Last indexed: "..tostring(error_blame))
 	error(string.format('%s:%i: %s', src, line or -1, err), 0)
 end
 
@@ -628,6 +635,7 @@ local function run_lua_func(state, env, upvals)
 								index = memory[inst.C]
 							end
 
+							error_blame = index
 							memory[A + 1] = memory[B]
 							memory[A] = memory[B][index]
 						else
@@ -829,7 +837,10 @@ local function run_lua_func(state, env, upvals)
 							if not success then
 								str = memory[B]
 
-								for i = B + 1, C do str = str .. memory[i] end
+								for i = B + 1, C do
+									error_blame = "Concat"
+									str = str .. memory[i]
+								end
 							end
 
 							memory[inst.A] = str
@@ -893,6 +904,7 @@ local function run_lua_func(state, env, upvals)
 							rhs = memory[inst.C]
 						end
 
+						error_blame = tostring(lhs).." < "..tostring(rhs)
 						if (lhs < rhs) == (inst.A ~= 0) then pc = pc + code[pc].sBx end
 
 						pc = pc + 1
@@ -1002,8 +1014,11 @@ local function run_lua_func(state, env, upvals)
 							limit = assert(tonumber(memory[A + 1]), '`for` limit must be a number')
 							step = assert(tonumber(memory[A + 2]), '`for` step must be a number')
 
+							error_blame = "For-loop initial value"
 							memory[A] = init - step
+							error_blame = "For-loop limit value"
 							memory[A + 1] = limit
+							error_blame = "For-loop step value"
 							memory[A + 2] = step
 
 							pc = pc + inst.sBx

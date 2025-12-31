@@ -53,7 +53,7 @@ function endsWith(str, ending)
 end
 
 --load either plain text lua or a precompiled chunk with fione
-function makeChunk(filename)
+function makeChunk(filename, env)
 	local src = love.filesystem.read(filename)
 	if not src then
 		return nil, nil, "No source"
@@ -61,7 +61,7 @@ function makeChunk(filename)
 	
 	if src:sub(1, 4) == "\27Lua" then --it's bytecode!
 		print("Loading compiled Lua \""..filename.."\"...")
-		return pcall(loadbytecode, src, nil, filename)
+		return pcall(loadbytecode, src, env, filename)
 	else --that's just plain old lua.. boring..
 		print("Loading Lua \""..filename.."\"...")
 		return pcall(love.filesystem.load, filename)
@@ -69,41 +69,47 @@ function makeChunk(filename)
 end
 
 --very important in later codebases
-function loadLuaFileToObject(filename, ctx, envKey, lenient)
+function loadLuaFileToObject(filename, ctx, key, lenient)
 	local loaded, lua
+
+	ctx = ctx or _G
+
+	local env
+	if type(key) == "table" then
+		env = key
+	elseif type(key) == "string" and key ~= "" then
+		--make a new table in ctx with the name of key (this, "ui")
+		ctx[key] = ctx[key] or {}
+		env = ctx[key]
+	else
+		--use ctx table (this.ui, "")
+		env = ctx
+	end
+
 	filename = resolvePath(datapath.."/"..filename)
-	loaded, lua = makeChunk(filename)
+	loaded, lua = makeChunk(filename, env)
 
 	if lua and loaded then
-		ctx = ctx or _G
-
-		local env = nil
-		if type(envKey) == "table" then
-			env = envKey
-		elseif type(envKey) == "string" and envKey ~= "" then
-			ctx[envKey] = {}
-			env = ctx[envKey]
-		else
-			env = ctx
-		end
+	    setfenv(lua, env)
 		
 		--emulate scope behavior
-		setmetatable(env, {
-			__index = function(self, k)
-				if k == "_G" or k == "gamelua" then
-					return _G
-				elseif k == "this" then
-					return env
+		if not getmetatable(env) then
+			setmetatable(env, {
+				__index = function(self, k)
+					if k == "_G" or k == "gamelua" then
+						return _G
+					elseif k == "this" then
+						return env
+					end
+				end,
+				__newindex = function(self, k, v)
+					if k ~= "filename" then
+						rawset(self, k, v)
+					end
 				end
-			end,
-			__newindex = function(self, k, v)
-				if k ~= "filename" then
-					rawset(self, k, v)
-				end
-			end
-		})
+			})
+		end
 
-	    setfenv(lua, env)
 		lua()
 	elseif not lenient then
 		-- local _,r = pcall(loadstring(love.filesystem.read(filename)))
@@ -142,6 +148,8 @@ function loadLuaFile(filename, envKey, lenient)
 		end
 		print("Could not load Lua file: "..filename.."\n"..tostring(lua))
 	end
+
+	return false
 end
 
 function runLuaFile(filename, lenient)
@@ -161,8 +169,16 @@ function runLuaFile(filename, lenient)
 end
 
 --also used in some versions
+local alreadyloaded = {}
 function requireFile(filename)
-	if not loadLuaFile(scriptPath.."/"..filename, nil, true) then loadLuaFile(commonScriptPath.."/"..filename) end
+	if alreadyloaded[filename] then return end
+
+	if loadLuaFile(scriptPath.."/"..filename, nil, true) == false and loadLuaFile(commonScriptPath.."/"..filename) == false then
+		print("Could not load Lua file: "..filename)
+		return
+	end
+
+	alreadyloaded[filename] = true
 end
 
 --strips ..
