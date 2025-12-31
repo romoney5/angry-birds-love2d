@@ -208,7 +208,7 @@ function drawRubberband(x1, y1, x2, y2, width, sprite)
 	love.graphics.translate(x1, y1)
 	love.graphics.rotate(angle)
 	love.graphics.scale(dist / sprite.width, width / sprite.height)
-	res.drawSprite(sprite, 0, 0, "LEFT")
+	res.drawSprite(sprite, 0, -sprite.height / 4, "LEFT")
 
 	love.graphics.pop()
 end
