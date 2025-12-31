@@ -61,10 +61,42 @@ function convertImagePVR(data, filename)
 			local filedata = love.filesystem.newFileData(data, "")
 			imagedata = love.image.newCompressedData(filedata)
 		-- else
-		-- 	error("wrong pvr format for \""..filename.."\"")
+		-- 	error("convertImagePVR: unsupported pvr pixel format for \""..filename.."\": "..tostring(format))
+		end
+	elseif love.data.unpack(">i4", data, 1) == 0x50565203 then --pvr v3 header, nearly everything in 4.0.0
+		skip(4) --PVR
+		skip(4) --flags
+		-- format = data:sub(pos, pos + 3) --pixel format
+		format = love.data.unpack("<i4", data, pos + 4)
+		skip(8)
+		skip(4) --color space
+		skip(4) --channel type
+		h = love.data.unpack("<i4", data, pos)
+		skip(4)
+		w = love.data.unpack("<i4", data, pos)
+		skip(4)
+		skip(4) --depth
+		skip(4) --num surfaces
+		skip(4) --num faces
+		mipmaps = love.data.unpack("<i4", data, pos) --and NOW we have our mipmaps
+
+		if format == 67372036 and support.rgba4 then --04 04 04 04 unorm linear
+			local expectedSize = w * h * 2 + headerSize
+			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize..", got "..data:len())
+
+			rawdata = string.sub(data, headerSize + 1)
+			imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
+		elseif format == 134744072 and support.rgba8 then --08 08 08 08 unorm linear
+			local expectedSize = w * h * 4 + headerSize
+			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize..", got "..data:len())
+
+			rawdata = string.sub(data, headerSize + 1)
+			imagedata = love.image.newImageData(w, h, "rgba8", rawdata)
+		-- else
+		-- 	error("convertImagePVR: unsupported pvr pixel format for \""..filename.."\": "..tostring(format))
 		end
 	else
-		error("convertImagePVR: wrong pvr format for \""..filename.."\"")
+		print("convertImagePVR: unsupported pvr header format for \""..filename.."\"")
 	end
 
 	--shucks! guess an empty image will do

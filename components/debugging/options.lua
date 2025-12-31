@@ -44,7 +44,7 @@ function updateOptions(dt)
 	-- 		return
 	-- 	end
 	-- end
-	drawBox(boxsprites or {}, "", x - w*.5, y - h*.5, w, h)
+	drawBoxNative(boxsprites or {}, x - w*.5, y - h*.5, w, h)
 	drawDebugText("Options", 240, 170, nil, "FONT_MENU")
 	drawDebugButton("BUTTON_ARROW_LEFT", 180, 170, 1, function()
 		optionsOpen = false

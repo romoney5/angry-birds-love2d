@@ -132,10 +132,10 @@ function updateDebug(dt)
 			return
 		end
 	end
-	drawBox(boxsprites or {},"",x - w*.5,y - h*.5,w,h)
+	drawBoxNative(boxsprites or {}, x - w*.5, y - h*.5, w, h)
 	love.graphics.translate(x, y)
 	love.graphics.scale(s)
-	res.drawString("","Options",0,0,"HCENTER","VCENTER")
+	res.drawString("", "Options", 0, 0, "HCENTER", "VCENTER")
 end
 
 function updateOptions(dt)
