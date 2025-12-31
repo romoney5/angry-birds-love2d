@@ -178,7 +178,8 @@ function drawObject(v)
 	drawxp, drawyp = res.getSpritePivot(v.sprite)
 	drawangle = v.angle
 	
-	local scale = v.powerup_scale or 1
+	local userData = v.fixture:getUserData()
+	local scale = userData.scale or 1
 	if v.isBackground then scale = 2 end
 
 	love.graphics.scale(scale)

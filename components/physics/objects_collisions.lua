@@ -123,7 +123,9 @@ function setObjectParameter(object, parameter, value)
 		elseif parameter == 3 then -- nothing
 		elseif parameter == 4 then -- nothing
 		elseif parameter == 5 then -- ?
-
+			if obj.body then
+				setScale(object, value)
+			end
 		elseif parameter == 6 then -- ?
 
 		end

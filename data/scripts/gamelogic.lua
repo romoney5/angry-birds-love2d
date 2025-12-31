@@ -26365,8 +26365,8 @@ function animateBirdToSlingShot(dt)
 end
 
 function updateCharacterAnimations(dt)
-
-for k1, v1 in _G.pairs(objects.world) do
+	
+	for k1, v1 in _G.pairs(objects.world) do
         if getObjectDefinition(k1).animationSprites then
             playAnimation(k1, dt)
         end
@@ -28483,35 +28483,6 @@ function removeObjectUpdateFunction(object, f)
 end
 function setFriction(name, friction) getObject(name).friction = friction end
 function setDensity(name, density) getObject(name).density = density end
-
-function resizeCircle(name, radius)
-	if time % 2 == 1 then
-		return
-	end
-	local object = objects.world[name] 
-	removeBird(object, true, true)
-	local newName = name
-	createCircle(newName, object.sprite, object.x, object.y, object.radius * (object.deathTimer / object.deathTimerFull * 1), object.density, object.friction, object.restitution, object.controllable, object.z_order)
-	for k, v in _G.pairs(object) do
-		objects.world[newName][k] = v
-	end
-	objects.world[newName].radius = radius
-	objects.world[newName].animTimer = 9999
-	objects.world[newName].jumpTimer = 9999
-	objects.world[newName].animOn = false
-	setSprite(newName, objects.world[newName].damageSprite)
-	setObjectParameter(newName, 6, 1)
-	setRotation(newName, object.angle)
-	addParticles(newName, "yellowBuff", 3)
-	objects.world[name].directionChangeTimer = object.directionChangeTimer
-	objects.world[name].xVelChange = object.xVelChange or 0
-	objects.world[name].yVelChange = object.yVelChange or -50
-	objects.world[name].xVel = object.xVel + objects.world[name].xVelChange
-	objects.world[name].yVel = object.yVel + objects.world[name].yVelChange
-	setRotation(name, _G.math.atan2(-objects.world[name].xVel, objects.world[name].yVel) - _G.math.pi / 2)
-	setVelocity(newName, objects.world[newName].xVel, objects.world[newName].yVel)
-	cameraTargetObject = birds[newName]
-end
 
 function globeBirdDeath(object)
 	_G.res.playAudio(getAudioName("bubbles_deflating"), 1, false)
