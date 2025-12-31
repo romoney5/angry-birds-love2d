@@ -484,8 +484,9 @@ function getCurrentTime()
 end
 
 function getStampTime(stamp)
-	local t = os.date("*t", stamp)
-	return {years = t.year, months = t.month, days = t.day, hours = t.hour, minutes = t.min, seconds = t.sec}
+	--months technically not accurate
+	return {years = stamp / 60 / 60 / 24 / 365, months = stamp / 60 / 60 / 24 / 30, days = stamp / 60 / 60 / 24,
+		hours = stamp / 60 / 60, minutes = stamp / 60, seconds = stamp}
 end
 
 function timeToStamp(t)
@@ -493,15 +494,15 @@ function timeToStamp(t)
 end
 
 function getTimeDifferenceInSeconds(time1, time2)
-	time1,time2 = timeToStamp(time1), timeToStamp(time2)
+	time1, time2 = timeToStamp(time1), timeToStamp(time2)
 	
-	return math.abs(time1 - time2)
+	return math.abs(time2 - time1)
 end
 
 function getTimeDifference(time1, time2)
-	time1,time2 = timeToStamp(time1), timeToStamp(time2)
+	time1, time2 = timeToStamp(time1), timeToStamp(time2)
 	
-	return getStampTime(math.abs(time1 - time2))
+	return getStampTime(math.abs(time2 - time1))
 end
 
 function setWorldGravity(x, y)
