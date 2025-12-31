@@ -32,9 +32,18 @@ function createJoint(joint)
 			anchorAX, anchorAY, 
 			anchorBX, anchorBY, 
 			collideConnected)
-			
-		newJoint:setFrequency(joint.frequency)
-		newJoint:setDampingRatio(joint.dampingRatio)
+		
+		if newJoint.setFrequency then -- backwards compability
+			newJoint:setFrequency(joint.frequency)
+		else
+			newJoint:setStiffness(joint.frequency)
+		end
+		
+		if newJoint.setDampingRatio then
+			newJoint:setDampingRatio(joint.dampingRatio)
+		else
+			newJoint:setDamping(joint.dampingRatio)
+		end
 		
 	elseif type == 2 then --weld joint
 		local anchorAX, anchorAY = obj1.body:getWorldPoint(x1, y1)
