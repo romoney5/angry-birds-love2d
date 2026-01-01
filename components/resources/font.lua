@@ -209,7 +209,7 @@ function clipText(group, text, size)
 	clippedText.widestLine = widestLine
 end
 
-function res.getStringWidth(text, font)
+function res.getStringWidth(text, font, _, _, resetline)
 	text = text or ""
 	local font = fonts[font or drawfont]
 	if font then
@@ -222,15 +222,32 @@ function res.getStringWidth(text, font)
 				highscore = math.max(highscore, i)
 			elseif c == "\n" then
 				i = 0
+				if resetline then
+					highscore = 0
+				end
 			end
 		end
 		return highscore
 	else
 		local font = love.graphics.getFont()
-		return font:getWidth(text)
+		return font:getWidth(text) --does not account for line breaks
 	end
 	-- return 0
 	-- return screenWidth*.75
+end
+
+--used by console
+function res.getStringHeight(text, font, start)
+	text = text or ""
+	local font = fonts[font or drawfont]
+	local increment = font and font.leading or (love.graphics.getFont():getHeight() + love.graphics.getFont():getLineHeight())
+	local i = start and increment or 0
+	for c in text:gmatch(".") do
+		if c == "\n" then
+			i = i + increment
+		end
+	end
+	return i
 end
 
 function res.getFontLeading()

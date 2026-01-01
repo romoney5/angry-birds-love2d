@@ -1,21 +1,32 @@
 --console (activated by shift+d or clicking in the bottom right corner)
 
+debugOpen = false
+
 debugText = ""
 debugCursorPosition = 0
 debugCursorBlink = 0
+
 debugPrevious = {}
 debugPreviousIndex = 1
-debugOpen = false
-debugPrints = ""
+
+debugPrints = {}
+debugPrintsLimit = 200
+
+debugScroll = 0
+debugScrollTarget = 0
+
 debugPadding = 50
 
 function checkDebugOpen()
 	if (keyHold["SHIFT"] and keyPressed["D"]) or (keyPressed["LBUTTON"] and cursor.x >= screenWidth - 20 and cursor.y >= screenHeight - 20) or (debugOpen and keyPressed["ESCAPE"]) then
 		keyPressed["ESCAPE"] = nil
 		debugOpen = not debugOpen
-		debugText = ""
-		debugCursorPosition = 0
+		-- debugText = ""
+		-- debugCursorPosition = 0
 		debugPreviousIndex = 0
+		debugScroll = 0
+		debugScrollTarget = 0
+
 		res.playAudio("menu_confirm", 1, false)
 		if debugOpen then
 			love.keyboard.setTextInput(true)
@@ -25,7 +36,7 @@ end
 
 function debugExecute(text)
 	if text == "clear" then
-		debugPrints = ""
+		table.clear(debugPrints)
 		res.playAudio("menu_select", 1, false)
 	else
 		local su,re = pcall(loadstring(text))
@@ -41,7 +52,7 @@ function debugExecute(text)
 	end
 end
 
-function updateDebug(dt)
+function updateDebug(dt, cx, cy)
 	setRenderState(0,0,1,1)
 
 	debugCursorBlink = debugCursorBlink + dt
@@ -53,12 +64,14 @@ function updateDebug(dt)
 		debugCursorPosition = math.max(debugCursorPosition - 1, 0)
 		debugCursorBlink = 0
 	end
+
 	if keyPressed["DELETE"] then
 		res.playAudio("menu_back", 1, false)
 		debugText = string.back(debugText, debugCursorPosition + 1)
 		-- debugCursorPosition = math.max(debugCursorPosition, 0)
 		debugCursorBlink = 0
 	end
+
 	if keyPressed["RETURN"] then
 		res.playAudio("menu_confirm", 1, false)
 		debugCursorBlink = 0
@@ -70,67 +83,87 @@ function updateDebug(dt)
 				table.insert(debugPrevious, 1, debugText)
 			end
 
+			-- print(debugText)
 			debugExecute(debugText)
 			debugText = ""--debugText:sub(1,-2)
 			debugCursorPosition = 0
 			debugPreviousIndex = 0
 		end
 	end
-	if keyPressed["LEFT"] then
+
+	--move the selection left/right
+	if keyPressed.LEFT or keyPressed.RIGHT and not (keyPressed.LEFT and keyPressed.RIGHT) then
+		local direction = (keyPressed.RIGHT and 1 or -1)
 		res.playAudio("menu_select", 1, false)
-		debugCursorPosition = math.max(debugCursorPosition - 1, 0)
+
+		debugCursorPosition = math.min(math.max(debugCursorPosition + direction, 0), debugText:len())
 		debugCursorBlink = 0
 	end
-	if keyPressed["RIGHT"] then
-		res.playAudio("menu_select", 1, false)
-		debugCursorPosition = math.min(debugCursorPosition + 1, string.len(debugText))
-		debugCursorBlink = 0
+
+	--swap to the next/previous entry
+	if keyPressed.UP or keyPressed.DOWN and not (keyPressed.UP and keyPressed.DOWN) then
+		local direction = (keyPressed.UP and 1 or -1)
+		if (direction == 1 and debugPreviousIndex < #debugPrevious) or (direction == -1 and debugPreviousIndex > 0) then
+			res.playAudio("menu_select", 1, false)
+
+			if direction == 1 and debugPreviousIndex == 0 then debugPrevious[0] = debugText end
+			debugPreviousIndex = debugPreviousIndex + direction
+			debugText = debugPrevious[debugPreviousIndex]
+			debugCursorPosition = #debugText
+		end
 	end
 
-	if keyPressed["UP"] and debugPreviousIndex < #debugPrevious then
-		res.playAudio("menu_select", 1, false)
-		if debugPreviousIndex == 0 then debugPrevious[0] = debugText end
-		debugPreviousIndex = debugPreviousIndex + 1
-		debugText = debugPrevious[debugPreviousIndex]
-		debugCursorPosition = #debugText
-	end
-	if keyPressed["DOWN"] and debugPreviousIndex > 0 then
-		res.playAudio("menu_select", 1, false)
-		debugPreviousIndex = debugPreviousIndex - 1
-		debugText = debugPrevious[debugPreviousIndex]
-		debugCursorPosition = #debugText
+	--scrolling
+	res.useFont("FONT_BASIC")
+
+	local logText = table.concat(debugPrints, "\n")
+	local logHeight = res.getStringHeight(logText, nil, true) --there can be line breaks in some prints
+	local scrollLimit = -logHeight + screenHeight - debugPadding * 2 - 70
+	debugScrollTarget = debugScrollTarget + math.min(math.max(cursor.wheel, -10), 10) * 64
+
+	--touch scrolling
+	if keyHold.LBUTTON and not keyPressed.LBUTTON then --try not to snap the cursor on touchscreens
+		debugScrollTarget = debugScrollTarget + (cursor.y - cy)
 	end
 
-	
-	-- local textLength,textLines = 0,-1
-	-- local maxLength,lines = font:getWrap(debugText:sub(1, debugCursorPosition),screenWidth - debugPadding * 2)
-	-- local _,linesTotal = font:getWrap(debugText,screenWidth - debugPadding * 2)
-	
-	-- for i,v in pairs(lines) do
-	-- 	textLines = textLines + 1
-	-- 	textLength = font:getWidth(v)
-	-- end
+	debugScroll = lerp(debugScroll, debugScrollTarget, dt * 16)
+	debugScrollTarget = math.min(math.max(debugScrollTarget, scrollLimit), 0)
 
+	local round_padding = debugPadding / 4
+	local input_h = debugPadding * 2 + 50 - round_padding * 2 + math.max(res.getStringHeight(debugText) - 50, 0)
 	love.graphics.setColor(0, 0, 0, .5)
 	love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
-	love.graphics.rectangle("fill", 0, 0, screenWidth, debugPadding * 2 + 30)-- + (#linesTotal * font:getHeight()))
+	love.graphics.rectangle("fill", round_padding, round_padding, screenWidth - round_padding * 2, input_h, 20, 20)-- + (#linesTotal * font:getHeight()))
 	love.graphics.setColor(1, 1, 1, 1)
 
-	-- love.graphics.printf(debugText, debugPadding, debugPadding, screenWidth - debugPadding * 2)
-	res.useFont("FONT_BASIC")
-	res.drawString("", debugText,debugPadding,debugPadding)
-	-- love.graphics.printf((debugCursorBlink%.5 <= .25 and "|" or ""), res.getStringWidth(debugText:sub(1, debugCursorPosition)) + debugPadding - 3, (debugPadding + 0.5), screenWidth)-- + (textLines * font:getHeight()), screenWidth)
-	res.drawString("", (debugCursorBlink % .5 <= .25 and "|" or ""), res.getStringWidth(debugText:sub(1, debugCursorPosition)) + debugPadding, (debugPadding + 3))
+	res.drawString("", debugText, debugPadding, debugPadding)
+	res.drawString("", (debugCursorBlink % .5 <= .25 and "|" or ""),
+		res.getStringWidth(debugText:sub(1, debugCursorPosition), nil, nil, nil, true) + debugPadding,
+		res.getStringHeight(debugText:sub(1, debugCursorPosition)) + (debugPadding + 3))
 
-	-- love.graphics.printf(debugPrints, debugPadding, debugPadding * 2 + 70, screenWidth - debugPadding*2)-- + (#linesTotal * font:getHeight()), screenWidth - debugPadding * 2)
-	res.drawString("", debugPrints, debugPadding, debugPadding * 2 + 70)
+	love.graphics.setScissor(0, (input_h + 20) * displayScale, love.graphics.getDimensions())
+	res.drawString("", logText, debugPadding, input_h + round_padding + 40 + debugScroll)
+	love.graphics.setScissor()
+
+	--scroll bar indicator
+	local sc_w = 10
+	local percent = debugScroll / scrollLimit
+	local scrollHeight = math.min((screenHeight - input_h - round_padding * 2) / math.max(logHeight, 1), 1)
+	local barHeight = (screenHeight - (input_h + round_padding * 3))
+	love.graphics.setColor(.5, .5, .5, .5)
+	love.graphics.setLineWidth(1)
+	love.graphics.rectangle("fill", screenWidth - round_padding - sc_w, lerp(input_h + round_padding * 2, screenHeight - (barHeight * scrollHeight) - round_padding, percent), sc_w, barHeight * scrollHeight, sc_w / 2, sc_w / 2)
+	love.graphics.rectangle("line", screenWidth - round_padding - sc_w, input_h + round_padding * 2, sc_w, barHeight, sc_w / 2, sc_w / 2)
+	love.graphics.setColor(1, 1, 1, 1)
+
 
 	local boxsprites = tutorialBoxSprites
 	if boxsprites then
 		local tl = checkSprite(boxsprites.topLeft)
 		if not tl then return end
 		local tlw, tlh = tl.width, tl.height
-		local x, y = screenWidth - 125, 65
+		local x, y = screenWidth - debugPadding - round_padding - tlw, debugPadding + round_padding * 2
+		x, y = math.floor(x), math.floor(y)
 		local w, h = 75 * .9, 75 * .4
 		local s = 1
 		if checkBounds(x - tlw*2, y - tlh * 1.5, w + tlw*2, h + tlh*2, cursor.x, cursor.y) then
@@ -157,7 +190,7 @@ function updateDebug(dt)
 		setRenderState(0,0,1,1)
 
 		local w, h = 75 * .9, 75 * .4
-		local x, y = screenWidth - 145 - w*2, 65
+		local x, y = screenWidth - debugPadding - round_padding * 2 - tlw - w * 2, debugPadding + round_padding * 2
 		local s = 1
 		if checkBounds(x - tlw*2, y - tlh*1.5, w + tlw*2, h + tlh*2, cursor.x, cursor.y)then
 			if keyHold["LBUTTON"] then
@@ -185,10 +218,12 @@ end
 function love.textinput(key)
 	-- print(key)
 	if debugOpen then
-		res.playAudio("menu_confirm", 1, false)
-		debugText = string.insert(debugText, key, debugCursorPosition)
-		debugCursorPosition = debugCursorPosition + 1
-		debugCursorBlink = 0
+		if not (keyHold["SHIFT"] and keyPressed["D"]) then --hack to stop D from being added
+			res.playAudio("menu_confirm", 1, false)
+			debugText = string.insert(debugText, key, debugCursorPosition)
+			debugCursorPosition = debugCursorPosition + 1
+			debugCursorBlink = 0
+		end
 	elseif somethingTextInput then
 		somethingTextInput = key
 	end

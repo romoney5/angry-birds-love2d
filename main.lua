@@ -236,7 +236,12 @@ function print(...)
 		prints = prints..tostring(v).."\t"
 	end
 	if debugPrints then
-		debugPrints = prints.."\n"..debugPrints
+		table.insert(debugPrints, 1, prints)
+		if #debugPrints > debugPrintsLimit then
+			for i = #debugPrints, debugPrintsLimit + 1, -1 do
+				table.remove(debugPrints, i)
+			end
+		end
 	end
 	orig_print(prints)
 end

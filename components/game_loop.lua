@@ -68,6 +68,8 @@ function love.update(dt)
 			setmetatable(particles, getParticles)
 		end
 
+		--cursor delta for debug scrolling
+		local cx, cy = cursor.x, cursor.y
 		if not joystick then
 			cursor.x, cursor.y = love.mouse.getPosition()
 			cursor.x = cursor.x / displayScale
@@ -102,8 +104,13 @@ function love.update(dt)
 
 		dt2 = speedUpPre(math.min(dt, .4) * ((debugOpen or optionsOpen) and 0.2 or 1) * timeScale)
 
-		local kp, kr, kh = keyPressed, keyReleased, keyHold
-		if openPopups[1] or debugOpen or fmOpen or optionsOpen then keyPressed, keyReleased, keyHold = {},{},{} end
+		local kp, kr, kh, cw = keyPressed, keyReleased, keyHold, cursor.wheel
+		if openPopups[1] or debugOpen or fmOpen or optionsOpen then
+			table.clear(keyPressed)
+			table.clear(keyReleased)
+			table.clear(keyHold)
+			cursor.wheel = 0
+		end
 
 		if currentGameMode == updateSomething then
 			currentGameMode(dt2)
@@ -142,7 +149,7 @@ function love.update(dt)
 			end
 		end
 		
-		keyPressed, keyReleased, keyHold = kp, kr, kh
+		keyPressed, keyReleased, keyHold, cursor.wheel = kp, kr, kh, cw
 		updatePhysics(dt)
 
 		zoomLevel = lerp(zoomLevel, wantedZoomLevel, dt * 8)
@@ -152,7 +159,7 @@ function love.update(dt)
 
 		if debugOpen then
 			love.keyboard.setKeyRepeat(true)
-			updateDebug(dt)
+			updateDebug(dt, cx, cy)
 		else
 			love.keyboard.setKeyRepeat(false)
 		end
