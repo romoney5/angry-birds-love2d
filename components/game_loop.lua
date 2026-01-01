@@ -161,6 +161,8 @@ function love.update(dt)
 			updateOptions(dt)
 		end
 
+		love.mouse.setVisible(not (gameOptions and gameOptions.ui and gameOptions.ui.enableCursor) or deviceModel ~= "windows"
+			or debugOpen or optionsOpen)
 		setRenderState(0, 0, 1, 1)
 		updatePopup()
 		love.graphics.present()

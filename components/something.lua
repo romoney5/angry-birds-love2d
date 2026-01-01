@@ -214,6 +214,7 @@ function updateSomething(dt)
 	end
 	
 	res.drawSprite("SOUNDBOARD_2_BIRD", screenWidth - 100, dance + screenHeight - 200)
+	res.drawSprite(g_currentCursorName, cursor.x, cursor.y)
 
 	so.time = so.time + dt
 end

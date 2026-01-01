@@ -48,8 +48,6 @@ enableDebug = false
 
 targetFPS = 1000 --love's love.run function uses 0.001 by default
 
-love.mouse.setVisible(showCursor == true)
-
 function endsWith(str, ending)
 	return string.sub(str, -string.len(ending)) == ending
 end
