@@ -50,11 +50,13 @@ function resizeCircle(name, radius)
 		objects.world[name].definition = obj.definition
 		objects.world[name].strength = obj.strength
 		objects.world[name].defence = obj.defence
-		objects.world[name].damageSprite = obj.damageSprite
+		objects.world[name].damageSprite = obj.sprite
 		setRotation(name, obj.angle)
 		setVelocity(name, obj.xVel, obj.yVel)
 		setMaterial(name, obj.material)
 		if obj.controllable then
+			objects.world[name].animTimer = obj.animTimer
+			objects.world[name].jumpTimer = obj.jumpTimer
 			objects.world[name].shot = obj.shot
 			objects.world[name].damageFactors = obj.damageFactors
 			objects.world[name].useLegacyCollisionPath = obj.useLegacyCollisionPath
