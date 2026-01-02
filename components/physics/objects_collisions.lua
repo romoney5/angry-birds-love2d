@@ -164,6 +164,7 @@ end
 
 
 --vastly improved damage system, credits to halo
+local softcodedScore = false --required for 3.2.0 and later TODO: find a better solution
 
 --used to be postsolve
 function physicsBeginContact(obj1, obj2, contact)
@@ -234,10 +235,13 @@ function physicsBeginContact(obj1, obj2, contact)
 		end
 		
 		--assert(damage >= 0, "damage < 0 "..o1.name..", "..o2.name)
+		if softcodedScore then
+			damageDone = linearForce
+		end
 		
 		blockCollision(o1.name, o2.name, linearForce, damageDone)
 		
-		if damage > 0 then
+		if not softcodedScore and damage > 0 then
 			local score = math.floor(linearForce) * 10.0
 			scoreTable.blocks.score = currentScore + score
 		end

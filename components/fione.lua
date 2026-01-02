@@ -652,6 +652,7 @@ local function run_lua_func(state, env, upvals)
 							index = memory[inst.C]
 						end
 
+						error_blame = "Get table "..tostring(index)
 						memory[inst.A] = memory[inst.B][index]
 					else
 						--[[SUB]]
@@ -760,6 +761,7 @@ local function run_lua_func(state, env, upvals)
 								value = memory[inst.C]
 							end
 
+							error_blame = "Set table "..tostring(index)
 							memory[inst.A][index] = value
 						end
 					elseif op > 16 then
