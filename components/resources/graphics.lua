@@ -147,10 +147,10 @@ function drawRect(r, g, b, a, x, y, w, h, inWorld)
 	love.graphics.push()
 	if not inWorld then --if the rect is not supposed to be drawn in world space
 		love.graphics.origin()
+		love.graphics.scale(displayScale)
 	end
 
 	--rotate around the x/y rotation pivot
-	love.graphics.scale(displayScale)
 	love.graphics.translate(x, y)
 	love.graphics.translate(drawxp, drawyp)
 	love.graphics.rotate(drawangle)
@@ -206,6 +206,7 @@ function drawRubberband(x1, y1, x2, y2, width, sprite)
 	love.graphics.push()
 
 	love.graphics.origin()
+	love.graphics.scale(displayScale)
 	love.graphics.translate(x1, y1)
 	love.graphics.rotate(angle)
 	love.graphics.scale(dist / sprite.width, width / sprite.height)

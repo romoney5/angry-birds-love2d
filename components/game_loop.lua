@@ -20,6 +20,9 @@ function updateDisplayScale()
 		end
 	end
 	love.graphics.scale(displayScale)
+	
+	screenWidth = math.floor(love.graphics.getWidth() / displayScale)
+	screenHeight = math.floor(love.graphics.getHeight() / displayScale)
 end
 
 function love.update(dt)
@@ -55,8 +58,6 @@ function love.update(dt)
 		love.audio.setVolume(audiovolume)
 		
 		updateDisplayScale()
-		screenWidth = math.floor(love.graphics.getWidth() / displayScale)
-		screenHeight = math.floor(love.graphics.getHeight() / displayScale)
 
 		g_updatedScreenWidth, g_updatedScreenHeight = screenWidth, screenHeight --4.0.0
 		

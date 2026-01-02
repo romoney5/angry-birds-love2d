@@ -579,9 +579,8 @@ function setFullScreenMode(mode)
 end
 
 function setResolution(w, h)
-	screenWidth = w
-	screenHeight = h
 	love.window.updateMode(w * displayScale * love.graphics.getDPIScale(), h * displayScale * love.graphics.getDPIScale())
+	updateDisplayScale()
 end
 
 --classic 3.0.1 only
