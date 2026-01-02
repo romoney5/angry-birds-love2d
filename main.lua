@@ -52,17 +52,88 @@ function endsWith(str, ending)
 	return string.sub(str, -string.len(ending)) == ending
 end
 
---load either plain text lua or a precompiled chunk with fione
+--load either plain text lua, a precompiled chunk with fione,
+--a 7-zipped file, an aes-256 encrypted file, or all of the above
+--TODO: move this over to another file
 function makeChunk(filename, env)
 	local src = love.filesystem.read(filename)
 	if not src then
 		return nil, nil, "No source"
 	end
 	
-	if src:sub(1, 4) == "\27Lua" then --it's bytecode!
+	local function identify(src)
+		--lzma support?
+		if src:sub(1, 6) == "7z\xbc\xaf\x27\x1c" then return "7z" end
+		if src:sub(1, 4) == "\27Lua" then return "lua" end
+		if src:find("[\128-\255]") then return "binary" end
+		return "plain" --what we want
+	end
+	
+	local function temp_file()
+		local dec_filename = "/dec"..filename
+		love.filesystem.createDirectory(dec_filename:match(".*/") or "")
+		
+		local success, message = love.filesystem.write(dec_filename, src)
+		if not success then
+			print("makeChunk: writing to temporary file failed ("..tostring(message)..")")
+			return
+		end
+		
+		return dec_filename
+	end
+	
+	local kind = identify(src)
+	
+	if kind == "binary" then --it's probably encrypted..
+		local mode = "-aes-256-cbc"
+		local key = "55534361505170413454534E56784D49317639534B39554330795A75416E6232" --hex key for ab classic assets
+		local iv = "0" --iv is always 0
+		
+		--now use openssl and open it in binary mode
+		local file = io.popen("openssl enc "..mode.." -d -K "..key.." -iv "..iv.." -in \"."..filename.."\"", "rb")
+		--openssl enc -aes-256-cbc -d -K 55534361505170413454534E56784D49317639534B39554330795A75416E6232 -iv 0 -in <file>
+		if file then
+			src = file:read("*a")
+			file:close()
+			
+			--did it do anything?
+			assert(src and src:len() > 0, "makeChunk: OpenSSL returned nothing")
+			
+			--reidentify it
+			kind = identify(src)
+		else
+			print("makeChunk: Could not run OpenSSL")
+			return --just don't bother trying to run an encrypted file
+		end
+	end
+	
+	--now it shouldn't be binary
+	--assert(kind ~= "binary", "makeChunk: file is binary")
+	
+	if kind == "7z" then --looks like it's 7-zipped too
+		--because 7-zip sucks we have to do file operations first
+		local dec_filename = temp_file()
+		
+		--now use 7-zip with stdin and open it in binary mode
+		local file = io.popen("7z e -so -t7z \""..love.filesystem.getSaveDirectory()..dec_filename.."\"", "rb") --no -si
+		if file then
+			src = file:read("*a")
+			file:close()
+			
+			--did it do anything?
+			assert(src and src:len() > 0, "makeChunk: 7-zip returned nothing")
+			
+			--reidentify it
+			kind = identify(src)
+		else
+			print("makeChunk: Could not run 7-zip")
+		end
+	end
+	
+	if kind == "lua" then --it's bytecode!
 		print("Loading compiled Lua \""..filename.."\"...")
 		return pcall(loadbytecode, src, env, filename)
-	else --that's just plain old lua.. boring..
+	elseif kind == "plain" then --that's just plain old lua.. boring..
 		print("Loading Lua \""..filename.."\"...")
 		return pcall(love.filesystem.load, filename)
 	end
