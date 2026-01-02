@@ -106,9 +106,7 @@ function love.update(dt)
 
 		local kp, kr, kh, cw = keyPressed, keyReleased, keyHold, cursor.wheel
 		if openPopups[1] or debugOpen or fmOpen or optionsOpen then
-			table.clear(keyPressed)
-			table.clear(keyReleased)
-			table.clear(keyHold)
+			keyPressed, keyReleased, keyHold = {}, {}, {}
 			cursor.wheel = 0
 		end
 
