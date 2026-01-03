@@ -7,6 +7,7 @@ _, ffi = pcall(require, "ffi")                              --luajit ffi
 
 loadbytecode = runLuaFile(compsPath.."/libs/fione.lua")     --run lua 5.1 bytecode because loadstring
 runLuaFile(compsPath.."/libs/aes.lua")                      --aes-256-cbc decryption powered by none other than luajit ffi
+runLuaFile(compsPath.."/libs/7zip.lua")                     --7-zip extraction powered by none other than luajit ffi
 
 --debug
 runLuaFile(compsPath.."/debugging/console.lua")				--debug console
