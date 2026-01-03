@@ -117,3 +117,16 @@ end
 function removeAllNotifications()
 	print("Remove all notifications")
 end
+
+--crystal
+function isCrystalUIShowing()
+	return false
+end
+
+function activateCrystalUI()
+	return
+end
+
+function deactivateCrystalUI()
+	return
+end

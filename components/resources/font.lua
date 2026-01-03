@@ -122,13 +122,13 @@ function drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_scale)
 
 		for i, line in ipairs(self.lines) do
 			love.graphics.push()
-			love.graphics.scale(scale_x * self.scaleX * hs, scale_y * self.scaleY * hs)
+			love.graphics.scale((scale_x or 1) * self.scaleX * hs, (scale_y or 1) * self.scaleY * hs)
 			res.drawString(line.group, line.text, 0, 0, line.hanchor, line.vanchor)
 			love.graphics.pop()
 			love.graphics.translate(0, math.floor(font.leading))
 		end
 	else
-		love.graphics.scale(scale_x * self.scaleX * hs, scale_y * self.scaleY * hs)
+		love.graphics.scale((scale_x or 1) * self.scaleX * hs, (scale_y or 1) * self.scaleY * hs)
 		res.drawString(self.group, self.text, 0, 0, self.hanchor, self.vanchor)
 	end
 	love.graphics.setColor(1, 1, 1, 1)
