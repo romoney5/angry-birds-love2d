@@ -1,5 +1,13 @@
 --load components
 
+--extra libraries
+
+pcall(require, "table.clear")                               --clear key* tables instead of remaking them
+_, ffi = pcall(require, "ffi")                              --luajit ffi
+
+loadbytecode = runLuaFile(compsPath.."/libs/fione.lua")     --run lua 5.1 bytecode because loadstring
+runLuaFile(compsPath.."/libs/aes.lua")                      --aes-256-cbc decryption powered by none other than luajit ffi
+
 --debug
 runLuaFile(compsPath.."/debugging/console.lua")				--debug console
 runLuaFile(compsPath.."/debugging/fps.lua")					--debug fps
@@ -46,6 +54,5 @@ runLuaFile(compsPath.."/something.lua")						--something
 runLuaFile(compsPath.."/iap.lua")							--in app purchases functions
 runLuaFile(compsPath.."/game_loop.lua")						--main game loop, calls update
 runLuaFile(compsPath.."/gamepad.lua")						--controller related functions
-loadbytecode = runLuaFile(compsPath.."/fione.lua")			--run lua bytecode because loadstring
 
 runLuaFile(compsPath.."/debugging/error.lua")				--run the error handler after everything is loaded

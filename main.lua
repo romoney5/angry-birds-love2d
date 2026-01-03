@@ -85,24 +85,18 @@ function makeChunk(filename, env)
 	local kind = identify(src)
 	
 	if kind == "binary" then --it's probably encrypted..
-		local mode = "-aes-256-cbc"
-		local key = "55534361505170413454534E56784D49317639534B39554330795A75416E6232" --hex key for ab classic assets
-		local iv = "0" --iv is always 0
-		
-		--now use openssl and open it in binary mode
-		local file = io.popen("openssl enc "..mode.." -d -K "..key.." -iv "..iv.." -in \"."..filename.."\"", "rb")
-		--openssl enc -aes-256-cbc -d -K 55534361505170413454534E56784D49317639534B39554330795A75416E6232 -iv 0 -in <file>
-		if file then
-			src = file:read("*a")
-			file:close()
-			
-			--did it do anything?
-			assert(src and src:len() > 0, "makeChunk: OpenSSL returned nothing")
+		--let's use libcrypto as a dll/so
+		if AES then
+			local key = AES.Keys.Assets.Classic --ascii key for ab classic assets
+			local iv = nil --iv is always nil
+			src = AES.Decrypt(src, key, iv)
+			--equivalent to openssl enc -aes-256-cbc -d -K 55534361505170413454534E56784D49317639534B39554330795A75416E6232 -iv 0 -in <file>
+			--if it failed the function would probably throw an error
 			
 			--reidentify it
 			kind = identify(src)
 		else
-			print("makeChunk: Could not run OpenSSL")
+			print("makeChunk: Could not run libcrypto")
 			return --just don't bother trying to run an encrypted file
 		end
 	end
@@ -135,7 +129,7 @@ function makeChunk(filename, env)
 		return pcall(loadbytecode, src, env, filename)
 	elseif kind == "plain" then --that's just plain old lua.. boring..
 		print("Loading Lua \""..filename.."\"...")
-		return pcall(love.filesystem.load, filename)
+		return pcall(loadstring, src, filename)
 	end
 end
 
@@ -150,7 +144,7 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 		env = key
 	elseif type(key) == "string" and key ~= "" then
 		--make a new table in ctx with the name of key (this, "ui")
-		ctx[key] = ctx[key] or {}
+		ctx[key] = {}--ctx[key] or {}
 		env = ctx[key]
 	else
 		--use ctx table (this.ui, "")

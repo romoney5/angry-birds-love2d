@@ -1,7 +1,5 @@
 --functions for reading data types like int, float, etc
 
-hasffi, ffi = pcall(require,"ffi")
-
 --read 8-bit (1 byte) signed int
 function read8Int(data, index)
 	return love.data.unpack(">i1", data, index)

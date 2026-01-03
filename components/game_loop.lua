@@ -1,8 +1,5 @@
 --this massive function runs every frame
 
---clear key* tables instead of remaking them
-require("table.clear")
-
 local pausedaudios = {} --thanks love 11
 zoomLevel = 0
 wantedZoomLevel = 0
