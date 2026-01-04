@@ -58,14 +58,14 @@ end
 function makeChunk(filename, env)
 	local src = love.filesystem.read(filename)
 	if not src then
-		return nil, nil, "No source"
+		return nil, "No source"
 	end
 	
 	local function identify(src)
 		--lzma support?
 		if src:sub(1, 6) == "7z\xbc\xaf\x27\x1c" then return "7z" end
 		if src:sub(1, 4) == "\27Lua" then return "lua" end
-		if src:find("[\128-\255]") then return "binary" end
+		if src:sub(1, 64):find("[\128-\255]") then return "binary" end
 		return "plain" --what we want
 	end
 	
@@ -109,7 +109,8 @@ function makeChunk(filename, env)
 		local dec_filename = temp_file()
 		
 		--now use 7-zip with stdin and open it in binary mode
-		local file = io.popen("7z e -so -t7z \""..love.filesystem.getSaveDirectory()..dec_filename.."\"", "rb") --no -si
+		--TODO: binary mode off for linux and on for windows?
+		local file = io.popen("7z e -so -t7z \""..love.filesystem.getSaveDirectory()..dec_filename.."\"", "r") --no -si
 		if file then
 			src = file:read("*a")
 			file:close()
