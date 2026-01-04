@@ -332,10 +332,15 @@ local function loadSheet(sheet, usecomposprites)
 
 				lsheet.sheet = love.graphics.newImage(convertImagePVR(data, filename))
 			elseif endsWith(filename,".webp") then
-				extensionlength = 5 + 4 --.webp + .png
-				filename = filename..".png"
+				if not webp then
+					extensionlength = 5 + 4 --.webp + .png
+					filename = filename..".png"
 
-				lsheet.sheet = love.graphics.newImage(table.concat(paths, "/").."/"..filename)
+					lsheet.sheet = love.graphics.newImage(table.concat(paths, "/").."/"..filename)
+				else
+					local src = love.filesystem.read(table.concat(paths, "/").."/"..filename)
+					lsheet.sheet = love.graphics.newImage(webp.loadImage(src, src:len()))
+				end
 			else
 				lsheet.sheet = love.graphics.newImage(table.concat(paths, "/").."/"..filename)
 			end
