@@ -66,9 +66,7 @@ function res.playAudio(audio, volume, loop, track)
 	if not cachedaudios[audio] then
 		if not checkDirectory(audios[audio]) then
 			cachedaudios[audio] = 0
-			showPopup("Warning",
-				"Audio file \""..audios[audio].."\" not found."
-			, nil, true)
+			print("Audio file \""..audios[audio].."\" not found.")
 			return
 		end
 		cachedaudios[audio] = love.audio.newSource(audios[audio], loop and "stream" or "static") --for looping audio, stream from disk rather than in memory
@@ -116,14 +114,6 @@ function res.stopAllAudio()
 	for k, _ in ipairs(audiochannels) do
 		audiochannels[k] = {}
 	end
-end
-
-function setMusicVolume(vol)
-	audiovolume = vol
-end
-
-function setEffectsVolume(vol)
-	audiovolume = vol
 end
 
 function res.stopAudioOutput()

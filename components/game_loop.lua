@@ -30,10 +30,8 @@ function love.update(dt)
 		end
 
 		if not hasfocus then
-			for i,v in pairs(pausedaudios) do
-				v:play()
-			end
-			pausedaudios = {}
+			love.audio.play(pausedaudios)
+			table.clear(pausedaudios)
 		end
 
 		hasfocus = true
