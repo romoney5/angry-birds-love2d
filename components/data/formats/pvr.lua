@@ -12,6 +12,7 @@ function convertImagePVR(data, filename)
 	local mipmaps = 0
 	local imagedata
 	local rawdata
+	local metadatasize = 0
 
 	if love.data.unpack("<i4", data, pos) == headerSize then --1.6.3
 		skip(4)
@@ -23,28 +24,30 @@ function convertImagePVR(data, filename)
 		skip(4)
 		format = love.data.unpack("<i1", data, pos)
 
+		local headerSize = headerSize + metadatasize
+
 		-- print("convertImagePVR: pvr file "..tostring(filename).." has w:"..w.." h:"..h.." format:"..format.."")
 		if format == 16 and support.rgba4 then --r4 g4 b4 a4
 			local expectedSize = w * h * 2 + headerSize
-			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize..", got "..data:len())
+			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize.." ("..metadatasize.."), got "..data:len())
 
 			rawdata = string.sub(data, headerSize + 1)
 			imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
 		elseif format == 19 and support.rgb565 then --r5 g6 b5
 			local expectedSize = w * h * 2 + headerSize
-			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize..", got "..data:len())
+			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize.." ("..metadatasize.."), got "..data:len())
 			
 			rawdata = string.sub(data, headerSize + 1)
 			imagedata = love.image.newImageData(w, h, "rgb565", rawdata)
 		elseif format == 25 and support.PVR1rgba4 then --pvrtc 4bpp rgba
 			local expectedSize = w * h / 2 + headerSize
-			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize..", got "..data:len())
+			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize.." ("..metadatasize.."), got "..data:len())
 			
 			rawdata = string.sub(data, headerSize + 1)
 			imagedata = love.image.newImageData(w, h, "PVR1rgba4", rawdata)
 		elseif format == 54 and support.ETC1 then --etc1 compressed, 4bpp
 			-- local expectedSize = w * h / 2 + 52
-			-- assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize..", got "..data:len())
+			-- assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize.." ("..metadatasize.."), got "..data:len())
 
 			--just rebuild the header, sometimes (1 mipmap?) love just bails trying to convert a pvr header
 			local head = ""
@@ -85,16 +88,20 @@ function convertImagePVR(data, filename)
 		skip(4) --num surfaces
 		skip(4) --num faces
 		mipmaps = love.data.unpack("<i4", data, pos) --and NOW we have our mipmaps
+		skip(4)
+		metadatasize = love.data.unpack("<i4", data, pos) --size of metadata
+
+		local headerSize = headerSize + metadatasize
 
 		if format == 67372036 and support.rgba4 then --04 04 04 04 unorm linear
 			local expectedSize = w * h * 2 + headerSize
-			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize..", got "..data:len())
+			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize.." ("..metadatasize.."), got "..data:len())
 
 			rawdata = string.sub(data, headerSize + 1)
 			imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
 		elseif format == 134744072 and support.rgba8 then --08 08 08 08 unorm linear
 			local expectedSize = w * h * 4 + headerSize
-			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize..", got "..data:len())
+			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize.." ("..metadatasize.."), got "..data:len())
 
 			rawdata = string.sub(data, headerSize + 1)
 			imagedata = love.image.newImageData(w, h, "rgba8", rawdata)
