@@ -70,16 +70,16 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, isWea
 			end
 			
 			--TODO: that's not a circle.. ..
-			if pt.emitter_circle then
+			if pt.emitter_circle and pt.emitter_circle.minVel and pt.emitter_circle.maxVel then
 				mivx,mavx, mivy,mavy = pt.emitter_circle.minVel,pt.emitter_circle.maxVel,
 										pt.emitter_circle.minVel,pt.emitter_circle.maxVel
 			end
 
 			p.xVel,p.yVel = _G.math.random(mivx, mavx), _G.math.random(mivy, mavy)
 			p.angle = _G.math.random(1, 3.14)
-			p.angleVel = _G.math.random(pt.minAngleVel, pt.maxAngleVel)
-			p.scaleBegin = _G.math.random(pt.minScaleBegin, pt.maxScaleBegin)
-			p.scaleEnd = _G.math.random(pt.minScaleEnd, pt.maxScaleEnd)
+			p.angleVel = _G.math.random(pt.minAngleVel or 0, pt.maxAngleVel or 0)
+			p.scaleBegin = _G.math.random(pt.minScaleBegin or 0, pt.maxScaleBegin or 0)
+			p.scaleEnd = _G.math.random(pt.minScaleEnd or 0, pt.maxScaleEnd or 0)
 			p.scale = p.scaleBegin
 			p.type = type
 			p.sprite = pt.sprites[_G.math.random(1, #pt.sprites)]

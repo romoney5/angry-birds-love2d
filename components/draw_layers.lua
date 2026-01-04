@@ -75,6 +75,7 @@ local textureShader = love.graphics.newShader([[
 )
 
 function drawGameNative() --work in progress
+	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, 1)
 
 	--draw textures
 	for k, v in _G.pairs(objects.world) do

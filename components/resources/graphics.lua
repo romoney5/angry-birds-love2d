@@ -15,7 +15,7 @@ function setBGColor(r, g, b) --set the background color
 end
 
 --quite literally used everywhere
-function setRenderState(x, y, xs, ys, angle, xp, yp)
+function setRenderState(x, y, xs, ys, angle, xp, yp, alpha)
 	love.graphics.origin()
 	love.graphics.scale(xs, ys)
 	love.graphics.scale(displayScale)
@@ -25,6 +25,10 @@ function setRenderState(x, y, xs, ys, angle, xp, yp)
 	--drawxp and yp are exclusively used for rotation, they are useless when angle is 0
 	drawxp = xp or 0
 	drawyp = yp or 0
+
+	if alpha then
+		setAlpha(alpha)
+	end
 end
 
 --frontend of drawsprite
@@ -157,7 +161,7 @@ function drawRect(r, g, b, a, x, y, w, h, inWorld)
 	love.graphics.translate(-drawxp, -drawyp)
 
 	local r2,y2,b2,a2 = love.graphics.getColor()
-	love.graphics.setColor(r, g, b, a)
+	love.graphics.setColor(r * a, g * a, b * a, a)
 	w = w - x
 	h = h - y
 	love.graphics.rectangle("fill", 0, 0, w, h)
