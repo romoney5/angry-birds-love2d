@@ -640,6 +640,7 @@ local function run_lua_func(state, env, upvals)
 							memory[A] = memory[B][index]
 						else
 							--[[GETGLOBAL]]
+							error_blame = "Get global "..tostring(inst.const)
 							memory[inst.A] = env[inst.const]
 						end
 					elseif op > 6 then

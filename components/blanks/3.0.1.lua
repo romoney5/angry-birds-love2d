@@ -215,3 +215,8 @@ Editor = {}
 function Editor:new()
 	return
 end
+
+
+function disableSpotlight()
+	return
+end

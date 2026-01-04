@@ -48,6 +48,11 @@ function setPosition(object, x, y)
 	end
 end
 
+function getVelocity(object)
+	if not objects.world[object] then return end
+	return objects.world[object].xVel, objects.world[object].yVel
+end
+
 function setVelocity(object, x, y)
 	if not objects.world[object] then return end
 	objects.world[object].xVel = x
