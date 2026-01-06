@@ -299,27 +299,24 @@ function physicsBeginContact(obj1, obj2, contact)
 					if newStrength < 0 then
 						contact:setEnabled(false)
 						
+						local overkillDamage
 						if bird.useLegacyCollisionPath then
-							local overkillDamage = ((-newStrength / birdMass) / effectiveDamage) * 10.0 * 1.75
-							if overkillDamage > 1.0 then
-								overkillDamage = 1.0
-							end
-							
-							local birdVelocityX = vx * overkillDamage
-							local birdVelocityY = vy * overkillDamage
-							setVelocity(bird.name, birdVelocityX, birdVelocityY)
+							overkillDamage = ((-newStrength / birdMass) / effectiveDamage) * 10.0 * 1.75
 						else
-							local overkillDamage = ((effectiveDamage - strength) / effectiveDamage) * velocityMultiplier
-							if overkillDamage > 1.0 then
-								overkillDamage = 1.0
-							end
-							
-							local birdVelocityX = vx * overkillDamage
-							local birdVelocityY = vy * overkillDamage
-							setVelocity(bird.name, birdVelocityX, birdVelocityY)
+							overkillDamage = ((effectiveDamage - strength) / effectiveDamage) * velocityMultiplier
 						end
 						
+						if overkillDamage > 1.0 then
+							overkillDamage = 1.0
+						end
+						
+						local birdVelocityX = vx * overkillDamage
+						local birdVelocityY = vy * overkillDamage
+						setVelocity(bird.name, birdVelocityX, birdVelocityY)
+						
 						damage = strength--math.min(damageDealt, strength)
+					else
+						damage = damageDealt
 					end
 				end
 			
