@@ -44,6 +44,17 @@ function love.mousereleased(x, y, button, istouch, presses)
 	end
 end
 
+local prevTouches
+function updatePinch()
+	if touches and prevTouches and #touches == 2 and #prevTouches == 2 then
+		local dist = math.sqrt((touches[1].x - touches[2].x) ^ 2 + (touches[1].y - touches[2].y) ^ 2)
+		local prevdist = math.sqrt((prevTouches[1].x - prevTouches[2].x) ^ 2 + (prevTouches[1].y - prevTouches[2].y) ^ 2)
+		zoomLevel = zoomLevel + (dist - prevdist) / 16 / 28
+		wantedZoomLevel = zoomLevel
+	end
+	
+	prevTouches = touches
+end
 
 function love.wheelmoved(x, y)
 	cursor.wheelTriggered = y ~= 0--true

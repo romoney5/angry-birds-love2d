@@ -86,6 +86,9 @@ function love.update(dt)
 			touches[1] = {x = cursor.x, y = cursor.y}
 		end
 		touchcount = #touches
+		
+		--update pinch to zoom
+		updatePinch()
 		if checkDebugOpen then checkDebugOpen() end
 
 		if keyHold["LALT"] and keyPressed["RETURN"] then setFullScreenMode(not isInFullScreenMode()) end
