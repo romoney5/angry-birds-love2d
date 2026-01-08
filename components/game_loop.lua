@@ -113,7 +113,7 @@ function love.update(dt)
 			cursor.wheel = 0
 		end
 
-		if currentGameMode == updateSomething then
+		if currentGameMode and currentGameMode == updateSomething then
 			currentGameMode(dt2)
 		else
 			--pause the game if there's an important popup
@@ -122,7 +122,7 @@ function love.update(dt)
 					alreadyLoadedFonts = true
 					loadFonts()
 				end
-			else
+			elseif update then
 				update(dt2, dt2)
 			end
 		end
@@ -218,7 +218,7 @@ function updatePopup()
 		end
 
 		for i,v in pairs(popup.buttons) do
-			drawDebugButton(v.sprite, ox + (i - (btns + 1) / 2) * sx, oy + h * .5, 1, function()
+			drawDebugButton(v.sprite, ox + (i - (btns + 1) / 2) * sx, oy + h * .5, nil, nil, 1, function()
 				-- optionsOpen = false
 				if v.callback and v.callback() then
 					table.remove(openPopups, 1)

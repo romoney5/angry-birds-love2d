@@ -360,7 +360,7 @@ function love.load()
 	end
 
 	-- makeImages()
-	loadlua(scriptPath.."/options.lua", this, nil, true)
+	loadLuaFileToObject(scriptPath.."/options.lua", this, nil, true)
 	--and now start the actual game
 	if gamelogicPath then
 		loadlua(gamelogicPath, this, nil, true)
@@ -372,10 +372,10 @@ function love.load()
 
 	-- loadLuaFileToObject(scriptPath .. "/animations.lua", this)
 	loadLuaFileToObject(scriptPath.."/particles.lua", this, particleTable, true)
-	loadlua(scriptPath.."/starLimits.lua", this, starTable)
+	loadLuaFileToObject(scriptPath.."/starLimits.lua", this, starTable, true)
 	blockTable.themes, blockTable.blocks = {}, {}
 	
-	loadlua(scriptPath.."/blocks.lua", this, blockTable, true)
+	loadLuaFileToObject(scriptPath.."/blocks.lua", this, blockTable, true)
 
 	loadLuaFileToObject(scriptPath.."/loadlist.lua", this, _G, true)
 

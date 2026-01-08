@@ -111,8 +111,11 @@ end
 
 function res.stopAllAudio()
 	love.audio.stop()
-	for k, _ in ipairs(audiochannels) do
-		audiochannels[k] = {}
+
+	if audiochannels then
+		for k, _ in ipairs(audiochannels) do
+			audiochannels[k] = {}
+		end
 	end
 end
 

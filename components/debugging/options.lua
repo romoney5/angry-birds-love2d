@@ -46,7 +46,7 @@ function updateOptions(dt)
 	-- end
 	drawBoxNative(boxsprites or {}, x - w*.5, y - h*.5, w, h)
 	drawDebugText("Options", 240, 170, nil, "FONT_MENU")
-	drawDebugButton("BUTTON_ARROW_LEFT", 180, 170, 1, function()
+	drawDebugButton("BUTTON_ARROW_LEFT", 180, 170, nil, nil, 1, function()
 		optionsOpen = false
 		optionsScrollTo = 0
 		optionsScrolling = 0
@@ -61,7 +61,7 @@ function updateOptions(dt)
 	res.setClipRect(0, y0, screenWidth, y1 - y0)
 	for i,v in pairs(gameOptions) do
 		if type(v) == "boolean" then
-			drawDebugButton(v and "TUTORIAL_OK" or "MENU_NO", 200, optionsy, .5, function()
+			drawDebugButton(v and "TUTORIAL_OK" or "MENU_NO", 200, optionsy, nil, nil, .5, function()
 				-- optionsOpen = false
 				gameOptions[i] = not v
 			end, (optionsy <= y1 and optionsy >= y0), "menu_confirm")
@@ -72,7 +72,7 @@ function updateOptions(dt)
 			optionsy = optionsy + 50
 			for ii,vv in pairs(v) do
 				if type(vv) == "boolean" then
-					drawDebugButton(vv and "TUTORIAL_OK" or "MENU_NO", 200 + 56, optionsy, .5, function()
+					drawDebugButton(vv and "TUTORIAL_OK" or "MENU_NO", 200 + 56, optionsy, nil, nil, .5, function()
 						-- optionsOpen = false
 						gameOptions[i][ii] = not vv
 					end, (optionsy <= y1 and optionsy >= y0), "menu_confirm")

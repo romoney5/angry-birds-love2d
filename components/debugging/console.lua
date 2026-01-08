@@ -146,73 +146,44 @@ function updateDebug(dt, cx, cy)
 	love.graphics.setScissor()
 
 	--scroll bar indicator
-	local sc_w = 10
-	local percent = debugScroll / scrollLimit
-	local scrollHeight = math.min((screenHeight - input_h - round_padding * 2) / math.max(logHeight, 1), 1)
-	local barHeight = (screenHeight - (input_h + round_padding * 3))
-	love.graphics.setColor(.5, .5, .5, .5)
-	love.graphics.setLineWidth(1)
-	love.graphics.rectangle("fill", screenWidth - round_padding - sc_w, lerp(input_h + round_padding * 2, screenHeight - (barHeight * scrollHeight) - round_padding, percent), sc_w, barHeight * scrollHeight, sc_w / 2, sc_w / 2)
-	love.graphics.rectangle("line", screenWidth - round_padding - sc_w, input_h + round_padding * 2, sc_w, barHeight, sc_w / 2, sc_w / 2)
-	love.graphics.setColor(1, 1, 1, 1)
+	CUI.Scrollbar(
+		screenWidth - round_padding,
+		input_h + round_padding * 2,
+		10,
+		screenHeight - (input_h + round_padding * 3),
+		debugScroll,
+		scrollLimit,
+		logHeight)
 
+	--files/options
+	local tlw, tlh = 35, 36--tl.width, tl.height
+	local x, y = screenWidth - debugPadding - round_padding - tlw, debugPadding + round_padding * 2
+	x, y = math.floor(x), math.floor(y)
+	local w, h = 60 + tlw*2, 20 + tlh*2
+	local s = 1
+	drawDebugButton(nil, x, y, w, h, s, function()
+		debugOpen = false
+		-- optionsOpen = true
+		sgm()
+		return
+	end, true, "menu_confirm")
+	love.graphics.translate(x, y)
+	love.graphics.scale(s)
+	res.drawString("", "Files", 0, 0, "HCENTER", "VCENTER")
 
-	local boxsprites = tutorialBoxSprites
-	if boxsprites then
-		local tl = checkSprite(boxsprites.topLeft)
-		if not tl then return end
-		local tlw, tlh = tl.width, tl.height
-		local x, y = screenWidth - debugPadding - round_padding - tlw, debugPadding + round_padding * 2
-		x, y = math.floor(x), math.floor(y)
-		local w, h = 75 * .9, 75 * .4
-		local s = 1
-		if checkBounds(x - tlw*2, y - tlh * 1.5, w + tlw*2, h + tlh*2, cursor.x, cursor.y) then
-			if keyHold["LBUTTON"] then
-				s = .8
-			elseif (gameOptions.ui and gameOptions.ui.enableHoverScaling) or not gameOptions.ui then
-				s = 1.2
-			end
-			w, h = w * s, h * s
-			
-			if keyReleased["LBUTTON"] then
-				res.playAudio("menu_confirm", 1, false)
-				debugOpen = false
-				-- optionsOpen = true
-				sgm()
-				return
-			end
-		end
-		drawBoxNative(boxsprites or {}, x - w*.5, y - h*.5, w, h)
-		love.graphics.translate(x, y)
-		love.graphics.scale(s)
-		res.drawString("", "Files", 0, 0, "HCENTER", "VCENTER")
+	setRenderState(0,0,1,1)
 
-		setRenderState(0,0,1,1)
-
-		local w, h = 75 * .9, 75 * .4
-		local x, y = screenWidth - debugPadding - round_padding * 2 - tlw - w * 2, debugPadding + round_padding * 2
-		local s = 1
-		if checkBounds(x - tlw*2, y - tlh*1.5, w + tlw*2, h + tlh*2, cursor.x, cursor.y)then
-			if keyHold["LBUTTON"] then
-				s = .8
-			elseif (gameOptions.ui and gameOptions.ui.enableHoverScaling) or not gameOptions.ui then
-				s = 1.2
-			end
-			w, h = w * s, h * s
-			
-			if keyReleased["LBUTTON"] then
-				res.playAudio("menu_confirm", 1, false)
-				debugOpen = false
-				optionsOpen = true
-				-- sgm()
-				return
-			end
-		end
-		drawBoxNative(boxsprites or {}, x - w*.5, y - h*.5, w, h)
-		love.graphics.translate(x, y)
-		love.graphics.scale(s)
-		res.drawString("", "Options", 0, 0, "HCENTER", "VCENTER")
-	end
+	local w, h = 60 + tlw*2, 20 + tlh*2
+	local x, y = screenWidth - w * 2, debugPadding + round_padding * 2
+	local s = 1
+	drawDebugButton(nil, x, y, w, h, s, function()
+		debugOpen = false
+		optionsOpen = true
+		return
+	end, true, "menu_confirm")
+	love.graphics.translate(x, y)
+	love.graphics.scale(s)
+	res.drawString("", "Options", 0, 0, "HCENTER", "VCENTER")
 end
 
 function love.textinput(key)

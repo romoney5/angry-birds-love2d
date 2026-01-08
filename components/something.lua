@@ -31,7 +31,7 @@ something = {
 			{text = "Rename", callback = function(f)
 				showPopup(
 					"Rename",
-					"Rename \""..f.name.."\" to..",
+					"Rename \""..f.name.."\" to...",
 					{
 						{sprite = "MENU_NO", callback = function()
 							return true
@@ -39,14 +39,14 @@ something = {
 						{sprite = "TUTORIAL_OK", callback = function()
 							return true
 						end},
-					},
+					}, false,
 					function(x,y,w,h,p)
 						love.graphics.rectangle("fill", x, y, w, h)
 					end, 20
 				)
 			end},
 			{text = "Delete", callback = function(f)
-				showPopup(f.name, "Delete \""..f.name.."\"?",
+				showPopup(f.name, "Permanently delete \""..f.name.."\"?",
 					{
 						{sprite = "MENU_NO", callback = function()
 							return true
@@ -89,7 +89,7 @@ function updateSomething(dt)
 	time = time or love.timer.getTime()
 	cameraShakeX, cameraShakeY = 0, 0
 
-	res.drawString("", "DT "..tostring(dt), 50, 50)
+	-- res.drawString("", "DT "..tostring(dt), 50, 50)
 	local dance = math.abs(math.cos(so.time * (123 / 20))) * 100
 
 	screen.top = -400
@@ -102,33 +102,11 @@ function updateSomething(dt)
 
 	drawRect2(0, 0, 0, .6, 0, 0, screenWidth, screenHeight)
 
-	drawDebugText(so.path or "Files",screenWidth*.5,100, "HCENTER", "FONT_MENU")
-	if currentGameMode and currentGameMode == updateSomething then
-		drawDebugButton("BUTTON_ARROW_LEFT", 100, 100, 1, function()
-			res.stopAudio("somethingTheme")
-			currentGameMode = so.pgm
-		end, true, "menu_back")
-	else
-		drawDebugButton("BUTTON_RESTART", 100, 100, .9, function()
-			showPopup("Restart", "The game has not been properly loaded.\nRestart the game?",
-				{
-					{sprite = "BUTTON_RESTART", callback = function()
-						love.event.quit()
-					end},
-					{sprite = "MENU_NO", callback = function()
-						return true
-					end},
-					{sprite = "TUTORIAL_OK", callback = function()
-						love.event.quit("restart")
-					end},
-				})
-		end, true, "menu_back")
-	end
-
-	local w, h = screenWidth - 400,screenHeight - 300
+	local padding = math.min(200, math.min(screenWidth, screenHeight) / 4)
+	local w, h = screenWidth - padding,screenHeight - padding
 	local x, y = screenWidth*.5 - w*.5,screenHeight*.5 - h*.5
-	drawRect2(10 / 255, 10 / 255,10 / 255, .3, x + 10, y + 10, w, h, 16)
-	drawRect2(24 / 255, 50 / 255,75 / 255, 1, x, y, w, h, 16)
+	drawRect2(10 / 255, 10 / 255, 10 / 255, .3, x + 10, y + 10, w, h, 16)
+	drawRect2(24 / 255, 50 / 255, 75 / 255, 1, x, y, w, h, 16)
 
 	res.setClipRect(x, y, w, h)
 
@@ -177,24 +155,36 @@ function updateSomething(dt)
 		drawDebugText(v.name, fx + 30, fy, "LEFT", "FONT_BASIC")
 		yoffset = yoffset + 36
 	end
-	so.scrollto = math.max(so.scrollto, -(yoffset - so.scroll) + h - 72)
+
+	local maxscroll = -(yoffset - so.scroll) + h - 72
+	so.scrollto = math.max(so.scrollto, maxscroll)
 	so.scrollto = math.min(so.scrollto, 0)
+
+	--scroll bar indicator
+	CUI.Scrollbar(
+		screenWidth - padding / 2 - f_padding / 2,
+		padding / 2 + f_padding / 2,
+		10,
+		screenHeight - padding / 2 * 2 - f_padding / 2 * 2,
+		so.scroll,
+		maxscroll,
+		yoffset - so.scroll)
 
 	love.graphics.setScissor()
 
 	if so.cmenu.attach then
 		local attach = so.cmenu.attach
-		drawRect2(.2, .2, .2, .2, so.cmenu.x + 8, so.cmenu.y + 8, so.cmenu.w, so.cmenu.h, 5)
-		drawRect2(.9, .9, .9, 1, so.cmenu.x, so.cmenu.y, so.cmenu.w, so.cmenu.h, 5)
+		drawRect2(10 / 255, 10 / 255, 10 / 255, 10 / 255, so.cmenu.x + 8, so.cmenu.y + 8, so.cmenu.w, so.cmenu.h, 5)
+		drawRect2(48 / 255, 60 / 255, 75 / 255, 1, so.cmenu.x, so.cmenu.y, so.cmenu.w, so.cmenu.h, 5)
 
 		local itemy = 0
 		for i,v in pairs(so.cmenu.items) do
 			if v then
-				local ix, iy = so.cmenu.x + 16, itemy + so.cmenu.y
-				local selected = so.cmenu.hovering and checkBounds(0, iy + 16, screenWidth, 36, cursor.x, cursor.y)
+				local ix, iy = so.cmenu.x + 16, itemy + so.cmenu.y + 16
+				local selected = so.cmenu.hovering and checkBounds(0, iy, screenWidth, 36, cursor.x, cursor.y)
 				if selected then
 					ix = ix + 12
-					drawRect2(1, 1, 1, 1, so.cmenu.x, iy + 16, so.cmenu.w, 36, 5)
+					drawRect2(60 / 255, 80 / 255,100 / 255, 1, so.cmenu.x, iy, so.cmenu.w, 36, 5)
 					if keyHold.LBUTTON then
 						ix = ix - 12
 					end
@@ -206,11 +196,34 @@ function updateSomething(dt)
 					end
 				end
 
-				res.drawString("", v.text, ix, iy, "TOP")
+				drawDebugText(v.text, ix, iy + 10)
 				itemy = itemy + 18
 			end
 			itemy = itemy + 18
 		end
+	end
+
+	drawDebugText(so.path or "Files", screenWidth * .5, math.min(padding / 2, 100), "HCENTER", "FONT_MENU")
+	if currentGameMode and currentGameMode == updateSomething then
+		drawDebugButton("BUTTON_ARROW_LEFT", padding / 3, padding / 3, nil, nil, 1, function()
+			res.stopAudio("somethingTheme")
+			currentGameMode = so.pgm
+		end, true, "menu_back")
+	else
+		drawDebugButton("BUTTON_RESTART", padding / 3, padding / 3, nil, nil, .9, function()
+			showPopup("Restart", "The game has not been properly loaded.\nRestart the game?",
+				{
+					{sprite = "BUTTON_RESTART", callback = function()
+						love.event.quit()
+					end},
+					{sprite = "MENU_NO", callback = function()
+						return true
+					end},
+					{sprite = "TUTORIAL_OK", callback = function()
+						love.event.quit("restart")
+					end},
+				})
+		end, true, "menu_back")
 	end
 	
 	res.drawSprite("SOUNDBOARD_2_BIRD", screenWidth - 100, dance + screenHeight - 200)
