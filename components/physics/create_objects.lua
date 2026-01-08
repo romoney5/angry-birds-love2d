@@ -171,7 +171,7 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 	obj.fixture:setUserData(obj)
 	obj.fixture:setCategory(CATEGORY_NORMAL)
 
-	obj.body:setAngularDamping(1)
+	obj.body:setAngularDamping(2)
 
 	--set type
 	obj.type = "polygon"
@@ -201,7 +201,7 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 	obj.fixture:setFriction(friction)
 	obj.fixture:setUserData(obj)
 	
-	obj.body:setAngularDamping(1)
+	obj.body:setAngularDamping(2)
 
 	--set type
 	obj.type = "box"
@@ -225,7 +225,7 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	obj.fixture:setFriction(friction)
 	obj.fixture:setUserData(obj)
 
-	obj.body:setAngularDamping(1)
+	obj.body:setAngularDamping(2)
 	
 	if z_order >= 999 then
 		obj.isBackground = true
