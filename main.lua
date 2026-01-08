@@ -110,9 +110,9 @@ function makeChunk(filename, env)
 		--because 7-zip sucks we have to do file operations first
 		local dec_filename = temp_file()
 		
-		--now use 7-zip with stdin and open it in binary mode
-		--TODO: binary mode off for linux and on for windows?
-		local file = io.popen("7z e -so -t7z \""..love.filesystem.getSaveDirectory()..dec_filename.."\"", "r") --no -si
+		--now use 7-zip with stdin and open it in binary mode on windows
+		local mode = love._os == "Windows" and "rb" or "r"
+		local file = io.popen("7z e -so -t7z \""..love.filesystem.getSaveDirectory()..dec_filename.."\"", mode) --no -si
 		if file then
 			src = file:read("*a")
 			file:close()
