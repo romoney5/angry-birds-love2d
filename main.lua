@@ -327,9 +327,24 @@ function love.load()
 	if love.setDeprecationOutput then
 		love.setDeprecationOutput(false)
 	end
+	
+	--cache original image path
+	local og_imagePath = imagePath
+	local og_fontPath = fontPath
 
 	runLuaFile(compsPath.."/load_all.lua")
 	handleStartArgs()
+	
+	--load only certain properties from config.lua
+	local config = {}
+	if not loadLuaFileToObject("config.lua", config, nil, true) then loadLuaFileToObject(datapath.."/config.lua", config, nil, true) end
+	imagePath = config.imagePath or imagePath
+	fontPath = config.fontPath or fontPath
+	audioPath = config.audioPath or audioPath
+	localizationPath = config.localizationPath or localizationPath
+	levelPath = config.levelPath or levelPath
+	scriptPath = config.scriptPath or scriptPath
+	--deviceModel = config.deviceModel or deviceModel
 
 	--load save data
 	runLuaFile("settings.lua", true)
@@ -371,7 +386,7 @@ function love.load()
 	function selectFontProfile(...)
 		-- deviceModel = "windows"
 		local font = sfp and sfp(...)
-		if font and not checkDirectory(datapath.."/"..fontPath.."/"..font) then
+		if font and not checkDirectory(datapath.."/"..og_fontPath.."/"..font) then
 			font = "1024x768" --just default to the pc version
 		end
 		return font
@@ -380,11 +395,11 @@ function love.load()
 	local sap = selectAssetProfile
 	function selectAssetProfile(...)
 		local asset = sap and sap(...)
-		if asset and not checkDirectory(datapath.."/"..imagePath.."/"..asset) then
+		if asset and (not checkDirectory(datapath.."/"..og_imagePath.."/"..asset) and not checkDirectory(datapath.."/"..imagePath.."/"..asset)) then
 			asset = sap and string.upper(sap(...)) --try uppercase version then..
 		end
 		
-		if not asset or asset == "" or not checkDirectory(datapath.."/"..imagePath.."/"..asset) then
+		if not asset or asset == "" or (not checkDirectory(datapath.."/"..og_imagePath.."/"..asset) and not checkDirectory(datapath.."/"..imagePath.."/"..asset)) then
 			asset = "1024x768"
 		end
 		return asset
@@ -432,7 +447,7 @@ function love.load()
 	local uimos = updateItemMouseOverState
 	if uimos then
 		function updateItemMouseOverState(item,dt)
-			if not gameOptions.ui.enableHoverScaling then
+			if gameOptions and gameOptions.ui and not gameOptions.ui.enableHoverScaling then
 				return
 			end
 			uimos(item, dt)
