@@ -33,6 +33,8 @@ function handleStartArgs()
 			elseif v == "--datapath" or v == "-dp" then --override datapath and set save directory
 				datapath = arg[i + 1] or datapath
 				love.filesystem.setIdentity(love.filesystem.getIdentity().."/DATA_"..datapath)
+			elseif v == "--blamelength" or v == "-bl" then --length of fione bytecode traceback (disabled by default)
+				fione_errorblame_length = tonumber(arg[i + 1]) or fione_errorblame_length
 			end
 		end
 	end

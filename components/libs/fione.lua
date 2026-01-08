@@ -29,10 +29,8 @@ if not table.move then
 	end
 end
 
-local ffi = ffi
-local table = table
-local pcall = pcall
-local error_blame
+local error_blame = {}
+local error_blame_state
 local og_assert = assert
 local function assert(...)
 	og_assert(...)
@@ -569,12 +567,116 @@ local function open_lua_upvalue(list, index, memory)
 	return prev
 end
 
+local inst_names = {
+	-- level 1
+	[18] = "JMP",
+	[8] = "FORLOOP",
+	[28] = "TFORLOOP",
+	-- level 2
+	[3] = "MOVE",
+	[13] = "LOADK",
+	[23] = "LOADBOOL",
+	[33] = "TEST",
+	-- level 3
+	[1] = "ADD",
+	[6] = "SUB",
+	[10] = "MUL",
+	[16] = "DIV",
+	[20] = "MOD",
+	[26] = "POW",
+	[30] = "UNM",
+	[36] = "NOT",
+	-- level 4
+	[0] = "LOADNIL",
+	[2] = "GETUPVAL",
+	[4] = "GETGLOBAL",
+	[7] = "GETTABLE",
+	[9] = "SETGLOBAL",
+	[12] = "SETUPVAL",
+	[14] = "SETTABLE",
+	[17] = "NEWTABLE",
+	[19] = "LEN",
+	[22] = "CONCAT",
+	[24] = "EQ",
+	[27] = "LT",
+	[29] = "LE",
+	[32] = "TESTSET",
+	[34] = "FORPREP",
+	[37] = "SETLIST",
+	-- level 5
+	[5] = "SELF",
+	[11] = "CALL",
+	[15] = "TAILCALL",
+	[21] = "RETURN",
+	[25] = "CLOSE",
+	[31] = "CLOSURE",
+	[35] = "VARARG",
+}
+
+local function bytecode_traceback()
+	local function pad(str, len)
+		len = len or 10
+		return str..string.rep(" ", len - (#str % len))
+	end
+	
+	local memory = error_blame_state and error_blame_state.memory
+	local output = "Recent instructions: (ascending)\n"
+	
+	for i, inst in ipairs(error_blame) do
+		local built = ""
+		
+		if i == #error_blame then
+			built = "-> "..built
+		end
+		
+		if inst then
+			built = built..inst_names[inst.op] or "?"
+			built = pad(built)
+			built = pad(built..(inst.A and tostring(inst.A) or ""), 5)
+			built = pad(built..(inst.B and tostring(inst.B) or ""), 5)
+			built = pad(built..(inst.C and tostring(inst.C) or ""), 5)
+			
+			local addition
+			if inst.is_KB then
+				if not addition then built = pad(built.."-") addition = true end
+				built = built.."B: \""
+				built = pad(built..tostring(inst.const_B and inst.const_B.."\"" or "\""))
+			elseif memory and inst.B and memory[inst.B] then
+				if not addition then built = pad(built.."-") addition = true end
+				built = built.."Bmem: \""
+				built = pad(built..tostring(memory[inst.B]).."\"")
+			end
+			
+			if inst.is_KC then
+				if not addition then built = pad(built.."-") addition = true end
+				built = built.."C: \""
+				built = pad(built..tostring(inst.const_C and inst.const_C.."\"" or "\""))
+			elseif memory and inst.C and memory[inst.C] then
+				if not addition then built = pad(built.."-") addition = true end
+				built = built.."Cmem: \""
+				built = pad(built..tostring(memory[inst.C]).."\"")
+			end
+		end
+		
+		output = output..built.."\n"
+	end
+	
+	error_blame = {}
+	
+	return output
+end
+
+local function error_blame_append(inst)
+	if fione_errorblame_length == 0 then return end
+	table.insert(error_blame, inst)
+	if #error_blame > fione_errorblame_length then table.remove(error_blame, 1) end
+end
+
 local function on_lua_error(failed, err)
 	local src = failed.source
 	local line = failed.lines[failed.pc - 1]
 
-	print("Last indexed: "..tostring(error_blame))
-	error(string.format('%s:%i: %s', src, line or -1, err), 0)
+	error(string.format('%s:%i: %s\n%s', src, line or -1, err, bytecode_traceback()), 0)
 end
 
 local function run_lua_func(state, env, upvals)
@@ -587,10 +689,14 @@ local function run_lua_func(state, env, upvals)
 	local memory = state.memory
 	local pc = state.pc
 
+	error_blame_append(false)
 	while true do
 		local inst = code[pc]
 		local op = inst.op
 		pc = pc + 1
+		
+		--append to instruction debug list
+		error_blame_append(inst)
 
 		if op < 18 then
 			if op < 8 then
@@ -635,12 +741,10 @@ local function run_lua_func(state, env, upvals)
 								index = memory[inst.C]
 							end
 
-							error_blame = index
 							memory[A + 1] = memory[B]
 							memory[A] = memory[B][index]
 						else
 							--[[GETGLOBAL]]
-							error_blame = "Get global "..tostring(inst.const)
 							memory[inst.A] = env[inst.const]
 						end
 					elseif op > 6 then
@@ -653,7 +757,6 @@ local function run_lua_func(state, env, upvals)
 							index = memory[inst.C]
 						end
 
-						error_blame = "Get table "..tostring(index)
 						memory[inst.A] = memory[inst.B][index]
 					else
 						--[[SUB]]
@@ -762,7 +865,6 @@ local function run_lua_func(state, env, upvals)
 								value = memory[inst.C]
 							end
 
-							error_blame = "Set table "..tostring(index)
 							memory[inst.A][index] = value
 						end
 					elseif op > 16 then
@@ -841,7 +943,6 @@ local function run_lua_func(state, env, upvals)
 								str = memory[B]
 
 								for i = B + 1, C do
-									error_blame = "Concat"
 									str = str .. memory[i]
 								end
 							end
@@ -907,7 +1008,6 @@ local function run_lua_func(state, env, upvals)
 							rhs = memory[inst.C]
 						end
 
-						error_blame = tostring(lhs).." < "..tostring(rhs)
 						if (lhs < rhs) == (inst.A ~= 0) then pc = pc + code[pc].sBx end
 
 						pc = pc + 1
@@ -1017,11 +1117,8 @@ local function run_lua_func(state, env, upvals)
 							limit = assert(tonumber(memory[A + 1]), '`for` limit must be a number')
 							step = assert(tonumber(memory[A + 2]), '`for` step must be a number')
 
-							error_blame = "For-loop initial value"
 							memory[A] = init - step
-							error_blame = "For-loop limit value"
 							memory[A + 1] = limit
-							error_blame = "For-loop step value"
 							memory[A + 2] = step
 
 							pc = pc + inst.sBx
@@ -1076,6 +1173,8 @@ local function run_lua_func(state, env, upvals)
 
 		state.pc = pc
 	end
+	
+	error_blame_append(false)
 end
 
 function lua_wrap_state(proto, env, upval)
@@ -1099,6 +1198,7 @@ function lua_wrap_state(proto, env, upval)
 		end
 
 		local state = {vararg = vararg, memory = memory, code = proto.code, subs = proto.subs, pc = 1}
+		error_blame_state = state
 
 		local result = table.pack(pcall(run_lua_func, state, env, upval))
 

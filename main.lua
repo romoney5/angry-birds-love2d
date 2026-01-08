@@ -48,6 +48,8 @@ enableDebug = false
 
 targetFPS = 1000 --love's love.run function uses 0.001 by default
 
+fione_errorblame_length = 0
+
 function endsWith(str, ending)
 	return string.sub(str, -string.len(ending)) == ending
 end
@@ -58,7 +60,7 @@ end
 function makeChunk(filename, env)
 	local src = love.filesystem.read(filename)
 	if not src then
-		return nil, "No source"
+		return false, nil, "No source"
 	end
 	
 	local function identify(src)
@@ -127,16 +129,16 @@ function makeChunk(filename, env)
 	
 	if kind == "lua" then --it's bytecode!
 		print("Loading compiled Lua \""..filename.."\"...")
-		return pcall(loadbytecode, src, env, filename)
+		return true, pcall(loadbytecode, src, env, filename)
 	elseif kind == "plain" then --that's just plain old lua.. boring..
 		print("Loading Lua \""..filename.."\"...")
-		return pcall(loadstring, src, filename)
+		return false, pcall(loadstring, src, filename)
 	end
 end
 
 --very important in later codebases
 function loadLuaFileToObject(filename, ctx, key, lenient)
-	local loaded, lua
+	local compiled, loaded, lua
 
 	ctx = ctx or _G
 
@@ -153,10 +155,14 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 	end
 
 	filename = resolvePath(datapath.."/"..filename)
-	loaded, lua = makeChunk(filename, env)
+	compiled, loaded, lua = makeChunk(filename, env)
 
 	if lua and loaded then
-	    setfenv(lua, env)
+		--fione needs the env on script loading so this should only work on plaintext luas
+		if not compiled then
+			setfenv(lua, env)
+		end
+
 		
 		--emulate scope behavior
 		if not getmetatable(env) then
@@ -201,11 +207,15 @@ end
 --also used in some versions
 function loadLuaFile(filename, envKey, lenient)
 	local loaded, lua
+	local env = _G[envKey] or _G
 	filename = resolvePath(datapath.."/"..filename)
-	loaded, lua = makeChunk(filename)
+	compiled, loaded, lua = makeChunk(filename, env)
 
 	if loaded and lua then
-		setfenv(lua, _G[envKey] or _G)
+		if not compiled then
+			setfenv(lua, env)
+		end
+		
 		return lua()
 	elseif not lenient then
 		-- error("Could not load Lua file: "..filename)
@@ -221,7 +231,7 @@ end
 function runLuaFile(filename, lenient)
 	local loaded, lua
 	filename = resolvePath(filename)
-	loaded, lua = makeChunk(filename)
+	compiled, loaded, lua = makeChunk(filename)
 
 	if loaded and lua then
 		return lua()
