@@ -59,12 +59,7 @@ function res.drawString(group, text, x, y, aligny, alignx)
 
 	local font = fonts[drawfont]
 	if font then
-		local h = font.maxascending - font.leading
-		for l in text:gmatch("[^\n]+") do
-			h = h + font.leading
-		end
-		
-		local ay = h
+		local ay = font.maxascending
 
 		if alignx=="VCENTER" or aligny=="VCENTER" then ay = ay - font.height / 2 end
 		if alignx=="BOTTOM" or aligny=="BOTTOM" then ay = ay - font.height end
@@ -72,13 +67,12 @@ function res.drawString(group, text, x, y, aligny, alignx)
 		-- if alignx=="TOP" or aligny=="TOP" then ay = h + font.leading end
 		
 		local line = 0
-		local linex = x
-		-- for l in text:gmatch("[^\n]+") do
+		for l in text:gmatch("[^\n]+") do
 			local ax, i = 0, 0
-			if alignx=="HCENTER" or aligny=="HCENTER" then ax = -res.getStringWidth(text) / 2 end
-			if alignx=="RIGHT" or aligny=="RIGHT" then ax = -res.getStringWidth(text) end
+			if alignx=="HCENTER" or aligny=="HCENTER" then ax = -res.getStringWidth(l) / 2 end
+			if alignx=="RIGHT" or aligny=="RIGHT" then ax = -res.getStringWidth(l) end
 
-			for c in text:gmatch(".") do
+			for c in l:gmatch(".") do
 				local char = font.chars[string.format("%04x", string.byte(c))]
 				if char then
 					local charX = (x + i + ax)
@@ -88,8 +82,8 @@ function res.drawString(group, text, x, y, aligny, alignx)
 					i = i + (char.width + font.tracking) --math.floor for crisp text
 				end
 			end
-		-- 	line = line + 1
-		-- end
+			line = line + 1
+		end
 	else
 		--temporarily revert blendmode
 		local bm, am = love.graphics.getBlendMode()

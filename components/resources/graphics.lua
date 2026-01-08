@@ -284,7 +284,7 @@ local function findCaseInsensitive(dir)
 		end
 	end
 
-	error("no "..dir)
+	error("findCaseInsensitive: could not find "..dir)
 	return "", nil
 end
 
