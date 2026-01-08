@@ -18,8 +18,13 @@ If you are on Linux, it's as easy as downloading a LÖVE Flatpak, navigating to 
 
 ## Acknowledgements
 [FiOne](https://github.com/Rerumu/FiOne) is used to run compiled Lua files (with some edits).
+
 The libcrypto library, a part of [OpenSSL](https://github.com/openssl/openssl), is used to decrypt encrypted Lua files.
 - libcrypto-3.dll is required to use it: https://slproweb.com/products/Win32OpenSSL.html
+
 [love-webp](https://github.com/ImagicTheCat/love-webp) is used to read WebP images.
+
 [7-Zip](https://www.7-zip.org/) is used to extract Lua files compressed with 7z.
 - 7z.exe is required to use it.
+
+This port is not affiliated with or endorsed by Rovio Entertainment Corporation.
