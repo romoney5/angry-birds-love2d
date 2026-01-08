@@ -411,6 +411,7 @@ function love.load()
 		--return rawget(_, i)
 	end})]]
 	if createStartUpAssets then createStartUpAssets() end
+	if updateValues then updateValues() end
 
 	gpcx, gpcy = love.mouse.getPosition()
 

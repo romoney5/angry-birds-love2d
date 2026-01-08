@@ -32,6 +32,10 @@ function love.update(dt)
 		if not hasfocus then
 			love.audio.play(pausedaudios)
 			table.clear(pausedaudios)
+
+			if gameResumed and not enableDebug then
+				gameResumed()
+			end
 		end
 
 		hasfocus = true
@@ -175,7 +179,7 @@ function love.update(dt)
 		pausedaudios = love.audio.pause()
 
 		--don't keep saving settings.lua every time you defocus
-		if not enableDebug then
+		if gamePaused and not enableDebug then
 			gamePaused()
 		end
 
@@ -221,6 +225,12 @@ function updatePopup()
 				end
 			end, true, v.sound or "menu_confirm")
 		end
+	end
+end
+
+function love.resize(width, height)
+	if resolutionChanged then
+		resolutionChanged(width, height)
 	end
 end
 
