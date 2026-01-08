@@ -29,8 +29,8 @@ function res.createBitmapFont(font, silent)
 				spritesheet = love.graphics.newImage(filepath)
 			end
 			
-			--TODO last time i checked, some properties are inaccurate to fusion
-			fonts[fontname] = {leading = data.leading, tracking = data.tracking, spritesheet = spritesheet, chars = {}, height = data.height - data.mbaseline}
+			fonts[fontname] = {leading = data.leading, tracking = data.tracking, spritesheet = spritesheet, chars = {},
+				height = data.height, maxascending = data.maxascending, maxdescending = data.maxdescending}
 
 			--for each character, also construct a quad
 			for _, char in pairs(data.chars) do
@@ -51,7 +51,6 @@ function res.useFont(font)
 	end
 end
 
---TODO: font y positions are inaccurate
 function res.drawString(group, text, x, y, aligny, alignx)
 	text = tostring(text) or ""
 	if group and group~="" then
@@ -60,22 +59,26 @@ function res.drawString(group, text, x, y, aligny, alignx)
 
 	local font = fonts[drawfont]
 	if font then
-		local ay = 0
-		local h = -font.leading
+		local h = font.maxascending - font.leading
+		for l in text:gmatch("[^\n]+") do
+			h = h + font.leading
+		end
 		
-		for l in text:gmatch("[^\n]+") do h = h + font.leading end
-		if alignx=="VCENTER" or aligny=="VCENTER" then ay = -h * .75 + res.getFontHeight() * .25 end
-		if alignx=="BOTTOM" or aligny=="BOTTOM" then ay = -(h + font.leading) * .5  end
-		if alignx=="TOP" or aligny=="TOP" then ay = h + font.leading * .75 end
+		local ay = h
+
+		if alignx=="VCENTER" or aligny=="VCENTER" then ay = ay - font.height / 2 end
+		if alignx=="BOTTOM" or aligny=="BOTTOM" then ay = ay - font.height end
+		if alignx=="BASELINE" or aligny=="BASELINE" then ay = ay - font.maxascending end
+		-- if alignx=="TOP" or aligny=="TOP" then ay = h + font.leading end
 		
 		local line = 0
 		local linex = x
-		for l in text:gmatch("[^\n]+") do
+		-- for l in text:gmatch("[^\n]+") do
 			local ax, i = 0, 0
-			if alignx=="HCENTER" or aligny=="HCENTER" then ax = -res.getStringWidth(l) / 2 end
-			if alignx=="RIGHT" or aligny=="RIGHT" then ax = -res.getStringWidth(l) end
+			if alignx=="HCENTER" or aligny=="HCENTER" then ax = -res.getStringWidth(text) / 2 end
+			if alignx=="RIGHT" or aligny=="RIGHT" then ax = -res.getStringWidth(text) end
 
-			for c in l:gmatch(".") do
+			for c in text:gmatch(".") do
 				local char = font.chars[string.format("%04x", string.byte(c))]
 				if char then
 					local charX = (x + i + ax)
@@ -85,16 +88,18 @@ function res.drawString(group, text, x, y, aligny, alignx)
 					i = i + (char.width + font.tracking) --math.floor for crisp text
 				end
 			end
-			line = line + 1
-		end
+		-- 	line = line + 1
+		-- end
 	else
 		--temporarily revert blendmode
 		local bm, am = love.graphics.getBlendMode()
 		love.graphics.setBlendMode("alpha")
 		local ay = 0
-		if alignx=="VCENTER" or aligny=="VCENTER" then ay = 24 * .75 + res.getFontHeight() * .25 end
-		if alignx=="BOTTOM" or aligny=="BOTTOM" then ay = 24 * .5  end
+		if alignx=="VCENTER" or aligny=="VCENTER" then ay = -res.getFontHeight() / 2 end
+		if alignx=="BOTTOM" or aligny=="BOTTOM" then ay = -res.getFontHeight() end
 		-- if alignx=="TOP" or aligny=="TOP" then ay=.75 end
+		if alignx == "HCENTER" or aligny == "HCENTER" then x = x - res.getStringWidth(text) / 2 end
+		if alignx == "RIGHT" or aligny == "RIGHT" then x = x - res.getStringWidth(text) end
 		love.graphics.print(text, x, y + ay)
 		love.graphics.setBlendMode(bm, am)
 	end
@@ -211,7 +216,7 @@ end
 
 function res.getStringWidth(text, font, _, _, resetline)
 	text = text or ""
-	local font = fonts[font or drawfont]
+	local font = fonts[font] or fonts[drawfont]
 	if font then
 		local highscore = 0
 		local i = 0
@@ -227,7 +232,7 @@ function res.getStringWidth(text, font, _, _, resetline)
 				end
 			end
 		end
-		return highscore
+		return highscore - font.tracking
 	else
 		local font = love.graphics.getFont()
 		return font:getWidth(text) --does not account for line breaks
@@ -258,13 +263,13 @@ end
 
 function res.getFontMaxAscending()
 	local font = fonts[drawfont]
-	if font then return font.leading end
+	if font then return font.maxascending end
 	return 0
 end
 
 function res.getFontMaxDescending()
 	local font = fonts[drawfont]
-	if font then return -font.leading end
+	if font then return font.maxdescending end
 	return 0
 end
 

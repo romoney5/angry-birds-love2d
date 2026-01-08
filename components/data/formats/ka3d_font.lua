@@ -3,7 +3,7 @@
 function readFont(fileData)
 	--length of filename
 	local filenameLength = readInt(fileData, pos)
-	data = {filename = readString(fileData, pos+2, filenameLength), chars = {}, height = 0, mbaseline = 0}
+	data = {filename = readString(fileData, pos+2, filenameLength), chars = {}, height = 0, maxascending = 0, maxdescending = 0}
 	skip(filenameLength+4)
 
 	data.leading = readInt(fileData,pos-2)
@@ -21,10 +21,15 @@ function readFont(fileData)
 		data.chars[char].width = readInt(fileData,pos+4)
 		data.chars[char].height = readInt(fileData,pos+6)
 		data.chars[char].pivotY = readInt(fileData,pos+8)
-		data.height = math.max(data.chars[char].height,data.height)
-		data.mbaseline = math.min(data.chars[char].pivotY,data.mbaseline)
+
+		data.maxascending = math.max(data.maxascending, data.chars[char].pivotY)
+		data.maxdescending = math.max(data.maxdescending, -data.chars[char].pivotY + data.chars[char].height)
 
 		skip(10)
 	end
+	
+	--height = max ascending + max descending
+	data.height = data.maxascending + data.maxdescending
+
 	return data
 end
