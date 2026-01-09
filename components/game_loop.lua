@@ -48,7 +48,7 @@ function love.update(dt)
 			for _, c in ipairs(audiochannels) do
 				for i, v in ipairs(c) do
 					if cachedaudios[v]:isPlaying() ~= true then
-						table.remove(c, k)
+						table.remove(c, i)
 					end
 				end
 			end
