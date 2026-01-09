@@ -113,14 +113,32 @@ local function clear(kind)
 	return
 end
 
-getParticles = {__index = function(self, i)
-	if i == "addParticles" then
-		return addParticles
-	elseif i == "setHardLimit" then
-		return setHardLimit
-	elseif i == "setSoftLimit" then
-		return setSoftLimit
-	elseif i == "clear" then
-		return clear
+local function addLevelParticles(type, amount, x, y, w, h, angle, ignoreLimits, isWeather)
+	--objects.levelParticles?
+	return
+end
+
+--absw
+local function native_addParticlesWithMode(particle)
+	return
+end
+
+getParticles = {
+	__index = function(self, i)
+		if i == "addParticles" then
+			return addParticles
+		elseif i == "setHardLimit" then
+			return setHardLimit
+		elseif i == "setSoftLimit" then
+			return setSoftLimit
+		elseif i == "clear" then
+			return clear
+
+		elseif i == "addLevelParticles" then
+			return addLevelParticles
+
+		elseif i == "native_addParticlesWithMode" then
+			return native_addParticlesWithMode
+		end
 	end
-end}
+}

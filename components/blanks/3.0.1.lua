@@ -36,10 +36,12 @@ function drawMenuParticlesInAdvance() --what is it with particles
 	return
 end
 
-function activateDebugConsole()
+function drawLevelParticlesNative(layer)
 	return
 end
 
+function activateDebugConsole()
+	return
 end
 
 --3.2.0 hd ipad

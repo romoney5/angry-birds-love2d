@@ -20,6 +20,11 @@ function loadLevel(filename)
 			return (a.z_order or 0) < (b.z_order or 0)
 		end)
 	end
+
+	--restore particle functions
+	if particles and not getmetatable(particles) then
+		setmetatable(particles, getParticles)
+	end
 end
 
 function saveLevel(filename)
