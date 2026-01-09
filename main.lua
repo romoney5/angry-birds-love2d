@@ -54,23 +54,55 @@ function endsWith(str, ending)
 	return string.sub(str, -string.len(ending)) == ending
 end
 
+--replace a missing filename due to case sensitivity
+function findCaseInsensitive(dir)
+	local _, paths = resolvePath(dir)
+
+	if checkDirectory(dir) then
+		table.remove(paths) --omit the old filename
+		return dir, paths
+	elseif love._os ~= "Windows" and dir and dir ~= "" then
+		if #paths == 0 then return "" end
+		local name = paths[#paths] --get the filename before it's too late
+		-- dir = table.concat(paths, "/") --and update dir according to that
+
+		for lookfor_i = 1, #paths - 1 do
+			local lookfor = table.concat(paths, "/", 1, lookfor_i)
+			for _, f in ipairs(love.filesystem.getDirectoryItems(lookfor)) do
+				if lookfor_i == #paths - 1 then
+					if f:lower() == name:lower() then
+						table.remove(paths) --omit the old filename
+						return lookfor.."/"..f, paths --and make a new one
+					end
+				else
+					if f:lower() == paths[lookfor_i + 1]:lower() then
+						paths[lookfor_i + 1] = f
+						break
+					end
+				end
+			end
+		end
+	end
+
+	-- print("findCaseInsensitive: could not find "..dir)
+	return nil, nil
+end
+
 --load either plain text lua, a precompiled chunk with fione,
 --a 7-zipped file, an aes-256 encrypted file, or all of the above
 --TODO: move this over to another file
-function makeChunk(filename, env)
-	local src = love.filesystem.read(filename)
-	if not src then
-		return false, nil, "No source"
-	end
-	
-	local function identify(src)
-		--lzma support?
-		if src:sub(1, 6) == "7z\xbc\xaf\x27\x1c" then return "7z" end
-		if src:sub(1, 4) == "\27Lua" then return "lua" end
-		if src:sub(1, 64):find("[\128-\255]") then return "binary" end
-		return "plain" --what we want
-	end
-	
+
+local function identifySrc(src)
+	--lzma support?
+	if src:sub(1, 6) == "7z\xbc\xaf\x27\x1c" then return "7z" end
+	if src:sub(1, 4) == "\27Lua" then return "lua" end
+	if src:sub(1, 64):find("[\128-\255]") then return "binary" end
+	return "plain" --what we want
+end
+
+function decryptSrc(filename, src)
+	src = src or love.filesystem.read(filename)
+
 	local function temp_file()
 		local dec_filename = "/dec"..filename
 		love.filesystem.createDirectory(dec_filename:match(".*/") or "")
@@ -84,7 +116,7 @@ function makeChunk(filename, env)
 		return dec_filename
 	end
 	
-	local kind = identify(src)
+	local kind = identifySrc(src)
 	
 	if kind == "binary" then --it's probably encrypted..
 		--let's use libcrypto as a dll/so
@@ -96,7 +128,7 @@ function makeChunk(filename, env)
 			--if it failed the function would probably throw an error
 			
 			--reidentify it
-			kind = identify(src)
+			kind = identifySrc(src)
 		else
 			print("makeChunk: Could not run libcrypto")
 			return --just don't bother trying to run an encrypted file
@@ -121,11 +153,24 @@ function makeChunk(filename, env)
 			assert(src and src:len() > 0, "makeChunk: 7-zip returned nothing")
 			
 			--reidentify it
-			kind = identify(src)
+			kind = identifySrc(src)
 		else
 			print("makeChunk: Could not run 7-zip")
 		end
 	end
+
+	return src
+end
+
+function makeChunk(filename, env)
+	local src = love.filesystem.read(filename)
+	if not src then
+		return nil, "No source"
+	end
+	
+	src = decryptSrc(filename, src)
+
+	local kind = identifySrc(src)
 	
 	if kind == "lua" then --it's bytecode!
 		print("Loading compiled Lua \""..filename.."\"...")
@@ -138,6 +183,10 @@ end
 
 --very important in later codebases
 function loadLuaFileToObject(filename, ctx, key, lenient)
+	filename = resolvePath(datapath.."/"..filename)
+	local newname, paths = findCaseInsensitive(filename)
+	filename = newname or filename
+
 	local compiled, loaded, lua
 
 	ctx = ctx or _G
@@ -154,7 +203,6 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 		env = ctx
 	end
 
-	filename = resolvePath(datapath.."/"..filename)
 	compiled, loaded, lua = makeChunk(filename, env)
 
 	if lua and loaded then
@@ -171,7 +219,7 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 					if k == "_G" or k == "gamelua" then
 						return _G
 					elseif k == "this" then
-						return env
+						return self
 					end
 				end,
 				__newindex = function(self, k, v)
@@ -205,15 +253,58 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 end
 
 --also used in some versions
-function loadLuaFile(filename, envKey, lenient)
+--absw: blocks makes the file load into .blocks, unpack unpacks all tables inside
+function loadLuaFile(filename, envKey, blocks, unpack, lenient)
+	filename = resolvePath(datapath.."/"..filename)
+	local newname, paths = findCaseInsensitive(filename)
+	filename = newname or filename
+
 	local loaded, lua
 	local env = _G[envKey] or _G
-	filename = resolvePath(datapath.."/"..filename)
+	local og_env = env
+
 	compiled, loaded, lua = makeChunk(filename, env)
 
 	if loaded and lua then
-		if not compiled then
+		if not compiled and not blocks then
 			setfenv(lua, env)
+		end
+
+		if blocks and not unpack then
+			blockTable[envKey] = blockTable[envKey] or {}
+			env = blockTable[envKey]
+		elseif blocks and unpack then
+			env.blocks = env.blocks or {}
+			env = env.blocks
+		end
+
+		if blocks then
+			og_env = {}
+
+			if not compiled then
+				setfenv(lua, og_env)
+			end
+
+			local _mt = {
+				__newindex = function(self, k, v)
+					if type(v) == "table" then
+						if unpack then
+							for kk, vv in pairs(v) do
+								if type(vv) == "table" then
+									kk = vv.definition or kk
+									rawset(env, kk, vv)
+								end
+							end
+						else
+							rawset(env, k, v)
+						end
+					else
+						rawset(self, k, v)
+					end
+				end
+			}
+
+			setmetatable(og_env, _mt)
 		end
 		
 		return lua()
@@ -229,8 +320,11 @@ function loadLuaFile(filename, envKey, lenient)
 end
 
 function runLuaFile(filename, lenient)
-	local loaded, lua
 	filename = resolvePath(filename)
+	local newname, paths = findCaseInsensitive(filename)
+	filename = newname or filename
+
+	local loaded, lua
 	compiled, loaded, lua = makeChunk(filename)
 
 	if loaded and lua then
@@ -249,7 +343,7 @@ local alreadyloaded = {}
 function requireFile(filename)
 	if alreadyloaded[filename] then return end
 
-	if loadLuaFile(scriptPath.."/"..filename, nil, true) == false and loadLuaFile(commonScriptPath.."/"..filename) == false then
+	if loadLuaFile(scriptPath.."/"..filename, nil, nil, nil, true) == false and loadLuaFile(commonScriptPath.."/"..filename) == false then
 		print("Could not load Lua file: "..filename)
 		return
 	end
@@ -382,28 +476,28 @@ function love.load()
 	loadLuaFileToObject(scriptPath.."/episodes.lua", this, "episodes", true)
 	loadLuaFileToObject(scriptPath.."/cutscenes.lua", this, "cutscenes", true)
 
-	local sfp = selectFontProfile
-	function selectFontProfile(...)
-		-- deviceModel = "windows"
-		local font = sfp and sfp(...)
-		if font and not checkDirectory(datapath.."/"..og_fontPath.."/"..font) then
-			font = "1024x768" --just default to the pc version
-		end
-		return font
-	end
+	-- local sfp = selectFontProfile
+	-- function selectFontProfile(...)
+	-- 	-- deviceModel = "windows"
+	-- 	local font = sfp and sfp(...)
+	-- 	if font and not findCaseInsensitive(datapath.."/"..og_fontPath.."/"..font) then
+	-- 		font = "1024x768" --just default to the pc version
+	-- 	end
+	-- 	return font
+	-- end
 
-	local sap = selectAssetProfile
-	function selectAssetProfile(...)
-		local asset = sap and sap(...)
-		if asset and (not checkDirectory(datapath.."/"..og_imagePath.."/"..asset) and not checkDirectory(datapath.."/"..imagePath.."/"..asset)) then
-			asset = sap and string.upper(sap(...)) --try uppercase version then..
-		end
+	-- local sap = selectAssetProfile
+	-- function selectAssetProfile(...)
+	-- 	local asset = sap and sap(...)
+	-- 	if asset and (not checkDirectory(datapath.."/"..og_imagePath.."/"..asset) and not checkDirectory(datapath.."/"..imagePath.."/"..asset)) then
+	-- 		asset = sap and string.upper(sap(...)) --try uppercase version then..
+	-- 	end
 		
-		if not asset or asset == "" or (not checkDirectory(datapath.."/"..og_imagePath.."/"..asset) and not checkDirectory(datapath.."/"..imagePath.."/"..asset)) then
-			asset = "1024x768"
-		end
-		return asset
-	end
+	-- 	if not asset or asset == "" or (not findCaseInsensitive(datapath.."/"..og_imagePath.."/"..asset) and not findCaseInsensitive(datapath.."/"..imagePath.."/"..asset)) then
+	-- 		asset = "1024x768"
+	-- 	end
+	-- 	return asset
+	-- end
 
 	--start by setting the background to white and using premultiplied alpha
 	setBGColor(255, 255, 255)
@@ -527,6 +621,8 @@ end
 function saveLuaFile(fileName, tableName, appData, noIndexes, noWrap)
 	local tableToSave = _G[tableName]
 	assert(tableToSave and type(tableToSave) == "table", "Table "..tableName.." does not exist.")
+
+	if not tableToSave then return end
 	
 	local serializedData
 	if not noWrap then

@@ -1,4 +1,4 @@
---rio
+--rio and related games
 
 function setRetinaResolution(retina)
 	print("Retina is now set to "..tostring(retina))
@@ -19,3 +19,80 @@ end
 function updateBackgroundAndForegroundScrollingNative(dt, _bool)
 	return
 end
+
+--latest pc version
+function getGameTimer()
+	return love.timer.getTime()
+end
+
+function getGameTimerMillis()
+	return love.timer.getTime() / 1000
+end
+
+function updateMenuParticlesNative()
+	return
+end
+
+function drawMenuParticlesNative()
+	return
+end
+
+function clearMenuParticlesNative()
+	return
+end
+
+--star wars
+function native_setWaterDensity(name, density)
+	return
+end
+
+function setSensorGravityMask(name, mask)
+	return
+end
+
+function setCameraLimits(limit)
+	return
+end
+
+function ClearSimulationTrajectory()
+	return
+end
+
+function resetMouseWheelScale(scale)
+	return
+end
+
+function enableInGameParticlesNative(enabled)
+	return
+end
+
+function clearAimingAid(clear)
+	return
+end
+
+function enableAimingAid(enabled)
+	return
+end
+
+function setThemeOffsetY(theme, y)
+	return
+end
+
+function clearParticlesNative()
+	return
+end
+
+--implementable
+function setTextureScale(name, textureScale)
+	return
+end
+
+function setSpriteRotation(name, angle)
+	return
+end
+
+function checkJointLimits(name)
+	return
+end
+
+themeSpriteObjects = {}

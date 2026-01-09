@@ -226,8 +226,10 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	obj.fixture:setUserData(obj)
 
 	obj.body:setAngularDamping(2)
+
+	if not tonumber(z_order) then objects.world[name].z_order = 0 end
 	
-	if z_order >= 999 then
+	if tonumber(z_order) and z_order >= 999 then
 		obj.isBackground = true
 		obj.fixture:setCategory(CATEGORY_BACKGROUND)
 		obj.fixture:setMask(CATEGORY_STATIC)
@@ -239,4 +241,11 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	obj.type = "circle"
 
 	updateObjectMass(name)
+end
+
+--absw
+function createJoints(joints)
+	for k, v in pairs(joints) do
+		createJoint(v)
+	end
 end

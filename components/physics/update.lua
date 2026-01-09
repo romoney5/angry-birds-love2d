@@ -20,7 +20,7 @@ function updatePhysics(dt)
 	if not physicsEnabled then return end
 
 	updateParticlesNative(dt2)
-	setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0)
+	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0)
 	
 	physicsWorld:update(solvePhysics())
 	removeBlocks()
@@ -85,8 +85,10 @@ function updatePhysics(dt)
 			local physicsJoint = joint.joint
 			local jointType = physicsJoint:getType()
 			if joint.backAndForth then
-				local angle = physicsJoint:getJointTranslation()
-				if jointType == "revolute" then
+				local angle
+				if jointType == "prismatic" then
+					angle = physicsJoint:getJointTranslation()
+				elseif jointType == "revolute" then
 					angle = physicsJoint:getJointAngle()
 				end
 				

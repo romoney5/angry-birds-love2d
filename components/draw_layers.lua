@@ -32,7 +32,7 @@ end
 function drawBackgroundNative()
 	local theme = blockTable.themes[currentTheme]
 	if not theme then return end
-	setBGColor(theme.color.r, theme.color.g, theme.color.b)
+	if theme.color then setBGColor(theme.color.r, theme.color.g, theme.color.b) end
 	for _,v in ipairs(theme.bgLayers) do
 		drawLayer(v)
 	end

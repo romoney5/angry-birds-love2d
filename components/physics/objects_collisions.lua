@@ -112,6 +112,61 @@ function setSensor(object,sensor)
 	end
 end
 
+--absw
+setAsSensor = setSensor
+
+function setLinearDamping(object, damping)
+	local obj = objects.world[object]
+	if obj and obj.body then
+		obj.body:setLinearDamping(damping)
+	end
+end
+
+function setActive(object, active)
+	local obj = objects.world[object]
+	if obj and obj.body then
+		obj.body:setActive(active)
+	end
+end
+
+function setVisible(object, visible)
+	local obj = objects.world[object]
+	if obj then
+		obj.visible = visible
+	end
+end
+
+--does the callback run immediately?
+function getRayCastedObjects(info)
+	local x1, y1 = info.x1, info.y1
+	local x2, y2 = info.x2, info.y2
+	local obj = objects.world[info.source]
+
+	if obj and obj.body and obj.fixture then
+		local hits = {}
+
+		physicsWorld:rayCast(x1, y1, x2, y2, function(fixture, x, y, xn, yn, fraction)
+			if fixture ~= obj.fixture then
+				local body = fixture:getBody()
+				local userdata = body and body:getUserData()
+				local name = userdata and userdata.name
+				if not name then return 1 end
+
+				table.insert(hits, name)
+				table.insert(hits, x)
+				table.insert(hits, y)
+				table.insert(hits, xn)
+				table.insert(hits, yn)
+				table.insert(hits, fraction)
+
+				return 1
+			end
+		end)
+
+		return hits
+	end
+end
+
 function setObjectParameter(object, parameter, value)
 	local obj = objects.world[object]
 	if obj then

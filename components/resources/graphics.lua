@@ -48,7 +48,7 @@ function res.drawCompoSprite(sheet, sprite, x, y)
 
 	if image then
 		for i,v in ipairs(image.items) do
-			res.drawSprite(v.n, math.floor(x + v.x), math.floor(y + v.y))
+			drawSprite(sheet, v.n, math.floor(x + v.x), math.floor(y + v.y))
 		end
 	end
 end
@@ -78,7 +78,7 @@ end
 
 function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
 	if sprite == g_currentCursorName and gameOptions and gameOptions.ui and (not gameOptions.ui.enableCursor or false) then return end
-	local image = type(sprite) == "string" and checkSprite(sprite) or sprite
+	local image = type(sprite) == "string" and (cachedimgs[sprite] or cachedcs[sprite]) or sprite
 
 	if image and image.quad and image.spsh then
 		local w, h = iwidth or image.width, iheight or image.height
@@ -96,9 +96,11 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 
 		if hanchor == "LEFT" or vanchor == "LEFT" then xpr = 0 end
 		if hanchor == "RIGHT" or vanchor == "RIGHT" then xpr = image.width end
+		if hanchor == "HPIVOT" or vanchor == "HPIVOT" then xpr = drawxp end
 		
 		if vanchor == "TOP" or hanchor == "TOP" then ypr = 0 end
 		if vanchor == "BOTTOM" or hanchor == "BOTTOM" then ypr = image.height end
+		if vanchor == "VPIVOT" or hanchor == "VPIVOT" then ypr = drawyp end
 		
 		-- if vanchor == "HCENTER" or hanchor == "HCENTER" then xpr = image.w/2 end
 		-- if vanchor == "VCENTER" or hanchor == "VCENTER" then ypr = image.h/2 end
@@ -266,28 +268,6 @@ local function releaseSheet(sheet, usecomposprites)
 	loadedSheets[sheet] = nil
 end
 
-local function findCaseInsensitive(dir)
-	local _, paths = resolvePath(dir)
-	if checkDirectory(dir) then
-		table.remove(paths) --omit the old filename
-		return dir, paths
-	elseif dir and dir ~= "" then
-		if #paths == 0 then return "" end
-		local name = paths[#paths] --get the filename before it's too late
-		table.remove(paths) --omit the old filename
-		dir = table.concat(paths, "/") --and update dir according to that
-
-		for _, f in ipairs(love.filesystem.getDirectoryItems(dir)) do
-			if f:lower() == name:lower() then
-				return dir.."/"..f, paths --and make a new one
-			end
-		end
-	end
-
-	error("findCaseInsensitive: could not find "..dir)
-	return "", nil
-end
-
 local function loadSheet(sheet, usecomposprites)
 	if loadedSheets[sheet] then return end
 	
@@ -295,7 +275,7 @@ local function loadSheet(sheet, usecomposprites)
 		loadedSheets[sheet] = {sheet = nil, sprites = {}}
 		
 		local newname, paths = findCaseInsensitive(datapath.."/"..sheet)
-		local data = love.filesystem.read(newname)
+		local data = love.filesystem.read(newname or "")
 		local info = getDatInfo(data, sheet, "SPRT")
 
 		if usecomposprites and info.compos then
@@ -361,6 +341,14 @@ local function loadSheet(sheet, usecomposprites)
 	end
 end
 
+function loadDATFileToTable(sheet, table)
+	local newname, paths = findCaseInsensitive(datapath.."/"..sheet)
+	local data = love.filesystem.read(newname)
+	local info = getDatInfo(data, sheet, "SPRT")
+
+	_G[table] = info.sprites or info.compos
+end
+
 function res.releaseSpriteSheet(sheet)
 	-- print("res.releaseSpriteSheet: unloading "..tostring(sheet))
 	releaseSheet(sheet, false)
@@ -381,6 +369,9 @@ function res.createCompoSpriteSet(sheet)
 	-- print("res.createCompoSpriteSet: loading "..tostring(sheet))
 	loadSheet(sheet, true)
 end
+
+ResourceManager.native_createSpriteSheet = res.createSpriteSheet
+ResourceManager.native_releaseSpriteSheet = res.releaseSpriteSheet
 
 function res.releaseFont(font)return end
 

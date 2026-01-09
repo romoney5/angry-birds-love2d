@@ -86,8 +86,9 @@ function res.playAudio(audio, volume, loop, track)
 	end
 end
 
+local res_playAudio = res.playAudio
 function ResourceManager.native_playAudio(audio, volume, flag, channel)
-	res.playAudio(audio, volume)
+	res_playAudio(audio, volume)
 end
 
 function ResourceManager.native_createAudio(path, name)
