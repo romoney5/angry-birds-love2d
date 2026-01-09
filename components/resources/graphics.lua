@@ -179,23 +179,18 @@ function drawRect2(r, g, b, a, x, y, w, h, round)
 	love.graphics.setColor(r2, y2, b2, a2)
 end
 
-function drawLine2D(x0, y0, x1, y1, w, r, g, b, a) --TODO: hitbox (8) rotations center on the origin
+function drawLine2D(x0, y0, x1, y1, w, r, g, b, a)
 	local r2, y2, b2, a2 = love.graphics.getColor()
 	love.graphics.push()
-	-- love.graphics.origin()
 	love.graphics.setColor(r / 255, g / 255, b / 255, a / 255)
 	love.graphics.setLineWidth(w * .75)
-	-- setRenderState(-screen.left - cameraShakeX, -screen.top - cameraShakeY, worldScale, worldScale, 0)
-	-- love.graphics.scale(worldScale)
-	-- love.graphics.translate(-screen.left - cameraShakeX, -screen.top - cameraShakeY)
-	-- gra
 
 	--rotate around the x/y rotation pivot
 	love.graphics.translate(x0, y0)
 	love.graphics.translate(drawxp, drawyp)
 	love.graphics.rotate(drawangle)
 	love.graphics.translate(-drawxp, -drawyp)
-	-- print(x1,y1,x2,y2)
+	
 	love.graphics.line(0, 0, x1-x0, y1-y0)
 	love.graphics.setColor(r2,y2,b2,a2)
 	love.graphics.pop()
@@ -282,19 +277,22 @@ local function loadSheet(sheet, usecomposprites)
 			for i, v in pairs(info.compos) do
 				--calculate the bounds here
 				local composprite = {items = v}
-				local x0, x1, y0, y1 = 0,0,0,0
+				local width, height = 0, 0
+				local px, py
 				
-				for ii, vv in pairs(v) do
-					local sprite = cachedimgs[vv.n]
-					if sprite then
-						local _,_,w,h = sprite.quad:getViewport()
-						x0,x1 = math.min(x0,vv.x - w), math.max(x1,vv.x + w)
-						y0,y1 = math.min(y0,vv.y - h), math.max(y1,vv.y + h)
-					end
-				end
-				
-				composprite.width, composprite.height = x1, y1
-				composprite.px, composprite.py = x0, y0
+				for ii, vv in ipairs(v) do
+                    local sprite = cachedimgs[vv.n]
+                    if sprite then
+                        width = math.max(width, vv.x + sprite.width)
+                        height = math.max(height, vv.y + sprite.height)
+                        
+                        --only use the first sprite's pivot
+                        px, py = px or sprite.px, py or sprite.py
+                    end
+                end
+                
+                composprite.width, composprite.height = width, height
+                composprite.px, composprite.py = px or 0, py or 0
 
 				cachedcs[i] = composprite
 			end
