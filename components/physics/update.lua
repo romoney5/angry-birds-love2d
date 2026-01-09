@@ -111,7 +111,7 @@ function updatePhysics(dt)
 	end
 	
 	for material, volume in pairs(rollingVolumes) do
-		local rollingSound = blockTable.materials[material].rollingSound
+		local rollingSound = blockTable.materials[material] and blockTable.materials[material].rollingSound
 		
 		if rollingSound then
 			if volume > 0 then

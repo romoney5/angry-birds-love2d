@@ -173,14 +173,15 @@ function drawGameNative() --work in progress
 end
 
 function drawObject(v)
+	if v.visible == false then return end
+
 	local x, y = physicsToWorldTransform(v.x, v.y)
 	love.graphics.push()
 
 	drawxp, drawyp = res.getSpritePivot(v.sprite)
 	drawangle = v.angle
 	
-	local userData = v.fixture:getUserData()
-	local scale = userData.scale or 1
+	local scale = v.scale or 1
 	if v.isBackground then scale = 2 end
 
 	love.graphics.scale(scale)

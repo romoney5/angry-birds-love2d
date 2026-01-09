@@ -84,6 +84,27 @@ function setAngularVelocity(object, a)
 	end
 end
 
+function setFriction(object, friction)
+	local obj = objects.world[object]
+	if obj and obj.fixture then
+		obj.fixture:setFriction(friction)
+	end
+end
+
+function setRestitution(object, restitution)
+	local obj = objects.world[object]
+	if obj and obj.fixture then
+		obj.fixture:setRestitution(restitution)
+	end
+end
+
+function setDensity(object, density)
+	local obj = objects.world[object]
+	if obj and obj.fixture then
+		obj.fixture:setDensity(density)
+	end
+end
+
 function setMaterial(object, material)
 	objects.world[object].material = material
 end
@@ -182,7 +203,7 @@ function setObjectParameter(object, parameter, value)
 			end
 		elseif parameter == 3 then -- nothing
 		elseif parameter == 4 then -- nothing
-		elseif parameter == 5 then -- ?
+		elseif parameter == 5 then -- scale
 			if obj.body then
 				setScale(object, value)
 			end
@@ -219,6 +240,38 @@ function setJointParameters(params)
 				obj[k] = v
 			end
 		end
+	end
+end
+
+function resizeCircle(name, radius)
+	local obj = objects.world[name]
+
+	if obj.shape then
+		--set the radius
+		obj.shape:setRadius(radius)
+		obj.radius = radius
+		obj.height = radius
+
+		--and then remake the fixture
+		local restitution, friction, density, category =
+			obj.fixture:getRestitution(), obj.fixture:getFriction(), obj.fixture:getDensity(), obj.fixture:getCategory()
+		obj.fixture:destroy()
+
+		obj.fixture = love.physics.newFixture(obj.body, obj.shape, density)
+
+		obj.fixture:setRestitution(restitution)
+		obj.fixture:setFriction(friction)
+		obj.fixture:setCategory(category)
+		obj.fixture:setUserData(obj)
+
+		updateObjectMass(name)
+	end
+end
+
+function setScale(name, scale)
+	local obj = objects.world[name]
+	if obj then
+		obj.scale = scale
 	end
 end
 
