@@ -58,6 +58,11 @@ function res.setClipRect(x1, y1, x2, y2)
 	love.graphics.setScissor(x1 * displayScale, y1 * displayScale, x2 * displayScale, y2 * displayScale)
 end
 
+function res.getClipRect(x1, y1, x2, y2)
+	local x, y, w, h = love.graphics.getScissor()
+	return x / displayScale, y / displayScale, w / displayScale, h / displayScale
+end
+
 function res.getSpriteBounds(sheet, sprite)
 	if not sprite then sprite = sheet end
 	sprite = checkSprite(sprite)
@@ -373,7 +378,9 @@ end
 ResourceManager.native_createSpriteSheet = res.createSpriteSheet
 ResourceManager.native_releaseSpriteSheet = res.releaseSpriteSheet
 
-function res.releaseFont(font)return end
+function res.releaseFont(font)
+	return
+end
 
 function getRokuImagePath(dat)
 	return ""

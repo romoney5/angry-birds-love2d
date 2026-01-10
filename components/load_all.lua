@@ -44,6 +44,7 @@ runLuaFile(compsPath.."/physics/update.lua")				--physics update function
 runLuaFile(compsPath.."/blanks/classic.lua")				--blank functions for 1.6.3.1
 runLuaFile(compsPath.."/blanks/3.0.1.lua")					--blank functions for 3.0.1
 runLuaFile(compsPath.."/blanks/rio.lua")					--blank functions for rio 1.4.0
+runLuaFile(compsPath.."/blanks/friends.lua")				--blank functions for friends mobile
 
 runLuaFile(compsPath.."/game_arguments.lua")				--handles arguments passed on to love
 runLuaFile(compsPath.."/options.lua")						--extra options, like devicemodel or gravity
