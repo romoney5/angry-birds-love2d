@@ -652,7 +652,10 @@ function checkForLuaFile(filename)
 	return love.filesystem.exists(datapath.."/"..filename)
 end
 
+local registered
 function openRegistrationDialog(message, validationURL, registrationURL, fullGame)
+	local returnedKey = ""
+
 	showPopup(
 		message,
 		"The game is not registered.\nRegister now?",
@@ -661,25 +664,25 @@ function openRegistrationDialog(message, validationURL, registrationURL, fullGam
 				return true
 			end},
 			{sprite = "TUTORIAL_OK", callback = function()
-				g_isGameUnlocked = true
-				
-				table.insert(settings.license.registeredKeyTypes, g_registrationKeys.fullGame)
-				
-				settings.license.hardwareID = getDeviceID()
-				if mainMenu and mainMenu.items and getItemByName then
-					local t_button = getItemByName(mainMenu.items, "buttonActivateFullVersion")	
-					if t_button then
-						t_button.visible = (g_isGameUnlocked == false)
-					end
-				end
-
-				showPopup("Registration", "Full game registered.")
+				returnedKey = true
+				registered = true
+				showPopup("Registration", "Full game registered.", nil, true)
 
 				return true
 			end},
-		}
+		},
+		true
 	)
-	return ""
+	return returnedKey
+end
+
+registerKey = openRegistrationDialog
+--returns finished, valid
+function checkRegistrationResult()
+	local finished = openPopups[1] == nil
+	local valid = registered
+	registered = nil
+	return finished, valid
 end
 
 function flurry.logEvent(self, text, text2)
@@ -750,7 +753,7 @@ function setDeltaTimeMultiplier(dt)
 end
 
 --override run function to allow drawing in the update hook
-function loveUpdate(pause)
+function loveUpdate(pause, freeze)
 	-- Process events.
 	if love.event then
 		love.event.pump()
@@ -767,7 +770,7 @@ function loveUpdate(pause)
 	-- Call update and draw
 	--don't step if the game should be paused while resizing
 	local dt = love.timer.step()
-	if love.update then love.update(pause and 0 or dt) end
+	if love.update and not freeze then love.update(pause and 0 or dt) end
 
 	if love.graphics and love.graphics.isActive() then
 		if love.draw then love.draw() end
@@ -800,4 +803,9 @@ function showPopup(title, text, buttons, pause, extra, height)
 
 	--add a popup at the end of the queue
 	table.insert(openPopups, {title = title, text = text, buttons = buttons, extra = extra, h = height, pause = pause})
+
+	--if it's important then run it immediately
+	if pause and #openPopups == 1 then
+		updatePopup()
+	end
 end

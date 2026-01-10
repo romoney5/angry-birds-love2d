@@ -22,6 +22,20 @@ function updateDisplayScale()
 	screenHeight = math.floor(love.graphics.getHeight() / displayScale)
 end
 
+function updateCursor(dt)
+	local cx, cy = cursor.x, cursor.y
+	if not joystick then
+		cursor.x, cursor.y = love.mouse.getPosition()
+		cursor.x = cursor.x / displayScale
+		cursor.y = cursor.y / displayScale
+	else --gamepad logic
+		updateGamepad(dt)
+	end
+
+	love.mouse.setVisible(not (gameOptions and gameOptions.ui and gameOptions.ui.enableCursor) or deviceModel ~= "windows"
+		or debugOpen or optionsOpen or openPopups[1] ~= nil)
+end
+
 function love.update(dt)
 	if love.window.hasFocus() then
 		if love.joystick then
@@ -69,14 +83,7 @@ function love.update(dt)
 		end
 
 		--cursor delta for debug scrolling
-		local cx, cy = cursor.x, cursor.y
-		if not joystick then
-			cursor.x, cursor.y = love.mouse.getPosition()
-			cursor.x = cursor.x / displayScale
-			cursor.y = cursor.y / displayScale
-		else --gamepad logic
-			updateGamepad(dt)
-		end
+		updateCursor(dt)
 
 		--proper multitouch support, at last
 		local mttouches = love.touch.getTouches()
@@ -115,16 +122,9 @@ function love.update(dt)
 
 		if currentGameMode and currentGameMode == updateSomething then
 			currentGameMode(dt2)
-		else
+		elseif update then
 			--pause the game if there's an important popup
-			if openPopups[1] and openPopups[1].pause then
-				if not alreadyLoadedFonts and loadFonts then
-					alreadyLoadedFonts = true
-					loadFonts()
-				end
-			elseif update then
-				update(dt2, dt2)
-			end
+			update(dt2, dt2)
 		end
 
 		--try it out, just for fun
@@ -169,8 +169,6 @@ function love.update(dt)
 			updateOptions(dt)
 		end
 
-		love.mouse.setVisible(not (gameOptions and gameOptions.ui and gameOptions.ui.enableCursor) or deviceModel ~= "windows"
-			or debugOpen or optionsOpen)
 		setRenderState(0, 0, 1, 1)
 		updatePopup()
 		love.graphics.present()
@@ -198,32 +196,50 @@ function updatePopup()
 	local popup = openPopups[1]
 
 	if popup then
-		local w, h = math.max(res.getStringWidth(popup.title, "FONT_MENU") - 50, res.getStringWidth(popup.text, "FONT_BASIC") + 50) + 320, 300 + (popup.h or 0)
-		w = math.min(w, screenWidth * .9)
+		local function update()
+			local w, h = math.max(res.getStringWidth(popup.title, "FONT_MENU") - 50, res.getStringWidth(popup.text, "FONT_BASIC") + 50) + 320, 300 + (popup.h or 0)
+			w = math.min(w, screenWidth * .9)
 
-		local ox, oy = screenWidth * .5, screenHeight * .5
-		local x, y = ox - w * .5, oy - h * .5
+			local ox, oy = screenWidth * .5, screenHeight * .5
+			local x, y = ox - w * .5, oy - h * .5
 
-		drawRect2(0, 0, 0, .6, 0, 0, screenWidth, screenHeight)
-		drawRect2(10 / 255, 10 / 255, 10 / 255, .3, x + 10, y + 10, w, h, 16)
-		drawRect2(24 / 255, 50 / 255, 75 / 255, 1, x, y, w, h, 16)
+			drawRect2(0, 0, 0, .6, 0, 0, screenWidth, screenHeight)
+			drawRect2(10 / 255, 10 / 255, 10 / 255, .3, x + 10, y + 10, w, h, 16)
+			drawRect2(24 / 255, 50 / 255, 75 / 255, 1, x, y, w, h, 16)
 
-		drawDebugText(popup.title, ox, y, "HCENTER", "FONT_MENU")
-		drawDebugText(popup.text, x + 50, y + 75, "LEFT", "FONT_BASIC")
+			drawDebugText(popup.title, ox, y, "HCENTER", "FONT_MENU")
+			drawDebugText(popup.text, x + 50, y + 75, "LEFT", "FONT_BASIC")
 
-		local btns = #popup.buttons
-		local sx = w / (btns + 1) --start x
-		if popup.extra then
-			popup.extra(x + 50, y + 100, w - 50 - 50, h - 50 - 90, popup)
+			local btns = #popup.buttons
+			local sx = w / (btns + 1) --start x
+			if popup.extra then
+				popup.extra(x + 50, y + 100, w - 50 - 50, h - 50 - 90, popup)
+			end
+
+			for i,v in pairs(popup.buttons) do
+				drawDebugButton(v.sprite, ox + (i - (btns + 1) / 2) * sx, oy + h * .5, nil, nil, 1, function()
+					-- optionsOpen = false
+					if v.callback and v.callback() then
+						table.remove(openPopups, 1)
+					end
+				end, true, v.sound or "menu_confirm")
+			end
 		end
 
-		for i,v in pairs(popup.buttons) do
-			drawDebugButton(v.sprite, ox + (i - (btns + 1) / 2) * sx, oy + h * .5, nil, nil, 1, function()
-				-- optionsOpen = false
-				if v.callback and v.callback() then
-					table.remove(openPopups, 1)
+		if popup.pause then
+			while popup and popup.pause do
+				update()
+				if loveUpdate(true, true) then
+					openPopups = {}
+					break
 				end
-			end, true, v.sound or "menu_confirm")
+				updateCursor(love.timer.getDelta())
+				love.graphics.present()
+
+				popup = openPopups[1]
+			end
+		else
+			update()
 		end
 	end
 end

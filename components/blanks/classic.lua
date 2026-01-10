@@ -130,3 +130,10 @@ end
 function deactivateCrystalUI()
 	return
 end
+
+
+--2.2.0 registration
+
+function verifyDeviceID(hwid)
+	return true
+end
