@@ -353,6 +353,10 @@ function physicsBeginContact(obj1, obj2, contact)
 		end
 		
 		blockCollision(o1.name, o2.name, linearForce, damageDone)
+
+		if joystick and linearForce >= 6 then
+			joystick:setVibration(math.min(linearForce / 15, 1), math.min(linearForce / 15, 1), .1)
+		end
 		
 		if not softcodedScore and damage > 0 then
 			local score = math.floor(linearForce) * 10.0
@@ -433,8 +437,7 @@ function physicsBeginContact(obj1, obj2, contact)
 		
 		birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage))
 		if joystick and effectiveDamage >= 6 then
-			--TODO: test this on not a 2 year-old offbrand switch pro controller
-			joystick:setVibration(math.min(effectiveDamage / 30, 1), math.min(effectiveDamage / 20, 1), .1) --deliberately stronger on the right side
+			joystick:setVibration(math.min(effectiveDamage / 15, 1), math.min(effectiveDamage / 15, 1), .1)
 		end
 			
 	else -- bird to bird collision 

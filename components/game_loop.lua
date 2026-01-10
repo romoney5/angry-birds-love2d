@@ -23,7 +23,6 @@ function updateDisplayScale()
 end
 
 function updateCursor(dt)
-	local cx, cy = cursor.x, cursor.y
 	if not joystick then
 		cursor.x, cursor.y = love.mouse.getPosition()
 		cursor.x = cursor.x / displayScale
@@ -83,6 +82,7 @@ function love.update(dt)
 		end
 
 		--cursor delta for debug scrolling
+		local cx, cy = cursor.x, cursor.y
 		updateCursor(dt)
 
 		--proper multitouch support, at last

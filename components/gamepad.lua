@@ -16,8 +16,15 @@ function registerGamepadKey(joystick, key, button) --check if a controller butto
 end
 
 function updateGamepad(dt)
+	local x, y = joystick:getAxis(1), joystick:getAxis(2)
+	-- if math.abs(x) < .1 then x = 0 end
+	-- if math.abs(y) < .1 then y = 0 end
+	if math.abs(x) < .1 and math.abs(y) < .1 then
+		x, y = 0, 0
+	end
+
 	if physicsEnabled then
-		if not levelCompleted and (joystick:getAxis(1) ~= 0 or joystick:getAxis(2) ~= 0) and not cameraTargetObject then
+		if not levelCompleted and (x ~= 0 or y ~= 0) and not cameraTargetObject then
 			if currentBirdName ~= nil then
 				local obj = objects.world[currentBirdName]
 				panToBirdCamera()
@@ -25,9 +32,10 @@ function updateGamepad(dt)
 			end
 			registerGamepadKey(joystick, "LBUTTON", true)
 
+			local rubberBandMaximumLength = 2.2 + 3.2
 			local sx,sy = physicsToWorldTransform(levelStartPosition.x,levelStartPosition.y)
-			cursor.x, cursor.y = (sx - screen.left) * worldScale + (joystick:getAxis(1) * rubberBandMaximumLength() * 20 * worldScale),
-				(sy - screen.top) * worldScale + (joystick:getAxis(2) * rubberBandMaximumLength() * 20 * worldScale)
+			cursor.x, cursor.y = (sx - screen.left) * worldScale + (x * rubberBandMaximumLength * 20 * worldScale),
+				(sy - screen.top) * worldScale + (y * rubberBandMaximumLength * 20 * worldScale)
 			if joystick:isGamepadDown("a") then
 				registerGamepadKey(joystick, "LBUTTON" ,false)
 			end
@@ -47,19 +55,18 @@ function updateGamepad(dt)
 				registerGamepadKey(joystick, "LBUTTON", "a")
 			end
 		end
-
-		gameOptions.ui.enableCursor = false
 	else
 		--move cursor
-		gpcx = math.max(20, math.min(gpcx + (joystick:getAxis(3 - 2) * 800 * dt),screenWidth - 20))
-		gpcy = math.max(20, math.min(gpcy + (joystick:getAxis(4 - 2) * 800 * dt),screenHeight - 20))
+		gpcx = math.max(20, math.min(gpcx + (x * 800 * dt), screenWidth - 20))
+		gpcy = math.max(20, math.min(gpcy + (y * 800 * dt), screenHeight - 20))
 		if gpc <= 0 then
 			registerGamepadKey(joystick, "LBUTTON", "a")
-			gameOptions.ui.enableCursor = true
+
 			cursor.x = gpcx
 			cursor.y = gpcy
 		end
 	end
+
 	registerGamepadKey(joystick, "ESCAPE", "b")
 	registerGamepadKey(joystick, "R", "x")
 	registerGamepadKey(joystick, "RIGHT", "rightshoulder")

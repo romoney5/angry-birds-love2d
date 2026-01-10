@@ -77,7 +77,9 @@ function res.getSpritePivot(sheet, sprite)
 end
 
 function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
-	if sprite == g_currentCursorName and gameOptions and gameOptions.ui and (not gameOptions.ui.enableCursor or false) then return end
+	if sprite == g_currentCursorName and ((gameOptions and gameOptions.ui and (not gameOptions.ui.enableCursor))
+		or (joystick and physicsEnabled)) then return end
+
 	local image = type(sprite) == "string" and (cachedimgs[sprite] or cachedcs[sprite]) or sprite
 
 	if image and image.quad and image.spsh then
