@@ -40,6 +40,7 @@ function convertImagePVR(data, filename)
 			rawdata = string.sub(data, headerSize + 1)
 			imagedata = love.image.newImageData(w, h, "rgb565", rawdata)
 		elseif format == 25 and support.PVR1rgba4 then --pvrtc 4bpp rgba
+			--usually unsupported for most devices
 			local expectedSize = w * h / 2 + headerSize
 			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize.." ("..metadatasize.."), got "..data:len())
 			

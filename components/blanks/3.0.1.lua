@@ -124,6 +124,10 @@ end
 --hooks: onChannelLoadingFailed() onRemoteNotificationReceived(view?) onChannelShown()
 --notifyEventManager(?,?) onChannelClosed() onNewChannelContentUpdated(?) onServiceAvailabilityChanged()
 
+function setRovioShelfAllowed(allowed)
+	return
+end
+
 --TODO: iap.lua?
 Payment = {}
 
@@ -148,11 +152,15 @@ end
 magicplaces = {}
 
 function magicplaces.gameMenuInitialised()
-	return
+	return true
 end
 
 function magicplaces.numOfVisitedPlaces()
 	return 0
+end
+
+function magicplaces.openMapView(width, height)
+	return
 end
 
 

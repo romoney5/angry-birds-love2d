@@ -34,7 +34,7 @@ end
 
 function setPhysicsSimulationScale(scale)
 	physicsSimulationScale = scale
-	love.physics.setMeter(physicsSimulationScale * 0.1*5) --TOD
+	love.physics.setMeter(physicsSimulationScale * 0.5)
 end
 
 function setWorldScale(num)

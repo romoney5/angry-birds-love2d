@@ -637,10 +637,16 @@ local function bytecode_traceback()
 			built = pad(built..(inst.C and tostring(inst.C) or ""), 5)
 			
 			local addition
+			if inst.const then
+				if not addition then built = pad(built.."-") addition = true end
+				built = built.."A: \""
+				built = pad(built..tostring(inst.const).."\"")
+			end
+
 			if inst.is_KB then
 				if not addition then built = pad(built.."-") addition = true end
 				built = built.."B: \""
-				built = pad(built..tostring(inst.const_B and inst.const_B.."\"" or "\""))
+				built = pad(built..tostring(inst.const_B).."\"")
 			elseif memory and inst.B and memory[inst.B] then
 				if not addition then built = pad(built.."-") addition = true end
 				built = built.."Bmem: \""
@@ -650,7 +656,7 @@ local function bytecode_traceback()
 			if inst.is_KC then
 				if not addition then built = pad(built.."-") addition = true end
 				built = built.."C: \""
-				built = pad(built..tostring(inst.const_C and inst.const_C.."\"" or "\""))
+				built = pad(built..tostring(inst.const_C).."\"")
 			elseif memory and inst.C and memory[inst.C] then
 				if not addition then built = pad(built.."-") addition = true end
 				built = built.."Cmem: \""

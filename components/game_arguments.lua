@@ -33,8 +33,51 @@ function handleStartArgs()
 			elseif v == "--datapath" or v == "-dp" then --override datapath and set save directory
 				datapath = arg[i + 1] or datapath
 				love.filesystem.setIdentity(love.filesystem.getIdentity().."/DATA_"..datapath)
+
+				--TODO: move zip handling to another file
+				local info = love.filesystem.getInfo(datapath)
+				if info and info.type == "file" then
+					print("Opening \""..datapath.."\" as a ZIP file...")
+					
+					--let's assume it's a zip/ipa/apk file
+					local src = love.filesystem.newFileData(datapath)
+					local success = love.filesystem.mount(src, datapath)
+
+					if success then
+						datapath = datapath
+
+						--look recursively for a data folder,
+						--it varies between pc installations, ipas, and apks
+						local function look(dir, target)
+							--first loop through all the items
+							for i, file in ipairs(love.filesystem.getDirectoryItems(dir)) do
+								if file:lower():match(target:lower()) then
+									--found it already?
+									return dir.."/"..file
+								else
+									--check if it's a folder, and if so, look through that and see if it got anything
+									local info = love.filesystem.getInfo(dir.."/"..file)
+
+									if info and info.type == "directory" then
+										local found = look(dir.."/"..file, target)
+
+										if found then
+											return found
+										end
+									end
+								end
+							end
+						end
+						
+						datapath = look(datapath, "^data")
+					end
+				end
 			elseif v == "--blamelength" or v == "-bl" then --length of fione bytecode traceback (disabled by default)
 				fione_errorblame_length = tonumber(arg[i + 1]) or fione_errorblame_length
+			elseif v == "--run" then --run lua
+				debugExecute(arg[i + 1] or "")
+			elseif v:sub(1, 1) == "+" then --run lua, alt syntax (srb2)
+				debugExecute(v:sub(2))
 			end
 		end
 	end
@@ -49,10 +92,6 @@ function handlePostStartArgs()
 					update(1, 1)
 					attempts = attempts - 1
 				until love.audio.getActiveSourceCount() > 0 or currentGameMode ~= updateSplashes or attempts <= 0
-			elseif v == "--run" then --run lua
-				debugExecute(arg[i + 1] or "")
-			elseif v:sub(1, 1) == "+" then --run lua, alt syntax (srb2)
-				debugExecute(v:sub(2))
 			end
 		end
 	end

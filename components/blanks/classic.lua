@@ -131,6 +131,22 @@ function deactivateCrystalUI()
 	return
 end
 
+function showCrystalSplash()
+	return
+end
+
+function userEnabledCrystal()
+	return true
+end
+
+function activateCrystalUIAtProfile()
+	return
+end
+
+function unlockAchievement(id, desc)
+	return
+end
+
 
 --2.2.0 registration
 
