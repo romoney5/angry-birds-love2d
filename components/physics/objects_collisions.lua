@@ -125,6 +125,15 @@ function setColliderType(object, collider) --3.0.1 only
 	objects.world[object].collider = collider
 end
 
+function inheritTeleportation(object, others) --3.3.0
+	--[[inheritTeleportation(flyingBird.name, {
+      flyingBird.name .. "a",
+      flyingBird.name .. "b",
+      flyingBird.name .. "c"
+    })]]
+	return
+end
+
 function setSensor(object,sensor)
 	local obj = objects.world[object]
 	if obj and obj.fixture then
@@ -272,12 +281,14 @@ function setScale(name, scale)
 	local obj = objects.world[name]
 	if obj then
 		obj.scale = scale
+		if obj.type == "circle" then
+			resizeCircle(name, obj.radius * obj.scale)
+		end
 	end
 end
 
 
 --vastly improved damage system, credits to halo
-local softcodedScore = false --required for 3.2.0 and later TODO: find a better solution
 
 --used to be postsolve
 function physicsBeginContact(obj1, obj2, contact)
@@ -348,9 +359,9 @@ function physicsBeginContact(obj1, obj2, contact)
 		end
 		
 		--assert(damage >= 0, "damage < 0 "..o1.name..", "..o2.name)
-		if softcodedScore then
-			damageDone = linearForce
-		end
+		damageDone = linearForce
+
+		local old_score = currentScore
 		
 		blockCollision(o1.name, o2.name, linearForce, damageDone)
 
@@ -358,7 +369,7 @@ function physicsBeginContact(obj1, obj2, contact)
 			joystick:setVibration(math.min(linearForce / 15, 1), math.min(linearForce / 15, 1), .1)
 		end
 		
-		if not softcodedScore and damage > 0 then
+		if currentScore == old_score and damage > 0 then
 			local score = math.floor(linearForce) * 10.0
 			scoreTable.blocks.score = currentScore + score
 		end
@@ -376,9 +387,10 @@ function physicsBeginContact(obj1, obj2, contact)
 		local damageMultiplier = 1.0
 		local velocityMultiplier = 1.0
 		
+		--3.0.1 uses materialName instead of material
 		local damageFactor = blockTable.damageFactors[bird.damageFactors]
-		local blockTable_damage = damageFactor.damageMultiplier[block.material]
-		local blockTable_velocity = damageFactor.velocityMultiplier[block.material]
+		local blockTable_damage = damageFactor.damageMultiplier[block.material or block.materialName]
+		local blockTable_velocity = damageFactor.velocityMultiplier[block.material or block.materialName]
 		
 		if blockTable_damage then
 			damageMultiplier = blockTable_damage
@@ -433,6 +445,12 @@ function physicsBeginContact(obj1, obj2, contact)
 				end
 			
 			end
+		end
+		
+		if enableDebug and damage > 0 then
+			table.insert(collisionsList, 1, {o1 = o1.name, o2 = o2.name, veloc = math.floor(linearForce * 10) / 10,
+				damage = effectiveDamage, m1 = math.floor((o1.strength + damage or -1) * 10) / 10,
+				m2 = math.floor((o2.strength + damage or -1) * 10) / 10})
 		end
 		
 		birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage))

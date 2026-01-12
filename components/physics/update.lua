@@ -23,7 +23,10 @@ function updatePhysics(dt)
 	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0)
 	
 	physicsWorld:update(solvePhysics())
-	removeBlocks()
+
+	if removeBlocks then
+		removeBlocks()
+	end
 	
 	hasAwakeObjects = false
 	hasMovingObjects = false
@@ -37,7 +40,7 @@ function updatePhysics(dt)
 	
 	local cx, cy = cursorPhysics.x, cursorPhysics.y
 	for _, obj in pairs(objects.world) do
-		if obj.body then
+		if obj.body and not obj.body:isDestroyed() then
 			obj.x, obj.y = obj.body:getPosition()
 			
 			local xVel, yVel = obj.body:getLinearVelocity()
@@ -61,7 +64,7 @@ function updatePhysics(dt)
 			obj.yVel = yVel
 			hasAwakeObjects = true
 			
-			local material = obj.material
+			local material = obj.material or obj.materialName
 			local volume = (math.abs(angularVelocity) * obj.mass / 400.0) * obj.body:getInertia()
 			
 			if volume > 1.0 then
@@ -162,7 +165,7 @@ function WorldSolve(step)
 	for name, object in pairs(objects.world) do
 		local body = object.body
 		
-		if body:getType() == "dynamic" then
+		if body and not body:isDestroyed() and body:getType() == "dynamic" then
 			local vx, vy = body:getLinearVelocity()
 			
 			--- calculate speed then limit it.
