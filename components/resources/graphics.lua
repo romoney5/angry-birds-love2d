@@ -313,12 +313,36 @@ local function loadSheet(sheet, usecomposprites)
 				cachedcs[i] = composprite
 			end
 		elseif not usecomposprites and info.sprites and info.filename then
-			local filename = info.filename
+			local filename = table.concat(paths, "/", 1, #paths - 1).."/"..info.filename
 			local extensionlength = 4
 
 			local lsheet = loadedSheets[sheet]
 
-			if endsWith(filename,".pvr") then
+			if not checkDirectory(filename) and checkDirectory(filename..".zip") then
+				--android versions like to zip some images
+				local zip = filename..".zip"
+				local src = love.filesystem.newFileData(zip)
+				local success = love.filesystem.mount(src, zip)
+
+				if success then
+					--cut off the base path assuming this is running from an apk
+					local _, og_datapath = resolvePath(datapath)
+					og_datapath = table.concat(og_datapath, "/", 2)
+
+					--then get the given sheet's base directory
+					local _, parentDir = resolvePath(sheet)
+					parentDir = table.concat(parentDir, "/", 1, #parentDir - 1)
+
+					--and append the real filename to it before passing in the real path
+					local newname, paths = findCaseInsensitive(zip.."/"..og_datapath.."/"..parentDir.."/"..info.filename)
+					filename = newname
+				else
+					--or it didn't even work
+					print("loadSheet: could not unzip "..zip)
+				end
+			end
+
+			if endsWith(filename, ".pvr") then
 				-- extensionlength = 4 + 4 --.pvr + .png
 				-- filename = filename..".png"
 
@@ -326,24 +350,24 @@ local function loadSheet(sheet, usecomposprites)
 				--most angry birds pvrs are usually listed as R4 G4 B4 A4 UNorm Linear under pvrtextool, so 16bpp
 				--the file size also lines up, width x height x 2 (bytes per pixel) + 52 bytes of headers = filesize
 				--the headers and formats differ however
-				local data = love.filesystem.read(table.concat(paths, "/").."/"..filename)
+				local data = love.filesystem.read(filename)
 
 				lsheet.sheet = love.graphics.newImage(convertImagePVR(data, filename))
-			elseif endsWith(filename,".webp") then
+			elseif endsWith(filename, ".webp") then
 				if not webp then
 					extensionlength = 5 + 4 --.webp + .png
 					filename = filename..".png"
 
-					lsheet.sheet = love.graphics.newImage(table.concat(paths, "/").."/"..filename)
+					lsheet.sheet = love.graphics.newImage(filename)
 				else
-					local src = love.filesystem.read(table.concat(paths, "/").."/"..filename)
+					local src = love.filesystem.read(filename)
 					lsheet.sheet = love.graphics.newImage(webp.loadImage(src, src:len()))
 				end
 			else
-				lsheet.sheet = love.graphics.newImage(table.concat(paths, "/").."/"..filename)
+				lsheet.sheet = love.graphics.newImage(filename)
 			end
 			
-			pngMapping[filename:sub(1, -extensionlength - 1)] = sheet --filename is the index for easy finding in drawGameNative
+			pngMapping[info.filename:sub(1, -extensionlength - 1)] = sheet --filename is the index for easy finding in drawGameNative
 
 			for i, spr in pairs(info.sprites) do
 				-- print("res.createSpriteSheet: adding sprite "..tostring(i))
