@@ -57,18 +57,12 @@ function setPhysicsEnabled(enabled)
 	physicsEnabled = enabled
 end
 
---massive thanks halo
-function addToTrajectory(index, x, y)
-	table.insert(trajectory[#trajectory][index], {x = x, y = y})
+--lite
+function loadLevelFile(filename, date)
+	loadLevel(filename)
 end
 
-function addPuffToTrajectory(index, x, y)
-	table.insert(trajectory[#trajectory][index], {x = x, y = y, s = "BIRD_SPECIAL"})
-end
-
-function startNewTrajectory()
-	table.insert(trajectory, {{}, {}, {}})
-	if #trajectory > 2 then
-		table.remove(trajectory, 1)
-	end
+function getLoadStatus()
+	--0=not finished, 1 or 2=finished, 3=christmas?
+	return {status = 1}
 end
