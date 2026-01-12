@@ -5,6 +5,16 @@ textGroups = {}
 
 drawfont = ""
 
+--if the displayscale is not 1, text snapping to pixels is probably more important than non-crisp text
+--(the text would be blurry already)
+local function textFloor(a)
+	if displayScale * love.graphics.getDPIScale() ~= 1 then
+		return a
+	end
+
+	return math.floor(a)
+end
+
 function res.createBitmapFont(font, silent)
 	font = datapath.."/"..font
 	local fontname = font:match("([^/]+)$"):sub(1, -5)
@@ -64,7 +74,8 @@ function res.drawString(group, text, x, y, aligny, alignx)
 		if alignx=="VCENTER" or aligny=="VCENTER" then ay = ay - font.height / 2 end
 		if alignx=="BOTTOM" or aligny=="BOTTOM" then ay = ay - font.height end
 		if alignx=="BASELINE" or aligny=="BASELINE" then ay = ay - font.maxascending end
-		-- if alignx=="TOP" or aligny=="TOP" then ay = h + font.leading end
+		-- if alignx=="TOP" or aligny=="TOP" then ay = ay + font.leading end
+		-- text = (alignx or "")..(aligny or "")
 		
 		local line = 0
 		for l in text:gmatch("[^\n]+") do
@@ -78,8 +89,8 @@ function res.drawString(group, text, x, y, aligny, alignx)
 					local charX = (x + i + ax)
 					local charY = (y + ay - char.pivoty + (line * font.leading))
 					
-					love.graphics.draw(font.spritesheet, char.quad, math.floor(charX), math.floor(charY), drawangle)
-					i = i + (char.width + font.tracking) --math.floor for crisp text
+					love.graphics.draw(font.spritesheet, char.quad, textFloor(charX), textFloor(charY), drawangle)
+					i = i + (char.width + font.tracking)
 				end
 			end
 			line = line + 1
@@ -102,29 +113,27 @@ function res.drawString(group, text, x, y, aligny, alignx)
 	-- love.graphics.print(tostring(aligny)..tostring(alignx).." "..res.getFontHeight(), x, y) love.graphics.setBlendMode(bm,am)
 end
 
---drawstring but more incomplete
+--draw 2.0.0 text
 function drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_scale)
-	-- print(_G.math.floor(self.x + x), _G.math.floor(self.y + y))
 	local alpha = self.alpha or 1
 	local hs = hover_scale or 1
 	res.useFont(self.font or "FONT_BASIC")
 	love.graphics.push()
 	setRenderState(0, 0, 1, 1)
-	-- res.drawString("",self.hanchor..self.vanchor, self.x+x, self.y+y)
-	-- print(self.font or "FONT_BASIC")
+	
 	love.graphics.setColor(1 * alpha, 1 * alpha, 1 * alpha, alpha)
-	love.graphics.translate(math.floor(self.x * hs + x), math.floor(self.y * hs + y))
+	love.graphics.translate(textFloor(self.x * hs + x), textFloor(self.y * hs + y))
 	if self.clipped then
 		local font = fonts[drawfont]
 
-		love.graphics.translate(0, math.floor(-font.leading * #self.lines / 2))
+		love.graphics.translate(0, textFloor(-res.getFontLeading() * (#self.lines - 1) / 2))
 
 		for i, line in ipairs(self.lines) do
 			love.graphics.push()
 			love.graphics.scale((scale_x or 1) * self.scaleX * hs, (scale_y or 1) * self.scaleY * hs)
 			res.drawString(line.group, line.text, 0, 0, line.hanchor, line.vanchor)
 			love.graphics.pop()
-			love.graphics.translate(0, math.floor(font.leading))
+			love.graphics.translate(0, textFloor(res.getFontLeading()))
 		end
 	else
 		love.graphics.scale((scale_x or 1) * self.scaleX * hs, (scale_y or 1) * self.scaleY * hs)
