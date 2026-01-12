@@ -173,6 +173,8 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 
 	obj.body:setAngularDamping(2)
 
+	if not tonumber(z_order) then objects.world[name].z_order = 0 end
+
 	--set type
 	obj.type = "polygon"
 
@@ -202,6 +204,8 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 	obj.fixture:setUserData(obj)
 	
 	obj.body:setAngularDamping(2)
+
+	if not tonumber(z_order) then objects.world[name].z_order = 0 end
 
 	--set type
 	obj.type = "box"

@@ -24,23 +24,11 @@ function setChannelCountLimit(channel,limit)
 	return
 end
 
-function loadParticleFile() --it's already loaded though
-	return
-end
-
-function clearParticles()
-	return
-end
-
-function drawMenuParticlesInAdvance() --what is it with particles
-	return
-end
-
-function drawLevelParticlesNative(layer)
-	return
-end
-
 function activateDebugConsole()
+	return
+end
+
+function setThemeForegroundOffsetY(index, y)
 	return
 end
 

@@ -1,41 +1,65 @@
 --particles
 
-function drawParticlesNative()
-	for _, p in _G.pairs(particles) do
-		if p.isWeather then
-			setRenderState(0, 0, worldScale * p.scale, worldScale * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
-		else
-			setRenderState(-screen.left / p.scale, -screen.top / p.scale, worldScale * p.scale, worldScale * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
-		end
+--menu is not used ingame
+function drawParticlesNative(menu)
+	if not particles then return end
 
-		_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
+	for _, p in _G.pairs(particles) do
+		if menu and p.menu then
+			setRenderState(0, 0, p.scale, p.scale, p.angle, p.spritePivotX, p.spritePivotY)
+			_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
+		elseif not menu and not p.menu then
+			setRenderState(-screen.left / p.scale, -screen.top / p.scale, worldScale * p.scale, worldScale * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
+			_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
+		end
 	end
 end
 
-function updateParticlesNative(dt)
+function loadParticleFile() --it's already loaded though
+	return
+end
+
+function clearParticles()
+	return
+end
+
+function drawMenuParticlesInAdvance() --what is it with particles
+	return
+end
+
+function drawLevelParticlesNative(layer)
+	return
+end
+
+function updateParticlesNative(dt, menu)
+	if not particles then return end
+
 	for k, v in pairs(particles) do
 		local p = v
-		p.time = p.time + dt
-		if p.time > p.lifeTime then
-			table.remove(particles, k)
-			particleAmount = particleAmount - 1
-		else
-			pt = particleTable.particles[p.type]
-			p.xVel = p.xVel + pt.gravityX * dt
-			p.yVel = p.yVel + pt.gravityY * dt
-			p.x = p.x + p.xVel * dt
-			p.y = p.y + p.yVel * dt
-			p.angle = p.angle + p.angleVel * dt
-			p.scale = p.scaleBegin + (p.scaleEnd - p.scaleBegin) * (p.time / p.lifeTime)
-			
-			if p.lifeTimeAnimation then
-				index = math.ceil(#pt.sprites * (p.time / p.lifeTime))
-				if index < 1 then index = 1 end
-				if index > #pt.sprites then index = #pt.sprites end
-				p.sprite = pt.sprites[index]
-				if p.oldSprite ~= p.sprite then
-					p.spritePivotX, p.spritePivotY = res.getSpritePivot(p.sheet, p.sprite)
-					p.oldSprite = p.sprite
+
+		if (menu and p.menu) or (not menu and not p.menu) then
+			p.time = p.time + dt
+			if p.time > p.lifeTime then
+				table.remove(particles, k)
+				particleAmount = particleAmount - 1
+			else
+				pt = particleTable.particles[p.type]
+				p.xVel = p.xVel + pt.gravityX * dt
+				p.yVel = p.yVel + pt.gravityY * dt
+				p.x = p.x + p.xVel * dt
+				p.y = p.y + p.yVel * dt
+				p.angle = p.angle + p.angleVel * dt
+				p.scale = p.scaleBegin + (p.scaleEnd - p.scaleBegin) * (p.time / p.lifeTime)
+				
+				if p.lifeTimeAnimation then
+					index = math.ceil(#pt.sprites * (p.time / p.lifeTime))
+					if index < 1 then index = 1 end
+					if index > #pt.sprites then index = #pt.sprites end
+					p.sprite = pt.sprites[index]
+					if p.oldSprite ~= p.sprite then
+						p.spritePivotX, p.spritePivotY = res.getSpritePivot(p.sheet, p.sprite)
+						p.oldSprite = p.sprite
+					end
 				end
 			end
 		end
@@ -43,9 +67,9 @@ function updateParticlesNative(dt)
 end
 
 --no, love does not run on an iphone 4
-ignoreParticleLimits = true
+-- ignoreParticleLimits = true
 
-local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, isWeather)
+local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 	local pt = particleTable.particles[type]
 	if softLimitSimultaneousParticles < particleAmount + amount and not ignoreParticleLimits then
 		amount = amount * 0.5
@@ -57,8 +81,8 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, isWea
 			local p = { }
 			p.x = x + (_G.math.random(0, w) - 0.5*w ) -- * cos(angle)
 			p.y = y + (_G.math.random(0, h) - 0.5*h ) -- * sin(angle)
-			local mivx,mavx = pt.minVel,pt.maxVel
-			local mivy,mavy = pt.minVel,pt.maxVel
+			local mivx,mavx = pt.minVel or 0, pt.maxVel or 0
+			local mivy,mavy = pt.minVel or 0, pt.maxVel or 0
 			if pt.emitter_box then
 				if pt.emitter_box.minVelX then
 					mivx, mavx, mivy, mavy = pt.emitter_box.minVelX,pt.emitter_box.maxVelX,
@@ -69,14 +93,21 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, isWea
 				end
 			end
 			
-			--TODO: that's not a circle.. ..
-			if pt.emitter_circle and pt.emitter_circle.minVel and pt.emitter_circle.maxVel then
-				mivx,mavx, mivy,mavy = pt.emitter_circle.minVel,pt.emitter_circle.maxVel,
-										pt.emitter_circle.minVel,pt.emitter_circle.maxVel
+			local circle = ((pt.minAngleEmitter ~= nil and pt.maxAngleEmitter ~= nil) and 1) or (pt.emitter_circle ~= nil and 2) or nil
+			if circle then
+				local emitter_circle = pt.emitter_circle or pt
+				local min, max = emitter_circle.minAngleEmitter or -180, emitter_circle.maxAngleEmitter or 180
+				local angle = math.random(min, max) * math.pi / 180
+				local vel = math.random(emitter_circle.minVel, emitter_circle.maxVel)
+
+				p.x = x + (_G.math.random(0, w) - 0.5*w ) * cos(angle)
+				p.y = y + (_G.math.random(0, h) - 0.5*h ) * sin(angle)
+				p.xVel, p.yVel = math.cos(angle) * vel, math.sin(angle) * vel
+			else
+				p.xVel, p.yVel = _G.math.random(mivx, mavx), _G.math.random(mivy, mavy)
 			end
 
-			p.xVel,p.yVel = _G.math.random(mivx, mavx), _G.math.random(mivy, mavy)
-			p.angle = _G.math.random(1, 3.14)
+			p.angle = _G.math.random(p.minAngle or 1, p.maxAngle or 3.14)
 			p.angleVel = _G.math.random(pt.minAngleVel or 0, pt.maxAngleVel or 0)
 			p.scaleBegin = _G.math.random(pt.minScaleBegin or 0, pt.maxScaleBegin or 0)
 			p.scaleEnd = _G.math.random(pt.minScaleEnd or 0, pt.maxScaleEnd or 0)
@@ -88,7 +119,7 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, isWea
 			p.lifeTime = pt.lifeTime
 			p.lifeTimeAnimation = pt.animation == "lifeTime"
 
-			p.isWeather = isWeather
+			p.menu = menu
 
 			if p.lifeTimeAnimation then
 				p.sprite = pt.sprites[1]
