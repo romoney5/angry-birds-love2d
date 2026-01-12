@@ -2,22 +2,28 @@
 
 trajectory = {{{}, {}, {}}}
 
+--[1] = sheet
+--[2] = sprite
+--[3] = parallax speed
+--[4] = scale
+--[5] = looping
+--[6] = position
 function drawLayer(v)
 	local px, py = res.getSpritePivot("", v[2])
 	local w, h = res.getSpriteBounds("", v[2])
 	local s = worldScale or 1
-	local scroll = (v.v or 0) * time
+	local scroll = -(v.v or 0) * time / 16
 	
 	if w > 0 and s > .02 then --don't draw if the scale is too low
 		for x = -1, math.floor(screenWidth / w / s) do
 			-- local i = #theme.bgLayers - k
-			local xp = w * x + (v[6] or 0)
+			local xp = (w) * x + (v[6] or 0)
 			local left = (-screen.left * v[3] / v[4] + scroll - (cameraShakeX or 0)) % w
 			local top = (-screen.top / v[4] - (cameraShakeY or 0))
 			-- top = (-screen.top * v[3] / v[4] - cameraShakeY)
 
 			if episode4BGCranes and v[2]:find("CRANE") then
-				left = -screen.left * v[3] / v[4] + episode4BGCranes.startX * 0.0625 - cameraShakeX
+				left = -screen.left * v[3] / v[4] + episode4BGCranes.startX / 16 - cameraShakeX
 			end
 
 			setRenderState(xp+left, top, s * v[4], s * v[4], 0, px, py)
@@ -191,4 +197,20 @@ function drawObject(v)
 
 	drawangle = 0
 	love.graphics.pop()
+end
+
+--massive thanks halo
+function addToTrajectory(index, x, y)
+	table.insert(trajectory[#trajectory][index], {x = x, y = y})
+end
+
+function addPuffToTrajectory(index, x, y)
+	table.insert(trajectory[#trajectory][index], {x = x, y = y, s = "BIRD_SPECIAL"})
+end
+
+function startNewTrajectory()
+	table.insert(trajectory, {{}, {}, {}})
+	if #trajectory > 2 then
+		table.remove(trajectory, 1)
+	end
 end
