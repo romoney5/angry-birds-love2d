@@ -157,11 +157,13 @@ function checkSprite(sprite)
 end
 
 function drawRect(r, g, b, a, x, y, w, h, inWorld)
-	love.graphics.push()
+	love.graphics.push("all")
 	if not inWorld then --if the rect is not supposed to be drawn in world space
 		love.graphics.origin()
 		love.graphics.scale(displayScale)
 	end
+
+	love.graphics.setBlendMode("alpha", "alphamultiply")
 
 	--rotate around the x/y rotation pivot
 	love.graphics.translate(x, y)
@@ -170,7 +172,7 @@ function drawRect(r, g, b, a, x, y, w, h, inWorld)
 	love.graphics.translate(-drawxp, -drawyp)
 
 	local r2,y2,b2,a2 = love.graphics.getColor()
-	love.graphics.setColor(r * a, g * a, b * a, a)
+	love.graphics.setColor(r, g, b, a)
 	w = w - x
 	h = h - y
 	love.graphics.rectangle("fill", 0, 0, w, h)
@@ -188,7 +190,9 @@ end
 
 function drawLine2D(x0, y0, x1, y1, w, r, g, b, a)
 	local r2, y2, b2, a2 = love.graphics.getColor()
-	love.graphics.push()
+	love.graphics.push("all")
+	love.graphics.setBlendMode("alpha", "alphamultiply")
+
 	love.graphics.setColor(r / 255, g / 255, b / 255, a / 255)
 	love.graphics.setLineWidth(w * .75)
 
@@ -227,6 +231,7 @@ end
 function drawFullscreenRect(r, g, b, a)
 	love.graphics.push("all")
 	love.graphics.origin()
+	love.graphics.setBlendMode("alpha", "alphamultiply")
 	love.graphics.setColor(r, g, b, a)
 	love.graphics.rectangle("fill", 0, 0, love.graphics.getDimensions())
 	love.graphics.pop()
