@@ -1,5 +1,7 @@
 --this massive function runs every frame
 
+table.clear = table.clear or function(t) for i, v in pairs(t) do t[i] = nil end end
+
 local pausedaudios = {} --thanks love 11
 zoomLevel = 0
 wantedZoomLevel = 0
@@ -172,6 +174,7 @@ function love.update(dt)
 			updateOptions(dt)
 		end
 
+		cursor.wheelTriggered = nil
 		setRenderState(0, 0, 1, 1)
 		updatePopup()
 		love.graphics.present()
