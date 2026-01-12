@@ -59,20 +59,21 @@ function findCaseInsensitive(dir)
 	local _, paths = resolvePath(dir)
 
 	if checkDirectory(dir) then
-		table.remove(paths) --omit the old filename
+		--it's there already
 		return dir, paths
 	elseif love._os ~= "Windows" and dir and dir ~= "" then
 		if #paths == 0 then return "" end
-		local name = paths[#paths] --get the filename before it's too late
-		-- dir = table.concat(paths, "/") --and update dir according to that
+
+		local name = paths[#paths] --get the filename now
 
 		for lookfor_i = 1, #paths - 1 do
 			local lookfor = table.concat(paths, "/", 1, lookfor_i)
 			for _, f in ipairs(love.filesystem.getDirectoryItems(lookfor)) do
 				if lookfor_i == #paths - 1 then
 					if f:lower() == name:lower() then
-						table.remove(paths) --omit the old filename
-						return lookfor.."/"..f, paths --and make a new one
+						local output = lookfor.."/"..f
+						local _, paths = resolvePath(output)
+						return output, paths --return that and do ANOTHER resolvepath
 					end
 				else
 					if f:lower() == paths[lookfor_i + 1]:lower() then
@@ -90,7 +91,7 @@ end
 
 --load either plain text lua, a precompiled chunk with fione,
 --a 7-zipped file, an aes-256 encrypted file, or all of the above
---TODO: move this over to another file
+--TODO: move lua script handling over to another file
 
 local function identifySrc(src)
 	--lzma support?
@@ -103,13 +104,16 @@ end
 function decryptSrc(filename, src)
 	src = src or love.filesystem.read(filename)
 
+	if not src then return end
+
+	--temporary file for use in 7-zip
 	local function temp_file()
-		local dec_filename = "/dec"..filename
+		local dec_filename = "/dec/"..filename
 		love.filesystem.createDirectory(dec_filename:match(".*/") or "")
 		
 		local success, message = love.filesystem.write(dec_filename, src)
 		if not success then
-			print("makeChunk: writing to temporary file failed ("..tostring(message)..")")
+			print("decryptSrc: writing to temporary file failed ("..tostring(message)..")")
 			return
 		end
 		
@@ -121,22 +125,21 @@ function decryptSrc(filename, src)
 	if kind == "binary" then --it's probably encrypted..
 		--let's use libcrypto as a dll/so
 		if AES then
-			local key = AES.Keys.Assets.Classic --ascii key for ab classic assets
 			local iv = nil --iv is always nil
+			local key = AES.FindKey(src, AES.Keys.Assets, iv)
 			src = AES.Decrypt(src, key, iv)
-			--equivalent to openssl enc -aes-256-cbc -d -K 55534361505170413454534E56784D49317639534B39554330795A75416E6232 -iv 0 -in <file>
-			--if it failed the function would probably throw an error
+			--equivalent to openssl enc -aes-256-cbc -d -K <key> -iv 0 -in <file>
+
+			--make sure it worked..
+			assert(src, "decryptSrc: libcrypto failure")
 			
 			--reidentify it
 			kind = identifySrc(src)
 		else
-			print("makeChunk: Could not run libcrypto")
+			print("decryptSrc: Could not run libcrypto")
 			return --just don't bother trying to run an encrypted file
 		end
 	end
-	
-	--now it shouldn't be binary
-	--assert(kind ~= "binary", "makeChunk: file is binary")
 	
 	if kind == "7z" then --looks like it's 7-zipped too
 		--because 7-zip sucks we have to do file operations first
@@ -150,25 +153,28 @@ function decryptSrc(filename, src)
 			file:close()
 			
 			--did it do anything?
-			assert(src and src:len() > 0, "makeChunk: 7-zip returned nothing")
+			assert(src and src:len() > 0, "decryptSrc: 7-zip returned nothing")
 			
 			--reidentify it
 			kind = identifySrc(src)
 		else
-			print("makeChunk: Could not run 7-zip")
+			print("decryptSrc: Could not run 7-zip")
 		end
 	end
+	
+	--now it shouldn't be binary
+	--assert(kind ~= "binary", "decryptSrc: file is binary")
 
 	return src
 end
 
 function makeChunk(filename, env)
-	local src = love.filesystem.read(filename)
+	--we need runnable lua code
+	src = decryptSrc(filename)
+
 	if not src then
 		return nil, "No source"
 	end
-	
-	src = decryptSrc(filename, src)
 
 	local kind = identifySrc(src)
 	
@@ -183,8 +189,7 @@ end
 
 --very important in later codebases
 function loadLuaFileToObject(filename, ctx, key, lenient)
-	filename = resolvePath(datapath.."/"..filename)
-	local newname, paths = findCaseInsensitive(filename)
+	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
 	filename = newname or filename
 
 	local compiled, loaded, lua
@@ -196,7 +201,7 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 		env = key
 	elseif type(key) == "string" and key ~= "" then
 		--make a new table in ctx with the name of key (this, "ui")
-		ctx[key] = {}--ctx[key] or {}
+		ctx[key] = {} --ctx[key] or {}
 		env = ctx[key]
 	else
 		--use ctx table (this.ui, "")
@@ -232,8 +237,6 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 
 		lua()
 	elseif not lenient then
-		-- local _,r = pcall(loadstring(love.filesystem.read(filename)))
-		-- print()
 		if checkDirectory(filename) then
 			error("Could not load Lua file: "..filename.."\n"..tostring(lua))
 		else
@@ -255,8 +258,7 @@ end
 --also used in some versions
 --absw: blocks makes the file load into .blocks, unpack unpacks all tables inside
 function loadLuaFile(filename, envKey, blocks, unpack, lenient)
-	filename = resolvePath(datapath.."/"..filename)
-	local newname, paths = findCaseInsensitive(filename)
+	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
 	filename = newname or filename
 
 	local loaded, lua
@@ -320,8 +322,7 @@ function loadLuaFile(filename, envKey, blocks, unpack, lenient)
 end
 
 function runLuaFile(filename, lenient)
-	filename = resolvePath(filename)
-	local newname, paths = findCaseInsensitive(filename)
+	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
 	filename = newname or filename
 
 	local loaded, lua
@@ -351,7 +352,25 @@ function requireFile(filename)
 	alreadyloaded[filename] = true
 end
 
---strips ..
+--debugging function to decrypt and save a lua file into the save directory
+function exportLua(filename)
+	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
+	filename = newname or filename
+
+	local src = decryptSrc(filename)
+	if src then
+		--findCaseInsensitive
+		-- paths = resolvePath(newname)
+		local exportname = paths[#paths]..".dec"
+		love.filesystem.write(exportname, src)
+
+		print("Decrypted file \""..filename.."\" into \""..exportname.."\"")
+	else
+		print("Could not decrypt file \""..filename.."\"")
+	end
+end
+
+--strips .. and separates directories into a table
 function resolvePath(path)
 	local resolved = {}
 	for part in path:gmatch("[^/]+") do
@@ -439,6 +458,10 @@ function love.load()
 	levelPath = config.levelPath or levelPath
 	scriptPath = config.scriptPath or scriptPath
 	--deviceModel = config.deviceModel or deviceModel
+
+	if not checkDirectory(datapath) then
+		print("Data path \""..tostring(datapath).."\" wasn't found.\nTry the --datapath argument to specify a custom path.")
+	end
 
 	--load save data
 	runLuaFile("settings.lua", true)

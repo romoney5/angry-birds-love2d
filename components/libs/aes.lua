@@ -12,6 +12,7 @@ AES = {}
 
 --relevant declarations from libcrypto
 ffi.cdef[[
+
 typedef struct evp_cipher_ctx_st EVP_CIPHER_CTX;
 typedef struct evp_cipher_st EVP_CIPHER;
 typedef struct engine_st ENGINE;
@@ -55,6 +56,7 @@ const EVP_CIPHER *EVP_aes_256_ctr(void);
 const EVP_CIPHER *EVP_aes_256_ccm(void);
 const EVP_CIPHER *EVP_aes_256_gcm(void);
 const EVP_CIPHER *EVP_aes_256_xts(void);
+
 ]]
 
 --all keys in ascii (classic and rio are the same)
@@ -109,14 +111,14 @@ function AES.Decrypt(ciphertext, key, iv)
     local plaintext = ffi.new("unsigned char[?]", ciphertext:len())
     
     local ctx = libcrypto.EVP_CIPHER_CTX_new()
-    assert(ctx)
+    if not (ctx) then return end
     
-    assert(libcrypto.EVP_DecryptInit_ex(ctx, libcrypto.EVP_aes_256_cbc(), nil, key, iv) == 1)
+    if not (libcrypto.EVP_DecryptInit_ex(ctx, libcrypto.EVP_aes_256_cbc(), nil, key, iv) == 1) then return end
     
-    assert(libcrypto.EVP_DecryptUpdate(ctx, plaintext, len, ciphertext, ciphertext:len()) == 1)
+    if not (libcrypto.EVP_DecryptUpdate(ctx, plaintext, len, ciphertext, ciphertext:len()) == 1) then return end
     plaintext_len[0] = len[0]
     
-    assert(libcrypto.EVP_DecryptFinal_ex(ctx, plaintext + len[0], len) == 1)
+    if not (libcrypto.EVP_DecryptFinal_ex(ctx, plaintext + len[0], len) == 1) then return end
     plaintext_len[0] = plaintext_len[0] + len[0]
     
     ffi.gc(ctx, libcrypto.EVP_CIPHER_CTX_free)
@@ -133,17 +135,35 @@ function AES.Encrypt(plaintext, key, iv)
     local ciphertext = ffi.new("unsigned char[?]", plaintext:len() + 64)
     
     local ctx = libcrypto.EVP_CIPHER_CTX_new()
-    assert(ctx)
+    if not (ctx) then return end
     
-    assert(libcrypto.EVP_EncryptInit_ex(ctx, libcrypto.EVP_aes_256_cbc(), nil, key, iv) == 1)
+    if not (libcrypto.EVP_EncryptInit_ex(ctx, libcrypto.EVP_aes_256_cbc(), nil, key, iv) == 1) then return end
     
-    assert(libcrypto.EVP_EncryptUpdate(ctx, ciphertext, len, plaintext, plaintext:len()) == 1)
+    if not (libcrypto.EVP_EncryptUpdate(ctx, ciphertext, len, plaintext, plaintext:len()) == 1) then return end
     ciphertext_len[0] = len[0]
     
-    assert(libcrypto.EVP_EncryptFinal_ex(ctx, ciphertext + len[0], len) == 1)
+    if not (libcrypto.EVP_EncryptFinal_ex(ctx, ciphertext + len[0], len) == 1) then return end
     ciphertext_len[0] = ciphertext_len[0] + len[0]
     
     ffi.gc(ctx, libcrypto.EVP_CIPHER_CTX_free)
     
     return ffi.string(ciphertext, ciphertext_len[0])
+end
+
+--looks through all keys inside the given keys table and sees which one can decrypt the file successfully
+function AES.FindKey(ciphertext, keys, iv)
+    if keys.DefaultKey then
+        return keys.DefaultKey
+    end
+
+    --default key was not found yet
+    for i, key in pairs(keys) do
+        if key ~= "" and AES.Decrypt(ciphertext, key, iv) then
+            --no errors were found
+            keys.DefaultKey = key
+            print("AES.FindKey: selected "..i.." key")
+
+            return key
+        end
+    end
 end
