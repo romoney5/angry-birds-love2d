@@ -277,6 +277,7 @@ local function loadSheet(sheet, usecomposprites)
 		loadedSheets[sheet] = {sheet = nil, sprites = {}}
 		
 		local newname, paths = findCaseInsensitive(datapath.."/"..sheet)
+
 		local data = love.filesystem.read(newname or "")
 		local info = getDatInfo(data, sheet, "SPRT")
 
@@ -284,22 +285,30 @@ local function loadSheet(sheet, usecomposprites)
 			for i, v in pairs(info.compos) do
 				--calculate the bounds here
 				local composprite = {items = v}
+				local x0, x1
+				local y0, y1
 				local width, height = 0, 0
-				local px, py
+				local px, py = 0, 0
 				
 				for ii, vv in ipairs(v) do
-                    local sprite = cachedimgs[vv.n]
-                    if sprite then
-                        width = math.max(width, vv.x + sprite.width)
-                        height = math.max(height, vv.y + sprite.height)
-                        
-                        --only use the first sprite's pivot
-                        px, py = px or sprite.px, py or sprite.py
-                    end
-                end
-                
-                composprite.width, composprite.height = width, height
-                composprite.px, composprite.py = px or 0, py or 0
+					local sprite = cachedimgs[vv.n]
+					if sprite then
+						local sx0, sx1 = vv.x - sprite.px, vv.x + sprite.width - sprite.px
+						local sy0, sy1 = vv.y - sprite.py, vv.y + sprite.height - sprite.py
+
+						x0, x1 = math.min(x0 or sx0, sx0), math.max(x1 or sx1, sx1)
+						y0, y1 = math.min(y0 or sy0, sy0), math.max(y1 or sy1, sy1)
+						
+						px = sprite.px - vv.x
+						py = sprite.py - vv.y
+					end
+				end
+
+				width = math.abs(x1 - x0)
+				height = math.abs(y1 - y0)
+				
+				composprite.width, composprite.height = width, height
+				composprite.px, composprite.py = px or 0, py or 0
 
 				cachedcs[i] = composprite
 			end
