@@ -93,6 +93,9 @@ end
 --a 7-zipped file, an aes-256 encrypted file, or all of the above
 --TODO: move lua script handling over to another file
 
+--cache decrypted files in the save directory to speed up loading dramatically
+local ALLOW_LUA_CACHE = true
+
 local function identifySrc(src)
 	--lzma support?
 	if src:sub(1, 6) == "7z\xbc\xaf\x27\x1c" then return "7z" end
@@ -162,6 +165,10 @@ function decryptSrc(filename, src)
 		end
 	end
 	
+	if ALLOW_LUA_CACHE then
+		temp_file()
+	end
+	
 	--now it shouldn't be binary
 	--assert(kind ~= "binary", "decryptSrc: file is binary")
 
@@ -169,8 +176,15 @@ function decryptSrc(filename, src)
 end
 
 function makeChunk(filename, env)
-	--we need runnable lua code
-	src = decryptSrc(filename)
+	local decinfo = ALLOW_LUA_CACHE and love.filesystem.getInfo("/dec/"..filename)
+	local info = decinfo and love.filesystem.getInfo(filename)
+	
+	if decinfo and decinfo.modtime and info and info.modtime and decinfo.modtime >= info.modtime then
+		src = love.filesystem.read("/dec/"..filename)
+	else
+		--we need runnable lua code
+		src = decryptSrc(filename)
+	end
 
 	if not src then
 		return nil, "No source"
