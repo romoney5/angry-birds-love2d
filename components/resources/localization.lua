@@ -1,26 +1,21 @@
 --localization
 
+locale = "en_EN"
+
 function res.getString(category, key) --return a string from localization
 	local group = textGroups[category]
-	if group and group.en_EN then
-		return group.en_EN[key] and group.en_EN[key]:gsub("%\\0A","\n") or key
+	if group and group[locale] then
+		return group[locale][key] or key
 	else
 		return key
 	end
 end
 
-function getLocalizationString(key)
-	for i,group in pairs(textGroups)do
-		if group.en_EN and group.en_EN[key] then
-			return group.en_EN[key]:gsub("%\\0A","\n") or key
-		end
-	end
-	return key
-end
-
 function res.createTextGroupSet(texts)
+	local path = datapath.."/"..texts
 	print("Loading text group set \""..texts.."\"...")
-	local info = getDatInfo(love.filesystem.read(datapath.."/"..texts), datapath.."/"..texts,"TEXT")
+	
+	local info = getDatInfo(love.filesystem.read(path), path, "TEXT")
 	local filename = ""
 	for i, v in texts:gmatch("([^/]+)") do
 		filename = i
@@ -33,10 +28,10 @@ function res.loadLocale(texts,locale)
 	return
 end
 
-function res.useLocale(locale)
-	return
+function res.useLocale(uselocale)
+	locale = uselocale
 end
 
 function res.getLocale()
-	return "en_US"
+	return locale
 end

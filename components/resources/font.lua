@@ -108,8 +108,8 @@ function res.drawString(group, text, x, y, aligny, alignx)
 			if alignx=="HCENTER" or aligny=="HCENTER" then ax = -res.getStringWidth(l) / 2 end
 			if alignx=="RIGHT" or aligny=="RIGHT" then ax = -res.getStringWidth(l) end
 
-			for c in l:gmatch(".") do
-				local char = font.chars[string.format("%04x", string.byte(c))]
+			for p, c in utf8.codes(l) do
+				local char = font.chars[c]
 				if char then
 					local charX = (x + i + ax)
 					local charY = (y + ay - char.pivoty + (line * font.leading))
@@ -168,7 +168,6 @@ function drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_scale)
 	love.graphics.pop()
 end
 
-clippedText = {lines = {}, widestLine = 0}
 function clipText(group, text, size)
 	local font = fonts[drawfont]
 	if not font then return end
@@ -177,45 +176,35 @@ function clipText(group, text, size)
 	
 	local cline = ""
 	local clinewidth = 0
-	local widestLine = 0
+	
 	if group and group ~= "" then
 		text = res.getString(group, text)
 	end
 
-	local function getWordWidth(word)
-		local wordWidth = 0
-		for c in word:gmatch(".") do
-			local char = font.chars[string.format("%04x", string.byte(c))]
-			if char then
-				wordWidth = wordWidth + char.width + font.tracking
-			end
-		end
-		return wordWidth - font.tracking
-	end
-
 	for word in text:gmatch("%S+%s*") do
-		local newlineIndex = word:find("\n")
-		if newlineIndex then
-			local beforeNewline = word:sub(1, newlineIndex - 1)
-			local afterNewline = word:sub(newlineIndex + 1)
+		local newline = word:find("\n")
+		if newline then
+			local preline = word:sub(1, newline - 1)
+			local postline = word:sub(newline + 1)
 
-			local wordWidth = getWordWidth(beforeNewline)
-			if clinewidth + wordWidth > size then
+			local wordwidth = res.getStringWidth(preline)
+			
+			if clinewidth + wordwidth > size then
 				table.insert(clippedText.lines, cline)
-				widestLine = math.max(widestLine, clinewidth)
-				cline = beforeNewline
-				clinewidth = wordWidth
+				clippedText.widestLine = math.max(clippedText.widestLine, clinewidth)
+				cline = preline
+				clinewidth = wordwidth
 			else
-				cline = cline..beforeNewline
-				clinewidth = clinewidth + wordWidth
+				cline = cline..preline
+				clinewidth = clinewidth + wordwidth
 			end
 
 			table.insert(clippedText.lines, cline)
-			widestLine = math.max(widestLine, clinewidth)
+			clippedText.widestLine = math.max(clippedText.widestLine, clinewidth)
 			cline = ""
 			clinewidth = 0
 
-			word = afterNewline
+			word = postline
 
 			while word:find("\n") do
 				table.insert(clippedText.lines, "")
@@ -223,23 +212,22 @@ function clipText(group, text, size)
 			end
 		end
 
-		local wordWidth = getWordWidth(word)
-		if clinewidth + wordWidth > size then
+		local wordwidth = res.getStringWidth(word)
+		if clinewidth + wordwidth > size then
 			table.insert(clippedText.lines, cline)
-			widestLine = math.max(widestLine, clinewidth)
+			clippedText.widestLine = math.max(clippedText.widestLine, clinewidth)
 			cline = word
-			clinewidth = wordWidth
+			clinewidth = wordwidth
 		else
 			cline = cline..word
-			clinewidth = clinewidth + wordWidth
+			clinewidth = clinewidth + wordwidth
 		end
 	end
 
 	if cline ~= "" then
 		table.insert(clippedText.lines, cline)
-		widestLine = math.max(widestLine, clinewidth)
+		clippedText.widestLine = math.max(clippedText.widestLine, clinewidth)
 	end
-	clippedText.widestLine = widestLine
 end
 
 function res.getStringWidth(text, font, _, _, resetline)
@@ -248,8 +236,8 @@ function res.getStringWidth(text, font, _, _, resetline)
 	if font then
 		local highscore = 0
 		local i = 0
-		for c in text:gmatch(".") do
-			local char = font.chars[string.format("%04x", string.byte(c))]
+		for p, c in utf8.codes(text) do
+			local char = font.chars[c]
 			if char then
 				i = i + char.width + font.tracking
 				highscore = math.max(highscore, i)

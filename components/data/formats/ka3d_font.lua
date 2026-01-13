@@ -12,7 +12,7 @@ function readFont(fileData)
 
 	--loop through all the characters
 	while pos <= #fileData do
-		local char = bytesToHex(readString(fileData,pos,2),1)
+		local char = readInt(fileData,pos,2)
 		data.chars[char] = {}
 		skip(2)
 

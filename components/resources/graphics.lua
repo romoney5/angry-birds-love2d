@@ -310,11 +310,11 @@ local function loadSheet(sheet, usecomposprites)
 						
 						px = sprite.px - vv.x
 						py = sprite.py - vv.y
+
+						width = math.abs(x1 - x0)
+						height = math.abs(y1 - y0)
 					end
 				end
-
-				width = math.abs(x1 - x0)
-				height = math.abs(y1 - y0)
 				
 				composprite.width, composprite.height = width, height
 				composprite.px, composprite.py = px or 0, py or 0
@@ -334,6 +334,7 @@ local function loadSheet(sheet, usecomposprites)
 				local success = love.filesystem.mount(src, zip)
 
 				if success then
+					lsheet.zip = zip
 					--cut off the base path assuming this is running from an apk
 					local _, og_datapath = resolvePath(datapath)
 					og_datapath = table.concat(og_datapath, "/", 2)

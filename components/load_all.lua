@@ -4,6 +4,7 @@
 
 pcall(require, "table.clear")                               --clear key* tables instead of remaking them
 _, ffi = pcall(require, "ffi")                              --luajit ffi
+_, utf8 = pcall(require, "utf8")							--utf8 library, now required for utf8 text
 
 loadbytecode = runLuaFile(compsPath.."/libs/fione.lua")     --run lua 5.1 bytecode because loadstring
 runLuaFile(compsPath.."/libs/aes.lua")                      --aes-256-cbc decryption powered by none other than luajit ffi
