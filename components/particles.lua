@@ -15,12 +15,12 @@ function drawParticlesNative(menu)
 	end
 end
 
-function loadParticleFile() --it's already loaded though
-	return
+function loadParticleFile(name) -- check if this is correct?
+	return loadLuaFile(scriptPath .. "/particles/" .. name, "", false)
 end
 
 function clearParticles()
-	return
+	particles = {}
 end
 
 function drawMenuParticlesInAdvance() --what is it with particles

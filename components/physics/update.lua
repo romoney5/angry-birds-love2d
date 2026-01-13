@@ -64,7 +64,7 @@ function updatePhysics(dt)
 			obj.yVel = yVel
 			hasAwakeObjects = true
 			
-			local material = obj.material or obj.materialName
+			local material = getMaterial(obj.name)
 			local volume = (math.abs(angularVelocity) * obj.mass / 400.0) * obj.body:getInertia()
 			
 			if volume > 1.0 then

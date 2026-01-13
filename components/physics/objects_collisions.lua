@@ -105,8 +105,16 @@ function setDensity(object, density)
 	end
 end
 
+function getMaterial(object)
+	return objects.world[object].material or objects.world[object].materialName
+end
+
 function setMaterial(object, material)
-	objects.world[object].material = material
+	if objects.world[object].materialName then
+		objects.world[object].materialName = material
+	else
+		objects.world[object].material = material
+	end
 end
 
 function setTexture(object, texture)
@@ -398,8 +406,8 @@ function physicsBeginContact(obj1, obj2, contact)
 		
 		--3.0.1 uses materialName instead of material
 		local damageFactor = blockTable.damageFactors[bird.damageFactors]
-		local blockTable_damage = damageFactor.damageMultiplier[block.material or block.materialName]
-		local blockTable_velocity = damageFactor.velocityMultiplier[block.material or block.materialName]
+		local blockTable_damage = damageFactor.damageMultiplier[getMaterial(block.name)]
+		local blockTable_velocity = damageFactor.velocityMultiplier[getMaterial(block.name)]
 		
 		if blockTable_damage then
 			damageMultiplier = blockTable_damage
