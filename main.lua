@@ -558,8 +558,8 @@ function love.load()
 	gpcx, gpcy = love.mouse.getPosition()
 
 	--override releaseBuild
-	releaseBuild = false
-	showEditor = true
+	--releaseBuild = false
+	--showEditor = true
 
 	local uimos = updateItemMouseOverState
 	if uimos then

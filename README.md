@@ -15,6 +15,7 @@ If you are on Linux, it's as easy as downloading a LÖVE Flatpak, navigating to 
 - `--run`/`+..` runs a line of Lua code. Examples: `--run "releaseBuild = true"` `+"autoScale = 240"`
 - `--gamelogic`/`-gl` overrides the path to `scripts/gamelogic.lua`. Handy for testing precompiled Lua support.
 - `--datapath`/`-dp` overrides the default path to `data/` and uses a new save data subfolder. Useful for quickly testing different versions of Angry Birds without different folders or symbolic links. Can also be used to boot from .zip/.ipa/.apk or other zipped files.
+- `--cheats`/`-c` enables cheats. (Disables `releaseBuild` and enables `showEditor`)
 - `--blamelength`/`-bm` sets the length of bytecode tracebacks (a list of previously run instructions shown upon getting an error). For performance reasons, set to 0 by default.
 
 ## Acknowledgements

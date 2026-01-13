@@ -92,6 +92,9 @@ function handlePostStartArgs()
 					update(1, 1)
 					attempts = attempts - 1
 				until love.audio.getActiveSourceCount() > 0 or currentGameMode ~= updateSplashes or attempts <= 0
+			elseif v == "--cheats" or v == "-c" then
+				releaseBuild = false
+				showEditor = true
 			end
 		end
 	end
