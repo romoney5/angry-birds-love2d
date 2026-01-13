@@ -287,6 +287,15 @@ function setScale(name, scale)
 	end
 end
 
+--5.0.1
+function addObjectUpdateFunction(name, func)
+	return
+end
+
+function destroyBreakableJoints(name, force)
+	return
+end
+
 
 --vastly improved damage system, credits to halo
 
@@ -363,7 +372,7 @@ function physicsBeginContact(obj1, obj2, contact)
 
 		local old_score = currentScore
 		
-		blockCollision(o1.name, o2.name, linearForce, damageDone)
+		blockCollision(o1.name, o2.name, linearForce, damageDone, 0, 0)
 
 		if joystick and linearForce >= 6 then
 			joystick:setVibration(math.min(linearForce / 15, 1), math.min(linearForce / 15, 1), .1)
@@ -453,7 +462,7 @@ function physicsBeginContact(obj1, obj2, contact)
 				m2 = math.floor((o2.strength + damage or -1) * 10) / 10})
 		end
 		
-		birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage))
+		birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage), 0, 0, 0, 0)
 		if joystick and effectiveDamage >= 6 then
 			joystick:setVibration(math.min(effectiveDamage / 15, 1), math.min(effectiveDamage / 15, 1), .1)
 		end
@@ -476,7 +485,7 @@ function physicsBeginContact(obj1, obj2, contact)
 		
 		local force = (collisionVelocity * mass) / 10.0
 		
-		birdCollision(o1.name, o2.name, force, 0)
+		birdCollision(o1.name, o2.name, force, 0,  0, 0, 0, 0)
 	end
 	
 	--use deadBlocks table in non-pc versions

@@ -56,7 +56,7 @@ end
 
 --replace a missing filename due to case sensitivity
 function findCaseInsensitive(dir)
-	local _, paths = resolvePath(dir)
+	local dir, paths = resolvePath(dir)
 
 	if checkDirectory(dir) then
 		--it's there already
@@ -201,7 +201,7 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 		env = key
 	elseif type(key) == "string" and key ~= "" then
 		--make a new table in ctx with the name of key (this, "ui")
-		ctx[key] = {} --ctx[key] or {}
+		ctx[key] = ctx[key] or {}
 		env = ctx[key]
 	else
 		--use ctx table (this.ui, "")
@@ -770,7 +770,7 @@ function performBitwiseOr(a,b)
 	return bit.bor(a,b)
 end
 
---not starwars
+--not absw
 function setDeltaTimeMultiplier(dt)
 	physicsTimeScale = dt
 end
