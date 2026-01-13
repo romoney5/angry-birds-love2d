@@ -69,6 +69,13 @@ function handleStartArgs()
 							end
 						end
 						
+						--make a guess
+						if endsWith(datapath, ".ipa") then
+							deviceModel = "iphone"
+						elseif endsWith(datapath, ".apk") then
+							deviceModel = "android"
+						end
+						
 						datapath = look(datapath, "^data")
 					end
 				end
