@@ -271,6 +271,10 @@ local function releaseSheet(sheet, usecomposprites)
 		end
 	end
 	
+	if lsheet.zip then
+		love.filesystem.unmount(lsheet.zip)
+	end
+	
 	if lsheet.sheet then lsheet.sheet:release() end
 	loadedSheets[sheet] = nil
 end
@@ -340,6 +344,9 @@ local function loadSheet(sheet, usecomposprites)
 
 					--and append the real filename to it before passing in the real path
 					local newname, paths = findCaseInsensitive(zip.."/"..og_datapath.."/"..parentDir.."/"..info.filename)
+					if not newname then
+						newname, paths = findCaseInsensitive(zip.."/"..info.filename)
+					end
 					filename = newname
 				else
 					--or it didn't even work
@@ -359,11 +366,12 @@ local function loadSheet(sheet, usecomposprites)
 
 				lsheet.sheet = love.graphics.newImage(convertImagePVR(data, filename))
 			elseif endsWith(filename, ".webp") then
-				if not webp then
+				if not haswebp then
 					extensionlength = 5 + 4 --.webp + .png
 					filename = filename..".png"
 
-					lsheet.sheet = love.graphics.newImage(filename)
+					--lsheet.sheet = love.graphics.newImage(filename)
+					lsheet.sheet = love.graphics.newImage(love.image.newImageData(1, 1, nil, nil))
 				else
 					local src = love.filesystem.read(filename)
 					lsheet.sheet = love.graphics.newImage(webp.loadImage(src, src:len()))

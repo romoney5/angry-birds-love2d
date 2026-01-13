@@ -31,6 +31,31 @@ function res.createBitmapFont(font, silent)
 			local data = getDatInfo(love.filesystem.read(font), font, "FONT")
 			local spritesheet = data.filename
 			local filepath = (font:match("(.+)/[^/]+$") or "").."/"..spritesheet
+
+			if not checkDirectory(filepath) and checkDirectory(filepath..".zip") then
+				--android versions also like to zip some fonts
+				local zip = filepath..".zip"
+				local src = love.filesystem.newFileData(zip)
+				local success = love.filesystem.mount(src, zip)
+
+				if success then
+					--get the given font's base directory
+					local _, parentDir = resolvePath(font)
+					parentDir = table.concat(parentDir, "/", 2, #parentDir - 1)
+
+					--and append the real filename to it before passing in the real path
+					local newname, paths = findCaseInsensitive(zip.."/"..parentDir.."/"..data.filename)
+					if not newname then
+						newname, paths = findCaseInsensitive(zip.."/"..data.filename)
+					end
+					
+					filepath = newname
+				else
+					--or it didn't even work
+					print("createBitmapFont: could not unzip "..zip)
+				end
+			end
+			
 			if endsWith(spritesheet, ".pvr") then
 				-- spritesheet = spritesheet..".png"
 				local data = love.filesystem.read(filepath)
