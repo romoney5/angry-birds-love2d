@@ -220,7 +220,7 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 
 	-- if controllable then obj.density = obj.density * 100 end
 
-	obj.body = love.physics.newBody(physicsWorld, xpos, ypos, obj.density == 0 and "static" or "dynamic")
+	obj.body = love.physics.newBody(physicsWorld, xpos, ypos, obj.density <= 0 and "static" or "dynamic")
 	obj.shape = love.physics.newCircleShape(w or 1)
 	obj.fixture = love.physics.newFixture(obj.body, obj.shape, obj.density)
 	if density == 0 then obj.density = 1 end

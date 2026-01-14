@@ -28,6 +28,10 @@ function activateDebugConsole()
 	return
 end
 
+function deactivateDebugConsole()
+	return
+end
+
 function setThemeForegroundOffsetY(index, y)
 	return
 end
@@ -242,6 +246,12 @@ end
 --spirit account?
 RovioAccount = {}
 
+RovioAccount.profile = {id = 0}
+
+function loadTableFromFile(filename, tosave)
+	return
+end
+
 function RovioAccount.native_isLoggedIn()
 	return false
 end
@@ -256,6 +266,16 @@ end
 
 function RovioAccount.native_isCloudSyncInProgress()
 	return false
+end
+
+CloudSync = {}
+
+function CloudSync.combineSettings(settings, settings, bool)
+	return
+end
+
+function CloudSync.removeSyncableSettings(settings)
+	return
 end
 
 

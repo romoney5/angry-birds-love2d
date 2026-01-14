@@ -265,6 +265,7 @@ function resizeCircle(name, radius)
 
 	if obj.shape then
 		--set the radius
+		radius = math.max(radius, 0)
 		obj.shape:setRadius(radius)
 		obj.radius = radius
 		obj.height = radius

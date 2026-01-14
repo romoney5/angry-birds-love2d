@@ -16,7 +16,7 @@ function drawParticlesNative(menu)
 end
 
 function loadParticleFile(name) -- check if this is correct?
-	return loadLuaFile(scriptPath .. "/particles/" .. name, "", false)
+	return-- loadLuaFile(scriptPath .. "/particles/" .. name, "", false)
 end
 
 function clearParticles()
@@ -98,7 +98,7 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 				local emitter_circle = pt.emitter_circle or pt
 				local min, max = emitter_circle.minAngleEmitter or -180, emitter_circle.maxAngleEmitter or 180
 				local angle = math.random(min, max) * math.pi / 180
-				local vel = math.random(emitter_circle.minVel, emitter_circle.maxVel)
+				local vel = math.random(emitter_circle.minVel or 0, emitter_circle.maxVel or 0)
 
 				p.x = x + (_G.math.random(0, w) - 0.5*w ) * cos(angle)
 				p.y = y + (_G.math.random(0, h) - 0.5*h ) * sin(angle)
