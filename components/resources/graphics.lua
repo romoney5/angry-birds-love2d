@@ -305,12 +305,15 @@ local function loadSheet(sheet, usecomposprites)
 						local sx0, sx1 = vv.x - sprite.px, vv.x + sprite.width - sprite.px
 						local sy0, sy1 = vv.y - sprite.py, vv.y + sprite.height - sprite.py
 
+						--get bounds
 						x0, x1 = math.min(x0 or sx0, sx0), math.max(x1 or sx1, sx1)
 						y0, y1 = math.min(y0 or sy0, sy0), math.max(y1 or sy1, sy1)
 						
-						px = sprite.px - vv.x
-						py = sprite.py - vv.y
+						--set the pivots
+						px = -x0
+						py = -y0
 
+						--set the dimensions
 						width = math.abs(x1 - x0)
 						height = math.abs(y1 - y0)
 					end

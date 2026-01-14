@@ -89,7 +89,7 @@ end
 function res.drawString(group, text, x, y, aligny, alignx)
 	text = tostring(text) or ""
 	if group and group~="" then
-		text = res.getString(group,text)
+		text = res.getString(group, text)
 	end
 
 	local font = fonts[drawfont]
@@ -103,8 +103,16 @@ function res.drawString(group, text, x, y, aligny, alignx)
 		-- text = (alignx or "")..(aligny or "")
 		
 		local line = 0
+		local height = love.graphics.getHeight()
+		
 		for l in text:gmatch("[^\n]+") do
 			local ax, i = 0, 0
+			
+			--don't calculate the widths and draw everything if it goes off screen
+			local _, miny = love.graphics.transformPoint(x + i + ax, (y + ay - font.leading + (line * font.leading)))
+			local _, maxy = love.graphics.transformPoint(x + i + ax, (y + ay + font.leading + (line * font.leading)))
+			if miny > height or maxy < 0 then break end
+			
 			if alignx=="HCENTER" or aligny=="HCENTER" then ax = -res.getStringWidth(l) / 2 end
 			if alignx=="RIGHT" or aligny=="RIGHT" then ax = -res.getStringWidth(l) end
 
