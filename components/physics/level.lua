@@ -29,7 +29,7 @@ end
 
 function saveLevel(filename)
 	print("Saving level \""..filename..".lua\"...")
-	saveLuaFile(datapath.."/"..filename..".lua","objects", nil, nil, true)
+	saveLuaFile(filename..".lua","objects", nil, nil, true)
 end
 
 function setPhysicsSimulationScale(scale)

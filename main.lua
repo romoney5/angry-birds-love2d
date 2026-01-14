@@ -61,7 +61,7 @@ function findCaseInsensitive(dir)
 	if checkDirectory(dir) then
 		--it's there already
 		return dir, paths
-	elseif love._os ~= "Windows" and dir and dir ~= "" then
+	elseif dir and dir ~= "" then
 		if #paths == 0 then return "" end
 
 		local name = paths[#paths] --get the filename now
