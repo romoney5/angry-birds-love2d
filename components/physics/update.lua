@@ -1,7 +1,7 @@
 --update physics every frame
 
 function solvePhysics()
-	local timeStep = dt2 * physicsTimeScale
+	local timeStep = dt2 * (physicsTimeScale or 1)
 	local velocityIterations = 10
 	local positionIterations = 10
 	
@@ -27,6 +27,9 @@ function updatePhysics(dt)
 	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0)
 	
 	physicsWorld:update(solvePhysics())
+
+	if applyForcesAtPhysicsStep then applyForcesAtPhysicsStep() end
+	if clearLuaForceFunctions then clearLuaForceFunctions() end
 
 	if removeBlocks then
 		removeBlocks()

@@ -77,6 +77,8 @@ function applyForce(object, x, y, xp, yp)
 	end
 end
 
+applyForceNative = applyForce
+
 function setAngularVelocity(object, a)
 	local obj = objects.world[object]
 	if obj and obj.body then
@@ -290,10 +292,17 @@ function setScale(name, scale)
 	local obj = objects.world[name]
 	if obj then
 		obj.scale = scale
-		if obj.type == "circle" then
-			resizeCircle(name, obj.radius * obj.scale)
-		end
+		-- if obj.type == "circle" then
+		-- 	resizeCircle(name, obj.radius * obj.scale)
+		-- end
 	end
+end
+
+function getScale(name)
+    local obj = objects.world[name]
+    if obj then
+        return obj.scale or 1
+    end
 end
 
 --5.0.1

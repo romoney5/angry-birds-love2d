@@ -229,7 +229,7 @@ end
 
 function drawSlingScopeNative(s_vx, s_vy, vertical_force)
 	love.graphics.push()
-	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, 1)
+	-- setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, 1)
 	local lsx, lsy = physicsToWorldTransform(selectedBird.x, selectedBird.y)
 	local spacing = 4
 	local amount = 16
