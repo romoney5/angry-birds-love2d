@@ -182,7 +182,7 @@ function getRayCastedObjects(info)
 	local x2, y2 = info.x2, info.y2
 	local obj = objects.world[info.source]
 
-	if obj and obj.body and obj.fixture then
+	if not obj or (obj and obj.body and obj.fixture) then
 		local hits = {}
 
 		physicsWorld:rayCast(x1, y1, x2, y2, function(fixture, x, y, xn, yn, fraction)
@@ -390,7 +390,7 @@ function physicsBeginContact(obj1, obj2, contact)
 
 		local old_score = currentScore
 		
-		blockCollision(o1.name, o2.name, linearForce, damageDone, 0, 0)
+		if blockCollision then blockCollision(o1.name, o2.name, linearForce, damageDone, 0, 0) end
 
 		if joystick and linearForce >= 6 then
 			joystick:setVibration(math.min(linearForce / 15, 1), math.min(linearForce / 15, 1), .1)
@@ -480,7 +480,7 @@ function physicsBeginContact(obj1, obj2, contact)
 				m2 = math.floor((o2.strength + damage or -1) * 10) / 10})
 		end
 		
-		birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage), 0, 0, 0, 0)
+		if birdCollision then birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage), 0, 0, 0, 0) end
 		if joystick and effectiveDamage >= 6 then
 			joystick:setVibration(math.min(effectiveDamage / 15, 1), math.min(effectiveDamage / 15, 1), .1)
 		end
@@ -503,7 +503,7 @@ function physicsBeginContact(obj1, obj2, contact)
 		
 		local force = (collisionVelocity * mass) / 10.0
 		
-		birdCollision(o1.name, o2.name, force, 0,  0, 0, 0, 0)
+		if birdCollision then birdCollision(o1.name, o2.name, force, 0,  0, 0, 0, 0) end
 	end
 	
 	--use deadBlocks table in non-pc versions

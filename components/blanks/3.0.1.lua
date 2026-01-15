@@ -71,6 +71,10 @@ function RovioAds.click(ad)
 	print("Clicking RovioAd "..ad)
 end
 
+function RovioAds.refresh()
+	return
+end
+
 function RovioAds.trackConversion()
 	return
 end
@@ -334,4 +338,128 @@ function screenToPhysicsTransform(x, y)
 	local wx, wy = screenToWorldTransform(x, y)
 	local px, py = worldToPhysicsTransform(wx, wy)
 	return px, py
+end
+
+--5.1.0
+function native.loadLuaTable(filename, env, a)
+	return loadLuaFileToObject(filename, env, "")
+end
+
+function native.loadLuaScript(filename)
+	runLuaFile(scriptPath.."/"..filename)
+end
+
+
+AnimationWrapperNative = {}
+
+function AnimationWrapperNative.update(dt)
+	return
+end
+
+
+ThemeSystem = {}
+
+ThemeSystem.setTheme = setTheme
+
+ThemeSystem.drawBackground = drawBackgroundNative
+ThemeSystem.drawForeground = drawForegroundNative
+
+function ThemeSystem.getThemeLayerOffset()--?
+	return {x = 0, y = 0}
+end
+
+function ThemeSystem.setThemeLayerOffset()--?
+	return
+end
+
+
+ServerTime = {}
+
+function ServerTime.getStatus()
+	return
+end
+
+
+CameraNative = {}
+
+CameraNative.setCameraZoomScale = setWorldScale
+CameraNative.setCameraTopLeft = setTopLeft
+CameraNative.drawGame = drawGameNative
+
+function CameraNative.updateGFXEffects(dt)
+	return
+end
+
+screenToWorldDistance = screenToWorldTransform
+
+
+function createMaskRenderer(name, sprite, texture, collider)
+	return
+end
+
+function createRendererForGameObject(name, sprite, collider)
+	return
+end
+
+function createLuaAssetRenderer(a, b, c)
+	a.luaAssetRenderer = {}
+	return "a"
+end
+
+function disposeLuaAssetRenderer(a)
+	return
+end
+
+function setObjectAsForceAdder(a)--?
+	return
+end
+
+
+function setObjectBodyStatic(name)
+	setObjectParameter(name, 2, 0)
+end
+
+function setObjectBodyDynamic(name)
+	setObjectParameter(name, 2, 1)
+end
+
+
+function raycast(x1, y1, x2, y2)
+	return getRayCastedObjects{x1 = x1, y1 = y1, x2 = x2, y2 = y2}
+end
+
+native.FileSystem = {}
+native.FileSystem.TYPE_FILE = "file"
+
+function native.FileSystem.enumerate(path, a, type, recursive)
+	local newpath = datapath.."/"..path
+	local files = love.filesystem.getDirectoryItems(newpath)
+	local output = {}
+	
+	for i, file in ipairs(files) do
+		local filetype = love.filesystem.getInfo(newpath.."/"..file).type
+		if recursive and filetype == "directory" then
+			for file2, v in pairs(native.FileSystem.enumerate(path.."/"..file, a, type, recursive)) do
+				output[file.."/"..file2] = v
+			end
+		else
+			output[file] = filetype
+		end
+	end
+	
+	return output
+end
+
+
+--stella
+function createUniqueShaders(shader, a)
+	return {}
+end
+
+function onNotificationReceived()
+	return
+end
+
+function setNotificationCallback(callback)
+	return
 end
