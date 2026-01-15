@@ -18,6 +18,10 @@ end
 
 function updatePhysics(dt)
 	if not physicsEnabled then return end
+	
+	if physicsSpeedFactor ~= physicsTimeScale then
+		physicsTimeScale = physicsSpeedFactor
+	end
 
 	updateParticlesNative(dt2)
 	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0)
