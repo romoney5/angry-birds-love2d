@@ -462,6 +462,8 @@ function love.load()
 	runLuaFile(compsPath.."/load_all.lua")
 	handleStartArgs()
 	
+	updateDisplayScale()
+	
 	--load only certain properties from config.lua
 	local config = {}
 	if not loadLuaFileToObject("config.lua", config, nil, true) then loadLuaFileToObject(datapath.."/config.lua", config, nil, true) end
@@ -550,7 +552,7 @@ function love.load()
 	keyHold["SHIFT"] = false
 	
 	--mobile-specific options
-	if deviceModel == "android" then
+	if love._os == "Android" then
 		if gameOptions and gameOptions.ui then
 			gameOptions.ui.enableHoverScaling = false
 			gameOptions.ui.enableCursor = false
