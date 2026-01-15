@@ -227,6 +227,36 @@ function drawRubberband(x1, y1, x2, y2, width, sprite)
 	love.graphics.pop()
 end
 
+function drawSlingScopeNative(s_vx, s_vy, vertical_force)
+	love.graphics.push()
+	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, 1)
+	local lsx, lsy = physicsToWorldTransform(selectedBird.x, selectedBird.y)
+	local spacing = 4
+	local amount = 16
+
+	local offset = g_sling_scope_animation % 1
+
+	s_vy = s_vy - worldgravity.y / physicsToWorld * spacing / 2
+	s_vy = s_vy + worldgravity.y / physicsToWorld * spacing * (offset)
+	lsx = lsx + s_vx * spacing * offset
+	lsy = lsy + s_vy * spacing * offset
+
+	for i = 1, amount do
+		love.graphics.push()
+
+		love.graphics.translate(lsx, lsy)
+		love.graphics.scale(lerp(1, 0, (i - 1 + offset) / amount))
+		s_vy = s_vy + worldgravity.y / physicsToWorld * spacing
+		lsx = lsx + s_vx * spacing
+		lsy = lsy + s_vy * spacing
+
+		res.drawSprite("PARTICLE_SLINGDOT", 0, 0)
+
+		love.graphics.pop()
+	end
+	love.graphics.pop()
+end
+
 --4.0.0
 function drawFullscreenRect(r, g, b, a)
 	love.graphics.push("all")
