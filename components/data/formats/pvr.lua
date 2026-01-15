@@ -89,8 +89,8 @@ function convertImagePVR(data, filename)
 
 			local filedata = love.filesystem.newFileData(data, "")
 			imagedata = love.image.newCompressedData(filedata)
-		else
-			error("convertImagePVR: unsupported pvr2 pixel format for \""..filename.."\": "..tostring(format))
+		-- else
+		-- 	error("convertImagePVR: unsupported pvr2 pixel format for \""..filename.."\": "..tostring(format))
 		end
 	elseif love.data.unpack(">i4", data, 1) == 0x50565203 then --pvr v3 header, nearly everything in 4.0.0
 		skip(4) --PVR
@@ -129,7 +129,7 @@ function convertImagePVR(data, filename)
 			rawdata = string.rep("\xFF", w * h * 16 / 8)
 			-- print(w, h)
 			imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
-		elseif format == 0 then --pvrtc1
+		elseif format == 0 and support.ETC1 then --pvrtc1
 			--hey.. that's etc1!
 			local filedata = love.filesystem.newFileData(data, "")
 			imagedata = love.image.newCompressedData(filedata)
@@ -145,8 +145,8 @@ function convertImagePVR(data, filename)
 			-- rawdata = resultstr--string.rep("\xFF", w * h * 16 / 8)
 			-- print(w, h)
 			-- imagedata = love.image.newImageData(w, h, "rgba8", rawdata)
-		else
-			error("convertImagePVR: unsupported pvr3 pixel format for \""..filename.."\": "..tostring(format))
+		-- else
+		-- 	error("convertImagePVR: unsupported pvr3 pixel format for \""..filename.."\": "..tostring(format))
 		end
 	else
 		print("convertImagePVR: unsupported pvr header format for \""..filename.."\"")
