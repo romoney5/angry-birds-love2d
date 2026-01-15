@@ -7,7 +7,7 @@ function removeObject(name)
 		obj.body:destroy()
 	end
 	
-	objects.world[name] = nil
+	-- objects.world[name] = nil
 end
 
 function destroyJoint(name)
