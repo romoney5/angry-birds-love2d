@@ -19,7 +19,7 @@ end
 function updatePhysics(dt)
 	if not physicsEnabled then return end
 	
-	if physicsSpeedFactor ~= physicsTimeScale then
+	if physicsSpeedFactor ~= physicsTimeScale then -- nifty hack, should probably change it later
 		physicsTimeScale = physicsSpeedFactor
 	end
 
