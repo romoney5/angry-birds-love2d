@@ -313,9 +313,14 @@ local function loadSheet(sheet, usecomposprites)
 	if loadedSheets[sheet] then return end
 	
 	if endsWith(sheet, ".dat") then
-		loadedSheets[sheet] = {sheet = nil, sprites = {}}
-		
 		local newname, paths = findCaseInsensitive(datapath.."/"..sheet)
+
+		if not newname then
+			print("loadSheet: dat file \""..tostring(sheet).."\" not found")
+			return
+		end
+
+		loadedSheets[sheet] = {sheet = nil, sprites = {}}
 
 		local data = love.filesystem.read(newname or "")
 		local info = getDatInfo(data, sheet, "SPRT")
@@ -360,9 +365,10 @@ local function loadSheet(sheet, usecomposprites)
 
 			local lsheet = loadedSheets[sheet]
 
-			if not checkDirectory(filename) and checkDirectory(filename..".zip") then
+			local zipped = not checkDirectory(filename) and ((checkDirectory(filename..".zip") and ".zip") or (checkDirectory(filename..".kazip") and ".kazip"))
+			if zipped then
 				--android versions like to zip some images
-				local zip = filename..".zip"
+				local zip = filename..zipped
 				local src = love.filesystem.newFileData(zip)
 				local success = love.filesystem.mount(src, zip)
 

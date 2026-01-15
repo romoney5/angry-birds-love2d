@@ -79,7 +79,10 @@ function res.playAudio(audio, volume, loop, track)
 		else
 			cachedaudios[audio]:setPitch(audioSpeed)
 		end
-		cachedaudios[audio]:setVolume(volume)
+
+		if volume then
+			cachedaudios[audio]:setVolume(volume)
+		end
 		res.stopAudio(audio)
 		cachedaudios[audio]:play()
 		table.insert(audiochannels[channel], audio)
