@@ -55,3 +55,25 @@ end
 function setOffsetedViewport(x,y)
 	return
 end
+
+
+Payment = {}
+
+function Payment.iapInitPayment()
+	print("Init IAP payment")
+end
+
+function Payment.iapHasPaymentProvider()
+	return true
+end
+
+Payment.iapBuyItem = iapBuyItem
+Payment.iapRestoreItems = iapRestoreItems
+
+function Payment.getIapProducts()
+	return {} --price:string
+end
+
+function Payment.iapInitPaymentProviders()
+	return
+end

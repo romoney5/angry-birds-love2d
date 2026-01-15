@@ -16,6 +16,14 @@ function getModel()
 	return deviceModel
 end
 
+function getDeviceIDHash()
+	return "0"
+end
+
+function postDownloadTracking()--?
+	return
+end
+
 function checkInstalledAppsOnline(url)
 	return
 end
@@ -125,24 +133,6 @@ function setRovioShelfAllowed(allowed)
 	return
 end
 
---TODO: iap.lua?
-Payment = {}
-
-function Payment.iapInitPayment()
-	print("Init IAP payment")
-end
-
-function Payment.iapHasPaymentProvider()
-	return true
-end
-
-Payment.iapBuyItem = iapBuyItem
-Payment.iapRestoreItems = iapRestoreItems
-
-function Payment.getIapProducts()
-	return {} --price:string
-end
-
 --hooks: onPaymentProviderSelected(?) onPurchaseStatusChanged(item,?) onPurchaseHistoryRetrieved(?)
 --onRestoreDone(restored) onPaymentError(error)
 
@@ -243,6 +233,10 @@ function native_initializeCloudServices()
 	return
 end
 
+function native_getUnlockRequestChecksum(id, code)
+	return
+end
+
 --spirit account?
 RovioAccount = {}
 
@@ -268,6 +262,10 @@ function RovioAccount.native_isCloudSyncInProgress()
 	return false
 end
 
+function RovioAccount.shouldCloudOverwriteLocalSave()
+	return false
+end
+
 CloudSync = {}
 
 function CloudSync.combineSettings(settings, settings, bool)
@@ -284,6 +282,11 @@ function isEditing()
 end
 
 function setNotificationsEnabled(enabled)
+	return
+end
+
+--short fuse
+function useAsBackgroundMask()--?
 	return
 end
 
