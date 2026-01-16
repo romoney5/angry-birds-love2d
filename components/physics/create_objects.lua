@@ -72,7 +72,7 @@ function createJoint(joint)
 		newJoint:setLimitsEnabled(joint.limit)
 		newJoint:setLimits(joint.lowerLimit, joint.upperLimit)
 		
-        if backAndForth then
+        if joint.backAndForth then
             joint.direction = 1
         end
 	elseif type == 4 then --prismatic joint
@@ -99,7 +99,7 @@ function createJoint(joint)
 		newJoint:setLimitsEnabled(joint.limit)
 		newJoint:setLimits(joint.lowerLimit, joint.upperLimit)
 		
-        if backAndForth then
+        if joint.backAndForth then
             joint.direction = 1
         end
 	elseif type == 5 then --annihilation joint

@@ -295,6 +295,13 @@ function getRadius(name)
 	end
 end
 
+function getAngularVelocity(name)
+	local obj = objects.world[name]
+	if obj then
+		return obj.body:getAngularVelocity()
+	end
+end
+
 function setScale(name, scale)
 	local obj = objects.world[name]
 	if obj then
