@@ -120,7 +120,7 @@ function updatePhysics(dt)
 				volume = 1.0
 			end
 
-			if obj.type == "circle" and rollingVolumes[material] and volume > rollingVolumes[material] then
+			if obj.type == "circle" and not birds[obj.name] and rollingVolumes[material] and volume > rollingVolumes[material] then
 				rollingVolumes[material] = volume
 			end
 			
