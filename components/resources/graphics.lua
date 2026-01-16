@@ -238,6 +238,13 @@ function drawSlingScopeNative(s_vx, s_vy, vertical_force)
 
 	s_vy = s_vy - worldgravity.y / physicsToWorld * spacing / 2
 	s_vy = s_vy + worldgravity.y / physicsToWorld * spacing * (offset)
+	
+	local verticalForce = (vertical_force / selectedBird.mass) / physicsToWorld
+	if vertical_force ~= 0 then
+		s_vy = s_vy - verticalForce * spacing / 2
+		s_vy = s_vy + verticalForce * spacing * (offset)
+	end
+	
 	lsx = lsx + s_vx * spacing * offset
 	lsy = lsy + s_vy * spacing * offset
 
@@ -249,7 +256,7 @@ function drawSlingScopeNative(s_vx, s_vy, vertical_force)
 		s_vy = s_vy + worldgravity.y / physicsToWorld * spacing
 		-- apply extra impulse on the curve
 		if vertical_force ~= 0 then
-			s_vy = s_vy + (vertical_force / selectedBird.mass) / physicsToWorld * spacing
+			s_vy = s_vy + verticalForce * spacing
 		end
 
 		lsx = lsx + s_vx * spacing
