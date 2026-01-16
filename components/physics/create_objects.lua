@@ -169,11 +169,9 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 	obj.fixture:setRestitution(restitution)
 	obj.fixture:setFriction(friction)
 	obj.fixture:setUserData(obj)
-	obj.fixture:setCategory(CATEGORY_NORMAL)
 	
 	if collision ~= true then
-		obj.fixture:setCategory(CATEGORY_STATIC)
-		obj.fixture:setMask(CATEGORY_NORMAL)
+		--obj.fixture:setFilterData(1, 0, 0)
 	end
 
 	obj.body:setAngularDamping(2)
@@ -205,8 +203,7 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 	end
 	
 	if collision ~= true then
-		obj.fixture:setCategory(CATEGORY_STATIC)
-		obj.fixture:setMask(CATEGORY_NORMAL)
+		obj.fixture:setFilterData(1, 0, 0)
 	end
 
 	obj.fixture:setRestitution(restitution)
