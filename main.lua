@@ -255,14 +255,16 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 			error("Could not load Lua file: "..filename.."\n"..tostring(lua))
 		else
 			print("Could not load Lua file: "..filename.."\n"..tostring(lua))
-			showPopup("Warning",
-					"Could not load Lua file: "..filename.."\n"..tostring(lua),
-					{
-						{sprite = "TUTORIAL_OK", callback = function()
-							return true
-						end},
-					}
-				, true)
+			if not releaseBuild then
+				showPopup("Warning",
+						"Could not load Lua file: "..filename.."\n"..tostring(lua),
+						{
+							{sprite = "TUTORIAL_OK", callback = function()
+								return true
+							end},
+						}
+					, true)
+			end
 		end
 	else
 		return tostring(lua)

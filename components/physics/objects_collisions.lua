@@ -288,6 +288,13 @@ function resizeCircle(name, radius)
 	end
 end
 
+function getRadius(name)
+	local obj = objects.world[name]
+	if obj then
+		return obj.shape:getRadius()
+	end
+end
+
 function setScale(name, scale)
 	local obj = objects.world[name]
 	if obj then
