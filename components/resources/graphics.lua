@@ -100,6 +100,7 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 		local hm = h / image.height
 
 		local xpr, ypr = image.px, image.py
+		local ox, oy = drawxp, drawyp
 
 		if hanchor == "LEFT" or vanchor == "LEFT" then xpr = 0 end
 		if hanchor == "RIGHT" or vanchor == "RIGHT" then xpr = image.width end
@@ -109,6 +110,11 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 		if vanchor == "BOTTOM" or hanchor == "BOTTOM" then ypr = image.height end
 		if vanchor == "VPIVOT" or hanchor == "VPIVOT" then ypr = drawyp end
 		
+		if vanchor == "LEFT" and hanchor == "TOP" then -- fix to the shockwave issue
+			ox = image.px
+			oy = image.py
+		end
+		
 		-- if vanchor == "HCENTER" or hanchor == "HCENTER" then xpr = image.w/2 end
 		-- if vanchor == "VCENTER" or hanchor == "VCENTER" then ypr = image.h/2 end
 
@@ -116,7 +122,7 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 		love.graphics.setColor(r * alpha, g * alpha, b * alpha, alpha)
 		local b1, b2 = love.graphics.getBlendMode()
 		if nopma then love.graphics.setBlendMode("alpha") end
-		
+
 		love.graphics.draw(
 			image.spsh,					--spritesheet
 			image.quad,					--quad
@@ -125,8 +131,8 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 			drawangle,					--angle
 			wm,							--x scale
 			hm,							--y scale
-			drawxp,				--x rotation pivot
-			drawyp)				--y rotation pivot
+			ox,				--x rotation pivot
+			oy)				--y rotation pivot
 		
 		love.graphics.setBlendMode(b1,b2)
 		love.graphics.setColor(r, g, b, a)
