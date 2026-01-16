@@ -92,6 +92,7 @@ function updatePhysics(dt)
 		if obj.body and not obj.body:isDestroyed() then
 			obj.x, obj.y = obj.body:getPosition()
 			
+			local bDef = getObjectDefinition(obj.name)
 			local xVel, yVel = obj.body:getLinearVelocity()
 			local velMagnitude = xVel^2 + yVel^2
 			local angularVelocity = obj.body:getAngularVelocity()
@@ -122,6 +123,14 @@ function updatePhysics(dt)
 
 			if obj.type == "circle" and not birds[obj.name] and rollingVolumes[material] and volume > rollingVolumes[material] then
 				rollingVolumes[material] = volume
+			end
+			
+			if applyForcesAtPhysicsStep then -- version check
+				if bDef.forceX ~= nil and bDef.forceY ~= nil then
+					applyForce(obj.name, bDef.forceX * obj.mass, bDef.forceY * obj.mass, obj.x, obj.y)
+				elseif obj.forceX ~= nil and obj.forceY ~= nil then
+					applyForce(obj.name, obj.forceX * obj.mass, obj.forceY * obj.mass, obj.x, obj.y)
+				end
 			end
 			
 			--grab objects
