@@ -247,6 +247,11 @@ function drawSlingScopeNative(s_vx, s_vy, vertical_force)
 		love.graphics.translate(lsx, lsy)
 		love.graphics.scale(lerp(1, 0, (i - 1 + offset) / amount))
 		s_vy = s_vy + worldgravity.y / physicsToWorld * spacing
+		-- apply extra impulse on the curve
+		if vertical_force ~= 0 then
+			s_vy = s_vy + (vertical_force / selectedBird.mass) / physicsToWorld * spacing
+		end
+
 		lsx = lsx + s_vx * spacing
 		lsy = lsy + s_vy * spacing
 
