@@ -489,8 +489,3 @@ end
 function getRokuImagePath(dat)
 	return ""
 end
-
---seasons TODO
-function setThemeRectColour(layer, r, g, b, a)
-	return
-end

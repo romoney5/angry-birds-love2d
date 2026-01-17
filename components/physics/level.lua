@@ -4,7 +4,9 @@ physicsSimulationScale = 0
 
 function loadLevel(filename)
 	print("Loading level \""..filename..".lua\"...")
+
 	trajectory = {{{}, {}, {}}}
+
 	if physicsWorld then physicsWorld:destroy() end --clear all the objects before continuing
 
 	physicsWorld = love.physics.newWorld(worldgravity.x, worldgravity.y, true)
@@ -21,10 +23,7 @@ function loadLevel(filename)
 		end)
 	end
 
-	--restore particle functions
-	if particles and not getmetatable(particles) then
-		setmetatable(particles, getParticles)
-	end
+	restoreParticles()
 end
 
 function saveLevel(filename)

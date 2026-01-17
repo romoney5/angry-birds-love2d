@@ -37,6 +37,14 @@ function updateCursor(dt)
 		or debugOpen or optionsOpen or openPopups[1] ~= nil)
 end
 
+--restore particle functions
+function restoreParticles()
+	particles = particles or {}
+	if particles and not getmetatable(particles) then
+		setmetatable(particles, getParticles)
+	end
+end
+
 function love.update(dt)
 	removeJoints()
 	
@@ -80,10 +88,7 @@ function love.update(dt)
 		--update window title
 		love.window.setTitle("Angry Birds ("..screenWidth.."x"..screenHeight..")")
 
-		--restore particle functions
-		if particles and not getmetatable(particles) then
-			setmetatable(particles, getParticles)
-		end
+		restoreParticles()
 
 		--cursor delta for debug scrolling
 		local cx, cy = cursor.x, cursor.y
