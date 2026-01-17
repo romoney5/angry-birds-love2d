@@ -136,7 +136,7 @@ end
 --hooks: onPaymentProviderSelected(?) onPurchaseStatusChanged(item,?) onPurchaseHistoryRetrieved(?)
 --onRestoreDone(restored) onPaymentError(error)
 
---[[magicplaces = {}
+magicplaces = {}
 
 function magicplaces.gameMenuInitialised()
 	return true
@@ -148,7 +148,10 @@ end
 
 function magicplaces.openMapView(width, height)
 	return
-end]]
+end
+
+--magic places breaks later versions
+magicplaces = nil
 
 
 function setGCPopupAllowed(allowed)
@@ -266,6 +269,9 @@ end
 function RovioAccount.shouldCloudOverwriteLocalSave()
 	return false
 end
+
+--rovio account can prevent settings.lua from saving properly
+RovioAccount = nil
 
 CloudSync = {}
 
