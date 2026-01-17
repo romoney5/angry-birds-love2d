@@ -23,15 +23,22 @@ function modifyThemeSprite(name, x, y, scaleX, scaleY, angle, layerNumber)
 end
 
 local yoffsets = {}
+local layercolors = {}
 
 function setThemeForegroundOffsetY(layer, y)
 	yoffsets[layer] = y
+end
+
+function setThemeRectColour(layer, r, g, b, a)
+	r, g, b, a = r / 255, g / 255, b / 255, a / 255
+	layercolors[layer] = {r * a, g * a, b * a, a}
 end
 
 function setTheme(theme)
 	currentTheme = theme
 	objects.theme = theme
 	yoffsets = {}
+	layercolors = {}
 
 	restoreParticles()
 end
@@ -109,7 +116,15 @@ function drawBackgroundNative()
 	if theme.color then setBGColor(theme.color.r, theme.color.g, theme.color.b) end
 
 	for layernum, layer in ipairs(theme.bgLayers) do
+		--theme rect colors
+		love.graphics.push("all")
+		if layercolors[layernum - 1] then
+			love.graphics.setColor(layercolors[layernum - 1])
+		end
+
 		drawLayer(layer)
+
+		love.graphics.pop()
 
 		for k, object in pairs(themeSpriteObjects) do
 			if object.layerNumber == layernum then
@@ -149,12 +164,6 @@ function drawForegroundNative()
 			drawRect(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, rect_x, rect_y, screenWidth, screenHeight + screen.top * s + rect_y)
 		end
 	end
-end
-
---seasons TODO
-function setThemeRectColour(layer, r, g, b, a)
-	-- print(layer, r, g, b, a)
-	return
 end
 
 local textureShader = love.graphics.newShader([[
