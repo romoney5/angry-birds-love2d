@@ -38,6 +38,18 @@ function updateCursor(dt)
 end
 
 function love.update(dt)
+	-- clean up joints before updating physics
+	if g_jointsToDestroy then
+		for jointName, joint in pairs(objects.joints) do
+			if not objects.world[joint.end1] or not objects.world[joint.end2] then
+				table.insert(g_jointsToDestroy, jointName)
+			end
+		end
+		for _, jointName in ipairs(g_jointsToDestroy) do
+			destroyJoint(jointName)
+		end
+	end
+	
 	if love.window.hasFocus() then
 		if love.joystick then
 			local joysticks = love.joystick.getJoysticks()
