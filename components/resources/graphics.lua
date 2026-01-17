@@ -124,15 +124,15 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 		if nopma then love.graphics.setBlendMode("alpha") end
 
 		love.graphics.draw(
-			image.spsh,					--spritesheet
-			image.quad,					--quad
+			image.spsh,			--spritesheet
+			image.quad,			--quad
 			x - xpr + drawxp,	--x position
 			y - ypr + drawyp,	--y position
-			drawangle,					--angle
-			wm,							--x scale
-			hm,							--y scale
-			ox,				--x rotation pivot
-			oy)				--y rotation pivot
+			drawangle,			--angle
+			wm,					--x scale
+			hm,					--y scale
+			ox,					--x rotation pivot
+			oy)					--y rotation pivot
 		
 		love.graphics.setBlendMode(b1,b2)
 		love.graphics.setColor(r, g, b, a)

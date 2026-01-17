@@ -40,10 +40,6 @@ function deactivateDebugConsole()
 	return
 end
 
-function setThemeForegroundOffsetY(index, y)
-	return
-end
-
 --3.2.0 hd ipad
 RovioAds = {}
 
@@ -188,6 +184,7 @@ end
 function disableSpotlight()
 	return
 end
+
 
 --5.0.1
 native.AssetDownloader = {}

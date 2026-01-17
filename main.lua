@@ -599,11 +599,6 @@ function love.load()
 	handlePostStartArgs()
 end
 
-function setTheme(theme)
-	currentTheme = theme
-	objects.theme = theme
-end
-
 function setLevelEffects(theme)
 	return
 end
@@ -615,10 +610,6 @@ end
 --enable/disable screensaver
 function setGameOn(on)
 	love.window.setDisplaySleepEnabled(not on)
-end
-
-function createThemeSprite(name, spr, x, y, speedX, scaleX, scaleY, angle, layer)
-	return
 end
 
 function setTopLeft(left,top)

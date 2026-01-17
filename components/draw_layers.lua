@@ -2,16 +2,50 @@
 
 trajectory = {{{}, {}, {}}}
 
+
+themeSpriteObjects = {}
+
+function createThemeSprite(name, sprite, x, y, speedX, scaleX, scaleY, angle, layerNumber)
+	themeSpriteObjects[name] = {sprite = sprite, x = x, y = y, speedX = speedX, scaleX = scaleX, scaleY = scaleY, angle = angle, layerNumber = layerNumber}
+end
+
+function removeThemeSprite(name, layerNumber)
+	themeSpriteObjects[name] = nil
+end
+
+function modifyThemeSprite(name, x, y, scaleX, scaleY, angle, layerNumber)
+	themeSpriteObjects[name].x = x
+	themeSpriteObjects[name].y = y
+	themeSpriteObjects[name].scaleX = scaleX
+	themeSpriteObjects[name].scaleY = scaleY
+	themeSpriteObjects[name].angle = angle
+	themeSpriteObjects[name].layerNumber = layerNumber
+end
+
+local yoffsets = {}
+
+function setThemeForegroundOffsetY(layer, y)
+	yoffsets[layer] = y
+end
+
+function setTheme(theme)
+	currentTheme = theme
+	objects.theme = theme
+	yoffsets = {}
+
+	restoreParticles()
+end
+
 --[1] = sheet
 --[2] = sprite
 --[3] = parallax speed
 --[4] = scale
 --[5] = looping
 --[6] = position
-function drawLayer(layer)
+function drawLayer(layer, yoffset)
 	local sprite = layer[2]
-	local relativeSpeed = layer[3]
-	local relativeScale = layer[4]
+	local relativeSpeed = layer[3] or 1
+	local relativeScale = layer[4] or 1.5
 	local isLooping = layer[5]
 	local startX = layer[6] or 0
 	local scrollFrequency = layer.v or 0
@@ -22,11 +56,11 @@ function drawLayer(layer)
 	local autoScroll = -scrollFrequency * time / 16
 	local shakeX, shakeY = cameraShakeX or 0, cameraShakeY or 0
 	
-	if w > 0 and wScale > .02 then --don't draw if the scale is too low
-		for x = -1, math.floor(screenWidth / w / wScale) do
+	if w > 0 and wScale > .02 then --don't draw so many if the scale is too low
+		for x = -1, math.floor(screenWidth / (w - px) / wScale) do
 			local pivotX = w * x + startX
 			local left = -screen.left * relativeSpeed / relativeScale
-			local top = -screen.top / relativeScale
+			local top = -screen.top / relativeScale + (yoffset or 0)
 			
 			if episode4BGCranes and sprite:find("CRANE") then
 				left = left + episode4BGCranes.startX / 16
@@ -43,30 +77,84 @@ function drawLayer(layer)
 	end
 end
 
+function drawThemeSprite(v, layer)
+	local px, py = res.getSpritePivot("", v.sprite)
+	local w, h = res.getSpriteBounds("", layer[2])
+
+	local wScale = tempWorldScale or worldScale
+	local relativeSpeed = layer[3] or 1
+	local relativeScale = layer[4] or 1.5
+	local isLooping = layer[5]
+	local shakeX, shakeY = cameraShakeX or 0, cameraShakeY or 0
+	
+	if w > 0 and wScale > .02 then --don't draw so many if the scale is too low
+		for x = -1, math.floor(screenWidth / w / wScale) do
+			local pivotX = w * x
+			local left = (-screen.left * relativeSpeed / relativeScale) % w
+			local top = (-screen.top / v.scaleY)
+
+			setRenderState(pivotX + left - shakeX, top - shakeY, wScale * v.scaleX, wScale * v.scaleY, v.angle, px, py)
+
+			if not (x ~= 0 and isLooping == false) then
+				res.drawSprite(v.sprite, v.x * 16, v.y)
+			end
+		end
+	end
+end
+
 function drawBackgroundNative()
 	local theme = blockTable.themes[currentTheme]
 	if not theme then return end
+
 	if theme.color then setBGColor(theme.color.r, theme.color.g, theme.color.b) end
-	for _,v in ipairs(theme.bgLayers) do
-		drawLayer(v)
+
+	for layernum, layer in ipairs(theme.bgLayers) do
+		drawLayer(layer)
+
+		for k, object in pairs(themeSpriteObjects) do
+			if object.layerNumber == layernum then
+				-- setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, v.angle)
+				-- res.drawSprite(v.sprite, v.x, 0)
+				drawThemeSprite(object, theme.bgLayers[layernum + 1] or layer)
+			end
+		end
 	end
 end
 
 function drawForegroundNative()
 	local theme = blockTable.themes[currentTheme]
 	if not theme then return end
+
 	local s = worldScale or 1
 	setRenderState(0, 0, 1, 1)
 
-	local _, ground_h = res.getSpriteBounds(theme.fgLayers[1][1], theme.fgLayers[1][2])
-	local rect_x = 0
-	local rect_y = (-screen.top + ground_h) * s
-	drawRect(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, rect_x, rect_y, screenWidth, screenHeight + screen.top * s + rect_y)
+	for layernum, layer in ipairs(theme.fgLayers) do
+		drawLayer(layer, yoffsets[layernum - 1])
 
-	for _,v in ipairs(theme.fgLayers) do
-		v[3], v[4] = v[3] or 1, v[4] or 1.5
-		drawLayer(v)
+		--draw ground color
+		if layernum == 1 then --hack for bad piggies
+			local fgLayers = theme.fgLayers
+			local ground_num = 1
+
+			--hack for bad piggies
+			if theme.effects then ground_num = #fgLayers end
+
+			local _, ground_h = res.getSpriteBounds(fgLayers[ground_num][1], fgLayers[ground_num][2])
+			local _, ground_py = res.getSpritePivot(fgLayers[ground_num][1], fgLayers[ground_num][2])
+			local scale = fgLayers[ground_num][4] or 1.5
+			local rect_x = 0
+			local rect_y = (-screen.top + (ground_h - ground_py) * scale) * s
+			rect_y = rect_y + (yoffsets[ground_num - 1] or 0) * s
+
+			drawRect(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, rect_x, rect_y, screenWidth, screenHeight + screen.top * s + rect_y)
+		end
 	end
+end
+
+--seasons TODO
+function setThemeRectColour(layer, r, g, b, a)
+	-- print(layer, r, g, b, a)
+	return
 end
 
 local textureShader = love.graphics.newShader([[
