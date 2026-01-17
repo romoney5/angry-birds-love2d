@@ -6,6 +6,8 @@ function removeObject(name)
 	if obj and obj.body then
 		obj.body:destroy()
 	end
+	
+	removeJoints()
 end
 
 function destroyJoint(name)
@@ -16,6 +18,19 @@ function destroyJoint(name)
 	end
 	
 	objects.joints[name] = nil
+end
+
+function removeJoints()
+	if g_jointsToDestroy then
+		for jointName, joint in pairs(objects.joints) do
+			if not objects.world[joint.end1] or not objects.world[joint.end2] then
+				table.insert(g_jointsToDestroy, jointName)
+			end
+		end
+		for _, jointName in ipairs(g_jointsToDestroy) do
+			destroyJoint(jointName)
+		end
+	end
 end
 
 function setSleeping(object, dozing)
