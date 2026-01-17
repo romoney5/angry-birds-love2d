@@ -258,5 +258,5 @@ end
 
 --set dt to 0 resizing
 if love.event.setModalDrawCallback then
-	love.event.setModalDrawCallback(function() loveUpdate(true) end)
+	love.event.setModalDrawCallback(function() loveUpdate(true) if clearLuaForceFunctions then clearLuaForceFunctions() end end)
 end
