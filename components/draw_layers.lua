@@ -8,28 +8,36 @@ trajectory = {{{}, {}, {}}}
 --[4] = scale
 --[5] = looping
 --[6] = position
-function drawLayer(v)
-	local px, py = res.getSpritePivot("", v[2])
-	local w, h = res.getSpriteBounds("", v[2])
-	local s = worldScale or 1
-	local scroll = -(v.v or 0) * time / 16
+function drawLayer(layer)
+	local sprite = layer[2]
+	local relativeSpeed = layer[3]
+	local relativeScale = layer[4]
+	local isLooping = layer[5]
+	local startX = layer[6] or 0
+	local scrollFrequency = layer.v or 0
 	
-	if w > 0 and s > .02 then --don't draw if the scale is too low
-		for x = -1, math.floor(screenWidth / w / s) do
-			-- local i = #theme.bgLayers - k
-			local xp = (w) * x + (v[6] or 0)
-			local left = (-screen.left * v[3] / v[4] + scroll - (cameraShakeX or 0)) % w
-			local top = (-screen.top / v[4] - (cameraShakeY or 0))
-			-- top = (-screen.top * v[3] / v[4] - cameraShakeY)
-
-			if episode4BGCranes and v[2]:find("CRANE") then
-				left = -screen.left * v[3] / v[4] + episode4BGCranes.startX / 16 - cameraShakeX
+	local px, py = res.getSpritePivot(sprite)
+	local w, h = res.getSpriteBounds(sprite)
+	local wScale = tempWorldScale or worldScale
+	local autoScroll = -scrollFrequency * time / 16
+	local shakeX, shakeY = cameraShakeX or 0, cameraShakeY or 0
+	
+	if w > 0 and wScale > .02 then --don't draw if the scale is too low
+		for x = -1, math.floor(screenWidth / w / wScale) do
+			local pivotX = w * x + startX
+			local left = -screen.left * relativeSpeed / relativeScale
+			local top = -screen.top / relativeScale
+			
+			if episode4BGCranes and sprite:find("CRANE") then
+				left = left + episode4BGCranes.startX / 16
+			elseif isLooping ~= false then
+				left = (left + autoScroll) % w
 			end
-
-			setRenderState(xp+left, top, s * v[4], s * v[4], 0, px, py)
-
-			if not (x ~= 0 and v[5] == false) then
-				res.drawSprite(v[2], 0, 0)
+			
+			setRenderState(pivotX + left - shakeX, top - shakeY, wScale * relativeScale, wScale * relativeScale, 0, px, py)
+			
+			if not (x ~= 0 and isLooping == false) then
+				res.drawSprite(sprite, 0, 0)
 			end
 		end
 	end
