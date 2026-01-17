@@ -36,7 +36,7 @@ function res.playAudio(audio, volume, loop, track)
 	if cachedaudios[audio] == 0 then return end
 	
 	local audioStreamAllowed = true
-	local maxChannel = 7
+	local maxChannel = 7 --10 -- NOTE : this must be increased for newer versions.
 	local channel = 1
 	
 	if track then
