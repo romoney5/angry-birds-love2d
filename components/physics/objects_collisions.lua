@@ -350,11 +350,13 @@ end
 ]]
 
 function destroyBreakableJoints(name, force)
-	local joint = objects.joint[name]
-	
-	if not joint.joint:isDestroyed() and joint.breakable then
-		if force >= joint.breakForce then
-			destroyJoint(name)
+	for _, joint in pairs(objects.joints) do
+		if joint.end1 == name or joint.end2 == name then
+			if not joint.joint:isDestroyed() and joint.breakable then
+				if force >= joint.breakForce then
+					destroyJoint(joint.name)
+				end
+			end
 		end
 	end
 end
