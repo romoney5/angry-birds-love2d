@@ -6,8 +6,6 @@ function removeObject(name)
 	if obj and obj.body then
 		obj.body:destroy()
 	end
-	
-	-- objects.world[name] = nil
 end
 
 function destroyJoint(name)
@@ -116,6 +114,13 @@ function setMaterial(object, material)
 		objects.world[object].materialName = material
 	else
 		objects.world[object].material = material
+	end
+end
+
+function setFilterMask(object, m)
+	local obj = objects.world[object]
+	if obj then
+		obj.fixture:setFilterData(1, m, 0)
 	end
 end
 
@@ -320,12 +325,38 @@ function getScale(name)
 end
 
 --5.0.1
-function addObjectUpdateFunction(name, func)
-	return
+--[[
+function addObjectUpdateFunction(name, f)
+	if object.updateFunction == nil then
+		object.updateFunction = f
+    elseif _G.type(object.updateFunction) == "table" and not contains(object.updateFunction, f) then
+        _G.table.insert(object.updateFunction, f)
+	elseif _G.type(r0_205.updateFunction) == "function" then
+		local old = object.updateFunction
+		object.updateFunction = {old, f}
+		local meta = {
+		  __call = function(fl, o, dt)
+			for _, v in _G.ipairs(fl) do
+			  v(o, dt)
+			end
+		  end
+		}
+		_G.setmetatable(object.updateFunction, meta)
+	else
+		_G.assert(false)
+	end
+	gameUpdateFunctions[object.name] = object.updateFunction
 end
+]]
 
 function destroyBreakableJoints(name, force)
-	return
+	local joint = objects.joint[name]
+	
+	if not joint.joint:isDestroyed() and joint.breakable then
+		if force >= joint.breakForce then
+			destroyJoint(name)
+		end
+	end
 end
 
 
