@@ -271,7 +271,8 @@ function RovioAccount.shouldCloudOverwriteLocalSave()
 end
 
 --rovio account can prevent settings.lua from saving properly
-RovioAccount = nil
+--but is also required in later (mobile) versions
+-- RovioAccount = nil
 
 CloudSync = {}
 
@@ -341,6 +342,29 @@ function screenToPhysicsTransform(x, y)
 	local wx, wy = screenToWorldTransform(x, y)
 	local px, py = worldToPhysicsTransform(wx, wy)
 	return px, py
+end
+
+function checkObjectBounds(x, y, width, height, angle, cursorX, cursorY)	 
+	local cx = cursorX - x
+	local cy = cursorY - y
+	
+	local tcx = cx * _G.math.cos(angle) + cy * _G.math.sin(angle)
+	local tcy = -cx * _G.math.sin(angle) + cy * _G.math.cos(angle)
+
+	local halfWidth = width * 0.5
+	local halfHeight = height * 0.5
+	
+	local left = -halfWidth
+	local top = -halfHeight
+	local right = halfWidth
+	local bottom = halfHeight
+	
+	if tcx >= left and tcx < right then
+		if tcy >= top and tcy < bottom then
+			return true
+		end
+	end
+	return false
 end
 
 --5.1.0

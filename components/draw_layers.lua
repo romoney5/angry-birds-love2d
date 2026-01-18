@@ -14,6 +14,7 @@ function removeThemeSprite(name, layerNumber)
 end
 
 function modifyThemeSprite(name, x, y, scaleX, scaleY, angle, layerNumber)
+	if not themeSpriteObjects[name] then return end
 	themeSpriteObjects[name].x = x
 	themeSpriteObjects[name].y = y
 	themeSpriteObjects[name].scaleX = scaleX
@@ -59,7 +60,7 @@ function drawLayer(layer, yoffset)
 	
 	local px, py = res.getSpritePivot(sprite)
 	local w, h = res.getSpriteBounds(sprite)
-	local wScale = tempWorldScale or worldScale
+	local wScale = tempWorldScale or worldScale or 1
 	local autoScroll = -scrollFrequency * time / 16
 	local shakeX, shakeY = cameraShakeX or 0, cameraShakeY or 0
 	

@@ -5,6 +5,7 @@ physicsSimulationScale = 0
 function loadLevel(filename)
 	print("Loading level \""..filename..".lua\"...")
 
+	birdTrajectory = {{}, {}, {}}
 	trajectory = {{{}, {}, {}}}
 
 	if physicsWorld then physicsWorld:destroy() end --clear all the objects before continuing
@@ -57,6 +58,7 @@ function setPhysicsEnabled(enabled)
 end
 
 --lite
+
 function loadLevelFile(filename, date)
 	loadLevel(filename)
 end
@@ -64,4 +66,10 @@ end
 function getLoadStatus()
 	--0=not finished, 1 or 2=finished, 3=christmas?
 	return {status = 1}
+end
+
+--4.3.1
+
+function removeTemporaryLevel()--?
+	return
 end
