@@ -126,9 +126,11 @@ function convertImagePVR(data, filename)
 			rawdata = string.sub(data, headerSize + 1)
 			imagedata = love.image.newImageData(w, h, "rgba8", rawdata)
 		elseif format == 329221 then --?
-			rawdata = string.rep("\xFF", w * h * 16 / 8)
+			rawdata = string.sub(data, headerSize + 1)
+			imagedata = love.image.newImageData(w, h, "rgb565", rawdata)
+			-- rawdata = string.rep("\xFF", w * h * 16 / 8)
 			-- print(w, h)
-			imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
+			-- imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
 		elseif format == 0 and support.ETC1 then --pvrtc1
 			--hey.. that's etc1!
 			local filedata = love.filesystem.newFileData(data, "")
