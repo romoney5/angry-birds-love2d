@@ -118,9 +118,9 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 		-- if vanchor == "HCENTER" or hanchor == "HCENTER" then xpr = image.w/2 end
 		-- if vanchor == "VCENTER" or hanchor == "VCENTER" then ypr = image.h/2 end
 
+		love.graphics.push("all")
 		local r, g, b, a = love.graphics.getColor()
-		love.graphics.setColor(r * alpha, g * alpha, b * alpha, alpha)
-		local b1, b2 = love.graphics.getBlendMode()
+		love.graphics.setColor(r * alpha, g * alpha, b * alpha, a * alpha)
 		if nopma then love.graphics.setBlendMode("alpha") end
 
 		love.graphics.draw(
@@ -134,8 +134,7 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 			ox,					--x rotation pivot
 			oy)					--y rotation pivot
 		
-		love.graphics.setBlendMode(b1,b2)
-		love.graphics.setColor(r, g, b, a)
+		love.graphics.pop()
 	elseif image and image.items then --composprite used in later versions
 		res.drawCompoSprite(sprite,x,y)
 	end
