@@ -121,7 +121,7 @@ function love.update(dt)
 
 		love.graphics.setScissor()
 
-		dt2 = speedUpPre(math.min(dt, .4) * ((debugOpen or optionsOpen) and 0.2 or 1) * timeScale)
+		dt2 = speedUpPre(math.min(dt, .25) * ((debugOpen or optionsOpen) and 0.2 or 1) * timeScale)
 
 		local kp, kr, kh, cw = keyPressed, keyReleased, keyHold, cursor.wheel
 		if openPopups[1] or debugOpen or fmOpen or optionsOpen then
@@ -148,7 +148,7 @@ function love.update(dt)
 		if speedUpPost then speedUpPost() end
 
 		drawParticlesNative(true)
-		updateParticlesNative(dt, true)
+		updateParticlesNative(dt2, true)
 
 		if dmonitor then
 			local v = type(dmonitor) == "string" and _G[dmonitor] or (type(dmonitor)=="table" and dmonitor[1] and _G[dmonitor[1]] and dmonitor[2] and (_G[dmonitor[1]][dmonitor[2]] or "nil"))

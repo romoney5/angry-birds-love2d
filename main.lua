@@ -255,7 +255,7 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 			error("Could not load Lua file: "..filename.."\n"..tostring(lua))
 		else
 			print("Could not load Lua file: "..filename.."\n"..tostring(lua))
-			if not releaseBuild then
+			if enableDebug then
 				showPopup("Warning",
 						"Could not load Lua file: "..filename.."\n"..tostring(lua),
 						{
