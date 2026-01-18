@@ -240,53 +240,43 @@ function drawGameNative() --work in progress
 		end
 	end
 	
-	--[[
-		LAYER HIEARCHY 
-		
-		- objects (z_order <= 4)
-		- birds
-		- objects (z_order >= 5) 
-		- background sprites (the eagle)
-	
-	]]
-	
-	-- TODO : maybe shorten this.
-	local layers = {
-		{},
-		{},
-		{},
-		{}
-	}
-	
-	for i, v in pairs(objects.world) do
-		if not v.texture then
-			if v.z_order <= 4.0 then
-				if v.controllable ~= true then
-					table.insert(layers[1], 1, i)
-				else
-					table.insert(layers[2], 1, i)
-				end
-			end
-			
-			if v.z_order >= 5.0 then
-				table.insert(layers[3], 1, i)
-			end
-			
-			if v.isBackground then
-				table.insert(layers[4], 1, i)
-			end
-		end
-	end
-
-	--draw objects
-	for i = 1, #layers do
-		for k, v in _G.pairs(layers[i]) do
-			drawObject(objects.world[v])
-		end
-	end
+	drawSprites()
 	
 	--draw particles
 	drawParticlesNative()
+end
+
+function drawSprites()
+	local layers = { {}, {}, {}, {} }
+	
+	for k, v in pairs(objects.world) do
+		if not v.texture then
+			local lookup = { [false] = 0, [true] = 1 }
+			local index = 1 + lookup[v.controllable]
+			
+			if v.isBackground then
+				index = 4
+			elseif v.z_order > 4.0 then
+				index = 3
+			end
+			
+			table.insert(layers[index], { name = k, z_order = v.z_order or 0 })
+		end
+	end
+	
+	-- sort sprites based on depth
+	for i = 1, #layers do
+		table.sort(layers[i], function(a, b)
+			return a.z_order > b.z_order
+		end)
+	end
+	
+	-- draw object
+	for i = 1, #layers do
+		for k, v in ipairs(layers[i]) do
+			drawObject(objects.world[v.name])
+		end
+	end
 end
 
 function drawObject(v)

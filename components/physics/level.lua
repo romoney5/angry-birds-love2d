@@ -17,13 +17,6 @@ function loadLevel(filename)
 	loadedObjects = {}
 	loadLuaFileToObject(filename..".lua", this, loadedObjects)
 	setMaxTranslation(2)
-
-	if loadedObjects.world then
-		table.sort(loadedObjects.world, function(a, b)
-			return (a.z_order or 0) < (b.z_order or 0)
-		end)
-	end
-
 	restoreParticles()
 end
 
