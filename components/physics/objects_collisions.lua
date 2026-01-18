@@ -227,6 +227,31 @@ function getRayCastedObjects(info)
 	end
 end
 
+function getIntersectingObjects(info)
+	local x, y = info.x, info.y
+	local left, right = info.left, info.right
+	local up, down = info.up, info.down
+    
+    local hits = {}
+        
+	physicsWorld:queryBoundingBox(x - left, y - up, x + right, y + down, function(fixture)
+		local body = fixture:getBody()
+		local userdata = body and body:getUserData()
+		local name = userdata and userdata.name
+		
+		if name then
+			table.insert(hits, {
+				name = name,
+				fixture = fixture
+			})
+		end
+		
+		return true
+	end)
+	
+	return hits
+end
+
 function setObjectParameter(object, parameter, value)
 	local obj = objects.world[object]
 	if obj then
