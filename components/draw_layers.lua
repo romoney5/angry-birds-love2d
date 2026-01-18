@@ -120,7 +120,12 @@ function drawBackgroundNative()
 		--theme rect colors
 		love.graphics.push("all")
 		if layercolors[layernum - 1] then
-			love.graphics.setColor(layercolors[layernum - 1])
+			local colors = layercolors[layernum - 1]
+			love.graphics.setColor(colors)
+			if layer.rect then
+				local a = colors[4] or layer.rect.a
+				drawRect(layer.rect.r * a, layer.rect.g * a, layer.rect.b * a, a, 0, 0, screenWidth, screenHeight)
+			end
 		end
 
 		drawLayer(layer)
