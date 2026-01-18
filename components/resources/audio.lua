@@ -53,7 +53,7 @@ function res.playAudio(audio, volume, loop, track)
 			local channelFound = false
 			
 			while availableChannel <= #audiochannels do
-				if #audiochannels[availableChannel] <= maxChannel then
+				if #audiochannels[availableChannel] < maxChannel then
 					channel = availableChannel
 					channelFound = true
 					break
