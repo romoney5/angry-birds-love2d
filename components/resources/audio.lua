@@ -13,11 +13,11 @@ function res.createAudioOutput(channels,bitrate,samplerate)
 	end
 end
 
-function res.createAudio(path,name)
+function res.createAudio(path, name, streamed)
 	audios[name] = datapath.."/"..path
 end
 
-function res.createCompositeAudio(name,list) --star wars.. not sure why they had to repeat the same audio 59 times
+function res.createCompositeAudio(name, list) --absw.. not sure why they had to repeat the same audio 59 times
 	audios[name] = audios[list[1]]
 end
 
@@ -25,6 +25,7 @@ function res.isAudioPlaying(audio)
 	if audios[audio] and cachedaudios[audio] and cachedaudios[audio] ~= 0 then
 		return cachedaudios[audio]:isPlaying()
 	end
+
 	return false
 end
 
@@ -37,6 +38,7 @@ function res.playAudio(audio, volume, loop, track)
 	
 	local audioStreamAllowed = true
 	local maxChannel = 7 --10 -- NOTE : this must be increased for newer versions.
+	maxChannel = 10
 	local channel = 1
 	
 	if track then
@@ -63,6 +65,7 @@ function res.playAudio(audio, volume, loop, track)
 		end
 	end
 	
+	--actually load audios when it's time to play them
 	if not cachedaudios[audio] then
 		if not checkDirectory(audios[audio]) then
 			cachedaudios[audio] = 0
