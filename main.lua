@@ -468,7 +468,9 @@ function love.load()
 	
 	--load only certain properties from config.lua
 	local config = {}
-	if not loadLuaFileToObject("config.lua", config, nil, true) then loadLuaFileToObject(datapath.."/config.lua", config, nil, true) end
+	local datapath_base, _ = resolvePath(datapath.."/..")
+
+	if not loadLuaFileToObject(datapath_base.."/config.lua", config, nil, true) then loadLuaFileToObject(datapath.."/config.lua", config, nil, true) end
 	imagePath = config.imagePath or imagePath
 	fontPath = config.fontPath or fontPath
 	audioPath = config.audioPath or audioPath
@@ -517,35 +519,14 @@ function love.load()
 	loadLuaFileToObject(scriptPath.."/episodes.lua", this, "episodes", true)
 	loadLuaFileToObject(scriptPath.."/cutscenes.lua", this, "cutscenes", true)
 
-	-- local sfp = selectFontProfile
-	-- function selectFontProfile(...)
-	-- 	-- deviceModel = "windows"
-	-- 	local font = sfp and sfp(...)
-	-- 	if font and not findCaseInsensitive(datapath.."/"..og_fontPath.."/"..font) then
-	-- 		font = "1024x768" --just default to the pc version
-	-- 	end
-	-- 	return font
-	-- end
-
-	-- local sap = selectAssetProfile
-	-- function selectAssetProfile(...)
-	-- 	local asset = sap and sap(...)
-	-- 	if asset and (not checkDirectory(datapath.."/"..og_imagePath.."/"..asset) and not checkDirectory(datapath.."/"..imagePath.."/"..asset)) then
-	-- 		asset = sap and string.upper(sap(...)) --try uppercase version then..
-	-- 	end
-		
-	-- 	if not asset or asset == "" or (not findCaseInsensitive(datapath.."/"..og_imagePath.."/"..asset) and not findCaseInsensitive(datapath.."/"..imagePath.."/"..asset)) then
-	-- 		asset = "1024x768"
-	-- 	end
-	-- 	return asset
-	-- end
-
 	--start by setting the background to white and using premultiplied alpha
 	setBGColor(255, 255, 255)
 	love.graphics.setBlendMode("alpha", "premultiplied")
 
 	--set an icon
-	if checkDirectory(compsPath.."/icon.png") then
+	if checkDirectory(datapath_base.."/Icon.png") then
+		love.window.setIcon(love.image.newImageData(datapath_base.."/Icon.png"))
+	elseif checkDirectory(compsPath.."/icon.png") then
 		love.window.setIcon(love.image.newImageData(compsPath.."/icon.png"))
 	end
 
