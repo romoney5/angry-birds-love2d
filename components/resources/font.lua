@@ -156,16 +156,23 @@ function drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_scale)
 	
 	love.graphics.setColor(1 * alpha, 1 * alpha, 1 * alpha, alpha)
 	love.graphics.translate(textFloor(self.x * hs + x), textFloor(self.y * hs + y))
+
+	--spans multiple lines
 	if self.clipped then
 		local font = fonts[drawfont]
 
-		love.graphics.translate(0, textFloor(-res.getFontLeading() * (#self.lines - 1) / 2))
+		--scaling goes above everything else
+		love.graphics.scale((scale_x or 1) * self.scaleX * hs, (scale_y or 1) * self.scaleY * hs)
 
 		for i, line in ipairs(self.lines) do
 			love.graphics.push()
-			love.graphics.scale((scale_x or 1) * self.scaleX * hs, (scale_y or 1) * self.scaleY * hs)
+
+			love.graphics.translate(0, textFloor(-res.getFontLeading() * (#self.lines - 1) / 2))
 			res.drawString(line.group, line.text, 0, 0, line.hanchor, line.vanchor)
+
 			love.graphics.pop()
+
+			--go to the next line
 			love.graphics.translate(0, textFloor(res.getFontLeading()))
 		end
 	else
