@@ -20,7 +20,7 @@ function destroyJoint(name)
 	objects.joints[name] = nil
 end
 
-function removeJoints()
+function removeJoints() -- TODO : find an optimal solution 
 	if g_jointsToDestroy then
 		for jointName, joint in pairs(objects.joints) do
 			if not objects.world[joint.end1] or not objects.world[joint.end2] then
