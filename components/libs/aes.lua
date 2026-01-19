@@ -158,12 +158,15 @@ function AES.FindKey(ciphertext, keys, iv)
 
     --default key was not found yet
     for i, key in pairs(keys) do
-        if key ~= "" and AES.Decrypt(ciphertext, key, iv) then
-            --no errors were found
-            keys.DefaultKey = key
-            print("AES.FindKey: selected "..i.." key")
+        if key ~= "" then
+            local dec = AES.Decrypt(ciphertext, key, iv)
+            if dec and identifySrc(dec) ~= "binary" then
+                --no errors were found
+                keys.DefaultKey = key
+                print("AES.FindKey: selected "..i.." key")
 
-            return key
+                return key
+            end
         end
     end
 end

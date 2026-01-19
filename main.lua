@@ -96,9 +96,10 @@ end
 --cache decrypted files in the save directory to speed up loading dramatically
 local ALLOW_LUA_CACHE = true
 
-local function identifySrc(src)
+function identifySrc(src)
 	--lzma support?
 	if src:sub(1, 6) == "7z\xbc\xaf\x27\x1c" then return "7z" end
+	if src:sub(2, 5) == "LZMA" then return "lzma" end
 	if src:sub(1, 4) == "\27Lua" then return "lua" end
 	if src:sub(1, 64):find("[\128-\255]") then return "binary" end
 	return "plain" --what we want
@@ -144,7 +145,7 @@ function decryptSrc(filename, src)
 		end
 	end
 	
-	if kind == "7z" then --looks like it's 7-zipped too
+	if kind == "7z" or kind == "lzma" then --looks like it's 7-zipped too
 		--because 7-zip sucks we have to do file operations first
 		local dec_filename = temp_file()
 		
@@ -187,10 +188,14 @@ function makeChunk(filename, env)
 	end
 
 	if not src then
-		return nil, "No source"
+		return nil, nil, "No source"
 	end
 
 	local kind = identifySrc(src)
+
+	if kind == "lzma" then
+		error("LZMA is not supported currently.\nTried loading "..tostring(filename))
+	end
 	
 	if kind == "lua" then --it's bytecode!
 		print("Loading compiled Lua \""..filename.."\"...")
