@@ -134,9 +134,53 @@ end
 
 function setFilterMask(object, m)
 	local obj = objects.world[object]
-	if obj then
-		obj.fixture:setFilterData(1, m, 0)
+	if obj and obj.fixture then
+		local categories, mask, group = obj.fixture:getFilterData()
+		--obj.fixture:setFilterData(categories, m, group)
 	end
+end
+
+function setFilterCategory(object, c) -- TODO : find the right filter categories (egg defender has a block mask for pigs)
+	local obj = objects.world[object]
+	if obj and obj.fixture then
+		local categories, mask, group = obj.fixture:getFilterData()
+		--obj.fixture:setFilterData(c, mask, group)
+	end
+end
+
+function getTrajectory(name)
+	local trajectoryTable = {}
+	local body = objects.world[name].body
+	
+	local startX = body:getX()
+	local startY = body:getY()
+	local xVel, yVel = body:getLinearVelocity()
+	
+	local timeStep = 1/60
+	local velocityScale = 1.506
+	local maxVel = b2_maxTranslation / velocityScale
+	local gravity = worldgravity.y
+	
+	local velocityMagnitude = math.sqrt(xVel * xVel + yVel * yVel)
+	if maxVel < velocityMagnitude then
+        xVel = xVel / velocityMagnitude * maxVel
+        yVel = yVel / velocityMagnitude * maxVel
+	end
+	
+	local currentTime = 0
+	for i = 1, 300 do
+		local x = startX + xVel * currentTime
+		local y = startY + yVel * currentTime + 
+        (currentTime * currentTime * gravity * timeStep) +
+        (gravity * currentTime * timeStep)
+		
+		
+		local point = {x = x, y = y, t = currentTime}
+		table.insert(trajectoryTable, math.floor(currentTime) + 1, point)
+		currentTime = currentTime + timeStep
+	end
+	
+	return trajectoryTable
 end
 
 function setTexture(object, texture)
@@ -430,11 +474,12 @@ function physicsBeginContact(obj1, obj2, contact)
 		
 		local currentScore = scoreTable.blocks.score
 		
+		local ignoreAllDamage = o1.ignoreAllDamage or o2.ignoreAllDamage
 		local damage = 0
 		local block1Destroyed = true
 		if o2.strength then
 			local defence = o2.defence or 0
-			if linearForce < defence or o2.defence >= 1000 then
+			if linearForce < defence or o2.defence >= 1000 or ignoreAllDamage then
 				block1Destroyed = false
 			else
 				local finalDamage = linearForce - defence
@@ -449,7 +494,7 @@ function physicsBeginContact(obj1, obj2, contact)
 		local block2Destroyed = true
 		if o1.strength then
 			local defence = o1.defence or 0
-			if linearForce < defence or o1.defence >= 1000 then
+			if linearForce < defence or o1.defence >= 1000 or ignoreAllDamage then
 				block2Destroyed = false
 			else
 				local finalDamage = linearForce - defence
@@ -522,7 +567,7 @@ function physicsBeginContact(obj1, obj2, contact)
 		local effectiveDamage = linearForce * damageMultiplier
 		local damage = 0
 		
-		if objects.world[block.name] then
+		if objects.world[block.name] and block.ignoreAllDamage ~= true then
 			if block.strength then
 				local damageDealt = effectiveDamage
 				if block.defence then
