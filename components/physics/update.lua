@@ -75,7 +75,6 @@ function updatePhysics(dt)
 
 	if removeBlocks then
 		removeBlocks()
-		removeJoints()
 	end
 	
 	hasAwakeObjects = false

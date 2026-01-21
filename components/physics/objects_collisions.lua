@@ -5,6 +5,7 @@ function removeObject(name)
 
 	if obj and obj.body then
 		obj.body:destroy()
+		objects.world[name] = nil -- DO NOT REMOVE THIS!!! 
 	end
 	
 	removeJoints()
@@ -20,13 +21,15 @@ function destroyJoint(name)
 	objects.joints[name] = nil
 end
 
-function removeJoints() -- TODO : find an optimal solution 
+function removeJoints()
 	if g_jointsToDestroy then
 		for jointName, joint in pairs(objects.joints) do
 			if not objects.world[joint.end1] or not objects.world[joint.end2] then
-				table.insert(g_jointsToDestroy, jointName)
+				destroyJointDeferred(jointName)
+				print(joint.end1, joint.end2)
 			end
 		end
+		
 		for _, jointName in ipairs(g_jointsToDestroy) do
 			destroyJoint(jointName)
 		end

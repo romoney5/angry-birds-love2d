@@ -256,7 +256,7 @@ function drawSprites()
 			
 			if v.isBackground then
 				index = 4
-			elseif v.z_order > 4.0 then
+			elseif v.z_order > 4.0 or v.z_order == 0 then
 				index = 3
 			end
 			
@@ -267,7 +267,7 @@ function drawSprites()
 	-- sort sprites based on depth
 	for i = 1, #layers do
 		table.sort(layers[i], function(a, b)
-			return a.z_order > b.z_order
+			return a.z_order < b.z_order
 		end)
 	end
 	
