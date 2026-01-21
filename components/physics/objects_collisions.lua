@@ -149,7 +149,7 @@ function setFilterCategory(object, c) -- TODO : find the right filter categories
 	local obj = objects.world[object]
 	if obj and obj.fixture then
 		local categories, mask, group = obj.fixture:getFilterData()
-		--obj.fixture:setFilterData(c, mask, group)
+		obj.fixture:setFilterData(c, mask, group)
 	end
 end
 
@@ -464,6 +464,9 @@ function physicsBeginContact(obj1, obj2, contact)
 	if not objects.world[o1.name] or not objects.world[o2.name] then return end
 	solvePhysics()
 	
+	local contactPoint = contact:getPositions()
+	local contactNormal = contact:getNormal()
+	
 	if not o1.controllable and not o2.controllable then -- object to object collision
 		
 		local vx, vy = b1:getLinearVelocity()
@@ -522,12 +525,17 @@ function physicsBeginContact(obj1, obj2, contact)
 				m2 = math.floor((o2.strength + damage or -1) * 10) / 10})
 		end
 		
+		local relativeSpeed = linearForce * 6.0
+		
+		destroyBreakableJoints(o1.name, relativeSpeed)
+		destroyBreakableJoints(o2.name, relativeSpeed)
+		
 		--assert(damage >= 0, "damage < 0 "..o1.name..", "..o2.name)
 		damageDone = linearForce
 
 		local old_score = currentScore
 		
-		if blockCollision then blockCollision(o1.name, o2.name, linearForce, damageDone, 0, 0) end
+		if blockCollision then blockCollision(o1.name, o2.name, linearForce, damageDone, contactPoint, -contactNormal) end
 
 		if joystick and linearForce >= 6 then
 			joystick:setVibration(math.min(linearForce / 15, 1), math.min(linearForce / 15, 1), .1)
@@ -567,10 +575,12 @@ function physicsBeginContact(obj1, obj2, contact)
 		local birdMass = bird.body:getMass() * 100
 		local vx, vy = bird.body:getLinearVelocity()
 		
-		local linearForce = (_G.math.sqrt(vx * vx + vy * vy) * birdMass) / 10.0
+		local linearForce = (_G.math.sqrt(vx * vx + vy * vy) * birdMass) / 10.0 -- the factor is 60.0 in newer versions
 		
 		local effectiveDamage = linearForce * damageMultiplier
 		local damage = 0
+		
+		destroyBreakableJoints(block.name, linearForce)
 		
 		if objects.world[block.name] and block.ignoreAllDamage ~= true then
 			if block.strength then
@@ -589,6 +599,7 @@ function physicsBeginContact(obj1, obj2, contact)
 						
 						local overkillDamage
 						if bird.useLegacyCollisionPath then
+							--60.0 * (math.abs(newStrength) / birdMass) / effectiveDamage * 1.2 NEW
 							overkillDamage = ((-newStrength / birdMass) / effectiveDamage) * 10.0 * 1.75
 						else
 							overkillDamage = ((effectiveDamage - strength) / effectiveDamage) * velocityMultiplier
@@ -617,7 +628,7 @@ function physicsBeginContact(obj1, obj2, contact)
 				m2 = math.floor((o2.strength + damage or -1) * 10) / 10})
 		end
 		
-		if birdCollision then birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage), 0, 0, 0, 0) end
+		if birdCollision then birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage), contactPoint, contactNormal) end
 		if joystick and effectiveDamage >= 6 then
 			joystick:setVibration(math.min(effectiveDamage / 15, 1), math.min(effectiveDamage / 15, 1), .1)
 		end
@@ -640,7 +651,7 @@ function physicsBeginContact(obj1, obj2, contact)
 		
 		local force = (collisionVelocity * mass) / 10.0
 		
-		if birdCollision then birdCollision(o1.name, o2.name, force, 0,  0, 0, 0, 0) end
+		if birdCollision then birdCollision(o1.name, o2.name, force, 0, contactPoint, contactNormal) end
 	end
 	
 	--use deadBlocks table in non-pc versions
