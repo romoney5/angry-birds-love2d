@@ -140,8 +140,8 @@ end
 function setFilterMask(object, m)
 	local obj = objects.world[object]
 	if obj and obj.fixture then
-		local categories, mask, group = obj.fixture:getFilterData()
-		--obj.fixture:setFilterData(categories, m, group)
+		local categories, _, group = obj.fixture:getFilterData()
+		obj.fixture:setFilterData(categories, m, group)
 	end
 end
 

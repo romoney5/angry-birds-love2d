@@ -194,39 +194,6 @@ local textureShader = love.graphics.newShader([[
 function drawGameNative() --work in progress
 	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, 1)
 
-	--draw textures
-	for k, v in _G.pairs(objects.world) do
-		local texture = checkSprite(v.texture) --or blockTable.themes[currentTheme].texture
-		if not texture then --try to find based on a png name
-			texture = findSpriteByPNG(v.texture)
-		end
-		
-		if texture then
-			love.graphics.push()
-			local b1, b2 = love.graphics.getBlendMode()
-			love.graphics.setBlendMode("alpha", "alphamultiply")
-			
-			local textureImage = texture.spsh
-			textureImage:setWrap("repeat", "repeat")
-			
-			textureShader:send("textureMask", textureImage)
-			
-			local w, h = textureImage:getDimensions()
-			textureShader:send("textureDimensions", {w, h})
-			
-			textureShader:send("worldScale", worldScale * displayScale * love.graphics.getDPIScale())
-			textureShader:send("camera", {screen.left, screen.top})
-			
-			love.graphics.setShader(textureShader)
-			
-			drawObject(v)
-			
-			love.graphics.setBlendMode(b1, b2)
-			love.graphics.setShader()
-			love.graphics.pop()
-		end
-	end
-
 	--trajectories (thanks again halo)
 	local trSprites = {}
 	for i = 1, 3 do trSprites[i - 1] = "TRAIL_WHITE_"..i end
@@ -250,18 +217,16 @@ function drawSprites()
 	local layers = { {}, {}, {}, {} }
 	
 	for k, v in pairs(objects.world) do
-		if not v.texture then
-			local lookup = { [false] = 0, [true] = 1 }
-			local index = 1 + lookup[v.controllable]
-			
-			if v.isBackground then
-				index = 4
-			elseif v.z_order > 4.0 or v.z_order == 0 then
-				index = 3
-			end
-			
-			table.insert(layers[index], { name = k, z_order = v.z_order or 0 })
+		local lookup = { [false] = 0, [true] = 1 }
+		local index = 1 + lookup[v.controllable]
+		
+		if v.isBackground then
+			index = 4
+		elseif v.z_order > 4.0 or v.z_order == 0 then
+			index = 3
 		end
+		
+		table.insert(layers[index], { name = k, z_order = v.z_order or 0 })
 	end
 	
 	-- sort sprites based on depth
@@ -274,14 +239,45 @@ function drawSprites()
 	-- draw object
 	for i = 1, #layers do
 		for k, v in ipairs(layers[i]) do
-			drawObject(objects.world[v.name])
+			local obj = objects.world[v.name]
+			local texture = checkSprite(obj.texture) --or blockTable.themes[currentTheme].texture
+			if not texture then --try to find based on a png name
+				texture = findSpriteByPNG(obj.texture)
+			end
+			
+			if texture then
+				love.graphics.push()
+				local b1, b2 = love.graphics.getBlendMode()
+				love.graphics.setBlendMode("alpha", "alphamultiply")
+				
+				local textureImage = texture.spsh
+				textureImage:setWrap("repeat", "repeat")
+				
+				textureShader:send("textureMask", textureImage)
+				
+				local w, h = textureImage:getDimensions()
+				textureShader:send("textureDimensions", {w, h})
+				
+				textureShader:send("worldScale", worldScale * displayScale * love.graphics.getDPIScale())
+				textureShader:send("camera", {screen.left, screen.top})
+				
+				love.graphics.setShader(textureShader)
+				
+				drawObject(obj)
+				
+				love.graphics.setBlendMode(b1, b2)
+				love.graphics.setShader()
+				love.graphics.pop()
+			else
+				drawObject(obj)
+			end
 		end
 	end
 end
 
 function drawObject(v)
 	if v.visible == false then return end
-
+	
 	local x, y = physicsToWorldTransform(v.x, v.y)
 	love.graphics.push()
 
