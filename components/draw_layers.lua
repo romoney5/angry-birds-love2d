@@ -222,7 +222,7 @@ function drawSprites()
 		
 		if v.isBackground then
 			index = 4
-		elseif v.z_order > 4.0 or v.z_order == 0 then
+		elseif v.z_order > 4.0 or (v.z_order == 0 and v.body:getType() == "dynamic") then
 			index = 3
 		end
 		
