@@ -213,54 +213,62 @@ function drawGameNative() --work in progress
 	drawParticlesNative()
 end
 
+local renderList
 function drawSprites()
-    local renderList = {}
-    for z, objects in pairs(zOrderedObjects) do
-        for _, obj in ipairs(objects) do
-            table.insert(renderList, obj)
-        end
-    end
-    
-    -- Sort the flat list by z_order
-    table.sort(renderList, function(a, b) 
-        return a.z_order < b.z_order 
-    end)
+	if not objectsSorted then
+		renderList = {}
+		for z, objects in pairs(zOrderedObjects) do
+			for _, obj in ipairs(objects) do
+				table.insert(renderList, obj)
+			end
+		end
+		
+		-- sort the flat list by z_order
+		table.sort(renderList, function(a, b) 
+			return a.z_order < b.z_order 
+		end)
+		objectsSorted = true
+	end
 
 	for k, v in ipairs(renderList) do
 		local obj = objects.world[v.name]
-		if obj then
-			local texture = checkSprite(obj.texture) --or blockTable.themes[currentTheme].texture
-			if not texture then --try to find based on a png name
-				texture = findSpriteByPNG(obj.texture)
-			end
-			
-			if texture then
-				love.graphics.push()
-				local b1, b2 = love.graphics.getBlendMode()
-				love.graphics.setBlendMode("alpha", "alphamultiply")
-				
-				local textureImage = texture.spsh
-				textureImage:setWrap("repeat", "repeat")
-				
-				textureShader:send("textureMask", textureImage)
-				
-				local w, h = textureImage:getDimensions()
-				textureShader:send("textureDimensions", {w, h})
-				
-				textureShader:send("worldScale", worldScale * displayScale * love.graphics.getDPIScale())
-				textureShader:send("camera", {screen.left, screen.top})
-				
-				love.graphics.setShader(textureShader)
-				
-				drawObject(obj)
-				
-				love.graphics.setBlendMode(b1, b2)
-				love.graphics.setShader()
-				love.graphics.pop()
-			else
-				drawObject(obj)
-			end
+		if not obj then
+			goto continue
 		end
+		
+		local texture = checkSprite(obj.texture) --or blockTable.themes[currentTheme].texture
+		if not texture then --try to find based on a png name
+			texture = findSpriteByPNG(obj.texture)
+		end
+		
+		if texture then
+			love.graphics.push()
+			local b1, b2 = love.graphics.getBlendMode()
+			love.graphics.setBlendMode("alpha", "alphamultiply")
+			
+			local textureImage = texture.spsh
+			textureImage:setWrap("repeat", "repeat")
+			
+			textureShader:send("textureMask", textureImage)
+			
+			local w, h = textureImage:getDimensions()
+			textureShader:send("textureDimensions", {w, h})
+			
+			textureShader:send("worldScale", worldScale * displayScale * love.graphics.getDPIScale())
+			textureShader:send("camera", {screen.left, screen.top})
+			
+			love.graphics.setShader(textureShader)
+			
+			drawObject(obj)
+			
+			love.graphics.setBlendMode(b1, b2)
+			love.graphics.setShader()
+			love.graphics.pop()
+		else
+			drawObject(obj)
+		end
+		
+		::continue::
 	end
 end
 --[[

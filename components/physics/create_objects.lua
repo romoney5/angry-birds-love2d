@@ -261,6 +261,7 @@ function addObjectToRenderQueue(name)
 	local z = math.floor(obj.z_order)
 	zOrderedObjects[z] = zOrderedObjects[z] or {}
 	table.insert(zOrderedObjects[z], {name = name, z_order = obj.z_order})
+	objectsSorted = false
 end
 
 --absw
