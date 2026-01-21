@@ -22,6 +22,7 @@ end
 function clearParticles()
 	particles = {}
 	particleAmount = 0
+	restoreParticles()
 end
 
 function drawMenuParticlesInAdvance() --what is it with particles

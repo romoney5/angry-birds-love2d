@@ -17,7 +17,6 @@ function loadLevel(filename)
 	loadedObjects = {}
 	loadLuaFileToObject(filename..".lua", this, loadedObjects)
 	setMaxTranslation(2)
-	restoreParticles()
 end
 
 function saveLevel(filename)
