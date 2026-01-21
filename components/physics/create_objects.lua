@@ -139,9 +139,11 @@ function updateObjectMass(name)
 	end
 end
 
-local CATEGORY_STATIC = 2
-local CATEGORY_BACKGROUND = 3
-local CATEGORY_NORMAL = 1
+local CATEGORY_IMMOVABLE = 0x0001
+local CATEGORY_SENSOR = 0x0002
+local CATEGORY_BLOCK = 0x0004
+local CATEGORY_BIRD = 0x0008
+local CATEGORY_EAGLE = 0x0010
 
 function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
 	local verts = polyverts
@@ -169,9 +171,10 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 	obj.fixture:setRestitution(restitution)
 	obj.fixture:setFriction(friction)
 	obj.fixture:setUserData(obj)
+	obj.fixture:setCategory(CATEGORY_BLOCK)
 	
-	if collision ~= true then
-		--obj.fixture:setFilterData(1, 0, 0)
+	if collision ~= false then
+		obj.fixture:setCategory(CATEGORY_SENSOR)
 	end
 
 	obj.body:setAngularDamping(2)
@@ -193,13 +196,18 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 	obj.shape = love.physics.newRectangleShape(w, h)
 	obj.fixture = love.physics.newFixture(obj.body, obj.shape, density)
 	
-	obj.fixture:setCategory(CATEGORY_NORMAL)
-	if density == 0 then
+	obj.fixture:setCategory(CATEGORY_BLOCK)
+	
+	if density == 0 then 
 		obj.density = 1
 		if name ~= "ground" then
-			obj.fixture:setCategory(CATEGORY_STATIC)
-			obj.fixture:setMask(CATEGORY_BACKGROUND)
+			obj.fixture:setCategory(CATEGORY_IMMOVABLE)
+			obj.fixture:setMask(CATEGORY_EAGLE)
 		end
+	end
+	
+	if controllable then
+		obj.fixture:setCategory(CATEGORY_BIRD)
 	end
 	
 	if collision ~= true then
@@ -239,13 +247,15 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	obj.body:setAngularDamping(2)
 
 	addObjectToRenderQueue(name)
-	
+
 	if tonumber(z_order) and z_order >= 999 then
 		obj.isBackground = true
-		obj.fixture:setCategory(CATEGORY_BACKGROUND)
-		obj.fixture:setMask(CATEGORY_STATIC)
+		obj.fixture:setCategory(CATEGORY_EAGLE)
+		obj.fixture:setMask(CATEGORY_IMMOVABLE)
+	elseif controllable then
+		obj.fixture:setCategory(CATEGORY_BIRD)
 	else
-		obj.fixture:setCategory(CATEGORY_NORMAL)
+		obj.fixture:setCategory(CATEGORY_BLOCK)
 	end
 
 	--set type
