@@ -176,7 +176,7 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 
 	obj.body:setAngularDamping(2)
 
-	if not tonumber(z_order) then objects.world[name].z_order = 0 end
+	addObjectToRenderQueue(name)
 
 	--set type
 	obj.type = "polygon"
@@ -212,7 +212,7 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 	
 	obj.body:setAngularDamping(2)
 
-	if not tonumber(z_order) then objects.world[name].z_order = 0 end
+	addObjectToRenderQueue(name)
 
 	--set type
 	obj.type = "box"
@@ -238,7 +238,7 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 
 	obj.body:setAngularDamping(2)
 
-	if not tonumber(z_order) then objects.world[name].z_order = 0 end
+	addObjectToRenderQueue(name)
 	
 	if tonumber(z_order) and z_order >= 999 then
 		obj.isBackground = true
@@ -252,6 +252,15 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	obj.type = "circle"
 
 	updateObjectMass(name)
+end
+
+function addObjectToRenderQueue(name)
+	local obj = objects.world[name]
+	obj.z_order = obj.z_order or 0
+	
+	local z = math.floor(obj.z_order)
+	zOrderedObjects[z] = zOrderedObjects[z] or {}
+	table.insert(zOrderedObjects[z], {name = name, z_order = obj.z_order})
 end
 
 --absw

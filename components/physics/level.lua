@@ -15,6 +15,7 @@ function loadLevel(filename)
 	physicsWorld:setCallbacks(physicsBeginContact, nil, nil, nil)
 	collisionsList = {}
 	loadedObjects = {}
+	zOrderedObjects = {}
 	loadLuaFileToObject(filename..".lua", this, loadedObjects)
 	setMaxTranslation(2)
 end
