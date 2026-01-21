@@ -163,7 +163,7 @@ function getTrajectory(name)
 	
 	local timeStep = 1/60
 	local velocityScale = 1.506
-	local maxVel = b2_maxTranslation / velocityScale
+	local maxVel = b2_maxTranslation * 2 / velocityScale
 	local gravity = worldgravity.y
 	
 	local velocityMagnitude = math.sqrt(xVel * xVel + yVel * yVel)
