@@ -5,7 +5,9 @@ function removeObject(name)
 
 	if obj and obj.body then
 		obj.body:destroy()
-		objects.world[name] = nil -- DO NOT REMOVE THIS!!! 
+		if not obj.controllable then
+			objects.world[name] = nil -- DO NOT REMOVE THIS!!! 
+		end
 	end
 	
 	removeJoints()
