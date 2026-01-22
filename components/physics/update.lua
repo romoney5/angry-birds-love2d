@@ -126,10 +126,10 @@ function updatePhysics(dt)
 			end
 			
 			if applyForcesAtPhysicsStep then -- version check
-				if bDef.forceX ~= nil and bDef.forceY ~= nil then
-					applyForce(obj.name, bDef.forceX * obj.mass, bDef.forceY * obj.mass, obj.x, obj.y)
-				elseif obj.forceX ~= nil and obj.forceY ~= nil then
+				if obj.forceX ~= nil and obj.forceY ~= nil then
 					applyForce(obj.name, obj.forceX * obj.mass, obj.forceY * obj.mass, obj.x, obj.y)
+				elseif bDef.forceX ~= nil and bDef.forceY ~= nil then
+					applyForce(obj.name, bDef.forceX * obj.mass, bDef.forceY * obj.mass, obj.x, obj.y)
 				end
 			end
 			
