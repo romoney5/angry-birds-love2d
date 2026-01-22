@@ -525,7 +525,7 @@ function physicsBeginContact(obj1, obj2, contact)
 				m2 = math.floor((o2.strength + damage or -1) * 10) / 10})
 		end
 		
-		local relativeSpeed = linearForce * 6.0
+		local relativeSpeed = linearForce --* 6.0
 		
 		destroyBreakableJoints(o1.name, relativeSpeed)
 		destroyBreakableJoints(o2.name, relativeSpeed)

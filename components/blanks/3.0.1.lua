@@ -490,3 +490,35 @@ end
 function setNotificationCallback(callback)
 	return
 end
+-- seasons 4.2.0
+NativePlatformScore = {}
+
+function NativePlatformScore.getPerformanceScore()
+    return 100 
+end
+
+function NativePlatformScore.getMemoryScore()
+    return 100 
+end
+
+function createDynamicHandler(name)
+	local handler = {}
+	
+	function handler:addreq(...)
+		return 
+	end
+	
+	function handler:getRequirements(...)
+       return {} 
+    end
+	
+	function handler:delayrelease(...) end
+
+	function handler:load(...) end
+	function handler:release(...) end
+	function handler:isLoaded(...) return true end
+
+	if name == "dynamic" then _G.dynamic = handler end
+	
+	return handler
+end
