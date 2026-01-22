@@ -58,7 +58,7 @@ function createJoint(joint)
 		
 		newJoint = love.physics.newRevoluteJoint(obj1.body, obj2.body, anchorX, anchorY, collideConnected)
 		
-		joint.motorSpeed = motorSpeed or 0.0
+		joint.motorSpeed = math.rad(motorSpeed) or 0.0
 		joint.lowerLimit = lowerLimit or 0.0
 		joint.upperLimit = upperLimit or math.pi
 
@@ -85,7 +85,7 @@ function createJoint(joint)
 			collideConnected
 		)
 		
-		joint.motorSpeed = motorSpeed or 0.0
+		joint.motorSpeed = math.rad(motorSpeed) or 0.0
 		joint.lowerLimit = lowerLimit or 0.0
 		joint.upperLimit = upperLimit or 5.0
 
