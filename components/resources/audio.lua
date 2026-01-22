@@ -3,13 +3,16 @@ audiochannels = nil
 cachedaudios = {}
 audios = {}
 
-function res.createAudioOutput(channels,bitrate,samplerate)
+channelVolumes = {}
+
+function res.createAudioOutput(channels, bitrate, samplerate)
 	print("Created audio output: "..(channels == 1 and "Mono" or "Stereo")..", "..bitrate.."-bit, "..(samplerate / 1000).."kHz")
 	accurateAudioSpeed._hz = samplerate
 
 	audiochannels = {}
 	for i = 1, 10 do
 		table.insert(audiochannels, {})
+		channelVolumes[i] = 1
 	end
 end
 
@@ -22,8 +25,16 @@ function res.createCompositeAudio(name, list) --absw.. not sure why they had to 
 end
 
 function res.isAudioPlaying(audio)
-	if audios[audio] and cachedaudios[audio] and cachedaudios[audio] ~= 0 then
-		return cachedaudios[audio]:isPlaying()
+	if not audiochannels or not cachedaudios[audio] or cachedaudios[audio] == 0 then
+		return false
+	end
+
+	for i, channel in ipairs(audiochannels) do
+		for ii, sound in ipairs(channel) do
+			if sound.name == audio and sound.source:isPlaying() then
+				return true
+			end
+		end
 	end
 
 	return false
@@ -72,23 +83,30 @@ function res.playAudio(audio, volume, loop, track)
 			print("Audio file \""..audios[audio].."\" not found.")
 			return
 		end
-		cachedaudios[audio] = love.audio.newSource(audios[audio], loop and "stream" or "static") --for looping audio, stream from disk rather than in memory
+
+		--if the audio loops it's likely that it should be streamed from disk
+		cachedaudios[audio] = love.audio.newSource(audios[audio], loop and "stream" or "static")
 	end
 
 	if audioStreamAllowed then
-		cachedaudios[audio]:setLooping(loop or false)
+		local source = cachedaudios[audio]:clone()
+		source:setLooping(loop or false)
+
 		if accurateAudioSpeed.on then
-			cachedaudios[audio]:setPitch(audioSpeed * (accurateAudioSpeed._hz / (cachedaudios[audio]:getDuration("samples") / cachedaudios[audio]:getDuration("seconds"))))
+			source:setPitch(audioSpeed * (accurateAudioSpeed._hz / (cachedaudios[audio]:getDuration("samples") / cachedaudios[audio]:getDuration("seconds"))))
 		else
-			cachedaudios[audio]:setPitch(audioSpeed)
+			source:setPitch(audioSpeed)
 		end
 
 		if volume then
-			cachedaudios[audio]:setVolume(volume)
+			source:setVolume(volume * channelVolumes[channel])
+		else
+			source:setVolume(channelVolumes[channel])
 		end
-		res.stopAudio(audio)
-		cachedaudios[audio]:play()
-		table.insert(audiochannels[channel], audio)
+		
+		source:play()
+
+		table.insert(audiochannels[channel], {name = audio, source = source, volume = volume or 1})
 	end
 end
 
@@ -102,18 +120,40 @@ function ResourceManager.native_createAudio(path, name)
 end
 
 function res.stopAudio(audio)
-	if not cachedaudios[audio] or cachedaudios[audio] == 0 then
+	if not audiochannels or not cachedaudios[audio] or cachedaudios[audio] == 0 then
 		return
 	end
-	cachedaudios[audio]:stop()
+
+	for i, channel in ipairs(audiochannels) do
+		for ii, sound in ipairs(channel) do
+			if sound.name == audio then
+				local source = sound.source
+
+				source:stop()
+				source:release()
+
+				table.remove(channel, ii)
+
+				return
+			end
+		end
+	end
 end
 
-function res.setTrackVolume(vol,track)
-	audiovolume = vol
+function res.setTrackVolume(vol, track)
+	local channel = track + 1
+	channelVolumes[channel] = math.min(math.max(vol, 0), 1)
+
+	if audiochannels then
+		for i, sound in ipairs(audiochannels[channel]) do
+			sound.source:setVolume(sound.volume * vol)
+		end
+	end
 end
 
 function res.getTrackVolume(track)
-	return love.audio.getVolume()
+	local channel = track + 1
+	return channelVolumes[channel]
 end
 
 function res.stopAllAudio()
@@ -121,7 +161,7 @@ function res.stopAllAudio()
 
 	if audiochannels then
 		for k, _ in ipairs(audiochannels) do
-			audiochannels[k] = {}
+			table.clear(audiochannels[k])
 		end
 	end
 end

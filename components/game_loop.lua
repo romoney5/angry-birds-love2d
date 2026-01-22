@@ -2,7 +2,7 @@
 
 table.clear = table.clear or function(t) for i, v in pairs(t) do t[i] = nil end end
 
-local pausedaudios = {} --thanks love 11
+local pausedaudios = {}
 zoomLevel = 0
 wantedZoomLevel = 0
 local hasfocus = true
@@ -68,16 +68,17 @@ function love.update(dt)
 		end
 		
 		if audiochannels then
-			for _, c in ipairs(audiochannels) do
-				for i, v in ipairs(c) do
-					if cachedaudios[v]:isPlaying() ~= true then
-						table.remove(c, i)
+			for i, channel in ipairs(audiochannels) do
+				for ii, sound in ipairs(channel) do
+					local source = sound.source
+					if not source:isPlaying() then
+						source:release()
+
+						table.remove(channel, ii)
 					end
 				end
 			end
 		end
-
-		love.audio.setVolume(audiovolume)
 		
 		updateDisplayScale()
 

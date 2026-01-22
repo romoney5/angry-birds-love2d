@@ -38,8 +38,6 @@ maxWorldScale = 0
 physicsEnabled = false
 physicsWorld = nil
 
-audiovolume = 1
-
 openPopups = {}
 
 flurry = {}
