@@ -449,7 +449,85 @@ function destroyBreakableJoints(name, force)
 		end
 	end
 end
+--[[
+	this function is supposed to roughly estimate box2D's restitution
+	i commented it in its unfinished state, so feel free to work on it.
+	
+function postSolveBounce(o1, o2, contact)
+	local b1 = o1.body
+	local b2 = o2.body
+	local cx, cy = contact:getPositions()
+	
+	local function vec4(x, y, x1, y1)
+		local table = {x = x, y = y, x1 = x1, y1 = y1}
+		return table
+	end
+	
+	local function isStatic(b)
+		return b:getType() == "static"
+	end
 
+	if cx then
+		local nx, ny = contact:getNormal()
+		
+        local cmx, cmy = b1:getWorldCenter()
+        local cmx1, cmy1 = b2:getWorldCenter()
+		
+		local relativeVector = vec4(cx - cmx, cy - cmy, cx - cmx1, cy - cmy1)
+		
+        local velXa, velYa = b1:getLinearVelocity()
+        local velXb, velYb = b2:getLinearVelocity()
+        local w1, w2 = b1:getAngularVelocity(), b2:getAngularVelocity()
+		
+        local pointVelocity = vec4(velXa - w1 * relativeVector.y, 
+				velYa + w1 * relativeVector.x, 
+				velXb - w2 * relativeVector.y1, 
+				velYb + w2 * relativeVector.x1)
+		
+        local rvx, rvy = pointVelocity.x1 - pointVelocity.x, pointVelocity.y1 - pointVelocity.y
+        local velAlongNormal = rvx * nx + rvy * ny
+		
+		print(velAlongNormal, o1.name, o2.name)
+		
+		if velAlongNormal > -3.0 then -- velocity normal on hit
+			local inv_mass_a = isStatic(b1) and 0 or 1 / b1:getMass()
+			local inv_inertia_a = isStatic(b1) and 0 or 1 / b1:getInertia()
+			
+			local inv_mass_b = isStatic(b2) and 0 or 1 / b2:getMass()
+			local inv_inertia_b = isStatic(b2) and 0 or 1 / b2:getInertia()
+			
+			local relativeNormal_A = relativeVector.x * ny - relativeVector.y * nx
+            local relativeNormal_B = relativeVector.x1 * ny - relativeVector.y1 * nx
+			local kNormal = inv_mass_a + inv_mass_b + (relativeNormal_A ^ 2 * inv_inertia_a) 
+							+ (relativeNormal_B ^ 2 * inv_inertia_b)
+	
+            local restitution = math.max(o1.restitution, o2.restitution)
+            local normalImpulse = (-(1 + restitution) * velAlongNormal) / kNormal
+			
+			local tangentX, tangentY = -ny, nx
+			local relativeTangent_A = relativeVector.x * tangentY - relativeVector.y * tangentX
+            local relativeTangent_B = relativeVector.x1 * tangentY - relativeVector.y1 * tangentX
+			local kTangent = inv_mass_a + inv_mass_b + (relativeTangent_A ^ 2 * inv_inertia_a) 
+							+ (relativeTangent_B ^ 2 * inv_inertia_b)
+			
+            local velAlongTangent = rvx * tangentX + rvy * tangentY
+            local friction = math.sqrt(o1.friction * o2.friction)
+			local maxFriction = math.abs(normalImpulse) * friction
+            local tangentImpulse = math.max(-maxFriction, math.min(maxFriction, -velAlongTangent / kTangent))
+			
+			local forceX = (normalImpulse * nx) + (tangentImpulse * tangentX)
+			local forceY = (normalImpulse * ny) + (tangentImpulse * tangentY)
+			
+			b1:applyLinearImpulse(-forceX, -forceY)
+            b2:applyLinearImpulse(forceX, forceY)
+			
+            b1:applyAngularImpulse(-(relativeVector.x * forceY - relativeVector.y * forceX))
+            b2:applyAngularImpulse( (relativeVector.x1 * forceY - relativeVector.y1 * forceX))
+		end
+	
+	end
+end
+]]
 
 --vastly improved damage system, credits to halo
 
