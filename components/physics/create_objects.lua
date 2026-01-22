@@ -58,7 +58,7 @@ function createJoint(joint)
 		
 		newJoint = love.physics.newRevoluteJoint(obj1.body, obj2.body, anchorX, anchorY, collideConnected)
 		
-		joint.motorSpeed = math.rad(motorSpeed) or 0.0
+		joint.motorSpeed = motorSpeed or 0.0
 		joint.lowerLimit = lowerLimit or 0.0
 		joint.upperLimit = upperLimit or math.pi
 
@@ -66,15 +66,17 @@ function createJoint(joint)
 		joint.maxTorque = maxTorque or 10000.0
 		joint.limit = limit or false
 		
+        if joint.backAndForth then
+            joint.direction = 1
+			joint.motorSpeed = math.rad(joint.motorSpeed)
+        end
+		
 		newJoint:setMotorEnabled(joint.motor)
 		newJoint:setMotorSpeed(joint.motorSpeed)
 		newJoint:setMaxMotorTorque(joint.maxTorque)
 		newJoint:setLimitsEnabled(joint.limit)
 		newJoint:setLimits(joint.lowerLimit, joint.upperLimit)
 		
-        if joint.backAndForth then
-            joint.direction = 1
-        end
 	elseif type == 4 then --prismatic joint
 		local anchorX, anchorY = obj1.body:getWorldPoint(x1, y1)
 		
@@ -85,7 +87,7 @@ function createJoint(joint)
 			collideConnected
 		)
 		
-		joint.motorSpeed = math.rad(motorSpeed) or 0.0
+		joint.motorSpeed = motorSpeed or 0.0
 		joint.lowerLimit = lowerLimit or 0.0
 		joint.upperLimit = upperLimit or 5.0
 
@@ -93,15 +95,17 @@ function createJoint(joint)
 		joint.maxTorque = maxTorque or 10000.0
 		joint.limit = limit or true
 		
+        if joint.backAndForth then
+            joint.direction = 1
+			joint.motorSpeed = math.rad(joint.motorSpeed)
+        end
+		
 		newJoint:setMotorEnabled(joint.motor)
 		newJoint:setMotorSpeed(joint.motorSpeed)
 		newJoint:setMaxMotorForce(joint.maxTorque) --equivalent to setMaxMotorTorque?
 		newJoint:setLimitsEnabled(joint.limit)
 		newJoint:setLimits(joint.lowerLimit, joint.upperLimit)
 		
-        if joint.backAndForth then
-            joint.direction = 1
-        end
 	elseif type == 5 then --annihilation joint
 		local anchorAX, anchorAY = obj1.body:getWorldPoint(x1, y1)
 		local anchorBX, anchorBY = obj2.body:getWorldPoint(x2, y2)
