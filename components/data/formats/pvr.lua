@@ -131,8 +131,7 @@ function convertImagePVR(data, filename)
 			-- rawdata = string.rep("\xFF", w * h * 16 / 8)
 			-- print(w, h)
 			-- imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
-		elseif format == 0 and support.ETC1 then --pvrtc1
-			--hey.. that's etc1!
+		elseif format == 0 and support.ETC1 then --pvrtc1 or etc1
 			local filedata = love.filesystem.newFileData(data, "")
 			imagedata = love.image.newCompressedData(filedata)
 			-- print(filename)
@@ -157,7 +156,7 @@ function convertImagePVR(data, filename)
 	--shucks! guess an empty image will do
 	imagedata = imagedata or love.image.newImageData(w, h, nil, nil)
 
-	return imagedata
+	return imagedata, w, h
 end
 
 --https://github.com/powervr-graphics/Native_SDK/blob/master/framework/PVRCore/texture/PVRTDecompress.cpp

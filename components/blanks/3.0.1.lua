@@ -504,21 +504,93 @@ end
 function createDynamicHandler(name)
 	local handler = {}
 	
-	function handler:addreq(...)
+	local function load(group)
+		assert(profile)
+		if loadlist[group] then
+			for i, v in pairs(loadlist[group]) do
+				res.createSpriteSheet(imagePath.."/"..profile.."/"..v..".dat")
+			end
+		end
+	end
+	
+	function handler.addreq(...)
+		print("addreq")
+		for i, v in pairs{...} do
+			if type(v) == "table" then
+				for i, v in pairs(v) do
+					loadlist[i] = v
+				end
+			end
+		end
+		for i, v in pairs{...} do
+			if type(v) == "table" then
+				print(i..":")
+				for i, v in pairs(v) do
+					if type(v) == "table" then
+						print("", i..":")
+						for i, v in pairs(v) do
+							print("", "", i, v)
+						end
+					else
+						print("", i, v)
+					end
+				end
+			else
+				print(v)
+			end
+		end
 		return 
 	end
 	
-	function handler:getRequirements(...)
-       return {} 
+	function handler.getRequirements(...)
+		print("getRequirements")
+		return {} 
     end
 	
 	function handler:delayrelease(...) end
 
-	function handler:load(...) end
+	function handler.load(...)
+		profile = (selectAssetProfile and selectAssetProfile()) or (platform and platform.Profiles and platform.Profiles.selectAssetProfile and platform.Profiles.selectAssetProfile())
+		print("profile", profile)
+		print("loading", ...)
+		for i, v in pairs{...} do
+			if type(v) == "table" then
+				for i, v in pairs(v) do
+					load(v)
+				end
+			else
+				load(v)
+			end
+		end
+	end
 	function handler:release(...) end
 	function handler:isLoaded(...) return true end
 
-	if name == "dynamic" then _G.dynamic = handler end
+	_G[name] = handler
 	
 	return handler
 end
+
+function flashAnimationPreLoad()--?
+	return
+end
+
+function getCameraTopLeft()--?
+	return screen.top, screen.left
+end
+
+function setCameraViewport(a, b, c, d)--?
+	return
+end
+
+native.GetTimeStamp = {}
+
+function native.GetTimeStamp.fetchTimeStamp()--?
+	return 0
+end
+
+function native.GetTimeStamp.hasResult()
+	return false
+end
+
+cloudDomain = ""

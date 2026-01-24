@@ -420,8 +420,18 @@ local function loadSheet(sheet, usecomposprites)
 				--the file size also lines up, width x height x 2 (bytes per pixel) + 52 bytes of headers = filesize
 				--the headers and formats differ however
 				local data = love.filesystem.read(filename)
+				local pvr, w, h = convertImagePVR(data, filename)
 
-				lsheet.sheet = love.graphics.newImage(convertImagePVR(data, filename))
+				--pcall because love can throw an error anyways
+				local success = pcall(function()
+					lsheet.sheet = love.graphics.newImage(pvr)
+				end)
+				
+				if not success then
+					local rawdata = string.rep("\xFF", w * h * 16 / 8)--resultstr
+					local imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
+					lsheet.sheet = love.graphics.newImage(imagedata)
+				end
 			elseif endsWith(filename, ".webp") then
 				if not haswebp then
 					extensionlength = 5 + 4 --.webp + .png

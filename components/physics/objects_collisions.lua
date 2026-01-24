@@ -405,7 +405,7 @@ function getRayCastedObjects(info)
 		local hits = {}
 
 		physicsWorld:rayCast(x1, y1, x2, y2, function(fixture, x, y, xn, yn, fraction)
-			if fixture ~= obj.fixture then
+			if not obj or fixture ~= obj.fixture then
 				local body = fixture:getBody()
 				local userdata = body and body:getUserData()
 				local name = userdata and userdata.name

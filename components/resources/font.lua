@@ -59,7 +59,8 @@ function res.createBitmapFont(font, silent)
 			if endsWith(spritesheet, ".pvr") then
 				-- spritesheet = spritesheet..".png"
 				local data = love.filesystem.read(filepath)
-				spritesheet = love.graphics.newImage(convertImagePVR(data, spritesheet))
+				local pvr, w, h = convertImagePVR(data, spritesheet)
+				spritesheet = love.graphics.newImage(pvr)
 			else
 				spritesheet = love.graphics.newImage(filepath)
 			end

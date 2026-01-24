@@ -554,6 +554,7 @@ function love.load()
 		--print(debug.traceback())
 		--return rawget(_, i)
 	end})]]
+	useDynamicAssets = false
 	if createStartUpAssets then createStartUpAssets() end
 	if updateValues then updateValues() end
 
@@ -743,7 +744,7 @@ function getTimeDifferenceInSeconds(time1, time2)
 end
 
 function getTimeDifference(time1, time2)
-	time1, time2 = timeToStamp(time1), timeToStamp(time2)
+	time1, time2 = timeToStamp(time1) or 0, timeToStamp(time2) or 0
 	
 	return getStampTime(math.abs(time2 - time1))
 end
