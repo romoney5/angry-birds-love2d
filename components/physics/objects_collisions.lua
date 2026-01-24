@@ -161,9 +161,9 @@ function getTrajectory(name)
 	local startY = body:getY()
 	local xVel, yVel = body:getLinearVelocity()
 	
-	local timeStep = 1/60
+	local timeStep = 1/30
 	local velocityScale = 1.506
-	local maxVel = b2_maxTranslation * 2 / velocityScale
+	local maxVel = b2_maxTranslation / velocityScale
 	local gravity = worldgravity.y
 	
 	local velocityMagnitude = math.sqrt(xVel * xVel + yVel * yVel)
@@ -186,6 +186,156 @@ function getTrajectory(name)
 	end
 	
 	return trajectoryTable
+end
+
+-- RMF related stuff
+function updateForceAdder(object, dt)
+	
+	local body = object.body
+	
+	local isForceEnabled = true
+	if object.disableForce then
+		isForceEnabled = not object.disableForce
+	end
+	
+	if isForceEnabled then
+		if object.applyForceInterval then
+			if object.forceTime then
+				object.forceTime = object.forceTime - dt
+			else
+				object.forceTime = object.applyForceInterval
+			end
+			
+			if object.forceTime <= 0 then
+				object.forceTime = object.forceTime + object.applyForceInterval
+				
+				setSprite(object.name, object.spriteWhenForceApplied)
+				
+				local volume = object.soundWhenForceAppliedVolume or 1.0
+				local audio = object.soundWhenForceApplied
+				
+				if type(audio) == "table" then
+					audio = audio[math.random(1, #audio)]
+				end
+				
+				res.playAudio(audio, volume, false, 0)
+				
+			elseif object.forceTime < object.applyForceInterval * 0.9 then
+				local currentSprite = object.sprite
+				local sprite = object.damageSprite
+				
+				if sprite ~= currentSprite then
+					setSprite(object.name, sprite)
+				end
+			end
+		end
+		
+		local forceX = 0.0
+		local forceY = 0.0
+		local applyAsImpulse = object.forceTime and object.forceTime <= 0.0
+		
+		if object.forceRelative then
+			local forceRelative = object.forceRelative
+			if math.abs(forceRelative) > 0.0 then
+				local bodyAngle = body:getAngle()
+				forceX = math.cos(bodyAngle) * forceRelative
+				forceY = math.sin(bodyAngle) * forceRelative
+			end
+		else
+			local baseForce = object.force or 1.0 -- whatever this is???
+			if object.forceX then
+				forceX = baseForce * object.forceX
+			end
+			
+			if object.forceY then
+				forceY = baseForce * object.forceY
+			end
+		end
+		
+		if forceX ~= 0.0 or forceY ~= 0.0 then
+			local velX, velY = body:getLinearVelocity()
+						
+			if object.targetVelocity then
+				local maxVel = object.targetVelocity
+			
+				if maxVel <= math.abs(velX) then
+					if velX * forceX > 0.0 then
+						forceX = 0.0
+					end
+				end
+				
+				if maxVel <= math.abs(velY) then
+					if velY * forceY > 0.0 then
+						forceY = 0.0
+					end
+				end
+			end
+			
+			if body:getType() == "dynamic" then
+				body:setAwake(true)
+				
+				local centerX, centerY = body:getWorldCenter()
+				local mass = object.mass
+				local invMass = 1 / mass
+				local invInertia = 1 / body:getInertia()
+				local torque = centerX * forceY - centerY * forceX
+				
+				if applyAsImpulse then
+					local vx = forceX * invMass + velX
+					local vy = forceY * invMass + velY
+					
+					body:setLinearVelocity(vx, vy)
+					--body:applyAngularImpulse(torque * invInertia)
+				
+				else
+					applyForce(object.name, forceX * mass, forceY * mass, centerX, centerY)
+					--body:applyTorque(torque)
+				end
+			end
+		end
+	end
+end
+
+function updateFriction(object, dt)
+
+	local body = object.body
+	
+	local friction = object.friction
+	local velX, velY = body:getLinearVelocity()
+	--[[
+	if friction ~= 0.0 then
+		return applyForce(object.name, velX * friction, velY * friction, object.x, object.y)
+	end
+	]]
+	
+	local fx = 0.0
+	local fy = 0.0
+	
+	if object.frictionXRelative then
+		fx = object.frictionXRelative
+	end
+	
+	if object.frictionYRelative then
+		fy = object.frictionYRelative
+	end
+	
+	if fx == 0.0 and fy == 0.0 then return end
+	
+	local angle = body:getAngle()
+	local cosA = math.cos(angle)
+	local sinA = math.sin(angle)
+	
+	local determinant = (cosA * cosA) + (sinA * sinA)
+	if determinant ~= 0.0 then
+		determinant = 1.0 / determinant
+	end
+	
+	local appliedFriction = ((fx * cosA - sinA * fy) * determinant * velX) +
+                            ((fy * cosA - sinA * fx) * determinant * velY)
+							
+	if appliedFriction < 0.0 then
+		applyForce(object.name, velX * appliedFriction, velY * appliedFriction, object.x, object.y)
+	end
 end
 
 function setTexture(object, texture)

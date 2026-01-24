@@ -65,9 +65,18 @@ function updatePhysics(dt)
 	updateParticlesNative(dt2)
 	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0)
 	
+	for _, v in pairs(objects.world) do
+		local PHYSICS_TIMESTEP = 1/30
+		if v.friction or not v.gravityEnabled then
+			updateFriction(v, PHYSICS_TIMESTEP)
+			updateForceAdder(v, PHYSICS_TIMESTEP)
+		end
+	end
+	
+	if applyForcesAtPhysicsStep then applyForcesAtPhysicsStep() end
+	
 	physicsWorld:update(solvePhysics())
 
-	if applyForcesAtPhysicsStep then applyForcesAtPhysicsStep() end
 	if clearLuaForceFunctions then clearLuaForceFunctions() end
 
 	--update the trajectory in the case of a newer version, on older versions the distance check prevents it from running twice
@@ -123,14 +132,6 @@ function updatePhysics(dt)
 
 			if obj.type == "circle" and not birds[obj.name] and rollingVolumes[material] and volume > rollingVolumes[material] then
 				rollingVolumes[material] = volume
-			end
-			
-			if applyForcesAtPhysicsStep then -- version check
-				if obj.forceX ~= nil and obj.forceY ~= nil then
-					applyForce(obj.name, obj.forceX * obj.mass, obj.forceY * obj.mass, obj.x, obj.y)
-				elseif bDef.forceX ~= nil and bDef.forceY ~= nil then
-					applyForce(obj.name, bDef.forceX * obj.mass, bDef.forceY * obj.mass, obj.x, obj.y)
-				end
 			end
 			
 			--grab objects
@@ -207,7 +208,7 @@ end
 
 ---- SOLVE FUNCTION ----
 function WorldSolve(step)
-	step.dt = 1/60
+	step.dt = 1/30
 	
 	if step.dt > 0 then
 		step.inv_dt = 1.0 / step.dt
@@ -250,6 +251,6 @@ function WorldSolve(step)
 end
 
 function setMaxTranslation(translation)
-	b2_maxTranslation = translation * 0.5 -- TODO : tune this to be game accurate
+	b2_maxTranslation = translation --* 0.5 -- TODO : tune this to be game accurate
 	b2_maxTranslationSquared = b2_maxTranslation * b2_maxTranslation
 end
