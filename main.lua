@@ -581,6 +581,13 @@ function love.load()
 		end
 	end
 	
+	toggleZoom_GameLua = toggleZoom2
+	
+	--windows builds don't use rovio account
+	if deviceModel == "windows" then
+		RovioAccount = nil
+	end
+	
 	handlePostStartArgs()
 end
 

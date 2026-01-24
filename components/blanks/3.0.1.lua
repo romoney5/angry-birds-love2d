@@ -254,6 +254,10 @@ function RovioAccount.native_isLoggedIn()
 	return false
 end
 
+function RovioAccount.native_isAvailable()--?
+	return false
+end
+
 function RovioAccount.native_getProfileID()
 	return 0
 end
@@ -450,9 +454,25 @@ function setObjectBodyDynamic(name)
 	setObjectParameter(name, 2, 1)
 end
 
+function toggleZoom(a, b)--?
+	wantedZoomLevel = a
+end
+
+function toggleZoom_GameLua(a, b)--?
+	wantedZoomLevel = a
+end
+
+function toggleZoom2(a, b)--?
+	wantedZoomLevel = a
+end
+
 
 function raycast(x1, y1, x2, y2)
-	return getRayCastedObjects{x1 = x1, y1 = y1, x2 = x2, y2 = y2}
+	local hit, name, px, py
+	local ray = getRayCastedObjects{x1 = x1, y1 = y1, x2 = x2, y2 = y2}
+	hit = ray[1] ~= nil
+	name, px, py = ray[1], ray[2], ray[3]
+	return hit, name, px, py
 end
 
 native.FileSystem = {}
@@ -490,19 +510,25 @@ end
 function setNotificationCallback(callback)
 	return
 end
+
+
 -- seasons 4.2.0
 NativePlatformScore = {}
 
 function NativePlatformScore.getPerformanceScore()
-    return 100 
+    return 2 
 end
 
 function NativePlatformScore.getMemoryScore()
-    return 100 
+    return 2 
 end
 
 function createDynamicHandler(name)
 	local handler = {}
+	--local loadlist = {}
+	local profile = (selectAssetProfile and selectAssetProfile()) or (platform and platform.Profiles and platform.Profiles.selectAssetProfile and platform.Profiles.selectAssetProfile())
+	loadLuaFile(imagePath.."/"..profile.."/loadlist.lua")
+	local loadlist = assetLoadList[profile]
 	
 	local function load(group)
 		assert(profile)
@@ -565,6 +591,10 @@ function createDynamicHandler(name)
 	end
 	function handler:release(...) end
 	function handler:isLoaded(...) return true end
+	
+	function handler:enterIngame(a, theme)
+		return 
+	end
 
 	_G[name] = handler
 	
