@@ -2,6 +2,8 @@
 
 iap = {}
 
+iapEnabled = true
+
 function iap.init()
 	print("Initialize IAP")
 end
@@ -9,6 +11,22 @@ end
 function iap.update(dt)
 	return
 end
+
+local statuses = {
+	PAYMENT_SUCCEEDED = 1,
+	PAYMENT_FAILED = 2,
+	PAYMENT_CANCELLED = 2,
+	PAYMENT_RESTORED = 3,
+}
+
+local statuses_new = {
+	PAYMENT_SUCCEEDED = 0,
+	PAYMENT_FAILED = 1,
+	PAYMENT_CANCELLED = 2,
+	PAYMENT_PENDING = 3,
+	PAYMENT_REFUNDED = 4,
+	PAYMENT_RESTORED = 5,
+}
 
 function iapInitItemPurchase(callback) --1.7.0
 	if _G[callback] then
@@ -18,24 +36,27 @@ function iapInitItemPurchase(callback) --1.7.0
 	end
 end
 
-function iapBuyItem(id,callback) --1.7.0
-	if _G[callback] then
+function iapBuyItem(id, callbackid, statuslist) --1.7.0
+	local callback = type(callbackid) == "function" and callbackid or _G[callbackid]
+	local statuslist = statuslist or statuses
+	
+	if callback then
 		showPopup(
 			"In-app Purchase",
 			"Buy item \""..id.."\"?",
 			{
 				{sprite = "MENU_NO", callback = function()
-					_G[callback](id, 2, 2)--gamelogic
+					callback(id, statuslist.PAYMENT_CANCELLED, statuslist.PAYMENT_CANCELLED)
 					return true
 				end},
 				{sprite = "TUTORIAL_OK", callback = function()
-					_G[callback](id, 1, 0)
+					callback(id, statuslist.PAYMENT_SUCCEEDED, 0)
 					return true
 				end},
 			}
 		)
 	else
-		print("Purchase callback: "..tostring(callback).." not found")
+		print("Purchase callback: "..tostring(callbackid).." not found")
 	end
 end
 
@@ -63,17 +84,46 @@ function Payment.iapInitPayment()
 	print("Init IAP payment")
 end
 
+local iapHasPaymentProvider = false
 function Payment.iapHasPaymentProvider()
-	return true
+	return iapHasPaymentProvider
 end
 
-Payment.iapBuyItem = iapBuyItem
+function Payment.iapBuyItem(id)
+	iapBuyItem(id, Payment.onPurchaseStatusChanged, statuses_new)
+end
 Payment.iapRestoreItems = iapRestoreItems
 
 function Payment.getIapProducts()
-	return {} --price:string
+	return {}
 end
 
 function Payment.iapInitPaymentProviders()
-	return
+	iapHasPaymentProvider = true
+	replacePaymentFunctions()
+	g_iap_state = 2
+	if Payment.onPaymentProviderSelected then
+		Payment.onPaymentProviderSelected()
+	end
+end
+
+function Payment.iapIsEnabled()--?
+	return iapEnabled
+end
+
+function replacePaymentFunctions()
+	if iap then
+		function iap.getItemPrice(item)
+			return true, "$0.00"
+		end
+		
+		--remove everything from underscore, not reliable
+		function iap.getProductNameForItem(item)
+			return item:sub(1, (item:find("_") or item:len() + 1) - 1)
+		end
+	end
+end
+
+function Payment.iapGetPurchaseLimit()
+	return math.huge
 end
