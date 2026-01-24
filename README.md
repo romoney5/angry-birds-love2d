@@ -11,12 +11,12 @@ If you are on Linux, it's as easy as downloading a LÖVE Flatpak, navigating to 
 ## Command line arguments
 - `--skipintro`/`-si` automatically skips the game's splash screen.
 - `--model`/`-m` overrides the `deviceModel`. Handy for testing for other devices, such as Android or Roku.
-- `--deletedata`/`-dd` prompts to delete all save data (settings.lua and highscores.lua).
-- `--run`/`+..` runs a line of Lua code. Examples: `--run "releaseBuild = true"` `+"autoScale = 240"`
-- `--gamelogic`/`-gl` overrides the path to `scripts/gamelogic.lua`. Handy for testing precompiled Lua support.
+- `--deletedata`/`-dd` prompts to delete save data (settings.lua and highscores.lua).
+- `--run`/`+".."` runs a line of Lua code before starting the game. Examples: `--run "releaseBuild = true"` `+"autoScale = 240"`
 - `--datapath`/`-dp` overrides the default path to `data/` and uses a new save data subfolder. Useful for quickly testing different versions of Angry Birds without different folders or symbolic links. Can also be used to boot from .zip/.ipa/.apk or other zipped files.
 - `--cheats`/`-c` enables cheats. (Disables `releaseBuild` and enables `showEditor`)
-- `--blamelength`/`-bm` sets the length of bytecode tracebacks (a list of previously run instructions shown upon getting an error). For performance reasons, set to 0 by default.
+- `--blamelength`/`-bm` sets the length of bytecode tracebacks (a list of previously run instructions shown upon getting an error). Set to 0 by default for performance reasons.
+- `--nosave`/`-ns` disables saving any Lua files (settings and highscores will not save).
 
 ## Acknowledgements
 [FiOne](https://github.com/Rerumu/FiOne) is used to run compiled Lua files (with some edits).

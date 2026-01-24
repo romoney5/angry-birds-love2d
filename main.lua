@@ -487,8 +487,10 @@ function love.load()
 	end
 
 	--load save data
-	runLuaFile("settings.lua", true)
-	runLuaFile("highscores.lua", true)
+	if not disableSaving then
+		runLuaFile("settings.lua", true)
+		runLuaFile("highscores.lua", true)
+	end
 	
 	uniqueDeviceId = getDeviceID()
 	uniqueInstallationId = ""
@@ -643,6 +645,11 @@ function serializeTable(t, indent, noIndexes)
 end
 
 function saveLuaFile(fileName, tableName, appData, noIndexes, noWrap)
+	if disableSaving then
+		print("Tried saving \""..tableName.."\" but saving is disabled")
+		return
+	end
+
 	local tableToSave = _G[tableName]
 	assert(tableToSave and type(tableToSave) == "table", "Table "..tableName.." does not exist.")
 
