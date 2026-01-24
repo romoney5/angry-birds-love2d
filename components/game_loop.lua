@@ -120,7 +120,7 @@ function love.update(dt)
 
 		love.graphics.setScissor()
 
-		dt2 = speedUpPre(math.min(dt, .25) * ((debugOpen or optionsOpen) and 0.2 or 1) * timeScale)
+		dt2 = speedUpPre(math.min(dt, 1/30) * ((debugOpen or optionsOpen) and 0.2 or 1) * timeScale)
 
 		local kp, kr, kh, cw = keyPressed, keyReleased, keyHold, cursor.wheel
 		if openPopups[1] or debugOpen or fmOpen or optionsOpen then
