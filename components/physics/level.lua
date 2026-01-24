@@ -12,7 +12,7 @@ function loadLevel(filename)
 
 	physicsWorld = love.physics.newWorld(worldgravity.x, worldgravity.y, true)
 	--physicsWorld:setCallbacks(nil,nil,physicsPreSolve,physicsPostSolve)
-	physicsWorld:setCallbacks(physicsBeginContact, nil, nil, nil)
+	physicsWorld:setCallbacks(physicsBeginContact, nil, postSolveBounce, nil)
 	collisionsList = {}
 	loadedObjects = {}
 	zOrderedObjects = {}

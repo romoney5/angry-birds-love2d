@@ -599,13 +599,19 @@ function destroyBreakableJoints(name, force)
 		end
 	end
 end
+
 --[[
 	this function is supposed to roughly estimate box2D's restitution
 	i commented it in its unfinished state, so feel free to work on it.
+]]
 	
-function postSolveBounce(o1, o2, contact)
-	local b1 = o1.body
-	local b2 = o2.body
+function postSolveBounce(obj1, obj2, contact)
+	local b1 = obj1:getBody()
+	local b2 = obj2:getBody()
+	
+	local o1 = obj1:getUserData()
+	local o2 = obj2:getUserData()
+	
 	local cx, cy = contact:getPositions()
 	
 	local function vec4(x, y, x1, y1)
@@ -637,9 +643,7 @@ function postSolveBounce(o1, o2, contact)
         local rvx, rvy = pointVelocity.x1 - pointVelocity.x, pointVelocity.y1 - pointVelocity.y
         local velAlongNormal = rvx * nx + rvy * ny
 		
-		print(velAlongNormal, o1.name, o2.name)
-		
-		if velAlongNormal > -3.0 then -- velocity normal on hit
+		if velAlongNormal > -3.0 or true then -- velocity normal on hit
 			local inv_mass_a = isStatic(b1) and 0 or 1 / b1:getMass()
 			local inv_inertia_a = isStatic(b1) and 0 or 1 / b1:getInertia()
 			
@@ -669,15 +673,23 @@ function postSolveBounce(o1, o2, contact)
 			local forceY = (normalImpulse * ny) + (tangentImpulse * tangentY)
 			
 			b1:applyLinearImpulse(-forceX, -forceY)
-            b2:applyLinearImpulse(forceX, forceY)
+			b2:applyLinearImpulse(forceX, forceY)
+			
+			--b1:applyLinearImpulse(forceX, forceY)
+			--b2:applyLinearImpulse(-forceX, -forceY)
+			
+			--if o1.name:find("Ball") or o2.name:find("Ball") then
+				--print(velAlongNormal, o1.name, o2.name, restitution, o1.restitution)
+			--end
 			
             b1:applyAngularImpulse(-(relativeVector.x * forceY - relativeVector.y * forceX))
             b2:applyAngularImpulse( (relativeVector.x1 * forceY - relativeVector.y1 * forceX))
 		end
-	
+		
+		contact:setRestitution(0)
 	end
 end
-]]
+postSolveBounce = nil
 
 --vastly improved damage system, credits to halo
 
