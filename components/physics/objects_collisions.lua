@@ -234,7 +234,7 @@ function updateForceAdder(object, dt)
 		local forceY = 0.0
 		local applyAsImpulse = object.forceTime and object.forceTime <= 0.0
 		
-		if object.forceRelative then
+		if object.forceRelative and object.forceRelative ~= 0.0 then
 			local forceRelative = object.forceRelative
 			if math.abs(forceRelative) > 0.0 then
 				local bodyAngle = body:getAngle()

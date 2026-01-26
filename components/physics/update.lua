@@ -39,10 +39,15 @@ local function updateTrajectory()
 	end
 end
 
-function solvePhysics()
-	local timeStep = dt2 * (physicsTimeScale or 1)
+function solvePhysics(updateStep) -- WIP
+	local delta = math.floor(dt2 * 10000) / 10000
+	local timeStep = delta * (physicsTimeScale or 1)
 	local velocityIterations = 10
 	local positionIterations = 10
+	
+	if updateStep then
+		physicsWorld:update(timeStep, velocityIterations, positionIterations)
+	end
 	
 	if dt2 > 0.0 then
 		WorldSolve({
@@ -50,9 +55,8 @@ function solvePhysics()
 			velocityIterations = velocityIterations,
 			positionIterations = positionIterations
 		})
-	end
-	
-	return timeStep, velocityIterations, positionIterations --ab uses 1/30, 10, 10
+	end	
+	--return timeStep, velocityIterations, positionIterations --ab uses 1/30, 10, 10
 end
 
 function updatePhysics(dt)
@@ -75,7 +79,7 @@ function updatePhysics(dt)
 	
 	if applyForcesAtPhysicsStep then applyForcesAtPhysicsStep() end
 	
-	physicsWorld:update(solvePhysics())
+	solvePhysics(true)
 
 	if clearLuaForceFunctions then clearLuaForceFunctions() end
 
@@ -119,8 +123,8 @@ function updatePhysics(dt)
 			end
 			
 			obj.angle = (obj.body:getAngle() + math.pi) % (math.pi * 2) - math.pi
-			obj.xVel = xVel
-			obj.yVel = yVel
+			obj.xVel = math.floor(xVel * 10000) / 10000
+			obj.yVel = math.floor(yVel * 10000) / 10000
 			hasAwakeObjects = true
 			
 			local material = getMaterial(obj.name)
@@ -208,7 +212,7 @@ end
 
 ---- SOLVE FUNCTION ----
 function WorldSolve(step)
-	step.dt = 1/30
+	step.dt = 1/30 * physicsTimeScale
 	
 	if step.dt > 0 then
 		step.inv_dt = 1.0 / step.dt
