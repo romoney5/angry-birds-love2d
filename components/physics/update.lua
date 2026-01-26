@@ -45,16 +45,16 @@ function solvePhysics(updateStep) -- WIP
 	local velocityIterations = 10
 	local positionIterations = 10
 	
-	if updateStep then
-		physicsWorld:update(timeStep, velocityIterations, positionIterations)
-	end
-	
 	if dt2 > 0.0 then
 		WorldSolve({
 			dt = timeStep,
 			velocityIterations = velocityIterations,
 			positionIterations = positionIterations
 		})
+	end
+
+	if updateStep then
+		physicsWorld:update(timeStep, velocityIterations, positionIterations) -- where do we call this?
 	end	
 	--return timeStep, velocityIterations, positionIterations --ab uses 1/30, 10, 10
 end
@@ -123,8 +123,8 @@ function updatePhysics(dt)
 			end
 			
 			obj.angle = (obj.body:getAngle() + math.pi) % (math.pi * 2) - math.pi
-			obj.xVel = math.floor(xVel * 10000) / 10000
-			obj.yVel = math.floor(yVel * 10000) / 10000
+			obj.xVel = xVel
+			obj.yVel = yVel
 			hasAwakeObjects = true
 			
 			local material = getMaterial(obj.name)
@@ -229,7 +229,7 @@ function WorldSolve(step)
 		local body = object.body
 		
 		if body and not body:isDestroyed() and body:getType() == "dynamic" then
-			local vx, vy = body:getLinearVelocity()
+			local vx, vy = object.xVel, object.yVel
 			
 			--- calculate speed then limit it.
 			local translationSq = vx*vx + vy*vy
