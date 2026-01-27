@@ -112,6 +112,7 @@ function updatePhysics(dt)
 			
 			if velMagnitude ~= 0 then
 				obj.frozen = obj.y > 20.0 or obj.x < objects.limits.mix or obj.x > objects.limits.max
+				obj.outsideBoundaries = obj.frozen
 			end
 			
 			if velMagnitude >= 0.0005 then
