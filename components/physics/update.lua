@@ -213,7 +213,7 @@ end
 
 ---- SOLVE FUNCTION ----
 function WorldSolve(step)
-	step.dt = 1/30 * physicsTimeScale
+	step.dt = 1/60 * physicsTimeScale
 	
 	if step.dt > 0 then
 		step.inv_dt = 1.0 / step.dt
@@ -256,6 +256,6 @@ function WorldSolve(step)
 end
 
 function setMaxTranslation(translation)
-	b2_maxTranslation = translation --* 0.5 -- TODO : tune this to be game accurate
+	b2_maxTranslation = translation * 0.5 -- TODO : tune this to be game accurate
 	b2_maxTranslationSquared = b2_maxTranslation * b2_maxTranslation
 end
