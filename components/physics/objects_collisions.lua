@@ -354,6 +354,10 @@ function setColliderType(object, collider) --3.0.1 only
 	objects.world[object].collider = collider
 end
 
+function getColliderType(object)
+	return objects.world[object].collider
+end
+
 function inheritTeleportation(object, others) --3.3.0
 	--[[inheritTeleportation(flyingBird.name, {
       flyingBird.name .. "a",
@@ -691,17 +695,62 @@ function postSolveBounce(obj1, obj2, contact)
 end
 postSolveBounce = nil
 
+function bubbleBeginContact(obj1, obj2, contact)
+	local o1 = obj1:getUserData()
+	local o2 = obj2:getUserData()
+	
+	local contactPoint = contact:getPositions()
+	local contactNormal = contact:getNormal()
+	
+	local bubble, collider = o1, o2
+	
+	if getColliderType(collider.name) == 11 then
+		bubble = o2
+		collider = o1
+	end
+	
+	if collider.shot then
+		setVelocity(collider.name, 0, 0)
+		collider.inBubble = true
+		collider.bubbleAntiGravityTimer = 5.0
+		collider.bubbleSpriteScale = 0.5
+		collider.bubbleSprite = bubble.sprite
+		
+		trappedInBubble(collider)
+		birdCollision(bubble.name, collider.name, 1.0, 0.0, contactPoint, contactNormal)
+	end
+	
+	--deadBlocks[bubble.name] = bubble
+	removeObject(bubble.name)
+	objects.world[bubble.name] = nil
+end
+
+function physicsBeginContact(obj1, obj2, contact)
+	local o1 = obj1:getUserData()
+	local o2 = obj2:getUserData()
+	
+	if not objects.world[o1.name] or not objects.world[o2.name] then return end
+	
+	local bubbleCollision = (getColliderType(o1.name) == 11 or getColliderType(o2.name) == 11) 
+	and getColliderType(o1.name) ~= getColliderType(o2.name)
+	
+	if bubbleCollision then
+		bubbleBeginContact(obj1, obj2, contact)
+	else
+		basicBeginContact(obj1, obj2, contact)
+	end
+end
+
 --vastly improved damage system, credits to halo
 
 --used to be postsolve
-function physicsBeginContact(obj1, obj2, contact)
+function basicBeginContact(obj1, obj2, contact)
 	local b1 = obj1:getBody()
 	local b2 = obj2:getBody()
 	
 	local o1 = obj1:getUserData()
 	local o2 = obj2:getUserData()
 	
-	if not objects.world[o1.name] or not objects.world[o2.name] then return end
 	solvePhysics()
 	
 	local contactPoint = contact:getPositions()
