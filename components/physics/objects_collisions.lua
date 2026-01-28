@@ -718,11 +718,12 @@ function bubbleBeginContact(obj1, obj2, contact)
 		
 		trappedInBubble(collider)
 		birdCollision(bubble.name, collider.name, 1.0, 0.0, contactPoint, contactNormal)
+		
+		removeObject(bubble.name)
+		objects.world[bubble.name] = nil
+	else --if not collider.controllable then -- does this have a condition?
+		deadBlocks[bubble.name] = bubble
 	end
-	
-	--deadBlocks[bubble.name] = bubble
-	removeObject(bubble.name)
-	objects.world[bubble.name] = nil
 end
 
 function physicsBeginContact(obj1, obj2, contact)
