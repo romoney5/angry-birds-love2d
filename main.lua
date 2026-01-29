@@ -188,16 +188,10 @@ function love.load()
 		end
 
 		setFullScreenMode(true)
-		autoScale = 640
+		autoScale = 720
 		enableDebug = false
 	end
 
-	--[[setmetatable(_G, {__index = function(_, i)
-		print("tried to index "..tostring(i))
-		--print(debug.traceback())
-		--return rawget(_, i)
-	end})]]
-	useDynamicAssets = false
 	if createStartUpAssets then createStartUpAssets() end
 	if updateValues then updateValues() end
 

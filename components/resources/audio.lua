@@ -85,7 +85,12 @@ function res.playAudio(audio, volume, loop, track)
 		end
 
 		--if the audio loops it's likely that it should be streamed from disk
-		cachedaudios[audio] = love.audio.newSource(audios[audio], loop and "stream" or "static")
+		--wrap it in a pcall in case love throws a tantrum
+		if not pcall(function() cachedaudios[audio] = love.audio.newSource(audios[audio], loop and "stream" or "static") end) then
+			cachedaudios[audio] = 0
+			print("Audio file \""..audios[audio].."\" could not be decoded.")
+			return
+		end
 	end
 
 	if audioStreamAllowed then
@@ -128,12 +133,7 @@ function res.stopAudio(audio)
 		for ii, sound in ipairs(channel) do
 			if sound.name == audio then
 				local source = sound.source
-
 				source:stop()
-				source:release()
-
-				table.remove(channel, ii)
-
 				return
 			end
 		end

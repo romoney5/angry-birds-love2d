@@ -112,7 +112,7 @@ function res.drawString(group, text, x, y, aligny, alignx)
 			--don't calculate the widths and draw everything if it goes off screen
 			local _, miny = love.graphics.transformPoint(x + i + ax, (y + ay - font.leading + (line * font.leading)))
 			local _, maxy = love.graphics.transformPoint(x + i + ax, (y + ay + font.leading + (line * font.leading)))
-			if miny > height or maxy < 0 then break end
+			if miny > height or maxy < 0 then goto continue end
 			
 			if alignx=="HCENTER" or aligny=="HCENTER" then ax = -res.getStringWidth(l) / 2 end
 			if alignx=="RIGHT" or aligny=="RIGHT" then ax = -res.getStringWidth(l) end
@@ -127,6 +127,8 @@ function res.drawString(group, text, x, y, aligny, alignx)
 					i = i + (char.width + font.tracking)
 				end
 			end
+			
+			::continue::
 			line = line + 1
 		end
 	else
