@@ -525,22 +525,35 @@ end
 
 function createDynamicHandler(name)
 	local handler = {}
-	--local loadlist = {}
-	local profile = (selectAssetProfile and selectAssetProfile()) or (platform and platform.Profiles and platform.Profiles.selectAssetProfile and platform.Profiles.selectAssetProfile())
-	loadLuaFile(imagePath.."/"..profile.."/loadlist.lua")
-	local loadlist = assetLoadList[profile]
+	local loadlist = {}
+	local selectAssetProfile = selectAssetProfile or (platform and platform.Profiles and platform.Profiles.selectAssetProfile)
+	
+	--TODO: queue and asset freeing
 	
 	local function load(group)
-		assert(profile)
 		if loadlist[group] then
 			for i, v in pairs(loadlist[group]) do
-				res.createSpriteSheet(imagePath.."/"..profile.."/"..v..".dat")
+				--TODO: add to a loadlist instead of reloading every time
+				local profile = selectAssetProfile(v)
+				loadLuaFile(imagePath.."/"..profile.."/loadlist.lua")
+				
+				local dat = assetLoadList[profile][v]
+				if dat then
+					for _, asset in ipairs(dat) do
+						if asset[2] ~= 1 then
+							res.createSpriteSheet(imagePath.."/"..profile.."/"..asset[1])
+						else
+							res.createCompoSpriteSet(imagePath.."/"..profile.."/"..asset[1])
+						end
+					end
+				end
 			end
 		end
 	end
 	
 	function handler.addreq(...)
-		print("addreq")
+		--[[
+		print("addreq:")
 		for i, v in pairs{...} do
 			if type(v) == "table" then
 				for i, v in pairs(v) do
@@ -565,20 +578,19 @@ function createDynamicHandler(name)
 				print(v)
 			end
 		end
-		return 
+		]]
+		return
 	end
 	
 	function handler.getRequirements(...)
-		print("getRequirements")
+		print("handler.getRequirements:", ...)
 		return {} 
     end
 	
 	function handler:delayrelease(...) end
 
 	function handler.load(...)
-		profile = (selectAssetProfile and selectAssetProfile()) or (platform and platform.Profiles and platform.Profiles.selectAssetProfile and platform.Profiles.selectAssetProfile())
-		print("profile", profile)
-		print("loading", ...)
+		print("handler.load:", ...)
 		for i, v in pairs{...} do
 			if type(v) == "table" then
 				for i, v in pairs(v) do
@@ -589,14 +601,15 @@ function createDynamicHandler(name)
 			end
 		end
 	end
-	function handler:release(...) end
-	function handler:isLoaded(...) return true end
+	function handler.release(...) end
+	function handler.isLoaded(...) return true end
 	
-	function handler:enterIngame(a, theme)
+	function handler.enterIngame(a, theme)
 		return 
 	end
 
 	_G[name] = handler
+	--print("platform is", tostring(platform))
 	
 	return handler
 end
