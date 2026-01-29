@@ -42,6 +42,7 @@ end
 function solvePhysics(updateStep) -- WIP
 	local delta = math.floor(dt2 * 10000) / 10000
 	local timeStep = delta * (physicsTimeScale or 1)
+	timeStep = math.floor(timeStep * 10000) / 10000
 	local velocityIterations = 10
 	local positionIterations = 10
 	
@@ -213,7 +214,7 @@ end
 
 ---- SOLVE FUNCTION ----
 function WorldSolve(step)
-	step.dt = 1/60 * physicsTimeScale
+	step.dt = 1/60 * (physicsTimeScale or 1)
 	
 	if step.dt > 0 then
 		step.inv_dt = 1.0 / step.dt
