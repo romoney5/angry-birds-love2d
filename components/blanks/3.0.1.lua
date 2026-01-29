@@ -552,7 +552,6 @@ function createDynamicHandler(name)
 	end
 	
 	function handler.addreq(...)
-		--[[
 		print("addreq:")
 		for i, v in pairs{...} do
 			if type(v) == "table" then
@@ -578,7 +577,6 @@ function createDynamicHandler(name)
 				print(v)
 			end
 		end
-		]]
 		return
 	end
 	
