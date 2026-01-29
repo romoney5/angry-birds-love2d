@@ -76,7 +76,7 @@ function drawLayer(layer, yoffset)
 				left = (left + autoScroll) % w
 			end
 			
-			setRenderState(pivotX + left - shakeX, top - shakeY, wScale * relativeScale, wScale * relativeScale, 0, px, py)
+			setRenderState(pivotX + left - shakeX / relativeScale, top - shakeY / relativeScale, wScale * relativeScale, wScale * relativeScale, 0, px, py)
 			
 			if not (x ~= 0 and isLooping == false) then
 				res.drawSprite(sprite, 0, 0)
@@ -149,26 +149,35 @@ function drawForegroundNative()
 	local s = worldScale or 1
 	setRenderState(0, 0, 1, 1)
 
-	for layernum, layer in ipairs(theme.fgLayers) do
-		drawLayer(layer, yoffsets[layernum - 1])
+	--draw ground color
+	local fgLayers = theme.fgLayers
+	local ground_num = 1
 
-		--draw ground color
-		if layernum == 1 then --hack for bad piggies
-			local fgLayers = theme.fgLayers
-			local ground_num = 1
+	--hack(?) for bad piggies
+	if theme.effects then
+		for i, v in ipairs(theme.effects) do
+			if v.type == "Waves" then
+				--check that all sprites are valid?
+				ground_num = v.params.water_layer.index
+				break
+			end
+		end
+	end
 
-			--hack for bad piggies
-			if theme.effects then ground_num = #fgLayers end
-
+	for layernum, layer in ipairs(fgLayers) do
+		if layernum == ground_num then
 			local _, ground_h = res.getSpriteBounds(fgLayers[ground_num][1], fgLayers[ground_num][2])
 			local _, ground_py = res.getSpritePivot(fgLayers[ground_num][1], fgLayers[ground_num][2])
+			
 			local scale = fgLayers[ground_num][4] or 1.5
 			local rect_x = 0
-			local rect_y = (-screen.top + (ground_h - ground_py) * scale) * s
-			rect_y = rect_y + (yoffsets[ground_num - 1] or 0) * s
+			local rect_y = (-screen.top - (cameraShakeY or 0) + (ground_h - ground_py) * scale) * s
+			rect_y = rect_y + (yoffsets[#fgLayers - 1] or 0) * s
 
 			drawRect(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, rect_x, rect_y, screenWidth, screenHeight + screen.top * s + rect_y)
 		end
+
+		drawLayer(layer, yoffsets[layernum - 1])
 	end
 end
 
@@ -191,7 +200,7 @@ local textureShader = love.graphics.newShader([[
 	}]]
 )
 
-function drawGameNative() --work in progress
+function drawGameNative()
 	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, 1)
 
 	--trajectories (thanks again halo)
