@@ -1,7 +1,9 @@
 --load components
 
---extra libraries
+--first load filesystem functions
+love.filesystem.load(compsPath.."/filesystem.lua")()		--filesystem functions
 
+--extra libraries
 pcall(require, "table.clear")                               --clear key* tables instead of remaking them
 _, ffi = pcall(require, "ffi")                              --luajit ffi
 _, utf8 = pcall(require, "utf8")							--utf8 library, now required for utf8 text
