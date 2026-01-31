@@ -10,6 +10,7 @@ function drawParticlesNative(menu)
 			_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
 		elseif not menu and not p.menu then
 			setRenderState(-screen.left / p.scale, -screen.top / p.scale, worldScale * p.scale, worldScale * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
+			setRenderState(-screen.left / p.scale, -screen.top / p.scale, (worldScale or 1) * p.scale, (worldScale or 1) * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
 			_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
 		end
 	end
@@ -29,12 +30,16 @@ function drawMenuParticlesInAdvance() --what is it with particles
 	return
 end
 
+function drawScreenParticles()
+	return
+end
+
 function drawLevelParticlesNative(layer)
 	return
 end
 
 function updateParticlesNative(dt, menu)
-	if not particles then return end
+	if not particles or not dt then return end
 
 	for k, v in pairs(particles) do
 		local p = v
@@ -137,6 +142,10 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 	end
 end
 
+local function addParticles2(type, amount, x, y, w, h, angle, ignoreLimits, menu) --different parameters
+	return
+end
+
 local function setHardLimit(limit)
 	hardLimitSimultaneousParticles = limit
 end
@@ -175,6 +184,11 @@ getParticles = {
 
 		elseif i == "native_addParticlesWithMode" then
 			return native_addParticlesWithMode
+
+		elseif i == "update" then
+			return updateParticlesNative
+		elseif i == "add" then
+			return addParticles2
 		end
 	end
 }

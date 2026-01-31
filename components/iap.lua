@@ -127,3 +127,9 @@ end
 function Payment.iapGetPurchaseLimit()
 	return math.huge
 end
+
+--seasons' take on iap
+
+CloudPayment = {}
+
+CloudPayment.isInitialized = Payment.iapHasPaymentProvider

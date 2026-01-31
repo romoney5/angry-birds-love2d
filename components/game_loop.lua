@@ -24,7 +24,7 @@ function updateDisplayScale()
 	screenHeight = math.floor(love.graphics.getHeight() / displayScale)
 end
 
-function updateCursor(dt)
+local function updateCursor(dt)
 	if not joystick then
 		cursor.x, cursor.y = love.mouse.getPosition()
 		cursor.x = cursor.x / displayScale
