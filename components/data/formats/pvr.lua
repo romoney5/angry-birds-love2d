@@ -3,6 +3,8 @@
 local support = love.graphics.getImageFormats()
 local headerSize = 52
 
+local pvr_debug = true
+
 function convertImagePVR(data, filename)
 	assert(data)
 
@@ -43,26 +45,28 @@ function convertImagePVR(data, filename)
 			--usually unsupported for most devices
 			-- local expectedSize = w * h / 2 + headerSize
 			-- assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize.." ("..metadatasize.."), got "..data:len())
+			if pvr_debug then print(("convertImagePVR: \"%s\" has pvrv2 format with pvrtc 4bpp"):format(filename)) end
 			
 			if support.PVR1rgba4 then
 				rawdata = string.sub(data, headerSize + 1)
 				imagedata = love.image.newImageData(w, h, "PVR1rgba4", rawdata)
 			elseif support.rgba4 then
-				-- print(w, h)
-				-- imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
-				-- local result = {}
-				-- local a, resultstr = PVRTDecompressPVRTC(data:sub(headerSize + 1), 2, w, h, result)
-				-- print(filename..", "..a)
-				-- print(w, h)
-				-- print(resultstr:len())
-
-				-- for i, v in ipairs(result) do
-				-- 	resultstr = resultstr..string.char(v.red)..string.char(v.green)..string.char(v.blue)..string.char(v.alpha)
-				-- end
-				rawdata = string.rep("\xFF", w * h * 16 / 8)--resultstr
+				print(w, h)
 				imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
+				local result = {}
+				local a, resultdat = PVRTDecompressPVRTC(data:sub(headerSize + 1), 2, w, h, result)
+				print(filename..", "..a)
+				print(w, h)
+				--print(resultstr:len())
+
+				--for i, v in ipairs(result) do
+					--resultstr = resultstr..string.char(v.red)..string.char(v.green)..string.char(v.blue)..string.char(v.alpha)
+				--end
+				--rawdata = string.rep("\xFF", w * h * 16 / 8)--resultstr
+				--imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
 				-- rawdata = resultstr
 				-- imagedata = love.image.newImageData(w, h, "rgba8", rawdata)
+				imagedata = resultdat
 				-- print(w, h)
 			end
 		elseif format == 54 and support.ETC1 then --etc1 compressed, 4bpp
@@ -193,16 +197,16 @@ local function getColorA(colorData)
 
 	-- Opaque Color Mode - RGB 554
 	if (bit.band(colorData, 0x8000) ~= 0) then
-		color.red = bit.rshift(bit.band(colorData, 0x7c00), 10); -- 5->5 bits
-		color.green = bit.rshift(bit.band(colorData, 0x3e0), 5); -- 5->5 bits
-		color.blue = bit.bor(bit.band(colorData, 0x1e), bit.rshift(bit.band(colorData, 0x1e), 4)); -- 4->5 bits
+		color.red = bit.arshift(bit.band(colorData, 0x7c00), 10); -- 5->5 bits
+		color.green = bit.arshift(bit.band(colorData, 0x3e0), 5); -- 5->5 bits
+		color.blue = bit.bor(bit.band(colorData, 0x1e), bit.arshift(bit.band(colorData, 0x1e), 4)); -- 4->5 bits
 		color.alpha = (0xf); -- 0->4 bits
 	-- Transparent Color Mode - ARGB 3443
 	else
-		color.red = bit.bor(bit.rshift(bit.band(colorData, 0xf00), 7), bit.rshift(bit.band(colorData, 0xf00), 11)); -- 4->5 bits
-		color.green = bit.bor(bit.rshift(bit.band(colorData, 0xf0), 3), bit.rshift(bit.band(colorData, 0xf0), 7)); -- 4->5 bits
-		color.blue = bit.bor(bit.lshift(bit.band(colorData, 0xe), 1), bit.rshift(bit.band(colorData, 0xe), 2)); -- 3->5 bits
-		color.alpha = bit.bor(bit.rshift(bit.band(colorData, 0x7000), 11)); -- 3->4 bits - note 0 at right
+		color.red = bit.bor(bit.arshift(bit.band(colorData, 0xf00), 7), bit.arshift(bit.band(colorData, 0xf00), 11)); -- 4->5 bits
+		color.green = bit.bor(bit.arshift(bit.band(colorData, 0xf0), 3), bit.arshift(bit.band(colorData, 0xf0), 7)); -- 4->5 bits
+		color.blue = bit.bor(bit.lshift(bit.band(colorData, 0xe), 1), bit.arshift(bit.band(colorData, 0xe), 2)); -- 3->5 bits
+		color.alpha = bit.bor(bit.arshift(bit.band(colorData, 0x7000), 11)); -- 3->4 bits - note 0 at right
 	end
 
 	return color;
@@ -213,16 +217,16 @@ local function getColorB(colorData)
 
 	-- Opaque Color Mode - RGB 555
 	if (bit.band(colorData, 0x80000000) ~= 0) then
-		color.red = bit.rshift(bit.band(colorData, 0x7c000000), 26); -- 5->5 bits
-		color.green = bit.rshift(bit.band(colorData, 0x3e00000), 21); -- 5->5 bits
-		color.blue = bit.rshift(bit.band(colorData, 0x1f0000), 16); -- 5->5 bits
+		color.red = bit.arshift(bit.band(colorData, 0x7c000000), 26); -- 5->5 bits
+		color.green = bit.arshift(bit.band(colorData, 0x3e00000), 21); -- 5->5 bits
+		color.blue = bit.arshift(bit.band(colorData, 0x1f0000), 16); -- 5->5 bits
 		color.alpha = (0xf); -- 0 bits
 	-- Transparent Color Mode - ARGB 3444
 	else
-		color.red = bit.bor(bit.rshift(bit.band(colorData, 0xf000000), 23), bit.rshift(bit.band(colorData, 0xf000000), 27)); -- 4->5 bits
-		color.green = bit.bor(bit.rshift(bit.band(colorData, 0xf00000), 19), bit.rshift(bit.band(colorData, 0xf00000), 23)); -- 4->5 bits
-		color.blue = bit.bor(bit.rshift(bit.band(colorData, 0xf0000), 15), bit.rshift(bit.band(colorData, 0xf0000), 19)); -- 4->5 bits
-		color.alpha = bit.rshift(bit.band(colorData, 0x70000000), 27); -- 3->4 bits - note 0 at right
+		color.red = bit.bor(bit.arshift(bit.band(colorData, 0xf000000), 23), bit.arshift(bit.band(colorData, 0xf000000), 27)); -- 4->5 bits
+		color.green = bit.bor(bit.arshift(bit.band(colorData, 0xf00000), 19), bit.arshift(bit.band(colorData, 0xf00000), 23)); -- 4->5 bits
+		color.blue = bit.bor(bit.arshift(bit.band(colorData, 0xf0000), 15), bit.arshift(bit.band(colorData, 0xf0000), 19)); -- 4->5 bits
+		color.alpha = bit.arshift(bit.band(colorData, 0x70000000), 27); -- 3->4 bits - note 0 at right
 	end
 
 	return color;
@@ -268,10 +272,10 @@ local function interpolateColors(P, Q, R, S, pPixel, bpp)
 			local dY = { red = hR.red - hP.red, green = hR.green - hP.green, blue = hR.blue - hP.blue, alpha = hR.alpha - hP.alpha };
 
 			for y = 0, wordHeight - 1 do
-				pPixel[y * wordWidth + x].red = (bit.rshift(result.red, 7) + bit.rshift(result.red, 2));
-				pPixel[y * wordWidth + x].green = (bit.rshift(result.green, 7) + bit.rshift(result.green, 2));
-				pPixel[y * wordWidth + x].blue = (bit.rshift(result.blue, 7) + bit.rshift(result.blue, 2));
-				pPixel[y * wordWidth + x].alpha = (bit.rshift(result.alpha, 5) + bit.rshift(result.alpha, 1));
+				pPixel[y * wordWidth + x].red = (bit.arshift(result.red, 7) + bit.arshift(result.red, 2));
+				pPixel[y * wordWidth + x].green = (bit.arshift(result.green, 7) + bit.arshift(result.green, 2));
+				pPixel[y * wordWidth + x].blue = (bit.arshift(result.blue, 7) + bit.arshift(result.blue, 2));
+				pPixel[y * wordWidth + x].alpha = (bit.arshift(result.alpha, 5) + bit.arshift(result.alpha, 1));
 
 				result.red = result.red + dY.red;
 				result.green = result.green + dY.green;
@@ -291,17 +295,17 @@ local function interpolateColors(P, Q, R, S, pPixel, bpp)
 		end
 	else
 		-- Loop through pixels to achieve results.
-		for y = 0, wordHeight - 1 do
+		for x = 0, wordWidth - 1 do
 			-- Pixel128S result = { 4 * hP.red, 4 * hP.green, 4 * hP.blue, 4 * hP.alpha };
 			-- Pixel128S dY = { hR.red - hP.red, hR.green - hP.green, hR.blue - hP.blue, hR.alpha - hP.alpha };
 			local result = { red = 4 * hP.red, green = 4 * hP.green, blue = 4 * hP.blue, alpha = 4 * hP.alpha };
 			local dY = { red = hR.red - hP.red, green = hR.green - hP.green, blue = hR.blue - hP.blue, alpha = hR.alpha - hP.alpha };
 
-			for x = 0, wordWidth - 1 do
-				pPixel[y * wordWidth + x].red = (bit.rshift(result.red, 6) + bit.rshift(result.red, 1));
-				pPixel[y * wordWidth + x].green = (bit.rshift(result.green, 6) + bit.rshift(result.green, 1));
-				pPixel[y * wordWidth + x].blue = (bit.rshift(result.blue, 6) + bit.rshift(result.blue, 1));
-				pPixel[y * wordWidth + x].alpha = (bit.rshift(result.alpha, 4) + (result.alpha));
+			for y = 0, wordHeight - 1 do
+				pPixel[y * wordWidth + x].red = (bit.arshift(result.red, 6) + bit.arshift(result.red, 1));
+				pPixel[y * wordWidth + x].green = (bit.arshift(result.green, 6) + bit.arshift(result.green, 1));
+				pPixel[y * wordWidth + x].blue = (bit.arshift(result.blue, 6) + bit.arshift(result.blue, 1));
+				pPixel[y * wordWidth + x].alpha = (bit.arshift(result.alpha, 4) + (result.alpha));
 
 				result.red = result.red + dY.red;
 				result.green = result.green + dY.green;
@@ -328,7 +332,7 @@ local function unpackModulations(word, offsetX, offsetY, modulationValues, modul
 
 	-- Unpack differently depending on 2bpp or 4bpp modes.
 	if (bpp == 2) then
-		if (WordModMode) then
+		if (WordModMode ~= 0) then
 			-- determine which of the three modes are in use:
 
 			-- If this is the either the H-only or V-only interpolation mode...
@@ -394,7 +398,7 @@ local function unpackModulations(word, offsetX, offsetY, modulationValues, modul
 	else
 		-- Much simpler than the 2bpp decompression, only two modes, so the n/8 values are set directly.
 		-- run through all the pixels in the word.
-		if (WordModMode) then
+		if (WordModMode ~= 0) then
 			for y = 0, 4 - 1 do
 				for x = 0, 4 - 1 do
 					-- print("mod "..(y + offsetY))
@@ -507,6 +511,7 @@ local function pvrtcGetDecompressedPixels(P, Q, R, S, pColorData, bpp)
 				pColorData[y * wordWidth + x].blue = (result.blue);
 				pColorData[y * wordWidth + x].alpha = (result.alpha);
 			elseif (bpp == 4) then
+				--if result.red ~= 0 then print(result.red, result.green, result.blue, result.alpha) error() end
 				pColorData[y + x * wordHeight].red = (result.red);
 				pColorData[y + x * wordHeight].green = (result.green);
 				pColorData[y + x * wordHeight].blue = (result.blue);
@@ -550,9 +555,9 @@ local function TwiddleUV(XSize, YSize, XPos, YPos)
 
 	-- Step through all the bits in the "minimum" dimension
 	while (SrcBitPos < MinDimension) do
-		if bit.band(YPos, SrcBitPos) then Twiddled = bit.bor(Twiddled, DstBitPos); end
+		if bit.band(YPos, SrcBitPos) ~= 0 then Twiddled = bit.bor(Twiddled, DstBitPos); end
 
-		if bit.band(XPos, SrcBitPos) then Twiddled = bit.bor(Twiddled, bit.lshift(DstBitPos, 1)); end
+		if bit.band(XPos, SrcBitPos) ~= 0 then Twiddled = bit.bor(Twiddled, bit.lshift(DstBitPos, 1)); end
 
 		SrcBitPos = bit.lshift(SrcBitPos, 1);
 		DstBitPos = bit.lshift(DstBitPos, 2);
@@ -560,7 +565,7 @@ local function TwiddleUV(XSize, YSize, XPos, YPos)
 	end
 
 	-- Prepend any unused bits
-	MaxValue = bit.rshift(MaxValue, ShiftCount);
+	MaxValue = bit.arshift(MaxValue, ShiftCount);
 	Twiddled = bit.bor(Twiddled, bit.lshift(MaxValue, (2 * ShiftCount)));
 
 	return Twiddled;
@@ -573,15 +578,32 @@ local function mapDecompressedData(pOutput, width, pWord, words, bpp)
 
 	for y = 0, wordHeight / 2 - 1 do
 		for x = 0, wordWidth / 2 - 1 do
-			pOutput[(((words.P[1] * wordHeight) + y + wordHeight / 2) * width + words.P[0] * wordWidth + x + wordWidth / 2)] = pWord[y * wordWidth + x]; -- map P
+			local py = ((words.P[1] * wordHeight) + y + wordHeight / 2)
+			local px = words.P[0] * wordWidth + x + wordWidth / 2
+			local src = pWord[y * wordWidth + x]
+			pOutput[py * width + px] = {red = src.red, green = src.green, blue = src.blue, alpha = src.alpha}; -- map P
 
-			pOutput[(((words.Q[1] * wordHeight) + y + wordHeight / 2) * width + words.Q[0] * wordWidth + x)] = pWord[y * wordWidth + x + wordWidth / 2]; -- map Q
+			local py = ((words.Q[1] * wordHeight) + y + wordHeight / 2)
+			local px = words.Q[0] * wordWidth + x
+			local src = pWord[y * wordWidth + x + wordWidth / 2]
+			pOutput[py * width + px] = {red = src.red, green = src.green, blue = src.blue, alpha = src.alpha}; -- map Q
 
-			pOutput[(((words.R[1] * wordHeight) + y) * width + words.R[0] * wordWidth + x + wordWidth / 2)] = pWord[(y + wordHeight / 2) * wordWidth + x]; -- map R
+			local py = ((words.R[1] * wordHeight) + y)
+			local px = words.R[0] * wordWidth + x + wordWidth / 2
+			local src = pWord[(y + wordHeight / 2) * wordWidth + x]
+			pOutput[py * width + px] = {red = src.red, green = src.green, blue = src.blue, alpha = src.alpha}; -- map R
 
-			pOutput[(((words.S[1] * wordHeight) + y) * width + words.S[0] * wordWidth + x)] = pWord[(y + wordHeight / 2) * wordWidth + x + wordWidth / 2]; -- map S
+			local py = ((words.S[1] * wordHeight) + y)
+			local px = words.S[0] * wordWidth + x
+			local src = pWord[(y + wordHeight / 2) * wordWidth + x + wordWidth / 2]
+			pOutput[py * width + px] = {red = src.red, green = src.green, blue = src.blue, alpha = src.alpha}; -- map S
 		end
 	end
+end
+
+--read 32-bit (4 byte) UNsigned int LITTLE-endian
+local function read32Int(data, index)
+	return love.data.unpack("<I4", data, index * 4 + 1)
 end
 local function pvrtcDecompress(pCompressedData, pDecompressedData, width, height, bpp)
 	local wordWidth = 4;
@@ -605,15 +627,14 @@ local function pvrtcDecompress(pCompressedData, pDecompressedData, width, height
 	for wordY = -1, i32NumYWords - 1 - 1 do
 		-- for each column of words
 		for wordX = -1, i32NumXWords - 1 - 1 do
-			--romoney5: is math.floor needed? i don't see any floats
-			indices.P[0] = math.floor(wrapWordIndex(i32NumXWords, wordX));
-			indices.P[1] = math.floor(wrapWordIndex(i32NumYWords, wordY));
-			indices.Q[0] = math.floor(wrapWordIndex(i32NumXWords, wordX + 1));
-			indices.Q[1] = math.floor(wrapWordIndex(i32NumYWords, wordY));
-			indices.R[0] = math.floor(wrapWordIndex(i32NumXWords, wordX));
-			indices.R[1] = math.floor(wrapWordIndex(i32NumYWords, wordY + 1));
-			indices.S[0] = math.floor(wrapWordIndex(i32NumXWords, wordX + 1));
-			indices.S[1] = math.floor(wrapWordIndex(i32NumYWords, wordY + 1));
+			indices.P[0] = (wrapWordIndex(i32NumXWords, wordX));
+			indices.P[1] = (wrapWordIndex(i32NumYWords, wordY));
+			indices.Q[0] = (wrapWordIndex(i32NumXWords, wordX + 1));
+			indices.Q[1] = (wrapWordIndex(i32NumYWords, wordY));
+			indices.R[0] = (wrapWordIndex(i32NumXWords, wordX));
+			indices.R[1] = (wrapWordIndex(i32NumYWords, wordY + 1));
+			indices.S[0] = (wrapWordIndex(i32NumXWords, wordX + 1));
+			indices.S[1] = (wrapWordIndex(i32NumYWords, wordY + 1));
 
 			-- Work out the offsets into the twiddle structs, multiply by two as there are two members per word.
 			local WordOffsets = {
@@ -625,6 +646,8 @@ local function pvrtcDecompress(pCompressedData, pDecompressedData, width, height
 
 			-- Access individual elements to fill out PVRTCWord
 			local P, Q, R, S = {}, {}, {}, {};
+			
+			--[[
 			P.colorData = pWordMembers:sub(WordOffsets[0] + 1, WordOffsets[0] + 1):byte()
 			P.modulationData = pWordMembers:sub(WordOffsets[0], WordOffsets[0]):byte()
 			Q.colorData = pWordMembers:sub(WordOffsets[1] + 1, WordOffsets[1] + 1):byte()
@@ -632,7 +655,15 @@ local function pvrtcDecompress(pCompressedData, pDecompressedData, width, height
 			R.colorData = pWordMembers:sub(WordOffsets[2] + 1, WordOffsets[2] + 1):byte()
 			R.modulationData = pWordMembers:sub(WordOffsets[2], WordOffsets[2]):byte()
 			S.colorData = pWordMembers:sub(WordOffsets[3] + 1, WordOffsets[3] + 1):byte()
-			S.modulationData = pWordMembers:sub(WordOffsets[3], WordOffsets[3]):byte()
+			S.modulationData = pWordMembers:sub(WordOffsets[3], WordOffsets[3]):byte()]]
+			P.colorData = read32Int(pWordMembers, WordOffsets[0] + 1)
+			P.modulationData = read32Int(pWordMembers, WordOffsets[0])
+			Q.colorData = read32Int(pWordMembers, WordOffsets[1] + 1)
+			Q.modulationData = read32Int(pWordMembers, WordOffsets[1])
+			R.colorData = read32Int(pWordMembers, WordOffsets[2] + 1)
+			R.modulationData = read32Int(pWordMembers, WordOffsets[2])
+			S.colorData = read32Int(pWordMembers, WordOffsets[3] + 1)
+			S.modulationData = read32Int(pWordMembers, WordOffsets[3])
 
 			-- assemble 4 words into struct to get decompressed pixels from
 			pvrtcGetDecompressedPixels(P, Q, R, S, pPixels, bpp);
@@ -657,7 +688,9 @@ function PVRTDecompressPVRTC(pCompressedData, Do2bitMode, XDim, YDim, pResultIma
 	if (XTrueDim ~= XDim or YTrueDim ~= YDim) then pDecompressedData = {}; end
 
 	-- Decompress the surface.
+	print("decomping")
 	local retval = pvrtcDecompress(pCompressedData, pDecompressedData, XTrueDim, YTrueDim, Do2bitMode == 1 and 2 or 4);
+	print("decomped")
 
 	local resultstr = ""
 
@@ -672,17 +705,25 @@ function PVRTDecompressPVRTC(pCompressedData, Do2bitMode, XDim, YDim, pResultIma
 				resultstr = resultstr..string.char(pixel.red)..string.char(pixel.green)..string.char(pixel.blue)..string.char(pixel.alpha)
 			end
 		end
-
+		
+		error()
 		-- Free the temporary buffer.
 		-- delete[] pDecompressedData;
 	else
+		local dat = love.image.newImageData(XDim, YDim, "rgba8", nil)
 		for x = 0, XDim - 1 do
 			-- for y = 0, YDim - 1 do pResultImage[x + y * XDim] = pDecompressedData[x + y * XTrueDim]; end
 			for y = 0, YDim - 1 do
 				local pixel = pDecompressedData[x + y * XTrueDim]
-				resultstr = resultstr..string.char(pixel.red)..string.char(pixel.green)..string.char(pixel.blue)..string.char(pixel.alpha)
+				--resultstr = resultstr..string.char(pixel.red)..string.char(pixel.green)..string.char(pixel.blue)..string.char(pixel.alpha)
+				dat:setPixel(x, y, pixel.red / 255, pixel.green / 255, pixel.blue / 255, pixel.alpha / 255)
+				--dat:setPixel(x, y, x / XDim, y / YDim, 0, 1)
+				--print(pixel.red / 255, pixel.green / 255, pixel.blue / 255, pixel.alpha / 255)
 			end
+			--print("row(column?) "..x)
+			--error()
 		end
+		return retval, dat
 	end
 	return retval, resultstr
 end
