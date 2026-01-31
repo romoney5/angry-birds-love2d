@@ -101,6 +101,10 @@ function createDynamicHandler(name)
 	
 	function handler.enterIngame(a, theme)
 		return 
+	end	
+	
+	function handler.releaseInGame(a, theme)
+		return 
 	end
 
 	_G[name] = handler
