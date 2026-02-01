@@ -356,6 +356,9 @@ function setColliderType(object, collider) --3.0.1 only
 	
 	if collider == colliders.ghost then
 		obj.fixture:setMask(CATEGORY_BIRD)
+	elseif collider == colliders.staticNoCollision then
+		setFilterCategory(object, CATEGORY_SENSOR)
+		setFilterMask(object, 0)
 	end
 end
 
