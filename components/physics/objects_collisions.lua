@@ -572,7 +572,11 @@ end
 function getScale(name)
     local obj = objects.world[name]
     if obj then
-        return obj.scale or 1
+		if type(obj.scale) == "table" then
+			return obj.scale.x, obj.scale.y
+		else
+			return obj.scale or 1
+		end
     end
 end
 
