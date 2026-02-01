@@ -266,14 +266,26 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	updateObjectMass(name)
 end
 
+local function isObjectInRenderQueue(name, z)
+	for k, v in ipairs(zOrderedObjects[z]) do
+		if v.name == name then
+			return true
+		end
+	end
+	
+	return false
+end
+
 function addObjectToRenderQueue(name)
 	local obj = objects.world[name]
 	obj.z_order = obj.z_order or 0
 	
 	local z = math.floor(obj.z_order)
 	zOrderedObjects[z] = zOrderedObjects[z] or {}
-	table.insert(zOrderedObjects[z], {name = name, z_order = obj.z_order})
-	objectsSorted = false
+	if not isObjectInRenderQueue(obj.name, z) then -- don't add a sprite element if it already exists
+		table.insert(zOrderedObjects[z], {name = obj.name, z_order = obj.z_order})
+		objectsSorted = false
+	end
 end
 
 --absw
