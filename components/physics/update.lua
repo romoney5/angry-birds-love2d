@@ -86,7 +86,7 @@ function updatePhysics(dt)
 
 	--update the trajectory in the case of a newer version, on older versions the distance check prevents it from running twice
 	updateTrajectory()
-
+	
 	if removeBlocks then
 		removeBlocks()
 	end
@@ -138,6 +138,16 @@ function updatePhysics(dt)
 
 			if obj.type == "circle" and not birds[obj.name] and rollingVolumes[material] and volume > rollingVolumes[material] then
 				rollingVolumes[material] = volume
+			end
+			
+			if obj.objectQueue then
+				for k, v in ipairs(obj.objectQueue) do
+					v.timer = v.timer - dt2
+					if v.timer <= 0 then
+						hoopTrigger(obj.name, v.name)
+						table.remove(obj.objectQueue, k)
+					end
+				end
 			end
 			
 			--grab objects

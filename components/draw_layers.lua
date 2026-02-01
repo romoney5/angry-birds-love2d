@@ -353,12 +353,19 @@ function drawObject(v)
 	drawangle = v.angle
 	
 	local scale = v.scale or 1
-	if v.isBackground then scale = 2 end
+	
+	if type(scale) == "table" then
+		love.graphics.scale(scale.x, scale.y)
+		
+		res.drawSprite(v.sprite, x / scale.x, y / scale.y)
+	else
+		if v.isBackground then scale = 2 end
 
-	love.graphics.scale(scale)
-	if v.flipx then love.graphics.scale(-1, 1) end
+		love.graphics.scale(scale)
+		if v.flipx then love.graphics.scale(-1, 1) end
 
-	res.drawSprite(v.sprite, x / scale, y / scale)
+		res.drawSprite(v.sprite, x / scale, y / scale)
+	end
 
 	drawangle = 0
 	love.graphics.pop()

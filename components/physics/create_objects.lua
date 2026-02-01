@@ -141,11 +141,11 @@ function updateObjectMass(name)
 	end
 end
 
-local CATEGORY_IMMOVABLE = 0x0001
-local CATEGORY_SENSOR = 0x0002
-local CATEGORY_BLOCK = 0x0004
-local CATEGORY_BIRD = 0x0008
-local CATEGORY_EAGLE = 0x0010
+CATEGORY_IMMOVABLE = 0x0001
+CATEGORY_SENSOR = 0x0002
+CATEGORY_BLOCK = 0x0004
+CATEGORY_BIRD = 0x0008
+CATEGORY_EAGLE = 0x0010
 
 function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
 	local verts = polyverts
