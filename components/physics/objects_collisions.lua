@@ -869,7 +869,7 @@ function basicBeginContact(obj1, obj2, contact)
 			block = o1
 		end
 		
-		if getColliderType(block.name) >= colliders.staticNoBirdCollision then
+		if colliders.staticNoBirdCollision and getColliderType(block.name) >= colliders.staticNoBirdCollision then
 			return
 		end
 		
