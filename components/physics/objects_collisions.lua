@@ -787,7 +787,7 @@ function physicsBeginContact(obj1, obj2, contact)
 	
 	if not objects.world[o1.name] or not objects.world[o2.name] then return end
 	
-	local bubbleCollision = (getColliderType(o1.name) == colliders.hoop or getColliderType(o2.name) == colliders.hoop) 
+	local bubbleCollision = (getColliderType(o1.name) == colliders.bubble or getColliderType(o2.name) == colliders.bubble) 
 	and getColliderType(o1.name) ~= getColliderType(o2.name)
 	
 	local isHoopTriggered = getMaterial(o1.name) == "hoop_trigger" or getMaterial(o2.name) == "hoop_trigger"
