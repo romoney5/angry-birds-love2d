@@ -148,7 +148,7 @@ function setupColliders()
 				return blockTable.collider_types[collider]
 			end
 			
-			return 0
+			return nil
 		end
 	}
 	

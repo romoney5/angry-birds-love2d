@@ -738,49 +738,13 @@ function bubbleBeginContact(obj1, obj2, contact)
 		deadBlocks[bubble.name] = bubble
 	end
 end
---[[ WORK IN PROGRESS
+
 function hoopBeginContact(obj1, obj2, contact)
-	local o1 = obj1:getUserData()
-	local o2 = obj2:getUserData()
-	
-	local hoop, collider = o1, o2
-	
-	if getMaterial(o2.name) == "hoop_trigger" then
-		hoop = o2
-		collider = o1
-	end
-	
-	if collider.type == "circle" then
-		local vx, vy = collider.body:getLinearVelocity()
-		local ballBottom = collider.y + collider.radius * 2
-		local xdiff = math.abs(hoop.x - collider.x)
-		local hoopRadius = hoop.width * 0.5
-		
-		if vy > 0 and hoop.y > ballBottom and xdiff < hoopRadius then
-			collider.throughTheHoop = hoop.name
-			print("Entering hoop:", vy, ballBottom, xdiff, hoopRadius)
-		end
-	end
 end
 
-function hoopEndContact(obj1, obj2, contact)
-	local o1 = obj1:getUserData()
-	local o2 = obj2:getUserData()
-	
-	local hoop, collider = o1, o2
-	
-	if getMaterial(o2.name) == "hoop_trigger" then
-		hoop = o2
-		collider = o1
-	end
-	
-	if collider.throughTheHoop and collider.throughTheHoop == hoop.name then
-		print("GOAL!")
-		hoop.objectQueue = hoop.objectQueue or {}
-		table.insert(hoop.objectQueue, {timer = #hoop.objectQueue, name = collider.name})
-	end
+function physicsEndContact(obj1, obj2, contact)
 end
-]]
+
 function physicsBeginContact(obj1, obj2, contact)
 	local o1 = obj1:getUserData()
 	local o2 = obj2:getUserData()
@@ -790,10 +754,10 @@ function physicsBeginContact(obj1, obj2, contact)
 	local bubbleCollision = (getColliderType(o1.name) == colliders.bubble or getColliderType(o2.name) == colliders.bubble) 
 	and getColliderType(o1.name) ~= getColliderType(o2.name)
 	
-	local isHoopTriggered = getMaterial(o1.name) == "hoop_trigger" or getMaterial(o2.name) == "hoop_trigger"
+	local isHoopTriggered = getColliderType(o1.name) == colliders.hoop or getColliderType(o2.name) == colliders.hoop
 	
 	if isHoopTriggered then
-		--hoopBeginContact(obj1, obj2, contact)
+		hoopBeginContact(obj1, obj2, contact)
 	elseif bubbleCollision then
 		bubbleBeginContact(obj1, obj2, contact)
 	else
