@@ -139,7 +139,7 @@ function updatePhysics(dt)
 			if obj.type == "circle" and not birds[obj.name] and rollingVolumes[material] and volume > rollingVolumes[material] then
 				rollingVolumes[material] = volume
 			end
-			
+			--[[
 			if obj.objectQueue then
 				for k, v in ipairs(obj.objectQueue) do
 					v.timer = v.timer - dt2
@@ -149,7 +149,7 @@ function updatePhysics(dt)
 					end
 				end
 			end
-			
+			]]
 			--grab objects
 			if not releaseBuild and keyHold.RBUTTON and checkObjectBounds(obj.x, obj.y, (obj.width or obj.radius) + 5, (obj.height or obj.radius) + 5, obj.angle, cx, cy) then
 				res.drawString("", obj.name, obj.x * 20, obj.y * 20 + 50)

@@ -141,6 +141,20 @@ function updateObjectMass(name)
 	end
 end
 
+function setupColliders()
+	local meta = {
+		__index = function(t, collider)
+			if blockTable.collider_types and blockTable.collider_types[collider] then
+				return blockTable.collider_types[collider]
+			end
+			
+			return 0
+		end
+	}
+	
+	colliders = setmetatable({}, meta)
+end
+
 CATEGORY_IMMOVABLE = 0x0001
 CATEGORY_SENSOR = 0x0002
 CATEGORY_BLOCK = 0x0004

@@ -354,7 +354,7 @@ function setColliderType(object, collider) --3.0.1 only
 	local obj = objects.world[object]
 	obj.collider = collider
 	
-	if collider == 6 then
+	if collider == colliders.ghost then
 		obj.fixture:setMask(CATEGORY_BIRD)
 	end
 end
@@ -717,7 +717,7 @@ function bubbleBeginContact(obj1, obj2, contact)
 	
 	local bubble, collider = o1, o2
 	
-	if getColliderType(collider.name) == 11 then
+	if getColliderType(collider.name) == colliders.bubble then
 		bubble = o2
 		collider = o1
 	end
@@ -787,7 +787,7 @@ function physicsBeginContact(obj1, obj2, contact)
 	
 	if not objects.world[o1.name] or not objects.world[o2.name] then return end
 	
-	local bubbleCollision = (getColliderType(o1.name) == 11 or getColliderType(o2.name) == 11) 
+	local bubbleCollision = (getColliderType(o1.name) == colliders.hoop or getColliderType(o2.name) == colliders.hoop) 
 	and getColliderType(o1.name) ~= getColliderType(o2.name)
 	
 	local isHoopTriggered = getMaterial(o1.name) == "hoop_trigger" or getMaterial(o2.name) == "hoop_trigger"
@@ -905,7 +905,7 @@ function basicBeginContact(obj1, obj2, contact)
 			block = o1
 		end
 		
-		if getColliderType(block.name) >= 12 then
+		if getColliderType(block.name) >= colliders.staticNoBirdCollision then
 			return
 		end
 		
@@ -932,8 +932,6 @@ function basicBeginContact(obj1, obj2, contact)
 		
 		local effectiveDamage = linearForce * damageMultiplier
 		local damage = 0
-		
-		print(bird.name, block.name, block.collider)
 		
 		destroyBreakableJoints(block.name, linearForce)
 		

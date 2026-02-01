@@ -18,6 +18,7 @@ function loadLevel(filename)
 	zOrderedObjects = {}
 	loadLuaFileToObject(filename..".lua", this, loadedObjects)
 	setMaxTranslation(2)
+	setupColliders()
 end
 
 function saveLevel(filename)
