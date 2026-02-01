@@ -360,7 +360,7 @@ function setColliderType(object, collider) --3.0.1 only
 end
 
 function getColliderType(object)
-	return objects.world[object].collider
+	return objects.world[object].collider or 0
 end
 
 function inheritTeleportation(object, others) --3.3.0
@@ -905,6 +905,10 @@ function basicBeginContact(obj1, obj2, contact)
 			block = o1
 		end
 		
+		if getColliderType(block.name) >= 12 then
+			return
+		end
+		
 		local damageMultiplier = 1.0
 		local velocityMultiplier = 1.0
 		
@@ -928,6 +932,8 @@ function basicBeginContact(obj1, obj2, contact)
 		
 		local effectiveDamage = linearForce * damageMultiplier
 		local damage = 0
+		
+		print(bird.name, block.name, block.collider)
 		
 		destroyBreakableJoints(block.name, linearForce)
 		
