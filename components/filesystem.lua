@@ -143,10 +143,12 @@ function makeChunk(filename, env)
 	
 	if kind == "lua" then --it's bytecode!
 		print("Loading compiled Lua \""..filename.."\"...")
-		return true, pcall(loadbytecode, src, env, filename)
+		local err, lua = pcall(loadbytecode, src, env, filename)
+		return true, lua, not err
 	elseif kind == "plain" then --that's just plain old lua.. boring..
 		print("Loading Lua \""..filename.."\"...")
-		return false, pcall(loadstring, src, filename)
+		local lua, err = loadstring(src, filename)
+		return false, lua, err
 	end
 end
 
@@ -154,8 +156,6 @@ end
 function loadLuaFileToObject(filename, ctx, key, lenient)
 	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
 	filename = newname or filename
-
-	local compiled, loaded, lua
 
 	ctx = ctx or _G
 
@@ -171,9 +171,9 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 		env = ctx
 	end
 
-	compiled, loaded, lua = makeChunk(filename, env)
+	local compiled, lua, err = makeChunk(filename, env)
 
-	if lua and loaded then
+	if lua and not err then
 		--fione needs the env on script loading so this should only work on plaintext luas
 		if not compiled then
 			setfenv(lua, env)
@@ -201,12 +201,13 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 		lua()
 	elseif not lenient then
 		if checkDirectory(filename) then
-			error("Could not load Lua file: "..filename.."\n"..tostring(lua))
+			--error("Could not load Lua file: "..filename.."\n"..tostring(err))
+			print("Could not load Lua file: "..filename.."\n"..tostring(err))
 		else
-			print("Could not load Lua file: "..filename.."\n"..tostring(lua))
+			print("Could not load Lua file: "..filename.."\n"..tostring(err))
 			if enableDebug then
 				showPopup("Warning",
-						"Could not load Lua file: "..filename.."\n"..tostring(lua),
+						"Could not load Lua file: "..filename.."\n"..tostring(err),
 						{
 							{sprite = "TUTORIAL_OK", callback = function()
 								return true
@@ -226,13 +227,11 @@ function loadLuaFile(filename, envKey, blocks, unpack, lenient)
 	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
 	filename = newname or filename
 
-	local loaded, lua
+	local compiled, lua, err = makeChunk(filename, env)
 	local env = _G[envKey] or _G
 	local og_env = env
 
-	compiled, loaded, lua = makeChunk(filename, env)
-
-	if loaded and lua then
+	if lua and not err then
 		if not compiled and not blocks then
 			setfenv(lua, env)
 		end
@@ -278,9 +277,9 @@ function loadLuaFile(filename, envKey, blocks, unpack, lenient)
 	elseif not lenient then
 		-- error("Could not load Lua file: "..filename)
 		if not checkDirectory(filename) then
-			lua = "File does not exist."
+			err = "File does not exist."
 		end
-		print("Could not load Lua file: "..filename.."\n"..tostring(lua))
+		print("Could not load Lua file: "..filename.."\n"..tostring(err))
 	end
 
 	return false
@@ -290,17 +289,16 @@ function runLuaFile(filename, lenient)
 	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
 	filename = newname or filename
 
-	local loaded, lua
-	compiled, loaded, lua = makeChunk(filename)
+	local compiled, lua, err = makeChunk(filename)
 
-	if loaded and lua then
+	if lua and not err then
 		return lua()
 	elseif not lenient then
 		-- error("Could not load Lua file: "..filename)
 		if not checkDirectory(filename) then
-			lua = "File does not exist."
+			err = "File does not exist."
 		end
-		error("Could not load Lua file: "..filename.."\n"..tostring(lua))
+		error("Could not load Lua file: "..filename.."\n"..tostring(err))
 	end
 end
 
