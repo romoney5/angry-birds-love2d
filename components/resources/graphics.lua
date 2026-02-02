@@ -355,6 +355,7 @@ local function loadSheet(sheet, usecomposprites)
 		if not usecomposprites then
 			info = {sprites = {}}
 			info.filename = jsondata.meta.image
+			info.pixelformat = jsondata.meta.format
 			
 			for i, sprite in ipairs(jsondata.frames) do
 				info.sprites[sprite.filename] = {
@@ -365,6 +366,9 @@ local function loadSheet(sheet, usecomposprites)
 					
 					pivotX = sprite.pivot.x,
 					pivotY = sprite.pivot.y,
+
+					--for .stream files
+					stream = sprite.stream,
 				}
 			end
 			--print(jsondata.meta.app, jsondata.meta.image)
@@ -436,7 +440,9 @@ local function loadSheet(sheet, usecomposprites)
 
 		local lsheet = loadedSheets[sheet]
 
-		local zipped = not checkDirectory(filename) and ((checkDirectory(filename..".zip") and ".zip") or (checkDirectory(filename..".kazip") and ".kazip"))
+		local zipped = not checkDirectory(filename) and ((checkDirectory(filename..".zip") and ".zip")
+			or (checkDirectory(filename..".kazip") and ".kazip"))
+
 		if zipped then
 			--android versions like to zip some images
 			local zip = filename..zipped
@@ -467,9 +473,6 @@ local function loadSheet(sheet, usecomposprites)
 		end
 
 		if endsWith(filename, ".pvr") then
-			-- extensionlength = 4 + 4 --.pvr + .png
-			-- filename = filename..".png"
-
 			extensionlength = 4
 			--most angry birds pvrs are usually listed as R4 G4 B4 A4 UNorm Linear under pvrtextool, so 16bpp
 			--the file size also lines up, width x height x 2 (bytes per pixel) + 52 bytes of headers = filesize
@@ -498,6 +501,24 @@ local function loadSheet(sheet, usecomposprites)
 				local src = love.filesystem.read(filename)
 				lsheet.sheet = love.graphics.newImage(webp.loadImage(src, src:len()))
 			end
+		elseif endsWith(filename, ".stream") then
+			--TODO: another file
+			--the json files basically handle everything for us at least for seasons
+
+			--json.meta.format to PixelFormat
+			local mapping = {
+				["RGBA4444"] = "rgba4",
+			}
+
+			local format = mapping[info.pixelformat]
+			local src = love.filesystem.read(filename)
+
+			for i, sprite in pairs(info.sprites) do
+				-- sprite.width = sprite.stream.width
+				-- sprite.height = sprite.stream.height
+				-- print(i)
+				sprite.sheet = love.graphics.newImage(love.image.newImageData(sprite.stream.width, sprite.stream.height, format, src:sub(sprite.stream.position + 1 + 40, sprite.stream.position + 40 + sprite.stream.length)))
+			end
 		else
 			lsheet.sheet = love.graphics.newImage(filename)
 		end
@@ -506,8 +527,9 @@ local function loadSheet(sheet, usecomposprites)
 
 		for i, spr in pairs(info.sprites) do
 			-- print("res.createSpriteSheet: adding sprite "..tostring(i))
-			cachedimgs[i] = {quad = love.graphics.newQuad(spr.x, spr.y, spr.width, spr.height, lsheet.sheet:getWidth(), lsheet.sheet:getHeight()),
-				spsh = lsheet.sheet, px = spr.pivotX, py = spr.pivotY, width = spr.width, height = spr.height}
+			local sheet = spr.sheet or lsheet.sheet
+			cachedimgs[i] = {quad = love.graphics.newQuad(spr.x, spr.y, spr.width, spr.height, sheet:getWidth(), sheet:getHeight()),
+				spsh = sheet, px = spr.pivotX, py = spr.pivotY, width = spr.width, height = spr.height}
 			table.insert(lsheet.sprites, i)
 		end
 	end
