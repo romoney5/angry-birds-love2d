@@ -86,7 +86,7 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 	if sprite == g_currentCursorName and ((gameOptions and gameOptions.ui and (not gameOptions.ui.enableCursor))
 		or (joystick and physicsEnabled)) then return end
 
-	local image = type(sprite) == "string" and (cachedimgs[sprite] or cachedcs[sprite]) or sprite
+	local image = type(sprite) == "string" and (cachedcs[sprite] or cachedimgs[sprite]) or sprite
 
 	if image and image.quad and image.spsh then
 		local w, h = iwidth or image.width, iheight or image.height
@@ -334,9 +334,6 @@ local function loadSheet(sheet, usecomposprites)
 	
 	if not newname then
 		newname, paths = findCaseInsensitive(datapath.."/"..sheet:sub(1, -5)..(usecomposprites and ".compo.json" or ".sheet.json"))
-		if not newname then
-			newname, paths = findCaseInsensitive(datapath.."/"..sheet:sub(1, -5).."_1"..(usecomposprites and ".compo.json" or ".sheet.json")) --ok
-		end
 	end
 
 	if not newname then
