@@ -26,10 +26,26 @@ function createDynamicHandler(name)
 				for i, list in ipairs{"loadlist", "neatLoadlist"} do
 					if not loadlists[list][profile] then
 						loadLuaFile(imagePath.."/"..profile.."/"..list..".lua")
+
+						--json loadlists
+						if checkDirectory(imagePath.."/"..profile.."/"..list..".json") then
+							assetLoadList = assetLoadList or {}
+							for profileName, profileValue in pairs(readJSONToLuaTable(imagePath.."/"..profile.."/"..list..".json")) do
+								for groupName, groupValue in pairs(profileValue) do
+									assetLoadList[profile][groupName] = assetLoadList[profile][groupName] or {}
+									for i, v in pairs(groupValue) do
+										table.insert(assetLoadList[profile][groupName], {v.filename, v.type})
+									end
+								end
+							end
+						end
+
+						if not assetLoadList then break end
+
 						loadlists[list][profile] = assetLoadList[profile]
 					end
 					
-					local dat = loadlists[list][profile][v]
+					local dat = loadlists[list] and loadlists[list][profile] and loadlists[list][profile][v]
 					if dat then
 						for _, asset in ipairs(dat) do
 							if asset[2] ~= 1 then
@@ -96,15 +112,37 @@ function createDynamicHandler(name)
 	function handler.isLoaded(...) return true end
 	
 	function handler.loadInGame(a, theme)--?
-		return 
+		return
 	end
 	
 	function handler.enterIngame(a, theme)
-		return 
+		return
+	end
+
+	--4.3.2
+	function handler.cacheProfiles(...)
+		print("cacheProfiles:")
+		for i, v in pairs{...} do
+			if type(v) == "table" then
+				print(i..":")
+				for i, v in pairs(v) do
+					if type(v) == "table" then
+						print("", i..":")
+						for i, v in pairs(v) do
+							print("", "", i, v)
+						end
+					else
+						print("", i, v)
+					end
+				end
+			else
+				print(v)
+			end
+		end
 	end	
 	
 	function handler.releaseInGame(a, theme)
-		return 
+		return
 	end
 
 	_G[name] = handler
@@ -150,6 +188,14 @@ function flashAnimationPauseToLast()--?
 end
 
 
+function checkLevelAvailabilityOnline()--?
+	return
+end
+
+function getOnlineCheckStatus()--?
+	return
+end
+
 function enablePigDaysVignette(enabled)--?
 	return
 end
@@ -180,8 +226,33 @@ function native.GetTimeStamp.fetchTimeStamp()--?
 	return 0
 end
 
+function native.GetTimeStamp.getTimeStamp()--?
+	return 0
+end
+
 function native.GetTimeStamp.hasResult()
 	return false
 end
 
 cloudDomain = ""
+
+
+function readJSONToLuaTable(filename, export)
+	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
+
+	if not newname then
+		print("readJSONToLuaTable: json file \""..tostring(sheet).."\" not found")
+		return {}
+	end
+
+	print("Loading JSON file \""..tostring(newname).."\"...")
+
+	local data = love.filesystem.read(newname or "")
+	local dec = json.decode(decryptSrc(newname, data))
+
+	if export then
+		_G[export] = dec
+	end
+
+	return dec --for dynamic handler
+end

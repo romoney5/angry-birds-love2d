@@ -119,6 +119,7 @@ function updateSomething(dt)
 		so.cmenu.attach = nil
 	end
 
+	local f_padding = 50
 	for i,v in pairs(so.files) do
 		local fx, fy = 250, 230 + yoffset
 		local selected = not so.cmenu.hovering and (fy >= y and fy <= y + h) and checkBounds(x, fy - 12, w, 36, cursor.x, cursor.y)

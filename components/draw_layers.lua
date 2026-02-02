@@ -1,5 +1,6 @@
 --draw bg, fg, and game
 
+local drawSprites --old seasons versions define drawSprites
 trajectory = {{{}, {}, {}}}
 
 

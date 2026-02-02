@@ -407,7 +407,15 @@ end
 ServerTime = {}
 
 function ServerTime.getStatus()
-	return
+	return 1
+end
+
+function ServerTime.getServerTimeInLocalTimeZone(a)
+	return 1
+end
+
+function ServerTime.getServerTimeInSeconds(a)--?
+	return 1
 end
 
 

@@ -9,7 +9,6 @@ function drawParticlesNative(menu)
 			setRenderState(0, 0, p.scale, p.scale, p.angle, p.spritePivotX, p.spritePivotY)
 			_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
 		elseif not menu and not p.menu then
-			setRenderState(-screen.left / p.scale, -screen.top / p.scale, worldScale * p.scale, worldScale * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
 			setRenderState(-screen.left / p.scale, -screen.top / p.scale, (worldScale or 1) * p.scale, (worldScale or 1) * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
 			_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
 		end

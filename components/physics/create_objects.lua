@@ -1,6 +1,5 @@
 --create box, circle, etc
 
---funky
 function createJoint(joint)
 	local name, end1, end2, type, coordType, x1, y1, x2, y2, collideConnected, limit, motor, maxTorque, lowerLimit, upperLimit, motorSpeed, destroyTimer =
 		joint.name,joint.end1,joint.end2,joint.type,joint.coordType,joint.x1,joint.y1,joint.x2,joint.y2,joint.collideConnected,
@@ -196,6 +195,9 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 	obj.body:setAngularDamping(2)
 
 	addObjectToRenderQueue(name)
+	obj.radius = 0
+
+	if not tonumber(z_order) then objects.world[name].z_order = 0 end
 
 	--set type
 	obj.type = "polygon"
@@ -237,6 +239,7 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 	obj.body:setAngularDamping(2)
 
 	addObjectToRenderQueue(name)
+	if not tonumber(z_order) then objects.world[name].z_order = 0 end
 
 	--set type
 	obj.type = "box"
@@ -264,6 +267,8 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 
 	addObjectToRenderQueue(name)
 
+	if not tonumber(z_order) then objects.world[name].z_order = 0 end
+	
 	if tonumber(z_order) and z_order >= 999 then
 		obj.isBackground = true
 		obj.fixture:setCategory(CATEGORY_EAGLE)

@@ -29,6 +29,7 @@ function res.createBitmapFont(font, silent)
 	if checkDirectory(font) then
 		if not fonts[fontname] then
 			local data = getDatInfo(love.filesystem.read(font), font, "FONT")
+			if not data then print("Failed to load font "..fontname) return end
 			local spritesheet = data.filename
 			local filepath = (font:match("(.+)/[^/]+$") or "").."/"..spritesheet
 
@@ -77,7 +78,7 @@ function res.createBitmapFont(font, silent)
 			print("Font "..fontname.." is already loaded.")
 		end
 	elseif not silent then
-		print("Failed to load font "..fontname)
+		print("Could not find font "..fontname)
 	end
 end
 
@@ -89,7 +90,7 @@ end
 
 function res.drawString(group, text, x, y, aligny, alignx)
 	text = tostring(text) or ""
-	if group and group~="" then
+	if group and group ~= "" then
 		text = res.getString(group, text)
 	end
 

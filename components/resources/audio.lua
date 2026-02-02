@@ -20,6 +20,10 @@ function res.createAudio(path, name, streamed)
 	audios[name] = datapath.."/"..path
 end
 
+function createAudioFromLua(path, name, streamed)--?
+	audios[name] = datapath.."/"..path
+end
+
 function res.createCompositeAudio(name, list) --absw.. not sure why they had to repeat the same audio 59 times
 	audios[name] = audios[list[1]]
 end

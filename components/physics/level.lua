@@ -59,7 +59,9 @@ end
 
 function getLoadStatus()
 	--0=not finished, 1 or 2=finished, 3=christmas?
-	return {status = 1}
+	--timetonext can be a number
+	--today: "yyyy-mm-dd"
+	return {status = 1, timeToNext = "", today = ""}
 end
 
 --4.3.1

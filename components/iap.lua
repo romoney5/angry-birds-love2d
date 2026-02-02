@@ -101,7 +101,6 @@ end
 function Payment.iapInitPaymentProviders()
 	iapHasPaymentProvider = true
 	replacePaymentFunctions()
-	g_iap_state = 2
 	if Payment.onPaymentProviderSelected then
 		Payment.onPaymentProviderSelected()
 	end
