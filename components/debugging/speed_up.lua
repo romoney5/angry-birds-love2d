@@ -1,18 +1,22 @@
 --speed-up the game by 5x with shift+a
 --pause the game by pressing shift+z and step a frame by pressing a (5x with shift+a)
 
-local paused = false
+debugPaused = false
 
 function isSpeedingUp()
 	return keyHold.SHIFT and keyHold.A
 end
 
 function getPauseState()
+	local val = debugPaused and (keyPressed.A and 2 or 1) or false
+
+	--deliberately do the check after making the value
+	--so the game still draws when you first pause
 	if keyHold.SHIFT and keyPressed.Z then
-		paused = not paused
+		debugPaused = not debugPaused
 	end
 
-	return paused and (keyPressed.A and 2 or 1) or false
+	return val
 end
 
 function speedUpPre(dt2)
@@ -30,7 +34,7 @@ function speedUpPre(dt2)
 end
 
 function speedUpPost()
-	if isSpeedingUp() or paused then
+	if isSpeedingUp() or debugPaused then
 		drawRect2(.2, .2, .2, .5, 0, 0, screenWidth, screenHeight)
 	end
 end

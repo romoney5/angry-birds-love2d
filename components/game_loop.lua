@@ -191,7 +191,10 @@ function love.update(dt)
 		cursor.wheelTriggered = nil
 		setRenderState(0, 0, 1, 1)
 		updatePopup()
-		love.graphics.present()
+
+		if not (debugPaused and dt2 == 0) then
+			love.graphics.present()
+		end
 	elseif hasfocus then
 		hasfocus = false
 		pausedaudios = love.audio.pause()
@@ -201,7 +204,9 @@ function love.update(dt)
 			gamePaused()
 		end
 
-		love.graphics.present()
+		if not debugPaused then
+			love.graphics.present()
+		end
 	end
 	-- if not cursor.wheelTriggered then
 		cursor.wheel = 0
