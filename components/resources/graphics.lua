@@ -48,6 +48,7 @@ function res.drawCompoSprite(sheet, sprite, x, y)
 
 	if image then
 		for i,v in ipairs(image.items) do
+			--TODO: scale and angle
 			drawSprite(sheet, v.n, math.floor(x + v.x), math.floor(y + v.y))
 		end
 	end
@@ -372,8 +373,29 @@ local function loadSheet(sheet, usecomposprites)
 			--print(jsondata.meta.app, jsondata.meta.image)
 		else
 			info = {compos = {}}
+			
+			for i, compo in ipairs(jsondata.compo) do
+				info.compos[compo.name] = {}
+				
+				for i, sprite in ipairs(compo.sprites) do
+					local scaleX = tonumber(sprite.scale) or sprite.scale[1]
+					local scaleY = tonumber(sprite.scale) or sprite.scale[2]
+					
+					--insert at the start
+					table.insert(info.compos[compo.name], 1, {
+						sheet = "",
+						x = sprite.x,
+						y = sprite.y,
+						sx = scaleX,
+						sy = scaleY,
+						a = sprite.angle,
+						flip = {x = false, y = false},
+						n = sprite.name
+					})
+				end
+			end
 			--error(newname)
-			print("sheet", jsondata.meta.sheet)
+			--print("sheet", jsondata.meta.sheet)
 		end
 	end
 
@@ -443,6 +465,7 @@ local function loadSheet(sheet, usecomposprites)
 			else
 				--or it didn't even work
 				print("loadSheet: could not unzip "..zip)
+				return
 			end
 		end
 
