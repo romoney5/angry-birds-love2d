@@ -132,7 +132,15 @@ function love.update(dt)
 			currentGameMode(dt2)
 		elseif update then
 			--pause the game if there's an important popup
+			local t1 = love.timer.getTime()
 			update(dt2, dt2)
+
+			if enableDebug then
+				local t2 = love.timer.getTime()
+				setRenderState(0, 0, 1, 1)
+				res.useFont("FONT_BASIC")
+				res.drawString("", "update: "..(math.floor((t2 - t1) * 1000 * 10) / 10).." ms", 10, 10)
+			end
 		end
 
 		--try it out, just for fun
