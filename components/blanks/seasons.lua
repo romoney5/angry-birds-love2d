@@ -256,3 +256,259 @@ function readJSONToLuaTable(filename, export)
 
 	return dec --for dynamic handler
 end
+
+PortalObjectTeleporter = {}
+-- TODO : fix angles + collision detection
+function PortalObjectTeleporter:recalculateLinearVelocity()
+	local vx, vy = self.object.body:getLinearVelocity()
+	local speed = math.sqrt(vx * vx + vy * vy)
+	
+	local EPSILON = 1.1920929e-07
+	
+	if speed < EPSILON then
+		return
+	end
+	
+	local deltaTime = dt2 * (physicsTimeScale or 1)
+	local portalAngleDiff = math.acos(self.destAngleCos * self.sourceAngleCos + self.destAngleSin * self.sourceAngleSin)
+							
+	local isLargerAngle = math.pi / 2 * deltaTime < portalAngleDiff
+	
+	local transformedVelocity = {x = 0, y = 0}
+	
+	local angleDelta = self.sourceAngle - self.destAngle
+	
+	if isLargerAngle then
+		local velAngle = math.atan2(vy, vx)
+		local newAngle = velAngle + deltaTime - angleDelta
+
+		newAngle = math.atan2(math.sin(newAngle), math.cos(newAngle))
+		
+		transformedVelocity.x = math.cos(newAngle) * speed
+		transformedVelocity.y = math.sin(newAngle) * speed
+		print("true", newAngle, velAngle, angleDelta)
+	else
+		local normalX = self.sourceAngleCos
+		local normalY = self.sourceAngleSin
+		local dotProduct = normalX * vx + normalY * vy
+		local angleReflected = {
+			x = vx - 2.0 * dotProduct * normalX,
+			y = vy - 2.0 * dotProduct * normalY,
+		}
+		
+		local newAngle = portalAngleDiff
+		if self.sourceAngle <= self.destAngle and angleDelta >= deltaTime then
+			newAngle = -newAngle
+		end
+		
+		local cosAngle = math.cos(newAngle)
+		local sinAngle = math.sin(newAngle)
+		
+		transformedVelocity.x = angleReflected.x * cosAngle + angleReflected.y * sinAngle
+		transformedVelocity.y = angleReflected.y * cosAngle - angleReflected.x * sinAngle
+		print("false", newAngle)
+	end
+	
+	if speed < self.minSpeed then
+		local scale = self.minSpeed / speed
+		transformedVelocity.x = transformedVelocity.x * scale
+		transformedVelocity.y = transformedVelocity.y * scale
+	end
+	
+	self.velocityX = transformedVelocity.x
+	self.velocityY = transformedVelocity.y
+end
+
+function PortalObjectTeleporter:new(object, x, y, angle, minSpeed, sourcePath, entryX, entryY, sourceX, sourceY, 
+	sourceAngle, destPath, destX, destY, destAngle, portalDelay, effect)
+	
+	local portal = {}
+	
+	portal.object = object
+	portal.x = x
+	portal.y = y
+	portal.angle = angle
+	portal.minSpeed = minSpeed
+	
+	portal.sourceName = sourcePath
+	portal.sourceX = sourceX
+	portal.sourceY = sourceY
+	portal.sourceAngle = sourceAngle
+	portal.sourceAngleSin = math.sin(sourceAngle)
+	portal.sourceAngleCos = math.cos(sourceAngle)
+	
+	portal.entryX = entryX
+	portal.entryY = entryY
+	
+	portal.destName = destPath
+	portal.destX = destX
+	portal.destY = destY
+	portal.destAngle = destAngle
+	portal.destAngleSin = math.sin(destAngle)
+	portal.destAngleCos = math.cos(destAngle)
+	
+	portal.portalDelay = portalDelay
+	portal.effect = effect
+	portal.needsVelocityRecalc = true
+	
+	self.active = false
+	self.effectsFinished = false
+	
+	self.finished = false
+	setmetatable(portal, self)
+	self.__index = self
+	
+	--portal:recalculateLinearVelocity()
+	
+	return portal
+end
+
+function PortalObjectTeleporter:update(dt)
+	if self.finished then
+		return false
+	end
+	
+	if self.active ~= true then
+		
+		local body = self.object.body
+		local vx, vy = body:getLinearVelocity()
+		local speed = math.sqrt(vx * vx + vy * vy)
+		
+		if speed > 0.0 then
+			local normalizedSpeed = (vx * self.sourceAngleCos + vy * self.sourceAngleSin) / speed
+			local velocityAngle = math.acos(normalizedSpeed)
+			
+			local angleThreshold = math.pi / 2 * dt
+			
+			if angleThreshold < velocityAngle then
+				if self.needsVelocityRecalc then
+					self:recalculateLinearVelocity()
+					self.needsVelocityRecalc = false
+				end
+				
+				local x, y = body:getPosition()
+				local dx = x - self.entryX
+				local dy = y - self.entryY
+				local distanceToEntry = math.sqrt(dx * dx + dy * dy)
+				
+				if distanceToEntry <= 0.0 then
+					return false
+				end
+				
+				local approachDot = (dx * self.sourceAngleCos + dy * self.sourceAngleSin) / distanceToEntry
+				local approachAngle = math.acos(approachDot)
+				
+				if approachAngle < angleThreshold then
+					return false
+				end
+				
+				local portalPassages = incrementPortalPingPongCount(self.object, self.sourceName, self.destName)
+				
+				if portalPassages > 10 then
+					self.effectsFinished = true
+					objectTeleportationAborted(self.object.name)
+					removeObject(self.object.name)
+					
+					return true
+				end
+				
+				self:playEffects(true)
+				
+				if self.portalDelay > 0.0 then
+					self:applyTeleportTransform()
+					body:setActive(false)
+					setVisible(self.object, false)
+					self.active = true
+					
+					return false
+				else
+					self:applyTeleportTransform()
+					objectExitingThroughPortal(self.object.name)
+					return true
+				end
+			end
+		end
+		
+		self.needsVelocityRecalc = true
+		return false
+	else
+		self.portalDelay = self.portalDelay - dt
+		
+		if self.portalDelay <= 0.0 then
+			self:restoreObject()
+			objectExitingThroughPortal(self.object.name)
+			
+			return true
+		end
+		
+		return false
+	end
+	
+	return false
+end
+
+function PortalObjectTeleporter:applyTeleportTransform()
+	local body = self.object.body
+	body:setTransform(self.x, self.y, self.angle)
+	body:setLinearVelocity(self.velocityX, self.velocityY)
+end
+
+function PortalObjectTeleporter:restoreObject()
+	local body = self.object.body
+	body:setActive(true)
+	setVisible(self.object, true)
+	self:playEffects(false)
+end
+
+function PortalObjectTeleporter:playEffects(isEntry)
+	local index = 1
+	while index <= #self.effect do
+		local effect = self.effect[index]
+		
+		local direction = effect.direction
+		local playSound = (direction == "both") or 
+                          (isEntry and direction == "in") or 
+                          (not isEntry and direction == "out")
+		
+		if playSound then
+			local assetName = effect.id
+			
+			if type(assetName) == "table" then
+				assetName = assetName[math.random(1, #assetName)]
+			end
+			
+			local effectType = effect.type
+			
+			if effectType == "particle" then
+				local x, y = self.object.x, self.object.y
+				
+				if effect.positionFromPortal then
+					x = self.entryX
+					y = self.entryY
+				end
+				
+				local rotation = 0.0
+				if not effect.positionFromPortal then
+					rotation = self.destAngle	
+					if isEntry then
+						rotation = self.sourceAngle	
+					end
+				end
+				
+				x = x * physicsToWorld
+				y = y * physicsToWorld
+				
+				_G.particles.addParticles(assetName, 1, x, y, 0, 0, rotation, false, false)
+			elseif effectType == "sound" then
+				local volume = effect.volume or 1.0
+				res.playAudio(assetName, volume, false, 0)
+			end
+		end
+
+		index = index + 1
+	end
+end
+
+function PortalObjectTeleporter:isComplete()
+    return self.finished
+end

@@ -78,6 +78,20 @@ function updatePhysics(dt)
 		end
 	end
 	
+	for name, teleporter in pairs(activeTeleporters) do
+		local objectBody = teleporter.object.body
+		
+		if objectBody:isDestroyed() then
+			activeTeleporters[name] = nil
+		else
+			local isComplete = teleporter:update(dt)
+			
+			if isComplete then
+				teleporter.finished = true
+			end
+		end
+	end
+
 	if applyForcesAtPhysicsStep then applyForcesAtPhysicsStep() end
 	
 	solvePhysics(true)

@@ -77,12 +77,12 @@ end
 
 local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 	local pt = particleTable.particles[type]
-	if softLimitSimultaneousParticles < particleAmount + amount and not ignoreParticleLimits then
+	if softLimitSimultaneousParticles < particleAmount + amount and not ignoreLimits then
 		amount = amount * 0.5
 	end
 	
 	for i = 1, amount, 1 do
-		if particleAmount < hardLimitSimultaneousParticles or ignoreLimits or ignoreParticleLimits then
+		if particleAmount < hardLimitSimultaneousParticles or ignoreLimits then
 			particleAmount = particleAmount + 1
 			local p = { }
 			p.x = x + (_G.math.random(0, w) - 0.5*w ) -- * cos(angle)

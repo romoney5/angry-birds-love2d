@@ -16,6 +16,7 @@ function loadLevel(filename)
 	collisionsList = {}
 	loadedObjects = {}
 	zOrderedObjects = {}
+	activeTeleporters = {}
 	loadLuaFileToObject(filename..".lua", this, loadedObjects)
 	setMaxTranslation(2)
 	setupColliders()

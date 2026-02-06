@@ -362,6 +362,19 @@ function setColliderType(object, collider) --3.0.1 only
 	end
 end
 
+function incrementPortalPingPongCount(object, enterPortal, newPortal)
+	birdTravellingThroughPortal(object.name)
+	
+	if enterPortal ~= object.portalName then
+		object.pingPongCount = 0
+	end
+	
+	object.portalName = newPortal
+	object.pingPongCount = object.pingPongCount + 1
+	
+	return object.pingPongCount
+end
+
 function getColliderType(object)
 	return objects.world[object].collider or 0
 end
@@ -745,7 +758,123 @@ end
 function hoopBeginContact(obj1, obj2, contact)
 end
 
+function portalBeginContact(obj1, obj2, contact)
+	local o1 = obj1:getUserData()
+	local o2 = obj2:getUserData()
+	
+	local portal, collider = o1, o2
+	
+	if getColliderType(collider.name) == colliders.portal then
+		portal = o2
+		collider = o1
+	end
+	
+    if activeTeleporters[collider.name] or collider.isTeleporting then
+        return
+    end
+	
+	print(collider.name, " enters ", portal.name)
+	
+	local teleportationTarget = objects.world[portal.portal.target]
+	
+	local teleportingObjectPath = collider.name .. "/" .. portal.name .. "/" .. teleportationTarget.name
+    local portalObjectPath = portal.name
+    local destinationPortalPath = teleportationTarget.name
+	
+	local portalX, portalY = teleportationTarget.x, teleportationTarget.y
+	
+	local deltaTime = dt2 * (physicsTimeScale or 1)
+	local portalAngle = deltaTime + portal.body:getAngle()
+	local destAngle =  deltaTime + teleportationTarget.body:getAngle()
+	
+	local sinSource = math.sin(portalAngle)
+	local cosSource = math.cos(portalAngle)
+	local sinDest = math.sin(destAngle)
+	local cosDest = math.cos(destAngle)
+	
+	local angleDiff = math.acos(cosSource * cosDest + sinSource * sinDest)
+	
+	local width = portal.width
+	local scaleFactor = 0.92
+	
+	local destX, destY = teleportationTarget.body:getPosition()
+	local sourceX, sourceY = portal.body:getPosition()
+	
+	local dx = collider.x - sourceX
+	local dy = collider.y - sourceY
+	local distance = math.sqrt(dx * dx + dy * dy)
+	
+	local newX = destX
+	local newY = destY
+	
+	if distance > 0.0 then
+        local approachAngle = math.atan2(sinSource * dx - cosSource * dy, cosSource * dx + sinSource * dy)
+        
+        local threshold = (math.pi / 2) * deltaTime
+        
+        if threshold < angleDiff then
+            approachAngle = -approachAngle
+        end
+        
+        local newPosAngle = destAngle - approachAngle
+        
+        newX = destX + math.cos(newPosAngle) * distance
+        newY = destY + math.sin(newPosAngle) * distance
+    end
+	
+	local portalObject = portal.portal
+	local portalDelay = portalObject.delay or 0.0
+	local portalMinVel = portalObject.minSpeedOut or 0.0
+	local effect = portalObject.effect
+
+	local teleporter = PortalObjectTeleporter:new(
+		collider,
+		newX, newY,
+		collider.angle,
+		portalMinVel,
+		portalObjectPath,
+		cosSource * width * scaleFactor - sourceX,
+		sinSource * width * scaleFactor - sourceY,
+		sourceX, sourceY, portalAngle,
+		destinationPortalPath,
+		destX, destY, destAngle,
+		portalDelay,
+		effect)
+		
+	activeTeleporters[collider.name] = teleporter
+end
+
+function portalEndContact(obj1, obj2, contact)
+	local o1 = obj1:getUserData()
+	local o2 = obj2:getUserData()
+	
+	local portal, collider = o1, o2
+	
+	if getColliderType(collider.name) == colliders.portal then
+		portal = o2
+		collider = o1
+	end
+	
+	local teleporter = activeTeleporters[collider.name]
+    
+    if teleporter then
+        if teleporter.finished then
+            activeTeleporters[collider.name] = nil
+        end
+    end
+	
+	print(collider.name, " exits ", portal.name)
+end
+
 function physicsEndContact(obj1, obj2, contact)
+	local o1 = obj1:getUserData()
+	local o2 = obj2:getUserData()
+	
+	local goingThroughPortal = getColliderType(o1.name) == colliders.portal or getColliderType(o2.name) == colliders.portal
+	
+	if goingThroughPortal then
+		portalEndContact(obj1, obj2, contact)
+	end
 end
 
 function physicsBeginContact(obj1, obj2, contact)
@@ -758,9 +887,12 @@ function physicsBeginContact(obj1, obj2, contact)
 	and getColliderType(o1.name) ~= getColliderType(o2.name)
 	
 	local isHoopTriggered = getColliderType(o1.name) == colliders.hoop or getColliderType(o2.name) == colliders.hoop
+	local goingThroughPortal = getColliderType(o1.name) == colliders.portal or getColliderType(o2.name) == colliders.portal
 	
 	if isHoopTriggered then
 		hoopBeginContact(obj1, obj2, contact)
+	elseif goingThroughPortal then
+		portalBeginContact(obj1, obj2, contact)
 	elseif bubbleCollision then
 		bubbleBeginContact(obj1, obj2, contact)
 	else
