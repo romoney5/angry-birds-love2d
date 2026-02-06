@@ -125,6 +125,9 @@ function love.load()
 
 	if not checkDirectory(datapath) then
 		print("Data path \""..tostring(datapath).."\" wasn't found.\nTry the --datapath argument to specify a custom path.")
+	elseif not checkDirectory(datapath.."/"..commonScriptPath) then
+		--versions around classic 7.3.0 remove scripts_common again
+		commonScriptPath = scriptPath
 	end
 
 	--load save data
@@ -146,8 +149,6 @@ function love.load()
 	--and now start the actual game
 	if gamelogicPath then
 		loadlua(gamelogicPath, this, nil, true)
-	elseif checkDirectory(datapath.."/"..scriptPath.."/gamelogic.lua") then
-		loadlua(scriptPath.."/gamelogic.lua", this, nil, true)--, settings)
 	elseif checkDirectory(datapath.."/"..commonScriptPath .. "/gamelogic.lua") then
 		loadlua(commonScriptPath.."/gamelogic.lua", this, nil, true)--, settings)
 	end
