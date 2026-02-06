@@ -95,7 +95,9 @@ function decryptSrc(filename, src)
 		
 		--now use lzma with stdin and open it in binary mode on windows
 		local mode = love._os == "Windows" and "rb" or "r"
-		local file = io.popen("lzma d -so \""..love.filesystem.getSaveDirectory()..dec_filename.."\"", mode)
+		--xz utils' lzma works differently
+		local cmd = love._os == "Windows" and "lzma d -so" or "lzma -d -c"
+		local file = io.popen(cmd.." \""..love.filesystem.getSaveDirectory()..dec_filename.."\"", mode)
 		if file then
 			src = file:read("*a")
 			file:close()
