@@ -14,7 +14,7 @@ If you are on Linux, it's as easy as downloading a LÖVE Flatpak, navigating to 
 - `--deletedata`/`-dd` prompts to delete save data (settings.lua and highscores.lua).
 - `--run`/`+".."` runs a line of Lua code before starting the game. Examples: `--run "releaseBuild = true"` `+"autoScale = 240"`
 - `--datapath`/`-dp` overrides the default path to `data/` and uses a new save data subfolder. Useful for quickly testing different versions of Angry Birds without different folders or symbolic links. Can also be used to boot from .zip/.ipa/.apk or other zipped files.
-- `--cheats`/`-c` enables cheats. (Disables `releaseBuild` and enables `showEditor`)
+- `--cheats`/`-c` enables cheats. (Enabled `cheatsEnabled`, overrides options.lua)
 - `--blamelength`/`-bm` sets the length of bytecode tracebacks (a list of previously run instructions shown upon getting an error). Set to 0 by default for performance reasons.
 - `--nosave`/`-ns` disables saving any Lua files (settings and highscores will not save).
 
@@ -28,5 +28,8 @@ The libcrypto library, a part of [OpenSSL](https://github.com/openssl/openssl), 
 
 [7-Zip](https://www.7-zip.org/) is used to extract Lua files compressed with 7z.
 - 7z.exe is required to use it.
+
+[LZMA](https://www.7-zip.org/sdk.html) is used to extract Lua files compressed with LZMA.
+- lzma.exe (found in bin/x64/lzma.exe) is required to use it.
 
 This port is not affiliated with or endorsed by Rovio Entertainment Corporation.

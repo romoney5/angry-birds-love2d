@@ -15,10 +15,12 @@ function handleStartArgs()
 						{sprite = "TUTORIAL_OK", callback = function()
 							local success1 = love.filesystem.remove("settings.lua")
 							local success2 = love.filesystem.remove("highscores.lua")
-							if success1 and success2 then
-								showPopup("Data", "Successfully deleted settings and highscores.", nil, true)
+							if success1 or success2 then
+								showPopup("Data", "Successfully deleted save data.", nil, true)
+							elseif not checkDirectory("settings.lua") and not checkDirectory("highscores.lua") then
+								showPopup("Data", "Save data does not exist.", nil, true)
 							else
-								showPopup("Data", "Could not properly delete settings and/or highscores.", nil, true)
+								showPopup("Data", "Could not properly delete save data.", nil, true)
 							end
 							settings, highscores = {}, {}
 
@@ -85,6 +87,10 @@ function handleStartArgs()
 				debugExecute(arg[i + 1] or "")
 			elseif v:sub(1, 1) == "+" then --run lua, alt syntax (srb2)
 				debugExecute(v:sub(2))
+			elseif v == "--cheats" or v == "-c" then
+				--[[releaseBuild = false
+				showEditor = true]]
+				queueCheatsEnabled = true --filesystem.lua
 			end
 		end
 	end
@@ -99,9 +105,6 @@ function handlePostStartArgs()
 					update(1, 1)
 					attempts = attempts - 1
 				until love.audio.getActiveSourceCount() > 0 or currentGameMode ~= updateSplashes or attempts <= 0
-			elseif v == "--cheats" or v == "-c" then
-				releaseBuild = false
-				showEditor = true
 			end
 		end
 	end

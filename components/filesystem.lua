@@ -89,7 +89,28 @@ function decryptSrc(filename, src)
 		end
 	end
 	
-	if kind == "7z" or kind == "lzma" then --looks like it's 7-zipped too
+	if kind == "lzma" then --new versions use lzma rather than 7z
+		src = src:sub(1 + 9)
+		local dec_filename = temp_file()
+		
+		--now use lzma with stdin and open it in binary mode on windows
+		local mode = love._os == "Windows" and "rb" or "r"
+		local file = io.popen("lzma d -so \""..love.filesystem.getSaveDirectory()..dec_filename.."\"", mode)
+		if file then
+			src = file:read("*a")
+			file:close()
+			
+			--did it do anything?
+			assert(src and src:len() > 0, "decryptSrc: LZMA returned nothing")
+			
+			--reidentify it
+			kind = identifySrc(src)
+		else
+			print("decryptSrc: Could not run LZMA")
+		end
+	end
+	
+	if kind == "7z" then --looks like it's 7-zipped too
 		--because 7-zip sucks we have to do file operations first
 		local dec_filename = temp_file()
 		
@@ -136,10 +157,6 @@ function makeChunk(filename, env)
 	end
 
 	local kind = identifySrc(src)
-
-	if kind == "lzma" then
-		error("LZMA is not supported currently.\nTried loading "..tostring(filename))
-	end
 	
 	if kind == "lua" then --it's bytecode!
 		print("Loading compiled Lua \""..filename.."\"...")
@@ -199,6 +216,10 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 		end
 
 		lua()
+		
+		if filename == "/"..datapath.."/"..scriptPath.."/options.lua" and queueCheatsEnabled then
+			cheatsEnabled = true
+		end
 	elseif not lenient then
 		if checkDirectory(filename) then
 			--error("Could not load Lua file: "..filename.."\n"..tostring(err))
