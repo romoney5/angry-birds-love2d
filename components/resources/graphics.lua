@@ -472,6 +472,13 @@ local function loadSheet(sheet, usecomposprites)
 			end
 		end
 
+		local zipped7 = not checkDirectory(filename) and (checkDirectory(filename..".7z") and ".7z")
+		
+		if zipped7 then
+			local src = decryptSrc(filename..".7z")
+			filename = "/dec/"..filename..".7z"
+		end
+
 		if endsWith(filename, ".pvr") then
 			extensionlength = 4
 			--most angry birds pvrs are usually listed as R4 G4 B4 A4 UNorm Linear under pvrtextool, so 16bpp
@@ -501,7 +508,7 @@ local function loadSheet(sheet, usecomposprites)
 				local src = love.filesystem.read(filename)
 				lsheet.sheet = love.graphics.newImage(webp.loadImage(src, src:len()))
 			end
-		elseif endsWith(filename, ".stream") then
+		elseif endsWith(filename, ".stream") or endsWith(filename, ".stream.7z") then
 			--TODO: another file
 			--the json files basically handle everything for us at least for seasons
 

@@ -205,6 +205,9 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 						return _G
 					elseif k == "this" then
 						return self
+					--hack for libao
+					elseif k == "loadAssets" then
+						return loadAssets
 					end
 				end,
 				__newindex = function(self, k, v)

@@ -76,6 +76,7 @@ end
 -- ignoreParticleLimits = true
 
 local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
+	if not particleTable.particles then return end
 	local pt = particleTable.particles[type]
 	if softLimitSimultaneousParticles < particleAmount + amount and not ignoreLimits then
 		amount = amount * 0.5

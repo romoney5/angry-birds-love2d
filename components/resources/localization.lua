@@ -35,3 +35,7 @@ end
 function res.getLocale()
 	return locale
 end
+
+function getCurrentLocale()
+	return locale
+end

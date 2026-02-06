@@ -1204,7 +1204,7 @@ function lua_wrap_state(proto, env, upval)
 		end
 
 		local state = {vararg = vararg, memory = memory, code = proto.code, subs = proto.subs, pc = 1}
-		error_blame_state = state
+		if fione_errorblame_length > 0 then error_blame_state = state end
 
 		local result = table.pack(pcall(run_lua_func, state, env, upval))
 

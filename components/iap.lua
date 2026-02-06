@@ -127,6 +127,11 @@ function Payment.iapGetPurchaseLimit()
 	return math.huge
 end
 
+
+function Payment.isReady()
+	return true
+end
+
 --seasons' take on iap
 
 CloudPayment = {}

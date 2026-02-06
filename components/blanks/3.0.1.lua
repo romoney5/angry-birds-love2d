@@ -1,8 +1,5 @@
 --classic 3.0.1 and later
-
-function getCurrentLocale()
-	return
-end
+--functions with --? need to have their parameters/return values confirmed
 
 function getOSName()
 	return love.system.getOS()
@@ -254,6 +251,10 @@ function RovioAccount.native_isLoggedIn()
 	return false
 end
 
+function RovioAccount.isLoggedIn()
+	return false
+end
+
 function RovioAccount.native_isAvailable()--?
 	return false
 end
@@ -325,6 +326,7 @@ function worldToScreenTransform(x, y)
 end
 
 function screenToWorldTransform(x, y)
+	local worldScale = worldScale or 1
 	local wx = x / worldScale + screen.left
 	local wy = y / worldScale + screen.top
 	return wx, wy
@@ -518,3 +520,371 @@ end
 function setNotificationCallback(callback)
 	return
 end
+
+--6.0.1
+
+native.Time = {}
+
+native.Time.Status = {STATUS_OK = 1, STATUS_FETCHING = 2,}
+
+function native.Time.getStatus()
+	return 0
+end
+
+function native.Time.getServerTime(a)
+	return 0
+end
+
+function native.Time.synchronizeServerTime(a)
+	return
+end
+
+
+native.Account = {}
+
+native.Account.Error = nil
+
+function native.Account.initialize()--?
+	return
+end
+
+function native.Account.isLoggedIn()--?
+	return false
+end
+
+function native.Account.login()--?
+	return false
+end
+
+function native.Account.register()--?
+	return false
+end
+
+
+native.Notifications = {}
+
+function native.Notifications.initialize()--?
+	return
+end
+
+function native.Notifications.register()--?
+	return
+end
+
+function native.Notifications.unregister()--?
+	return
+end
+
+
+native.Cloud = {}
+
+function native.Cloud.setLoginSucceededListener()--?
+	return
+end
+
+
+native.RovioChannel = {}
+
+function native.RovioChannel.numOfNewContent()--?
+	return 0
+end
+
+function native.RovioChannel.initialize()--?
+	return
+end
+
+function native.RovioChannel.setOnShownCallback()--?
+	return
+end
+
+function native.RovioChannel.setOnChannelLoadingFailed()--?
+	return
+end
+
+function native.RovioChannel.setOnChannelClosed()--?
+	return
+end
+
+function native.RovioChannel.setOnChannelCancelled()--?
+	return
+end
+
+function native.RovioChannel.openChannelViewWithSize()--?
+	return
+end
+
+function native.RovioChannel.cancelChannelViewLoading()--?
+	return
+end
+
+function native.RovioChannel.isChannelViewOpened()--?
+	return false
+end
+
+
+native.Ads = {}
+
+function native.Ads.initialize()--?
+	return
+end
+
+function native.Ads.refresh()--?
+	return
+end
+
+function native.Ads.hide()--?
+	return
+end
+
+function native.Ads.show()--?
+	return
+end
+
+
+native.AgeGenderQuery = {}
+
+function native.AgeGenderQuery.initialize()--?
+	return
+end
+
+
+native.Storage = {}
+
+function native.Storage.initialize()--?
+	return
+end
+
+
+native.Payment = Payment
+
+function native.Payment.setOnProductReceived()--?
+	return
+end
+
+function native.Payment.setOnOperationFailed()--?
+	return
+end
+
+function native.Payment.setOnPurchaseFailed()--?
+	return
+end
+
+function native.Payment.setOnRedeemCodeFailed()--?
+	return
+end
+
+function native.Payment.setOnRestoreSucceeded()--?
+	return
+end
+
+function native.Payment.setOnCatalogFetched()--?
+	return
+end
+
+function native.Payment.setOnCatalogFetchFailed()--?
+	return
+end
+
+function native.Payment.initialize()--?
+	return
+end
+
+
+ThemeSystem.createThemeSprite = createThemeSprite
+ThemeSystem.removeThemeSprite = removeThemeSprite
+ThemeSystem.modifyThemeSprite = modifyThemeSprite
+
+
+--mighty leg (6.3.0 talkweb)
+
+native.ModernLeague = {}
+
+function native.ModernLeague.setSeverURL()--?
+	return
+end
+
+function native.ModernLeague.getTimeStamp(a)--?
+	return "0000-00-00" --yyyy-mm-dd
+end
+
+function native.ModernLeague.getGlobalLeaderboard()--?
+	return
+end
+
+function native.ModernLeague.getAccountId()--?
+	return 0
+end
+
+function native.ModernLeague.cancelActiveCalls()--?
+	return
+end
+
+function native.ModernLeague.getMessageOfTheDay()--?
+	return "r"
+end
+
+function native.ModernLeague.getBoosterTimeLeft(item)
+	return {days = 0, hours = 0, minutes = 0}
+end
+
+
+remoteConfigTable_ml = {}
+remoteConfigTable_ml.VariousRules = {}
+
+
+IGCItemInfo = {}
+
+setmetatable(IGCItemInfo, {
+	__index = function(a)
+		return {iconId = "BIRD_RED", analyticsType = "", analyticsName = "", type = "dummy"}
+	end
+})
+
+
+native.IngameCurrency = {}
+
+function native.IngameCurrency.justSync()--?
+	return
+end
+
+function native.IngameCurrency.getBoosterValue(k)
+	return
+end
+
+
+function drawSpriteWithShader()--?
+	return
+end
+
+
+function shortenString(a, b)--?
+	return a:sub(1, b)
+end
+
+
+--another file?
+function setFilterGroup()--?
+	return
+end
+
+
+--7.0.0
+
+native.LeagueCloud = {}
+
+function native.LeagueCloud.setLoginParams()--?
+	return
+end
+
+function native.LeagueCloud.setLoginCallbacks()--?
+	return
+end
+
+function native.LeagueCloud.getCurrentDay()--?
+	return 0
+end
+
+function native.LeagueCloud.getLoginStatus()--?
+	return
+end
+
+function native.LeagueCloud.isConnectedToFacebook()--?
+	return false
+end
+
+function native.LeagueCloud.getFriendsWithData()--?
+	return
+end
+
+function native.LeagueCloud.steadyTimerReset()--?
+	return
+end
+
+function native.LeagueCloud.getMessageOfTheDay()--?
+	return "r"
+end
+
+
+function native.Time.initialize()--?
+	return
+end
+
+
+function native.RovioChannel.openChannelView()--?
+	return
+end
+
+
+--8.0.3
+function native.FileSystem.exists(path)--?
+	return checkDirectory(datapath.."/"..path)
+end
+
+
+function native.IngameCurrency.getIGCValue()
+	return 0
+end
+
+function native.IngameCurrency.addIGCValue()--?
+	return
+end
+
+
+function native.Account.checkTermsAndErasure()--?
+	return
+end
+
+
+function native.ModernLeague.timeToMidnight()--?
+	return 0--{days = 0, hours = 0, minutes = 0}
+end
+
+function native.ModernLeague.loadAvailableAvatars()--?
+	return
+end
+
+function native.ModernLeague.isConnectedToFacebook()--?
+	return false
+end
+
+function native.ModernLeague.isLoggedInFacebook()--?
+	return false
+end
+
+
+newPlayerRules = {}
+
+IGCKeyNames = {} --ipairs
+
+--loaded from a file?
+remoteConfigTable = {
+	VariousRules = {
+		unlimitedTickets = false,
+	},
+	
+	reward_config = {
+		star_rewards = {0, 0, 0},
+		reward_video_multiplier = 1,
+	},
+	
+	shopLayouts = {
+		layout_currency_popup = {tabs = {}},
+	},
+}
+
+EmblemConfig = {}
+
+
+ShopLayoutTable = {}
+
+ShopLayoutTable.sub_layouts = {}
+
+
+native.SpecialOffer = {}
+
+function native.SpecialOffer.hasSpecialOfferAssets()--?
+	return false
+end
+
+
+specialOfferMeta = {}

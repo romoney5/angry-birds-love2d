@@ -142,7 +142,6 @@ function love.load()
 		loadLuaFileToObject(filename, ctx, env)--, lenient)
 	end
 
-	-- makeImages()
 	loadLuaFileToObject(scriptPath.."/options.lua", this, nil, true)
 	--and now start the actual game
 	if gamelogicPath then

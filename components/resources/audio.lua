@@ -144,6 +144,23 @@ function res.stopAudio(audio)
 	end
 end
 
+function res.releaseAudio(audio)
+	if not audiochannels or not cachedaudios[audio] or cachedaudios[audio] == 0 then
+		return
+	end
+
+	for i, channel in ipairs(audiochannels) do
+		for ii, sound in ipairs(channel) do
+			if sound.name == audio then
+				local source = sound.source
+				source:stop()
+				source:release()
+				return
+			end
+		end
+	end
+end
+
 function res.setTrackVolume(vol, track)
 	local channel = track + 1
 	channelVolumes[channel] = math.min(math.max(vol, 0), 1)

@@ -139,11 +139,32 @@ function createDynamicHandler(name)
 				print(v)
 			end
 		end
-	end	
+	end
 	
 	function handler.releaseInGame(a, theme)
 		return
 	end
+	
+	function handler.totalmemory()
+		return collectgarbage("count") * 1024
+	end
+	
+	
+	--classic 6.3.0
+	function handler.loadAvatarSheets()--?
+		return
+	end
+	
+	function handler.releaseAvatarSheets()--?
+		return
+	end
+	
+	
+	--classic 8.0.3
+	handler.queue = handler.load
+	handler.queueAssets = handler.load
+	handler.queueInGame = handler.load
+	handler.releaseAssetGroup = handler.release
 
 	_G[name] = handler
 	--print("platform is", tostring(platform))
