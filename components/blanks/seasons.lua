@@ -213,7 +213,7 @@ function checkLevelAvailabilityOnline()--?
 	return
 end
 
-function getOnlineCheckStatus()--?
+function getOnlineCheckStatus(a)--?
 	return
 end
 
@@ -254,6 +254,52 @@ end
 function native.GetTimeStamp.hasResult()
 	return false
 end
+
+NativeCloudAssets = {}
+--NativeCloudPayment = true
+
+local downloads = {}
+NativeCloudAssets.allowNewBackgroundThread = nil --function returns boolean
+
+function NativeCloudAssets.getPackStatus(pack)
+	--UNKNOWN, IDLE, NO CONNECTION, FAILURE, QUEUED, DOWNLOADING, DOWNLOADED, PROCESSING, READY
+	return "DOWNLOADING"--"READY"
+end
+
+function NativeCloudAssets.packStep(episode)
+	downloads[episode] = {progress = 0, processing = false}
+end
+
+function NativeCloudAssets.isProcessing()
+	return false
+end
+
+function NativeCloudAssets.cancelPackOperation(pack)
+	return
+end
+
+function NativeCloudAssets:onInitialized()
+	return
+end
+
+function NativeCloudAssets.deleteAllCloudData()--?
+	return
+end
+
+--4.2.0
+function NativeCloudAssets.getAssetPath(asset)
+	return ""
+end
+
+function NativeCloudAssets.loadAsset(asset)
+	return
+end
+
+function NativeCloudAssets.removeAsset(asset)
+	return
+end
+
+NativeCloudAssets.getAssetStatus = NativeCloudAssets.getPackStatus
 
 cloudDomain = ""
 
