@@ -1,6 +1,5 @@
 --create box, circle, etc
 
---funky
 function createJoint(joint)
 	local name, end1, end2, type, coordType, x1, y1, x2, y2, collideConnected, limit, motor, maxTorque, lowerLimit, upperLimit, motorSpeed, destroyTimer =
 		joint.name,joint.end1,joint.end2,joint.type,joint.coordType,joint.x1,joint.y1,joint.x2,joint.y2,joint.collideConnected,
@@ -58,7 +57,7 @@ function createJoint(joint)
 		
 		newJoint = love.physics.newRevoluteJoint(obj1.body, obj2.body, anchorX, anchorY, collideConnected)
 		
-		joint.motorSpeed = motorSpeed or 0.0
+		joint.motorSpeed = math.rad(joint.motorSpeed) or 0.0
 		joint.lowerLimit = lowerLimit or 0.0
 		joint.upperLimit = upperLimit or math.pi
 
@@ -72,9 +71,10 @@ function createJoint(joint)
 		newJoint:setLimitsEnabled(joint.limit)
 		newJoint:setLimits(joint.lowerLimit, joint.upperLimit)
 		
-        if backAndForth then
+        if joint.backAndForth then
             joint.direction = 1
         end
+		
 	elseif type == 4 then --prismatic joint
 		local anchorX, anchorY = obj1.body:getWorldPoint(x1, y1)
 		
@@ -85,7 +85,7 @@ function createJoint(joint)
 			collideConnected
 		)
 		
-		joint.motorSpeed = motorSpeed or 0.0
+		joint.motorSpeed = math.rad(joint.motorSpeed) or 0.0
 		joint.lowerLimit = lowerLimit or 0.0
 		joint.upperLimit = upperLimit or 5.0
 
@@ -99,9 +99,10 @@ function createJoint(joint)
 		newJoint:setLimitsEnabled(joint.limit)
 		newJoint:setLimits(joint.lowerLimit, joint.upperLimit)
 		
-        if backAndForth then
+        if joint.backAndForth then
             joint.direction = 1
         end
+		
 	elseif type == 5 then --annihilation joint
 		local anchorAX, anchorAY = obj1.body:getWorldPoint(x1, y1)
 		local anchorBX, anchorBY = obj2.body:getWorldPoint(x2, y2)
@@ -139,9 +140,25 @@ function updateObjectMass(name)
 	end
 end
 
-local CATEGORY_STATIC = 2
-local CATEGORY_BACKGROUND = 3
-local CATEGORY_NORMAL = 1
+function setupColliders()
+	local meta = {
+		__index = function(t, collider)
+			if blockTable.collider_types and blockTable.collider_types[collider] then
+				return blockTable.collider_types[collider]
+			end
+			
+			return nil
+		end
+	}
+	
+	colliders = setmetatable({}, meta)
+end
+
+CATEGORY_IMMOVABLE = 0x0001
+CATEGORY_SENSOR = 0x0002
+CATEGORY_BLOCK = 0x0004
+CATEGORY_BIRD = 0x0008
+CATEGORY_EAGLE = 0x0010
 
 function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
 	local verts = polyverts
@@ -169,11 +186,18 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 	obj.fixture:setRestitution(restitution)
 	obj.fixture:setFriction(friction)
 	obj.fixture:setUserData(obj)
-	obj.fixture:setCategory(CATEGORY_NORMAL)
+	obj.fixture:setCategory(CATEGORY_BLOCK)
+	
+	if collision ~= false then
+		obj.fixture:setCategory(CATEGORY_SENSOR)
+	end
 
 	obj.body:setAngularDamping(2)
 	
 	obj.fixture:setRestitutionThreshold(0.3)
+
+	addObjectToRenderQueue(name)
+	obj.radius = 0
 
 	if not tonumber(z_order) then objects.world[name].z_order = 0 end
 
@@ -192,13 +216,22 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 	obj.shape = love.physics.newRectangleShape(w, h)
 	obj.fixture = love.physics.newFixture(obj.body, obj.shape, density)
 	
-	obj.fixture:setCategory(CATEGORY_NORMAL)
-	if density == 0 then
+	obj.fixture:setCategory(CATEGORY_BLOCK)
+	
+	if density == 0 then 
 		obj.density = 1
 		if name ~= "ground" then
-			obj.fixture:setCategory(CATEGORY_STATIC)
-			obj.fixture:setMask(CATEGORY_BACKGROUND)
+			obj.fixture:setCategory(CATEGORY_IMMOVABLE)
+			obj.fixture:setMask(CATEGORY_EAGLE)
 		end
+	end
+	
+	if controllable then
+		obj.fixture:setCategory(CATEGORY_BIRD)
+	end
+	
+	if collision ~= true then
+		obj.fixture:setFilterData(1, 0, 0)
 	end
 
 	obj.fixture:setRestitution(restitution)
@@ -209,6 +242,7 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 	
 	obj.fixture:setRestitutionThreshold(0.3)
 
+	addObjectToRenderQueue(name)
 	if not tonumber(z_order) then objects.world[name].z_order = 0 end
 
 	--set type
@@ -224,7 +258,7 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 
 	-- if controllable then obj.density = obj.density * 100 end
 
-	obj.body = love.physics.newBody(physicsWorld, xpos, ypos, obj.density == 0 and "static" or "dynamic")
+	obj.body = love.physics.newBody(physicsWorld, xpos, ypos, obj.density <= 0 and "static" or "dynamic")
 	obj.shape = love.physics.newCircleShape(w or 1)
 	obj.fixture = love.physics.newFixture(obj.body, obj.shape, obj.density)
 	if density == 0 then obj.density = 1 end
@@ -235,14 +269,18 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 
 	obj.body:setAngularDamping(2)
 
+	addObjectToRenderQueue(name)
+
 	if not tonumber(z_order) then objects.world[name].z_order = 0 end
 	
 	if tonumber(z_order) and z_order >= 999 then
 		obj.isBackground = true
-		obj.fixture:setCategory(CATEGORY_BACKGROUND)
-		obj.fixture:setMask(CATEGORY_STATIC)
+		obj.fixture:setCategory(CATEGORY_EAGLE)
+		obj.fixture:setMask(CATEGORY_IMMOVABLE)
+	elseif controllable then
+		obj.fixture:setCategory(CATEGORY_BIRD)
 	else
-		obj.fixture:setCategory(CATEGORY_NORMAL)
+		obj.fixture:setCategory(CATEGORY_BLOCK)
 	end
 	
 	obj.fixture:setRestitutionThreshold(0.3)
@@ -251,6 +289,28 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	obj.type = "circle"
 
 	updateObjectMass(name)
+end
+
+local function isObjectInRenderQueue(name, z)
+	for k, v in ipairs(zOrderedObjects[z]) do
+		if v.name == name then
+			return true
+		end
+	end
+	
+	return false
+end
+
+function addObjectToRenderQueue(name)
+	local obj = objects.world[name]
+	obj.z_order = obj.z_order or 0
+	
+	local z = math.floor(obj.z_order)
+	zOrderedObjects[z] = zOrderedObjects[z] or {}
+	if not isObjectInRenderQueue(obj.name, z) then -- don't add a sprite element if it already exists
+		table.insert(zOrderedObjects[z], {name = obj.name, z_order = obj.z_order})
+		objectsSorted = false
+	end
 end
 
 --absw

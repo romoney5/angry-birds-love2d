@@ -4,32 +4,26 @@ physicsSimulationScale = 0
 
 function loadLevel(filename)
 	print("Loading level \""..filename..".lua\"...")
+
+	birdTrajectory = {{}, {}, {}}
 	trajectory = {{{}, {}, {}}}
+
 	if physicsWorld then physicsWorld:destroy() end --clear all the objects before continuing
 
 	physicsWorld = love.physics.newWorld(worldgravity.x, worldgravity.y, true)
 	--physicsWorld:setCallbacks(nil,nil,physicsPreSolve,physicsPostSolve)
-	physicsWorld:setCallbacks(physicsBeginContact, nil, nil, nil)
+	physicsWorld:setCallbacks(physicsBeginContact, physicsEndContact, nil, nil)
 	collisionsList = {}
 	loadedObjects = {}
+	zOrderedObjects = {}
 	loadLuaFileToObject(filename..".lua", this, loadedObjects)
 	setMaxTranslation(2)
-
-	if loadedObjects.world then
-		table.sort(loadedObjects.world, function(a, b)
-			return (a.z_order or 0) < (b.z_order or 0)
-		end)
-	end
-
-	--restore particle functions
-	if particles and not getmetatable(particles) then
-		setmetatable(particles, getParticles)
-	end
+	setupColliders()
 end
 
 function saveLevel(filename)
 	print("Saving level \""..filename..".lua\"...")
-	saveLuaFile(datapath.."/"..filename..".lua","objects", nil, nil, true)
+	saveLuaFile(filename..".lua","objects", nil, nil, true)
 end
 
 function setPhysicsSimulationScale(scale)
@@ -58,11 +52,20 @@ function setPhysicsEnabled(enabled)
 end
 
 --lite
+
 function loadLevelFile(filename, date)
 	loadLevel(filename)
 end
 
 function getLoadStatus()
 	--0=not finished, 1 or 2=finished, 3=christmas?
-	return {status = 1}
+	--timetonext can be a number
+	--today: "yyyy-mm-dd"
+	return {status = 1, timeToNext = "", today = ""}
+end
+
+--4.3.1
+
+function removeTemporaryLevel()--?
+	return
 end

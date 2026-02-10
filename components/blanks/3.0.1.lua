@@ -16,6 +16,14 @@ function getModel()
 	return deviceModel
 end
 
+function getDeviceIDHash()
+	return "0"
+end
+
+function postDownloadTracking()--?
+	return
+end
+
 function checkInstalledAppsOnline(url)
 	return
 end
@@ -28,7 +36,7 @@ function activateDebugConsole()
 	return
 end
 
-function setThemeForegroundOffsetY(index, y)
+function deactivateDebugConsole()
 	return
 end
 
@@ -57,6 +65,10 @@ end
 
 function RovioAds.click(ad)
 	print("Clicking RovioAd "..ad)
+end
+
+function RovioAds.refresh()
+	return
 end
 
 function RovioAds.trackConversion()
@@ -121,28 +133,10 @@ function setRovioShelfAllowed(allowed)
 	return
 end
 
---TODO: iap.lua?
-Payment = {}
-
-function Payment.iapInitPayment()
-	print("Init IAP payment")
-end
-
-function Payment.iapHasPaymentProvider()
-	return true
-end
-
-Payment.iapBuyItem = iapBuyItem
-Payment.iapRestoreItems = iapRestoreItems
-
-function Payment.getIapProducts()
-	return {} --price:string
-end
-
 --hooks: onPaymentProviderSelected(?) onPurchaseStatusChanged(item,?) onPurchaseHistoryRetrieved(?)
 --onRestoreDone(restored) onPaymentError(error)
 
---[[magicplaces = {}
+magicplaces = {}
 
 function magicplaces.gameMenuInitialised()
 	return true
@@ -154,7 +148,10 @@ end
 
 function magicplaces.openMapView(width, height)
 	return
-end]]
+end
+
+--magic places breaks later versions
+magicplaces = nil
 
 
 function setGCPopupAllowed(allowed)
@@ -190,6 +187,7 @@ end
 function disableSpotlight()
 	return
 end
+
 
 --5.0.1
 native.AssetDownloader = {}
@@ -239,10 +237,24 @@ function native_initializeCloudServices()
 	return
 end
 
+function native_getUnlockRequestChecksum(id, code)
+	return
+end
+
 --spirit account?
 RovioAccount = {}
 
+RovioAccount.profile = {id = 0}
+
+function loadTableFromFile(filename, tosave)
+	return
+end
+
 function RovioAccount.native_isLoggedIn()
+	return false
+end
+
+function RovioAccount.native_isAvailable()--?
 	return false
 end
 
@@ -258,12 +270,35 @@ function RovioAccount.native_isCloudSyncInProgress()
 	return false
 end
 
+function RovioAccount.shouldCloudOverwriteLocalSave()
+	return false
+end
+
+--rovio account can prevent settings.lua from saving properly
+--but is also required in later (mobile) versions
+-- RovioAccount = nil
+
+CloudSync = {}
+
+function CloudSync.combineSettings(settings, settings, bool)
+	return
+end
+
+function CloudSync.removeSyncableSettings(settings)
+	return
+end
+
 
 function isEditing()
 	return false
 end
 
 function setNotificationsEnabled(enabled)
+	return
+end
+
+--short fuse
+function useAsBackgroundMask()--?
 	return
 end
 
@@ -311,4 +346,175 @@ function screenToPhysicsTransform(x, y)
 	local wx, wy = screenToWorldTransform(x, y)
 	local px, py = worldToPhysicsTransform(wx, wy)
 	return px, py
+end
+
+function checkObjectBounds(x, y, width, height, angle, cursorX, cursorY)	 
+	local cx = cursorX - x
+	local cy = cursorY - y
+	
+	local tcx = cx * _G.math.cos(angle) + cy * _G.math.sin(angle)
+	local tcy = -cx * _G.math.sin(angle) + cy * _G.math.cos(angle)
+
+	local halfWidth = width * 0.5
+	local halfHeight = height * 0.5
+	
+	local left = -halfWidth
+	local top = -halfHeight
+	local right = halfWidth
+	local bottom = halfHeight
+	
+	if tcx >= left and tcx < right then
+		if tcy >= top and tcy < bottom then
+			return true
+		end
+	end
+	return false
+end
+
+--5.1.0
+function native.loadLuaTable(filename, env, a)
+	return loadLuaFileToObject(filename, env, "")
+end
+
+function native.loadLuaScript(filename)
+	runLuaFile(scriptPath.."/"..filename)
+end
+
+
+AnimationWrapperNative = {}
+
+function AnimationWrapperNative.update(dt)
+	return
+end
+
+
+ThemeSystem = {}
+
+ThemeSystem.setTheme = setTheme
+
+ThemeSystem.drawBackground = drawBackgroundNative
+ThemeSystem.drawForeground = drawForegroundNative
+
+function ThemeSystem.getThemeLayerOffset()--?
+	return {x = 0, y = 0}
+end
+
+function ThemeSystem.setThemeLayerOffset()--?
+	return
+end
+
+
+ServerTime = {}
+
+function ServerTime.getStatus()
+	return 1
+end
+
+function ServerTime.getServerTimeInLocalTimeZone(a)
+	return 1
+end
+
+function ServerTime.getServerTimeInSeconds(a)--?
+	return 1
+end
+
+
+CameraNative = {}
+
+CameraNative.setCameraZoomScale = setWorldScale
+CameraNative.setCameraTopLeft = setTopLeft
+CameraNative.drawGame = drawGameNative
+
+function CameraNative.updateGFXEffects(dt)
+	return
+end
+
+screenToWorldDistance = screenToWorldTransform
+
+
+function createMaskRenderer(name, sprite, texture, collider)
+	return
+end
+
+function createRendererForGameObject(name, sprite, collider)
+	return
+end
+
+function createLuaAssetRenderer(a, b, c)
+	a.luaAssetRenderer = {}
+	return "a"
+end
+
+function disposeLuaAssetRenderer(a)
+	return
+end
+
+function setObjectAsForceAdder(a)--?
+	return
+end
+
+
+function setObjectBodyStatic(name)
+	setObjectParameter(name, 2, 0)
+end
+
+function setObjectBodyDynamic(name)
+	setObjectParameter(name, 2, 1)
+end
+
+function toggleZoom(a, b)--?
+	wantedZoomLevel = a
+end
+
+function toggleZoom_GameLua(a, b)--?
+	wantedZoomLevel = a
+end
+
+function toggleZoom2(a, b)--?
+	wantedZoomLevel = a
+end
+
+
+function raycast(x1, y1, x2, y2)
+	local hit, name, px, py
+	local ray = getRayCastedObjects{x1 = x1, y1 = y1, x2 = x2, y2 = y2}
+	hit = ray[1] ~= nil
+	name, px, py = ray[1], ray[2], ray[3]
+	return hit, name, px, py
+end
+
+native.FileSystem = {}
+native.FileSystem.TYPE_FILE = "file"
+
+function native.FileSystem.enumerate(path, a, type, recursive)
+	local newpath = datapath.."/"..path
+	local files = love.filesystem.getDirectoryItems(newpath)
+	local output = {}
+	
+	for i, file in ipairs(files) do
+		local filetype = love.filesystem.getInfo(newpath.."/"..file).type
+		if recursive and filetype == "directory" then
+			for file2, v in pairs(native.FileSystem.enumerate(path.."/"..file, a, type, recursive)) do
+				output[file.."/"..file2] = v
+			end
+		else
+			output[file] = filetype
+		end
+	end
+	
+	return output
+end
+
+
+--stella
+function createUniqueShaders(shader, a)
+	return {}
+end
+
+function onNotificationReceived()
+	return
+end
+
+function setNotificationCallback(callback)
+	return
 end

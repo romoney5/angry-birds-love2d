@@ -48,6 +48,7 @@ function res.drawCompoSprite(sheet, sprite, x, y)
 
 	if image then
 		for i,v in ipairs(image.items) do
+			--TODO: scale and angle
 			drawSprite(sheet, v.n, math.floor(x + v.x), math.floor(y + v.y))
 		end
 	end
@@ -85,7 +86,7 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 	if sprite == g_currentCursorName and ((gameOptions and gameOptions.ui and (not gameOptions.ui.enableCursor))
 		or (joystick and physicsEnabled)) then return end
 
-	local image = type(sprite) == "string" and (cachedimgs[sprite] or cachedcs[sprite]) or sprite
+	local image = type(sprite) == "string" and (cachedcs[sprite] or cachedimgs[sprite]) or sprite
 
 	if image and image.quad and image.spsh then
 		local w, h = iwidth or image.width, iheight or image.height
@@ -100,6 +101,7 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 		local hm = h / image.height
 
 		local xpr, ypr = image.px, image.py
+		local ox, oy = drawxp, drawyp
 
 		if hanchor == "LEFT" or vanchor == "LEFT" then xpr = 0 end
 		if hanchor == "RIGHT" or vanchor == "RIGHT" then xpr = image.width end
@@ -109,27 +111,31 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 		if vanchor == "BOTTOM" or hanchor == "BOTTOM" then ypr = image.height end
 		if vanchor == "VPIVOT" or hanchor == "VPIVOT" then ypr = drawyp end
 		
+		if vanchor == "LEFT" and hanchor == "TOP" then -- fix to the shockwave issue
+			ox = image.px
+			oy = image.py
+		end
+		
 		-- if vanchor == "HCENTER" or hanchor == "HCENTER" then xpr = image.w/2 end
 		-- if vanchor == "VCENTER" or hanchor == "VCENTER" then ypr = image.h/2 end
 
+		love.graphics.push("all")
 		local r, g, b, a = love.graphics.getColor()
-		love.graphics.setColor(r * alpha, g * alpha, b * alpha, alpha)
-		local b1, b2 = love.graphics.getBlendMode()
+		love.graphics.setColor(r * alpha, g * alpha, b * alpha, a * alpha)
 		if nopma then love.graphics.setBlendMode("alpha") end
-		
+
 		love.graphics.draw(
-			image.spsh,					--spritesheet
-			image.quad,					--quad
+			image.spsh,			--spritesheet
+			image.quad,			--quad
 			x - xpr + drawxp,	--x position
 			y - ypr + drawyp,	--y position
-			drawangle,					--angle
-			wm,							--x scale
-			hm,							--y scale
-			drawxp,				--x rotation pivot
-			drawyp)				--y rotation pivot
+			drawangle,			--angle
+			wm,					--x scale
+			hm,					--y scale
+			ox,					--x rotation pivot
+			oy)					--y rotation pivot
 		
-		love.graphics.setBlendMode(b1,b2)
-		love.graphics.setColor(r, g, b, a)
+		love.graphics.pop()
 	elseif image and image.items then --composprite used in later versions
 		res.drawCompoSprite(sprite,x,y)
 	end
@@ -227,6 +233,48 @@ function drawRubberband(x1, y1, x2, y2, width, sprite)
 	love.graphics.pop()
 end
 
+function drawSlingScopeNative(s_vx, s_vy, vertical_force)
+	love.graphics.push()
+	-- setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, 1)
+	local lsx, lsy = physicsToWorldTransform(selectedBird.x, selectedBird.y)
+	local spacing = 4
+	local amount = 16
+
+	local offset = g_sling_scope_animation % 1
+
+	s_vy = s_vy - worldgravity.y / physicsToWorld * spacing / 2
+	s_vy = s_vy + worldgravity.y / physicsToWorld * spacing * (offset)
+	
+	local verticalForce = (vertical_force / selectedBird.mass) / physicsToWorld
+	if vertical_force ~= 0 then
+		s_vy = s_vy - verticalForce * spacing / 2
+		s_vy = s_vy + verticalForce * spacing * (offset)
+	end
+	
+	lsx = lsx + s_vx * spacing * offset
+	lsy = lsy + s_vy * spacing * offset
+
+	for i = 1, amount do
+		love.graphics.push()
+
+		love.graphics.translate(lsx, lsy)
+		love.graphics.scale(lerp(1, 0, (i - 1 + offset) / amount))
+		s_vy = s_vy + worldgravity.y / physicsToWorld * spacing
+		-- apply extra impulse on the curve
+		if vertical_force ~= 0 then
+			s_vy = s_vy + verticalForce * spacing
+		end
+
+		lsx = lsx + s_vx * spacing
+		lsy = lsy + s_vy * spacing
+
+		res.drawSprite("PARTICLE_SLINGDOT", 0, 0)
+
+		love.graphics.pop()
+	end
+	love.graphics.pop()
+end
+
 --4.0.0
 function drawFullscreenRect(r, g, b, a)
 	love.graphics.push("all")
@@ -282,113 +330,207 @@ end
 local function loadSheet(sheet, usecomposprites)
 	if loadedSheets[sheet] then return end
 	
-	if endsWith(sheet, ".dat") then
-		loadedSheets[sheet] = {sheet = nil, sprites = {}}
+	local newname, paths = findCaseInsensitive(datapath.."/"..sheet)
+	
+	if not newname then
+		newname, paths = findCaseInsensitive(datapath.."/"..sheet:sub(1, -5)..(usecomposprites and ".compo.json" or ".sheet.json"))
+	end
+
+	if not newname then
+		print("loadSheet: dat file \""..tostring(sheet).."\" not found")
+		return
+	end
+
+	loadedSheets[sheet] = {sheet = nil, sprites = {}}
+
+	local data = love.filesystem.read(newname or "")
+	local info
+
+	--TODO: another file.. ..
+	if endsWith(newname, ".dat") then
+		info = getDatInfo(data, newname, "SPRT")
+	elseif endsWith(newname, ".json") then
+		local jsondata = json.decode(decryptSrc(newname, data))
 		
-		local newname, paths = findCaseInsensitive(datapath.."/"..sheet)
+		if not usecomposprites then
+			info = {sprites = {}}
+			info.filename = jsondata.meta.image
+			info.pixelformat = jsondata.meta.format
+			
+			for i, sprite in ipairs(jsondata.frames) do
+				info.sprites[sprite.filename] = {
+					x = sprite.frame.x,
+					y = sprite.frame.y,
+					width = sprite.frame.w,
+					height = sprite.frame.h,
+					
+					pivotX = sprite.pivot.x,
+					pivotY = sprite.pivot.y,
 
-		local data = love.filesystem.read(newname or "")
-		local info = getDatInfo(data, sheet, "SPRT")
-
-		if usecomposprites and info.compos then
-			for i, v in pairs(info.compos) do
-				--calculate the bounds here
-				local composprite = {items = v}
-				local x0, x1
-				local y0, y1
-				local width, height = 0, 0
-				local px, py = 0, 0
-				
-				for ii, vv in ipairs(v) do
-					local sprite = cachedimgs[vv.n]
-					if sprite then
-						local sx0, sx1 = vv.x - sprite.px, vv.x + sprite.width - sprite.px
-						local sy0, sy1 = vv.y - sprite.py, vv.y + sprite.height - sprite.py
-
-						x0, x1 = math.min(x0 or sx0, sx0), math.max(x1 or sx1, sx1)
-						y0, y1 = math.min(y0 or sy0, sy0), math.max(y1 or sy1, sy1)
-						
-						px = sprite.px - vv.x
-						py = sprite.py - vv.y
-
-						width = math.abs(x1 - x0)
-						height = math.abs(y1 - y0)
-					end
-				end
-				
-				composprite.width, composprite.height = width, height
-				composprite.px, composprite.py = px or 0, py or 0
-
-				cachedcs[i] = composprite
+					--for .stream files
+					stream = sprite.stream,
+				}
 			end
-		elseif not usecomposprites and info.sprites and info.filename then
-			local filename = table.concat(paths, "/", 1, #paths - 1).."/"..info.filename
-			local extensionlength = 4
-
-			local lsheet = loadedSheets[sheet]
-
-			if not checkDirectory(filename) and checkDirectory(filename..".zip") then
-				--android versions like to zip some images
-				local zip = filename..".zip"
-				local src = love.filesystem.newFileData(zip)
-				local success = love.filesystem.mount(src, zip)
-
-				if success then
-					lsheet.zip = zip
-					--cut off the base path assuming this is running from an apk
-					local _, og_datapath = resolvePath(datapath)
-					og_datapath = table.concat(og_datapath, "/", 2)
-
-					--then get the given sheet's base directory
-					local _, parentDir = resolvePath(sheet)
-					parentDir = table.concat(parentDir, "/", 1, #parentDir - 1)
-
-					--and append the real filename to it before passing in the real path
-					local newname, paths = findCaseInsensitive(zip.."/"..og_datapath.."/"..parentDir.."/"..info.filename)
-					if not newname then
-						newname, paths = findCaseInsensitive(zip.."/"..info.filename)
-					end
-					filename = newname
-				else
-					--or it didn't even work
-					print("loadSheet: could not unzip "..zip)
+			--print(jsondata.meta.app, jsondata.meta.image)
+		else
+			info = {compos = {}}
+			
+			for i, compo in ipairs(jsondata.compo) do
+				info.compos[compo.name] = {}
+				
+				for i, sprite in ipairs(compo.sprites) do
+					local scaleX = tonumber(sprite.scale) or sprite.scale[1]
+					local scaleY = tonumber(sprite.scale) or sprite.scale[2]
+					
+					--insert at the start
+					table.insert(info.compos[compo.name], 1, {
+						sheet = "",
+						x = sprite.x,
+						y = sprite.y,
+						sx = scaleX,
+						sy = scaleY,
+						a = sprite.angle,
+						flip = {x = false, y = false},
+						n = sprite.name
+					})
 				end
 			end
+			--error(newname)
+			--print("sheet", jsondata.meta.sheet)
+		end
+	end
 
-			if endsWith(filename, ".pvr") then
-				-- extensionlength = 4 + 4 --.pvr + .png
-				-- filename = filename..".png"
+	if usecomposprites and info.compos then
+		for i, v in pairs(info.compos) do
+			--calculate the bounds here
+			local composprite = {items = v}
+			local x0, x1
+			local y0, y1
+			local width, height = 0, 0
+			local px, py = 0, 0
+			
+			for ii, vv in ipairs(v) do
+				local sprite = cachedimgs[vv.n]
+				if sprite then
+					local sx0, sx1 = vv.x - sprite.px, vv.x + sprite.width - sprite.px
+					local sy0, sy1 = vv.y - sprite.py, vv.y + sprite.height - sprite.py
 
-				extensionlength = 4
-				--most angry birds pvrs are usually listed as R4 G4 B4 A4 UNorm Linear under pvrtextool, so 16bpp
-				--the file size also lines up, width x height x 2 (bytes per pixel) + 52 bytes of headers = filesize
-				--the headers and formats differ however
-				local data = love.filesystem.read(filename)
+					--get bounds
+					x0, x1 = math.min(x0 or sx0, sx0), math.max(x1 or sx1, sx1)
+					y0, y1 = math.min(y0 or sy0, sy0), math.max(y1 or sy1, sy1)
+					
+					--set the pivots
+					px = -x0
+					py = -y0
 
-				lsheet.sheet = love.graphics.newImage(convertImagePVR(data, filename))
-			elseif endsWith(filename, ".webp") then
-				if not haswebp then
-					extensionlength = 5 + 4 --.webp + .png
-					filename = filename..".png"
-
-					--lsheet.sheet = love.graphics.newImage(filename)
-					lsheet.sheet = love.graphics.newImage(love.image.newImageData(1, 1, nil, nil))
-				else
-					local src = love.filesystem.read(filename)
-					lsheet.sheet = love.graphics.newImage(webp.loadImage(src, src:len()))
+					--set the dimensions
+					width = math.abs(x1 - x0)
+					height = math.abs(y1 - y0)
 				end
-			else
-				lsheet.sheet = love.graphics.newImage(filename)
 			end
 			
-			pngMapping[info.filename:sub(1, -extensionlength - 1)] = sheet --filename is the index for easy finding in drawGameNative
+			composprite.width, composprite.height = width, height
+			composprite.px, composprite.py = px or 0, py or 0
 
-			for i, spr in pairs(info.sprites) do
-				-- print("res.createSpriteSheet: adding sprite "..tostring(i))
-				cachedimgs[i] = {quad = love.graphics.newQuad(spr.x, spr.y, spr.width, spr.height, lsheet.sheet:getWidth(), lsheet.sheet:getHeight()),
-					spsh = lsheet.sheet, px = spr.pivotX, py = spr.pivotY, width = spr.width, height = spr.height}
-				table.insert(lsheet.sprites, i)
+			cachedcs[i] = composprite
+		end
+	elseif not usecomposprites and info.sprites and info.filename then
+		local filename = table.concat(paths, "/", 1, #paths - 1).."/"..info.filename
+		local extensionlength = 4
+
+		local lsheet = loadedSheets[sheet]
+
+		local zipped = not checkDirectory(filename) and ((checkDirectory(filename..".zip") and ".zip")
+			or (checkDirectory(filename..".kazip") and ".kazip"))
+
+		if zipped then
+			--android versions like to zip some images
+			local zip = filename..zipped
+			local src = love.filesystem.newFileData(zip)
+			local success = love.filesystem.mount(src, zip)
+
+			if success then
+				lsheet.zip = zip
+				--cut off the base path assuming this is running from an apk
+				local _, og_datapath = resolvePath(datapath)
+				og_datapath = table.concat(og_datapath, "/", 2)
+
+				--then get the given sheet's base directory
+				local _, parentDir = resolvePath(sheet)
+				parentDir = table.concat(parentDir, "/", 1, #parentDir - 1)
+
+				--and append the real filename to it before passing in the real path
+				local newname, paths = findCaseInsensitive(zip.."/"..og_datapath.."/"..parentDir.."/"..info.filename)
+				if not newname then
+					newname, paths = findCaseInsensitive(zip.."/"..info.filename)
+				end
+				filename = newname
+			else
+				--or it didn't even work
+				print("loadSheet: could not unzip "..zip)
+				return
 			end
+		end
+
+		if endsWith(filename, ".pvr") then
+			extensionlength = 4
+			--most angry birds pvrs are usually listed as R4 G4 B4 A4 UNorm Linear under pvrtextool, so 16bpp
+			--the file size also lines up, width x height x 2 (bytes per pixel) + 52 bytes of headers = filesize
+			--the headers and formats differ however
+			local data = love.filesystem.read(filename)
+			local pvr, w, h = convertImagePVR(data, filename)
+
+			--pcall because love can throw an error anyways
+			local success = pcall(function()
+				lsheet.sheet = love.graphics.newImage(pvr)
+			end)
+			
+			if not success then
+				local rawdata = string.rep("\xFF", w * h * 16 / 8)--resultstr
+				local imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
+				lsheet.sheet = love.graphics.newImage(imagedata)
+			end
+		elseif endsWith(filename, ".webp") then
+			if not haswebp then
+				extensionlength = 5 + 4 --.webp + .png
+				filename = filename..".png"
+
+				--lsheet.sheet = love.graphics.newImage(filename)
+				lsheet.sheet = love.graphics.newImage(love.image.newImageData(1, 1, nil, nil))
+			else
+				local src = love.filesystem.read(filename)
+				lsheet.sheet = love.graphics.newImage(webp.loadImage(src, src:len()))
+			end
+		elseif endsWith(filename, ".stream") then
+			--TODO: another file
+			--the json files basically handle everything for us at least for seasons
+
+			--json.meta.format to PixelFormat
+			local mapping = {
+				["RGBA4444"] = "rgba4",
+			}
+
+			local format = mapping[info.pixelformat]
+			local src = love.filesystem.read(filename)
+
+			for i, sprite in pairs(info.sprites) do
+				-- sprite.width = sprite.stream.width
+				-- sprite.height = sprite.stream.height
+				-- print(i)
+				sprite.sheet = love.graphics.newImage(love.image.newImageData(sprite.stream.width, sprite.stream.height, format, src:sub(sprite.stream.position + 1 + 40, sprite.stream.position + 40 + sprite.stream.length)))
+			end
+		else
+			lsheet.sheet = love.graphics.newImage(filename)
+		end
+		
+		pngMapping[info.filename:sub(1, -extensionlength - 1)] = sheet --filename is the index for easy finding in drawGameNative
+
+		for i, spr in pairs(info.sprites) do
+			-- print("res.createSpriteSheet: adding sprite "..tostring(i))
+			local sheet = spr.sheet or lsheet.sheet
+			cachedimgs[i] = {quad = love.graphics.newQuad(spr.x, spr.y, spr.width, spr.height, sheet:getWidth(), sheet:getHeight()),
+				spsh = sheet, px = spr.pivotX, py = spr.pivotY, width = spr.width, height = spr.height}
+			table.insert(lsheet.sprites, i)
 		end
 	end
 end
@@ -431,9 +573,4 @@ end
 
 function getRokuImagePath(dat)
 	return ""
-end
-
---seasons TODO
-function setThemeRectColour(layer, r, g, b, a)
-	return
 end

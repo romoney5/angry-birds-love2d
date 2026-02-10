@@ -41,7 +41,7 @@ function clearMenuParticlesNative()
 	return
 end
 
---star wars
+--absw
 function native_setWaterDensity(name, density)
 	return
 end
@@ -94,5 +94,3 @@ end
 function checkJointLimits(name)
 	return
 end
-
-themeSpriteObjects = {}

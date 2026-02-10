@@ -1,7 +1,48 @@
 --update physics every frame
 
-function solvePhysics()
-	local timeStep = dt2 * physicsTimeScale
+local function updateTrajectory()
+	-- trajectory
+	local recordTrajectory = false
+	if flyingBird ~= nil then
+		if flyingBird.recordTrajectory ~= false then
+			recordTrajectory = true
+			local lx, ly = physicsToWorldTransform(flyingBird.x, flyingBird.y)
+			local bt = birdTrajectory[1] 
+			if #bt < 1 or vLength(lx - bt[#bt].x, ly - bt[#bt].y) > 20 then
+				-- if getObjectDefinition(flyingBird.name).particlesTrail ~= nil then
+					-- addParticles(flyingBird.name, getObjectDefinition(flyingBird.name).particlesTrail, 1)
+				-- end
+				_G.table.insert(bt, { x = lx, y = ly })
+				addToTrajectory(1, lx, ly)
+			end
+		end
+	end
+	
+	if otherBirds ~= nil then
+		for i = 1, 2 do
+			local obj = objects.world[otherBirds[i]]
+			if obj ~= nil then
+				if obj.recordTrajectory ~= false then
+					recordTrajectory = true
+					local lx, ly = physicsToWorldTransform(obj.x, obj.y)
+					local bt = birdTrajectory[i+1] 
+					if #bt < 1 or vLength(lx - bt[#bt].x, ly - bt[#bt].y) > 20 then
+						-- if getObjectDefinition(obj.name).particlesTrail ~= nil then
+							-- addParticles(obj.name, getObjectDefinition(obj.name).particlesTrail, 1)
+						-- end
+						_G.table.insert(bt, { x = lx, y = ly })
+						addToTrajectory(i+1, lx, ly)
+					end
+				end
+			end
+		end
+	end
+end
+
+function solvePhysics(updateStep) -- WIP
+	local delta = math.floor(dt2 * 10000) / 10000
+	local timeStep = delta * (physicsTimeScale or 1)
+	timeStep = math.floor(timeStep * 10000) / 10000
 	local velocityIterations = 10
 	local positionIterations = 10
 	
@@ -12,18 +53,40 @@ function solvePhysics()
 			positionIterations = positionIterations
 		})
 	end
-	
-	return timeStep, velocityIterations, positionIterations --ab uses 1/30, 10, 10
+
+	if updateStep then
+		physicsWorld:update(timeStep, velocityIterations, positionIterations) -- where do we call this?
+	end	
+	--return timeStep, velocityIterations, positionIterations --ab uses 1/30, 10, 10
 end
 
 function updatePhysics(dt)
-	if not physicsEnabled then return end
+	if not physicsEnabled or not physicsWorld then return end
+	
+	if physicsSpeedFactor ~= physicsTimeScale then -- nifty hack, should probably change it later
+		physicsTimeScale = physicsSpeedFactor
+	end
 
 	updateParticlesNative(dt2)
 	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0)
 	
-	physicsWorld:update(solvePhysics())
+	for _, v in pairs(objects.world) do
+		local PHYSICS_TIMESTEP = 1/30
+		if v.friction or not v.gravityEnabled then
+			updateFriction(v, PHYSICS_TIMESTEP)
+			updateForceAdder(v, PHYSICS_TIMESTEP)
+		end
+	end
+	
+	if applyForcesAtPhysicsStep then applyForcesAtPhysicsStep() end
+	
+	solvePhysics(true)
 
+	if clearLuaForceFunctions then clearLuaForceFunctions() end
+
+	--update the trajectory in the case of a newer version, on older versions the distance check prevents it from running twice
+	updateTrajectory()
+	
 	if removeBlocks then
 		removeBlocks()
 	end
@@ -43,12 +106,14 @@ function updatePhysics(dt)
 		if obj.body and not obj.body:isDestroyed() then
 			obj.x, obj.y = obj.body:getPosition()
 			
+			local bDef = getObjectDefinition(obj.name)
 			local xVel, yVel = obj.body:getLinearVelocity()
-			local velMagnitude = xVel^2 +  yVel^2
+			local velMagnitude = xVel^2 + yVel^2
 			local angularVelocity = obj.body:getAngularVelocity()
 			
 			if velMagnitude ~= 0 then
 				obj.frozen = obj.y > 20.0 or obj.x < objects.limits.mix or obj.x > objects.limits.max
+				obj.outsideBoundaries = obj.frozen
 			end
 			
 			if velMagnitude >= 0.0005 then
@@ -64,14 +129,14 @@ function updatePhysics(dt)
 			obj.yVel = yVel
 			hasAwakeObjects = true
 			
-			local material = obj.material or obj.materialName
+			local material = getMaterial(obj.name)
 			local volume = (math.abs(angularVelocity) * obj.mass / 400.0) * obj.body:getInertia()
 			
 			if volume > 1.0 then
 				volume = 1.0
 			end
 
-			if obj.type == "circle" and rollingVolumes[material] and volume > rollingVolumes[material] then
+			if obj.type == "circle" and not birds[obj.name] and rollingVolumes[material] and volume > rollingVolumes[material] then
 				rollingVolumes[material] = volume
 			end
 			
@@ -149,7 +214,7 @@ end
 
 ---- SOLVE FUNCTION ----
 function WorldSolve(step)
-	step.dt = 1/60
+	step.dt = 1/60 * (physicsTimeScale or 1)
 	
 	if step.dt > 0 then
 		step.inv_dt = 1.0 / step.dt
@@ -166,7 +231,7 @@ function WorldSolve(step)
 		local body = object.body
 		
 		if body and not body:isDestroyed() and body:getType() == "dynamic" then
-			local vx, vy = body:getLinearVelocity()
+			local vx, vy = object.xVel, object.yVel
 			
 			--- calculate speed then limit it.
 			local translationSq = vx*vx + vy*vy

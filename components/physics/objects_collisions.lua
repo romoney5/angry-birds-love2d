@@ -5,9 +5,12 @@ function removeObject(name)
 
 	if obj and obj.body then
 		obj.body:destroy()
+		if not obj.controllable then
+			objects.world[name] = nil -- DO NOT REMOVE THIS!!! 
+		end
 	end
 	
-	objects.world[name] = nil
+	removeJoints()
 end
 
 function destroyJoint(name)
@@ -18,6 +21,21 @@ function destroyJoint(name)
 	end
 	
 	objects.joints[name] = nil
+end
+
+function removeJoints()
+	if g_jointsToDestroy then
+		for jointName, joint in pairs(objects.joints) do
+			if not objects.world[joint.end1] or not objects.world[joint.end2] then
+				destroyJointDeferred(jointName)
+				print(joint.end1, joint.end2)
+			end
+		end
+		
+		for _, jointName in ipairs(g_jointsToDestroy) do
+			destroyJoint(jointName)
+		end
+	end
 end
 
 function setSleeping(object, dozing)
@@ -77,6 +95,8 @@ function applyForce(object, x, y, xp, yp)
 	end
 end
 
+applyForceNative = applyForce
+
 function setAngularVelocity(object, a)
 	local obj = objects.world[object]
 	if obj and obj.body then
@@ -105,8 +125,217 @@ function setDensity(object, density)
 	end
 end
 
+function getMaterial(object)
+	return objects.world[object].material or objects.world[object].materialName
+end
+
 function setMaterial(object, material)
-	objects.world[object].material = material
+	if objects.world[object].materialName then
+		objects.world[object].materialName = material
+	else
+		objects.world[object].material = material
+	end
+end
+
+function setFilterMask(object, m)
+	local obj = objects.world[object]
+	if obj and obj.fixture then
+		local categories, _, group = obj.fixture:getFilterData()
+		obj.fixture:setFilterData(categories, m, group)
+	end
+end
+
+function setFilterCategory(object, c) -- TODO : find the right filter categories (egg defender has a block mask for pigs)
+	local obj = objects.world[object]
+	if obj and obj.fixture then
+		local categories, mask, group = obj.fixture:getFilterData()
+		obj.fixture:setFilterData(c, mask, group)
+	end
+end
+
+function getTrajectory(name)
+	local trajectoryTable = {}
+	local body = objects.world[name].body
+	
+	local startX = body:getX()
+	local startY = body:getY()
+	local xVel, yVel = body:getLinearVelocity()
+	
+	local timeStep = 1/30
+	local velocityScale = 1.506
+	local maxVel = b2_maxTranslation / velocityScale
+	local gravity = worldgravity.y
+	
+	local velocityMagnitude = math.sqrt(xVel * xVel + yVel * yVel)
+	if maxVel < velocityMagnitude then
+        xVel = xVel / velocityMagnitude * maxVel
+        yVel = yVel / velocityMagnitude * maxVel
+	end
+	
+	local currentTime = 0
+	for i = 1, 300 do
+		local x = startX + xVel * currentTime
+		local y = startY + yVel * currentTime + 
+        (currentTime * currentTime * gravity * timeStep) +
+        (gravity * currentTime * timeStep)
+		
+		
+		local point = {x = x, y = y, t = currentTime}
+		table.insert(trajectoryTable, math.floor(currentTime) + 1, point)
+		currentTime = currentTime + timeStep
+	end
+	
+	return trajectoryTable
+end
+
+-- RMF related stuff
+function updateForceAdder(object, dt)
+	
+	local body = object.body
+	
+	local isForceEnabled = true
+	if object.disableForce then
+		isForceEnabled = not object.disableForce
+	end
+	
+	if isForceEnabled then
+		if object.applyForceInterval then
+			if object.forceTime then
+				object.forceTime = object.forceTime - dt
+			else
+				object.forceTime = object.applyForceInterval
+			end
+			
+			if object.forceTime <= 0 then
+				object.forceTime = object.forceTime + object.applyForceInterval
+				
+				setSprite(object.name, object.spriteWhenForceApplied)
+				
+				local volume = object.soundWhenForceAppliedVolume or 1.0
+				local audio = object.soundWhenForceApplied
+				
+				if type(audio) == "table" then
+					audio = audio[math.random(1, #audio)]
+				end
+				
+				res.playAudio(audio, volume, false, 0)
+				
+			elseif object.forceTime < object.applyForceInterval * 0.9 then
+				local currentSprite = object.sprite
+				local sprite = object.damageSprite
+				
+				if sprite ~= currentSprite then
+					setSprite(object.name, sprite)
+				end
+			end
+		end
+		
+		local forceX = 0.0
+		local forceY = 0.0
+		local applyAsImpulse = object.forceTime and object.forceTime <= 0.0
+		
+		if object.forceRelative and object.forceRelative ~= 0.0 then
+			local forceRelative = object.forceRelative
+			if math.abs(forceRelative) > 0.0 then
+				local bodyAngle = body:getAngle()
+				forceX = math.cos(bodyAngle) * forceRelative
+				forceY = math.sin(bodyAngle) * forceRelative
+			end
+		else
+			local baseForce = object.force or 1.0 -- whatever this is???
+			if object.forceX then
+				forceX = baseForce * object.forceX
+			end
+			
+			if object.forceY then
+				forceY = baseForce * object.forceY
+			end
+		end
+		
+		if forceX ~= 0.0 or forceY ~= 0.0 then
+			local velX, velY = body:getLinearVelocity()
+						
+			if object.targetVelocity then
+				local maxVel = object.targetVelocity
+			
+				if maxVel <= math.abs(velX) then
+					if velX * forceX > 0.0 then
+						forceX = 0.0
+					end
+				end
+				
+				if maxVel <= math.abs(velY) then
+					if velY * forceY > 0.0 then
+						forceY = 0.0
+					end
+				end
+			end
+			
+			if body:getType() == "dynamic" then
+				body:setAwake(true)
+				
+				local centerX, centerY = body:getWorldCenter()
+				local mass = object.mass
+				local invMass = 1 / mass
+				local invInertia = 1 / body:getInertia()
+				local torque = centerX * forceY - centerY * forceX
+				
+				if applyAsImpulse then
+					local vx = forceX * invMass + velX
+					local vy = forceY * invMass + velY
+					
+					body:setLinearVelocity(vx, vy)
+					--body:applyAngularImpulse(torque * invInertia)
+				
+				else
+					applyForce(object.name, forceX * mass, forceY * mass, centerX, centerY)
+					--body:applyTorque(torque)
+				end
+			end
+		end
+	end
+end
+
+function updateFriction(object, dt)
+
+	local body = object.body
+	
+	local friction = object.friction
+	local velX, velY = body:getLinearVelocity()
+	--[[
+	if friction ~= 0.0 then
+		return applyForce(object.name, velX * friction, velY * friction, object.x, object.y)
+	end
+	]]
+	
+	local fx = 0.0
+	local fy = 0.0
+	
+	if object.frictionXRelative then
+		fx = object.frictionXRelative
+	end
+	
+	if object.frictionYRelative then
+		fy = object.frictionYRelative
+	end
+	
+	if fx == 0.0 and fy == 0.0 then return end
+	
+	local angle = body:getAngle()
+	local cosA = math.cos(angle)
+	local sinA = math.sin(angle)
+	
+	local determinant = (cosA * cosA) + (sinA * sinA)
+	if determinant ~= 0.0 then
+		determinant = 1.0 / determinant
+	end
+	
+	local appliedFriction = ((fx * cosA - sinA * fy) * determinant * velX) +
+                            ((fy * cosA - sinA * fx) * determinant * velY)
+							
+	if appliedFriction < 0.0 then
+		applyForce(object.name, velX * appliedFriction, velY * appliedFriction, object.x, object.y)
+	end
 end
 
 function setTexture(object, texture)
@@ -122,7 +351,19 @@ function setRollingSound(object, rollingSound) --3.0.1 only
 end
 
 function setColliderType(object, collider) --3.0.1 only
-	objects.world[object].collider = collider
+	local obj = objects.world[object]
+	obj.collider = collider
+	
+	if collider == colliders.ghost then
+		obj.fixture:setMask(CATEGORY_BIRD)
+	elseif collider == colliders.staticNoCollision then
+		setFilterCategory(object, CATEGORY_SENSOR)
+		setFilterMask(object, 0)
+	end
+end
+
+function getColliderType(object)
+	return objects.world[object].collider or 0
 end
 
 function inheritTeleportation(object, others) --3.3.0
@@ -172,11 +413,11 @@ function getRayCastedObjects(info)
 	local x2, y2 = info.x2, info.y2
 	local obj = objects.world[info.source]
 
-	if obj and obj.body and obj.fixture then
+	if not obj or (obj and obj.body and obj.fixture) then
 		local hits = {}
 
 		physicsWorld:rayCast(x1, y1, x2, y2, function(fixture, x, y, xn, yn, fraction)
-			if fixture ~= obj.fixture then
+			if not obj or fixture ~= obj.fixture then
 				local body = fixture:getBody()
 				local userdata = body and body:getUserData()
 				local name = userdata and userdata.name
@@ -195,6 +436,31 @@ function getRayCastedObjects(info)
 
 		return hits
 	end
+end
+
+function getIntersectingObjects(info)
+	local x, y = info.x, info.y
+	local left, right = info.left, info.right
+	local up, down = info.up, info.down
+    
+    local hits = {}
+        
+	physicsWorld:queryBoundingBox(x - left, y - up, x + right, y + down, function(fixture)
+		local body = fixture:getBody()
+		local userdata = body and body:getUserData()
+		local name = userdata and userdata.name
+		
+		if name then
+			table.insert(hits, {
+				name = name,
+				fixture = fixture
+			})
+		end
+		
+		return true
+	end)
+	
+	return hits
 end
 
 function setObjectParameter(object, parameter, value)
@@ -257,6 +523,7 @@ function resizeCircle(name, radius)
 
 	if obj.shape then
 		--set the radius
+		radius = math.max(radius, 0)
 		obj.shape:setRadius(radius)
 		obj.radius = radius
 		obj.height = radius
@@ -277,38 +544,244 @@ function resizeCircle(name, radius)
 	end
 end
 
-function setScale(name, scale)
+function getRadius(name)
 	local obj = objects.world[name]
 	if obj then
-		obj.scale = scale
-		if obj.type == "circle" then
-			resizeCircle(name, obj.radius * obj.scale)
+		return obj.shape:getRadius()
+	end
+end
+
+function getAngularVelocity(name)
+	local obj = objects.world[name]
+	if obj then
+		return obj.body:getAngularVelocity()
+	end
+end
+
+function setScale(name, scaleX, scaleY)
+	local obj = objects.world[name]
+	if obj then
+		if scaleY then
+			obj.scale = {x = scaleX, y = scaleY}
+		else
+			obj.scale = scaleX
+		end
+		-- if obj.type == "circle" then
+		-- 	resizeCircle(name, obj.radius * obj.scale)
+		-- end
+	end
+end
+
+function getScale(name)
+    local obj = objects.world[name]
+    if obj then
+		if type(obj.scale) == "table" then
+			return obj.scale.x, obj.scale.y
+		else
+			return obj.scale or 1
+		end
+    end
+end
+
+--5.0.1
+--[[
+function addObjectUpdateFunction(name, f)
+	if object.updateFunction == nil then
+		object.updateFunction = f
+    elseif _G.type(object.updateFunction) == "table" and not contains(object.updateFunction, f) then
+        _G.table.insert(object.updateFunction, f)
+	elseif _G.type(r0_205.updateFunction) == "function" then
+		local old = object.updateFunction
+		object.updateFunction = {old, f}
+		local meta = {
+		  __call = function(fl, o, dt)
+			for _, v in _G.ipairs(fl) do
+			  v(o, dt)
+			end
+		  end
+		}
+		_G.setmetatable(object.updateFunction, meta)
+	else
+		_G.assert(false)
+	end
+	gameUpdateFunctions[object.name] = object.updateFunction
+end
+]]
+
+function destroyBreakableJoints(name, force)
+	for _, joint in pairs(objects.joints) do
+		if joint.end1 == name or joint.end2 == name then
+			if not joint.joint:isDestroyed() and joint.breakable then
+				if force >= joint.breakForce then
+					destroyJoint(joint.name)
+				end
+			end
 		end
 	end
 end
 
---5.0.1
-function addObjectUpdateFunction(name, func)
-	return
-end
-
-function destroyBreakableJoints(name, force)
-	return
-end
-
-
---vastly improved damage system, credits to halo
-
---used to be postsolve
-function physicsBeginContact(obj1, obj2, contact)
+--[[
+	this function is supposed to roughly estimate box2D's restitution
+	i commented it in its unfinished state, so feel free to work on it.
+]]
+	
+function postSolveBounce(obj1, obj2, contact)
 	local b1 = obj1:getBody()
 	local b2 = obj2:getBody()
 	
 	local o1 = obj1:getUserData()
 	local o2 = obj2:getUserData()
 	
+	local cx, cy = contact:getPositions()
+	
+	local function vec4(x, y, x1, y1)
+		local table = {x = x, y = y, x1 = x1, y1 = y1}
+		return table
+	end
+	
+	local function isStatic(b)
+		return b:getType() == "static"
+	end
+
+	if cx then
+		local nx, ny = contact:getNormal()
+		
+        local cmx, cmy = b1:getWorldCenter()
+        local cmx1, cmy1 = b2:getWorldCenter()
+		
+		local relativeVector = vec4(cx - cmx, cy - cmy, cx - cmx1, cy - cmy1)
+		
+        local velXa, velYa = b1:getLinearVelocity()
+        local velXb, velYb = b2:getLinearVelocity()
+        local w1, w2 = b1:getAngularVelocity(), b2:getAngularVelocity()
+		
+        local pointVelocity = vec4(velXa - w1 * relativeVector.y, 
+				velYa + w1 * relativeVector.x, 
+				velXb - w2 * relativeVector.y1, 
+				velYb + w2 * relativeVector.x1)
+		
+        local rvx, rvy = pointVelocity.x1 - pointVelocity.x, pointVelocity.y1 - pointVelocity.y
+        local velAlongNormal = rvx * nx + rvy * ny
+		
+		if velAlongNormal > -3.0 or true then -- velocity normal on hit
+			local inv_mass_a = isStatic(b1) and 0 or 1 / b1:getMass()
+			local inv_inertia_a = isStatic(b1) and 0 or 1 / b1:getInertia()
+			
+			local inv_mass_b = isStatic(b2) and 0 or 1 / b2:getMass()
+			local inv_inertia_b = isStatic(b2) and 0 or 1 / b2:getInertia()
+			
+			local relativeNormal_A = relativeVector.x * ny - relativeVector.y * nx
+            local relativeNormal_B = relativeVector.x1 * ny - relativeVector.y1 * nx
+			local kNormal = inv_mass_a + inv_mass_b + (relativeNormal_A ^ 2 * inv_inertia_a) 
+							+ (relativeNormal_B ^ 2 * inv_inertia_b)
+	
+            local restitution = math.max(o1.restitution, o2.restitution)
+            local normalImpulse = (-(1 + restitution) * velAlongNormal) / kNormal
+			
+			local tangentX, tangentY = -ny, nx
+			local relativeTangent_A = relativeVector.x * tangentY - relativeVector.y * tangentX
+            local relativeTangent_B = relativeVector.x1 * tangentY - relativeVector.y1 * tangentX
+			local kTangent = inv_mass_a + inv_mass_b + (relativeTangent_A ^ 2 * inv_inertia_a) 
+							+ (relativeTangent_B ^ 2 * inv_inertia_b)
+			
+            local velAlongTangent = rvx * tangentX + rvy * tangentY
+            local friction = math.sqrt(o1.friction * o2.friction)
+			local maxFriction = math.abs(normalImpulse) * friction
+            local tangentImpulse = math.max(-maxFriction, math.min(maxFriction, -velAlongTangent / kTangent))
+			
+			local forceX = (normalImpulse * nx) + (tangentImpulse * tangentX)
+			local forceY = (normalImpulse * ny) + (tangentImpulse * tangentY)
+			
+			b1:applyLinearImpulse(-forceX, -forceY)
+			b2:applyLinearImpulse(forceX, forceY)
+			
+			--b1:applyLinearImpulse(forceX, forceY)
+			--b2:applyLinearImpulse(-forceX, -forceY)
+			
+			--if o1.name:find("Ball") or o2.name:find("Ball") then
+				--print(velAlongNormal, o1.name, o2.name, restitution, o1.restitution)
+			--end
+			
+            b1:applyAngularImpulse(-(relativeVector.x * forceY - relativeVector.y * forceX))
+            b2:applyAngularImpulse( (relativeVector.x1 * forceY - relativeVector.y1 * forceX))
+		end
+		
+		contact:setRestitution(0)
+	end
+end
+postSolveBounce = nil
+
+function bubbleBeginContact(obj1, obj2, contact)
+	local o1 = obj1:getUserData()
+	local o2 = obj2:getUserData()
+	
+	local contactPoint = contact:getPositions()
+	local contactNormal = contact:getNormal()
+	
+	local bubble, collider = o1, o2
+	
+	if getColliderType(collider.name) == colliders.bubble then
+		bubble = o2
+		collider = o1
+	end
+	
+	if collider.shot then
+		setVelocity(collider.name, 0, 0)
+		collider.inBubble = true
+		collider.bubbleAntiGravityTimer = 5.0
+		collider.bubbleSpriteScale = 0.5
+		collider.bubbleSprite = bubble.sprite
+		
+		trappedInBubble(collider)
+		birdCollision(bubble.name, collider.name, 1.0, 0.0, contactPoint, contactNormal)
+		
+		removeObject(bubble.name)
+		objects.world[bubble.name] = nil
+	else --if not collider.controllable then -- does this have a condition?
+		deadBlocks[bubble.name] = bubble
+	end
+end
+
+function hoopBeginContact(obj1, obj2, contact)
+end
+
+function physicsEndContact(obj1, obj2, contact)
+end
+
+function physicsBeginContact(obj1, obj2, contact)
+	local o1 = obj1:getUserData()
+	local o2 = obj2:getUserData()
+	
 	if not objects.world[o1.name] or not objects.world[o2.name] then return end
+	
+	local bubbleCollision = (getColliderType(o1.name) == colliders.bubble or getColliderType(o2.name) == colliders.bubble) 
+	and getColliderType(o1.name) ~= getColliderType(o2.name)
+	
+	local isHoopTriggered = getColliderType(o1.name) == colliders.hoop or getColliderType(o2.name) == colliders.hoop
+	
+	if isHoopTriggered then
+		hoopBeginContact(obj1, obj2, contact)
+	elseif bubbleCollision then
+		bubbleBeginContact(obj1, obj2, contact)
+	else
+		basicBeginContact(obj1, obj2, contact)
+	end
+end
+
+--vastly improved damage system, credits to halo
+
+--used to be postsolve
+function basicBeginContact(obj1, obj2, contact)
+	local b1 = obj1:getBody()
+	local b2 = obj2:getBody()
+	
+	local o1 = obj1:getUserData()
+	local o2 = obj2:getUserData()
+	
 	solvePhysics()
+	
+	local contactPoint = contact:getPositions()
+	local contactNormal = contact:getNormal()
 	
 	if not o1.controllable and not o2.controllable then -- object to object collision
 		
@@ -325,11 +798,12 @@ function physicsBeginContact(obj1, obj2, contact)
 		
 		local currentScore = scoreTable.blocks.score
 		
+		local ignoreAllDamage = o1.ignoreAllDamage or o2.ignoreAllDamage
 		local damage = 0
 		local block1Destroyed = true
 		if o2.strength then
 			local defence = o2.defence or 0
-			if linearForce < defence or o2.defence >= 1000 then
+			if linearForce < defence or o2.defence >= 1000 or ignoreAllDamage then
 				block1Destroyed = false
 			else
 				local finalDamage = linearForce - defence
@@ -344,7 +818,7 @@ function physicsBeginContact(obj1, obj2, contact)
 		local block2Destroyed = true
 		if o1.strength then
 			local defence = o1.defence or 0
-			if linearForce < defence or o1.defence >= 1000 then
+			if linearForce < defence or o1.defence >= 1000 or ignoreAllDamage then
 				block2Destroyed = false
 			else
 				local finalDamage = linearForce - defence
@@ -367,12 +841,17 @@ function physicsBeginContact(obj1, obj2, contact)
 				m2 = math.floor((o2.strength + damage or -1) * 10) / 10})
 		end
 		
+		local relativeSpeed = linearForce --* 6.0
+		
+		destroyBreakableJoints(o1.name, relativeSpeed)
+		destroyBreakableJoints(o2.name, relativeSpeed)
+		
 		--assert(damage >= 0, "damage < 0 "..o1.name..", "..o2.name)
 		damageDone = linearForce
 
 		local old_score = currentScore
 		
-		blockCollision(o1.name, o2.name, linearForce, damageDone, 0, 0)
+		if blockCollision then blockCollision(o1.name, o2.name, linearForce, damageDone, contactPoint, -contactNormal) end
 
 		if joystick and linearForce >= 6 then
 			joystick:setVibration(math.min(linearForce / 15, 1), math.min(linearForce / 15, 1), .1)
@@ -393,13 +872,17 @@ function physicsBeginContact(obj1, obj2, contact)
 			block = o1
 		end
 		
+		if colliders.staticNoBirdCollision and getColliderType(block.name) >= colliders.staticNoBirdCollision then
+			return
+		end
+		
 		local damageMultiplier = 1.0
 		local velocityMultiplier = 1.0
 		
 		--3.0.1 uses materialName instead of material
 		local damageFactor = blockTable.damageFactors[bird.damageFactors]
-		local blockTable_damage = damageFactor.damageMultiplier[block.material or block.materialName]
-		local blockTable_velocity = damageFactor.velocityMultiplier[block.material or block.materialName]
+		local blockTable_damage = damageFactor.damageMultiplier[getMaterial(block.name)]
+		local blockTable_velocity = damageFactor.velocityMultiplier[getMaterial(block.name)]
 		
 		if blockTable_damage then
 			damageMultiplier = blockTable_damage
@@ -412,12 +895,14 @@ function physicsBeginContact(obj1, obj2, contact)
 		local birdMass = bird.body:getMass() * 100
 		local vx, vy = bird.body:getLinearVelocity()
 		
-		local linearForce = (_G.math.sqrt(vx * vx + vy * vy) * birdMass) / 10.0
+		local linearForce = (_G.math.sqrt(vx * vx + vy * vy) * birdMass) / 10.0 -- the factor is 60.0 in newer versions
 		
 		local effectiveDamage = linearForce * damageMultiplier
 		local damage = 0
 		
-		if objects.world[block.name] then
+		destroyBreakableJoints(block.name, linearForce)
+		
+		if objects.world[block.name] and block.ignoreAllDamage ~= true then
 			if block.strength then
 				local damageDealt = effectiveDamage
 				if block.defence then
@@ -434,6 +919,7 @@ function physicsBeginContact(obj1, obj2, contact)
 						
 						local overkillDamage
 						if bird.useLegacyCollisionPath then
+							--60.0 * (math.abs(newStrength) / birdMass) / effectiveDamage * 1.2 NEW
 							overkillDamage = ((-newStrength / birdMass) / effectiveDamage) * 10.0 * 1.75
 						else
 							overkillDamage = ((effectiveDamage - strength) / effectiveDamage) * velocityMultiplier
@@ -462,7 +948,7 @@ function physicsBeginContact(obj1, obj2, contact)
 				m2 = math.floor((o2.strength + damage or -1) * 10) / 10})
 		end
 		
-		birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage), 0, 0, 0, 0)
+		if birdCollision then birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage), contactPoint, contactNormal) end
 		if joystick and effectiveDamage >= 6 then
 			joystick:setVibration(math.min(effectiveDamage / 15, 1), math.min(effectiveDamage / 15, 1), .1)
 		end
@@ -485,7 +971,7 @@ function physicsBeginContact(obj1, obj2, contact)
 		
 		local force = (collisionVelocity * mass) / 10.0
 		
-		birdCollision(o1.name, o2.name, force, 0,  0, 0, 0, 0)
+		if birdCollision then birdCollision(o1.name, o2.name, force, 0, contactPoint, contactNormal) end
 	end
 	
 	--use deadBlocks table in non-pc versions

@@ -9,21 +9,27 @@ function drawParticlesNative(menu)
 			setRenderState(0, 0, p.scale, p.scale, p.angle, p.spritePivotX, p.spritePivotY)
 			_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
 		elseif not menu and not p.menu then
-			setRenderState(-screen.left / p.scale, -screen.top / p.scale, worldScale * p.scale, worldScale * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
+			setRenderState(-screen.left / p.scale, -screen.top / p.scale, (worldScale or 1) * p.scale, (worldScale or 1) * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
 			_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
 		end
 	end
 end
 
 function loadParticleFile(name) -- check if this is correct?
-	return loadLuaFile(scriptPath .. "/particles/" .. name, "", false)
+	return-- loadLuaFile(scriptPath .. "/particles/" .. name, "", false)
 end
 
 function clearParticles()
 	particles = {}
+	particleAmount = 0
+	restoreParticles()
 end
 
 function drawMenuParticlesInAdvance() --what is it with particles
+	return
+end
+
+function drawScreenParticles()
 	return
 end
 
@@ -32,7 +38,7 @@ function drawLevelParticlesNative(layer)
 end
 
 function updateParticlesNative(dt, menu)
-	if not particles then return end
+	if not particles or not dt then return end
 
 	for k, v in pairs(particles) do
 		local p = v
@@ -98,16 +104,19 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 				local emitter_circle = pt.emitter_circle or pt
 				local min, max = emitter_circle.minAngleEmitter or -180, emitter_circle.maxAngleEmitter or 180
 				local angle = math.random(min, max) * math.pi / 180
-				local vel = math.random(emitter_circle.minVel, emitter_circle.maxVel)
+				local vel = math.random(emitter_circle.minVel or 0, emitter_circle.maxVel or 0)
+				local minAngle = p.minAngle and p.minAngle * math.pi / 180 or 0
+				local maxAngle = p.maxAngle and p.maxAngle * math.pi / 180 or 0
 
 				p.x = x + (_G.math.random(0, w) - 0.5*w ) * cos(angle)
 				p.y = y + (_G.math.random(0, h) - 0.5*h ) * sin(angle)
+				p.angle = _G.math.random(minAngle, maxAngle)
 				p.xVel, p.yVel = math.cos(angle) * vel, math.sin(angle) * vel
 			else
 				p.xVel, p.yVel = _G.math.random(mivx, mavx), _G.math.random(mivy, mavy)
+				p.angle = _G.math.random(1, 3.14)
 			end
-
-			p.angle = _G.math.random(p.minAngle or 1, p.maxAngle or 3.14)
+				
 			p.angleVel = _G.math.random(pt.minAngleVel or 0, pt.maxAngleVel or 0)
 			p.scaleBegin = _G.math.random(pt.minScaleBegin or 0, pt.maxScaleBegin or 0)
 			p.scaleEnd = _G.math.random(pt.minScaleEnd or 0, pt.maxScaleEnd or 0)
@@ -130,6 +139,10 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 			_G.table.insert(particles, p)
 		end
 	end
+end
+
+local function addParticles2(type, amount, x, y, w, h, angle, ignoreLimits, menu) --different parameters
+	return
 end
 
 local function setHardLimit(limit)
@@ -170,6 +183,11 @@ getParticles = {
 
 		elseif i == "native_addParticlesWithMode" then
 			return native_addParticlesWithMode
+
+		elseif i == "update" then
+			return updateParticlesNative
+		elseif i == "add" then
+			return addParticles2
 		end
 	end
 }

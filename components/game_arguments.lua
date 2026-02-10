@@ -28,8 +28,6 @@ function handleStartArgs()
 				, true)
 			elseif v == "--model" or v == "-m" then --override deviceModel
 				deviceModel = arg[i + 1] or deviceModel
-			elseif v == "--gamelogic" or v == "-gl" then --override gamelogic.lua path
-				gamelogicPath = arg[i + 1] or gamelogicPath
 			elseif v == "--datapath" or v == "-dp" then --override datapath and set save directory
 				datapath = arg[i + 1] or datapath
 				love.filesystem.setIdentity(love.filesystem.getIdentity().."/DATA_"..datapath)
@@ -81,6 +79,8 @@ function handleStartArgs()
 				end
 			elseif v == "--blamelength" or v == "-bl" then --length of fione bytecode traceback (disabled by default)
 				fione_errorblame_length = tonumber(arg[i + 1]) or fione_errorblame_length
+			elseif v == "--nosave" or v == "-ns" then --prevent saving any data
+				disableSaving = true
 			elseif v == "--run" then --run lua
 				debugExecute(arg[i + 1] or "")
 			elseif v:sub(1, 1) == "+" then --run lua, alt syntax (srb2)

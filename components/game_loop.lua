@@ -2,7 +2,7 @@
 
 table.clear = table.clear or function(t) for i, v in pairs(t) do t[i] = nil end end
 
-local pausedaudios = {} --thanks love 11
+local pausedaudios = {}
 zoomLevel = 0
 wantedZoomLevel = 0
 local hasfocus = true
@@ -24,7 +24,7 @@ function updateDisplayScale()
 	screenHeight = math.floor(love.graphics.getHeight() / displayScale)
 end
 
-function updateCursor(dt)
+local function updateCursor(dt)
 	if not joystick then
 		cursor.x, cursor.y = love.mouse.getPosition()
 		cursor.x = cursor.x / displayScale
@@ -35,6 +35,14 @@ function updateCursor(dt)
 
 	love.mouse.setVisible(not (gameOptions and gameOptions.ui and gameOptions.ui.enableCursor) or deviceModel ~= "windows"
 		or debugOpen or optionsOpen or openPopups[1] ~= nil)
+end
+
+--restore particle functions
+function restoreParticles()
+	particles = particles or {}
+	if particles and not getmetatable(particles) then
+		setmetatable(particles, getParticles)
+	end
 end
 
 function love.update(dt)
@@ -60,16 +68,17 @@ function love.update(dt)
 		end
 		
 		if audiochannels then
-			for _, c in ipairs(audiochannels) do
-				for i, v in ipairs(c) do
-					if cachedaudios[v]:isPlaying() ~= true then
-						table.remove(c, i)
+			for i, channel in ipairs(audiochannels) do
+				for ii, sound in ipairs(channel) do
+					local source = sound.source
+					if not source:isPlaying() then
+						source:release()
+
+						table.remove(channel, ii)
 					end
 				end
 			end
 		end
-
-		love.audio.setVolume(audiovolume)
 		
 		updateDisplayScale()
 
@@ -78,10 +87,7 @@ function love.update(dt)
 		--update window title
 		love.window.setTitle("Angry Birds ("..screenWidth.."x"..screenHeight..")")
 
-		--restore particle functions
-		if particles and not getmetatable(particles) then
-			setmetatable(particles, getParticles)
-		end
+		restoreParticles()
 
 		--cursor delta for debug scrolling
 		local cx, cy = cursor.x, cursor.y
@@ -114,7 +120,7 @@ function love.update(dt)
 
 		love.graphics.setScissor()
 
-		dt2 = speedUpPre(math.min(dt, .4) * ((debugOpen or optionsOpen) and 0.2 or 1) * timeScale)
+		dt2 = speedUpPre(math.min(dt, 1/30) * ((debugOpen or optionsOpen) and 0.2 or 1) * timeScale)
 
 		local kp, kr, kh, cw = keyPressed, keyReleased, keyHold, cursor.wheel
 		if openPopups[1] or debugOpen or fmOpen or optionsOpen then
@@ -126,7 +132,15 @@ function love.update(dt)
 			currentGameMode(dt2)
 		elseif update then
 			--pause the game if there's an important popup
+			local t1 = love.timer.getTime()
 			update(dt2, dt2)
+
+			if enableDebug then
+				local t2 = love.timer.getTime()
+				setRenderState(0, 0, 1, 1)
+				res.useFont("FONT_BASIC")
+				res.drawString("", "update: "..(math.floor((t2 - t1) * 1000 * 10) / 10).." ms", 10, 10)
+			end
 		end
 
 		--try it out, just for fun
@@ -141,7 +155,7 @@ function love.update(dt)
 		if speedUpPost then speedUpPost() end
 
 		drawParticlesNative(true)
-		updateParticlesNative(dt, true)
+		updateParticlesNative(dt2, true)
 
 		if dmonitor then
 			local v = type(dmonitor) == "string" and _G[dmonitor] or (type(dmonitor)=="table" and dmonitor[1] and _G[dmonitor[1]] and dmonitor[2] and (_G[dmonitor[1]][dmonitor[2]] or "nil"))
@@ -177,7 +191,10 @@ function love.update(dt)
 		cursor.wheelTriggered = nil
 		setRenderState(0, 0, 1, 1)
 		updatePopup()
-		love.graphics.present()
+
+		if not (debugPaused and dt2 == 0) then
+			love.graphics.present()
+		end
 	elseif hasfocus then
 		hasfocus = false
 		pausedaudios = love.audio.pause()
@@ -187,7 +204,9 @@ function love.update(dt)
 			gamePaused()
 		end
 
-		love.graphics.present()
+		if not debugPaused then
+			love.graphics.present()
+		end
 	end
 	-- if not cursor.wheelTriggered then
 		cursor.wheel = 0
@@ -258,5 +277,5 @@ end
 
 --set dt to 0 resizing
 if love.event.setModalDrawCallback then
-	love.event.setModalDrawCallback(function() loveUpdate(true) end)
+	love.event.setModalDrawCallback(function() loveUpdate(true) if clearLuaForceFunctions then clearLuaForceFunctions() end end)
 end

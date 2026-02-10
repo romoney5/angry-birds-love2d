@@ -1,15 +1,18 @@
 --load components
 
---extra libraries
+--first load filesystem functions
+love.filesystem.load(compsPath.."/filesystem.lua")()		--filesystem functions
 
+--extra libraries
 pcall(require, "table.clear")                               --clear key* tables instead of remaking them
 _, ffi = pcall(require, "ffi")                              --luajit ffi
 _, utf8 = pcall(require, "utf8")							--utf8 library, now required for utf8 text
 
 loadbytecode = runLuaFile(compsPath.."/libs/fione.lua")     --run lua 5.1 bytecode because loadstring
+json = runLuaFile(compsPath.."/libs/json.lua")				--json support for modern seasons versions
 runLuaFile(compsPath.."/libs/aes.lua")                      --aes-256-cbc decryption powered by none other than luajit ffi
 haswebp, webp = pcall(runLuaFile,compsPath.."/libs/love-webp.lua")--read webp images
-_ = nil
+_ = nil --really weird hack
 
 --debug
 runLuaFile(compsPath.."/debugging/console.lua")				--debug console
@@ -42,12 +45,6 @@ runLuaFile(compsPath.."/physics/level.lua")					--level saving/loading, world fu
 runLuaFile(compsPath.."/physics/objects_collisions.lua")	--object params functions, damage system
 runLuaFile(compsPath.."/physics/update.lua")				--physics update function
 
---dummy functions
-runLuaFile(compsPath.."/blanks/classic.lua")				--blank functions for 1.6.3.1
-runLuaFile(compsPath.."/blanks/3.0.1.lua")					--blank functions for 3.0.1
-runLuaFile(compsPath.."/blanks/rio.lua")					--blank functions for rio 1.4.0
-runLuaFile(compsPath.."/blanks/friends.lua")				--blank functions for friends mobile
-
 runLuaFile(compsPath.."/game_arguments.lua")				--handles arguments passed on to love
 runLuaFile(compsPath.."/options.lua")						--extra options, like devicemodel or gravity
 runLuaFile(compsPath.."/ui.lua")							--ui components used in debug menus
@@ -58,5 +55,12 @@ runLuaFile(compsPath.."/something.lua")						--something
 runLuaFile(compsPath.."/iap.lua")							--in app purchases functions
 runLuaFile(compsPath.."/game_loop.lua")						--main game loop, calls update
 runLuaFile(compsPath.."/gamepad.lua")						--controller related functions
+
+--dummy functions
+runLuaFile(compsPath.."/blanks/classic.lua")				--blank functions for 1.6.3.1
+runLuaFile(compsPath.."/blanks/3.0.1.lua")					--blank functions for 3.0.1
+runLuaFile(compsPath.."/blanks/seasons.lua")				--blank functions for modern seasons
+runLuaFile(compsPath.."/blanks/rio.lua")					--blank functions for rio 1.4.0
+runLuaFile(compsPath.."/blanks/friends.lua")				--blank functions for friends mobile
 
 runLuaFile(compsPath.."/debugging/error.lua")				--run the error handler after everything is loaded

@@ -29,6 +29,7 @@ function res.createBitmapFont(font, silent)
 	if checkDirectory(font) then
 		if not fonts[fontname] then
 			local data = getDatInfo(love.filesystem.read(font), font, "FONT")
+			if not data then print("Failed to load font "..fontname) return end
 			local spritesheet = data.filename
 			local filepath = (font:match("(.+)/[^/]+$") or "").."/"..spritesheet
 
@@ -59,7 +60,8 @@ function res.createBitmapFont(font, silent)
 			if endsWith(spritesheet, ".pvr") then
 				-- spritesheet = spritesheet..".png"
 				local data = love.filesystem.read(filepath)
-				spritesheet = love.graphics.newImage(convertImagePVR(data, spritesheet))
+				local pvr, w, h = convertImagePVR(data, spritesheet)
+				spritesheet = love.graphics.newImage(pvr)
 			else
 				spritesheet = love.graphics.newImage(filepath)
 			end
@@ -76,7 +78,7 @@ function res.createBitmapFont(font, silent)
 			print("Font "..fontname.." is already loaded.")
 		end
 	elseif not silent then
-		print("Failed to load font "..fontname)
+		print("Could not find font "..fontname)
 	end
 end
 
@@ -88,8 +90,8 @@ end
 
 function res.drawString(group, text, x, y, aligny, alignx)
 	text = tostring(text) or ""
-	if group and group~="" then
-		text = res.getString(group,text)
+	if group and group ~= "" then
+		text = res.getString(group, text)
 	end
 
 	local font = fonts[drawfont]
@@ -103,8 +105,16 @@ function res.drawString(group, text, x, y, aligny, alignx)
 		-- text = (alignx or "")..(aligny or "")
 		
 		local line = 0
+		local height = love.graphics.getHeight()
+		
 		for l in text:gmatch("[^\n]+") do
 			local ax, i = 0, 0
+			
+			--don't calculate the widths and draw everything if it goes off screen
+			local _, miny = love.graphics.transformPoint(x + i + ax, (y + ay - font.leading + (line * font.leading)))
+			local _, maxy = love.graphics.transformPoint(x + i + ax, (y + ay + font.leading + (line * font.leading)))
+			if miny > height or maxy < 0 then goto continue end
+			
 			if alignx=="HCENTER" or aligny=="HCENTER" then ax = -res.getStringWidth(l) / 2 end
 			if alignx=="RIGHT" or aligny=="RIGHT" then ax = -res.getStringWidth(l) end
 
@@ -118,6 +128,8 @@ function res.drawString(group, text, x, y, aligny, alignx)
 					i = i + (char.width + font.tracking)
 				end
 			end
+			
+			::continue::
 			line = line + 1
 		end
 	else
@@ -148,16 +160,23 @@ function drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_scale)
 	
 	love.graphics.setColor(1 * alpha, 1 * alpha, 1 * alpha, alpha)
 	love.graphics.translate(textFloor(self.x * hs + x), textFloor(self.y * hs + y))
+
+	--spans multiple lines
 	if self.clipped then
 		local font = fonts[drawfont]
 
-		love.graphics.translate(0, textFloor(-res.getFontLeading() * (#self.lines - 1) / 2))
+		--scaling goes above everything else
+		love.graphics.scale((scale_x or 1) * self.scaleX * hs, (scale_y or 1) * self.scaleY * hs)
 
 		for i, line in ipairs(self.lines) do
 			love.graphics.push()
-			love.graphics.scale((scale_x or 1) * self.scaleX * hs, (scale_y or 1) * self.scaleY * hs)
+
+			love.graphics.translate(0, textFloor(-res.getFontLeading() * (#self.lines - 1) / 2))
 			res.drawString(line.group, line.text, 0, 0, line.hanchor, line.vanchor)
+
 			love.graphics.pop()
+
+			--go to the next line
 			love.graphics.translate(0, textFloor(res.getFontLeading()))
 		end
 	else

@@ -1,6 +1,49 @@
 --draw bg, fg, and game
 
+local drawSprites --old seasons versions define drawSprites
 trajectory = {{{}, {}, {}}}
+
+
+themeSpriteObjects = {}
+
+function createThemeSprite(name, sprite, x, y, speedX, scaleX, scaleY, angle, layerNumber)
+	themeSpriteObjects[name] = {sprite = sprite, x = x, y = y, speedX = speedX, scaleX = scaleX, scaleY = scaleY, angle = angle, layerNumber = layerNumber}
+end
+
+function removeThemeSprite(name, layerNumber)
+	themeSpriteObjects[name] = nil
+end
+
+function modifyThemeSprite(name, x, y, scaleX, scaleY, angle, layerNumber)
+	if not themeSpriteObjects[name] then return end
+	themeSpriteObjects[name].x = x
+	themeSpriteObjects[name].y = y
+	themeSpriteObjects[name].scaleX = scaleX
+	themeSpriteObjects[name].scaleY = scaleY
+	themeSpriteObjects[name].angle = angle
+	themeSpriteObjects[name].layerNumber = layerNumber
+end
+
+local yoffsets = {}
+local layercolors = {}
+
+function setThemeForegroundOffsetY(layer, y)
+	yoffsets[layer] = y
+end
+
+function setThemeRectColour(layer, r, g, b, a)
+	r, g, b, a = r / 255, g / 255, b / 255, a / 255
+	layercolors[layer] = {r * a, g * a, b * a, a}
+end
+
+function setTheme(theme)
+	currentTheme = theme
+	objects.theme = theme
+	yoffsets = {}
+	layercolors = {}
+
+	restoreParticles()
+end
 
 --[1] = sheet
 --[2] = sprite
@@ -8,28 +51,61 @@ trajectory = {{{}, {}, {}}}
 --[4] = scale
 --[5] = looping
 --[6] = position
-function drawLayer(v)
-	local px, py = res.getSpritePivot("", v[2])
-	local w, h = res.getSpriteBounds("", v[2])
-	local s = worldScale or 1
-	local scroll = -(v.v or 0) * time / 16
+function drawLayer(layer, yoffset)
+	local sprite = layer[2]
+	local relativeSpeed = layer[3] or 1
+	local relativeScale = layer[4] or 1.5
+	local isLooping = layer[5]
+	local startX = layer[6] or 0
+	local scrollFrequency = layer.v or 0
 	
-	if w > 0 and s > .02 then --don't draw if the scale is too low
-		for x = -1, math.floor(screenWidth / w / s) do
-			-- local i = #theme.bgLayers - k
-			local xp = (w) * x + (v[6] or 0)
-			local left = (-screen.left * v[3] / v[4] + scroll - (cameraShakeX or 0)) % w
-			local top = (-screen.top / v[4] - (cameraShakeY or 0))
-			-- top = (-screen.top * v[3] / v[4] - cameraShakeY)
-
-			if episode4BGCranes and v[2]:find("CRANE") then
-				left = -screen.left * v[3] / v[4] + episode4BGCranes.startX / 16 - cameraShakeX
+	local px, py = res.getSpritePivot(sprite)
+	local w, h = res.getSpriteBounds(sprite)
+	local wScale = tempWorldScale or worldScale or 1
+	local autoScroll = -scrollFrequency * time / 16
+	local shakeX, shakeY = cameraShakeX or 0, cameraShakeY or 0
+	
+	if w > 0 and wScale > .02 then --don't draw so many if the scale is too low
+		for x = -1, math.floor(screenWidth / (w - px) / wScale) do
+			local pivotX = w * x + startX
+			local left = -screen.left * relativeSpeed / relativeScale
+			local top = -screen.top / relativeScale + (yoffset or 0)
+			
+			if episode4BGCranes and sprite:find("CRANE") then
+				left = left + episode4BGCranes.startX / 16
+			elseif isLooping ~= false then
+				left = (left + autoScroll) % w
 			end
+			
+			setRenderState(pivotX + left - shakeX / relativeScale, top - shakeY / relativeScale, wScale * relativeScale, wScale * relativeScale, 0, px, py)
+			
+			if not (x ~= 0 and isLooping == false) then
+				res.drawSprite(sprite, 0, 0)
+			end
+		end
+	end
+end
 
-			setRenderState(xp+left, top, s * v[4], s * v[4], 0, px, py)
+function drawThemeSprite(v, layer)
+	local px, py = res.getSpritePivot("", v.sprite)
+	local w, h = res.getSpriteBounds("", layer[2])
 
-			if not (x ~= 0 and v[5] == false) then
-				res.drawSprite(v[2], 0, 0)
+	local wScale = tempWorldScale or worldScale
+	local relativeSpeed = layer[3] or 1
+	local relativeScale = layer[4] or 1.5
+	local isLooping = layer[5]
+	local shakeX, shakeY = cameraShakeX or 0, cameraShakeY or 0
+	
+	if w > 0 and wScale > .02 then --don't draw so many if the scale is too low
+		for x = -1, math.floor(screenWidth / w / wScale) do
+			local pivotX = w * x
+			local left = (-screen.left * relativeSpeed / relativeScale) % w
+			local top = (-screen.top / v.scaleY)
+
+			setRenderState(pivotX + left - shakeX, top - shakeY, wScale * v.scaleX, wScale * v.scaleY, v.angle, px, py)
+
+			if not (x ~= 0 and isLooping == false) then
+				res.drawSprite(v.sprite, v.x * 16, v.y)
 			end
 		end
 	end
@@ -38,26 +114,71 @@ end
 function drawBackgroundNative()
 	local theme = blockTable.themes[currentTheme]
 	if not theme then return end
+
 	if theme.color then setBGColor(theme.color.r, theme.color.g, theme.color.b) end
-	for _,v in ipairs(theme.bgLayers) do
-		drawLayer(v)
+
+	for layernum, layer in ipairs(theme.bgLayers) do
+		--theme rect colors
+		love.graphics.push("all")
+		if layercolors[layernum - 1] then
+			local colors = layercolors[layernum - 1]
+			love.graphics.setColor(colors)
+			if layer.rect then
+				local a = colors[4] or layer.rect.a
+				drawRect(layer.rect.r * a, layer.rect.g * a, layer.rect.b * a, a, 0, 0, screenWidth, screenHeight)
+			end
+		end
+
+		drawLayer(layer)
+
+		love.graphics.pop()
+
+		for k, object in pairs(themeSpriteObjects) do
+			if object.layerNumber == layernum then
+				-- setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, v.angle)
+				-- res.drawSprite(v.sprite, v.x, 0)
+				drawThemeSprite(object, theme.bgLayers[layernum + 1] or layer)
+			end
+		end
 	end
 end
 
 function drawForegroundNative()
 	local theme = blockTable.themes[currentTheme]
 	if not theme then return end
+
 	local s = worldScale or 1
 	setRenderState(0, 0, 1, 1)
 
-	local _, ground_h = res.getSpriteBounds(theme.fgLayers[1][1], theme.fgLayers[1][2])
-	local rect_x = 0
-	local rect_y = (-screen.top + ground_h) * s
-	drawRect(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, rect_x, rect_y, screenWidth, screenHeight + screen.top * s + rect_y)
+	--draw ground color
+	local fgLayers = theme.fgLayers
+	local ground_num = 1
 
-	for _,v in ipairs(theme.fgLayers) do
-		v[3], v[4] = v[3] or 1, v[4] or 1.5
-		drawLayer(v)
+	--hack(?) for bad piggies
+	if theme.effects then
+		for i, v in ipairs(theme.effects) do
+			if v.type == "Waves" then
+				--check that all sprites are valid?
+				ground_num = v.params.water_layer.index
+				break
+			end
+		end
+	end
+
+	for layernum, layer in ipairs(fgLayers) do
+		if layernum == ground_num then
+			local _, ground_h = res.getSpriteBounds(fgLayers[ground_num][1], fgLayers[ground_num][2])
+			local _, ground_py = res.getSpritePivot(fgLayers[ground_num][1], fgLayers[ground_num][2])
+			
+			local scale = fgLayers[ground_num][4] or 1.5
+			local rect_x = 0
+			local rect_y = (-screen.top - (cameraShakeY or 0) + (ground_h - ground_py) * scale) * s
+			rect_y = rect_y + (yoffsets[#fgLayers - 1] or 0) * s
+
+			drawRect(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, rect_x, rect_y, screenWidth, screenHeight + screen.top * s + rect_y)
+		end
+
+		drawLayer(layer, yoffsets[layernum - 1])
 	end
 end
 
@@ -80,14 +201,54 @@ local textureShader = love.graphics.newShader([[
 	}]]
 )
 
-function drawGameNative() --work in progress
+function drawGameNative()
 	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, 1)
 
-	--draw textures
-	for k, v in _G.pairs(objects.world) do
-		local texture = checkSprite(v.texture) --or blockTable.themes[currentTheme].texture
+	--trajectories (thanks again halo)
+	local trSprites = {}
+	for i = 1, 3 do trSprites[i - 1] = "TRAIL_WHITE_"..i end
+	trSprites[#trSprites + 1] = "PARTICLE_SLINGDOT"
+
+	for _,tr in ipairs(trajectory) do
+		for _,v in ipairs(tr) do
+			for i,vv in ipairs(v) do
+				res.drawSprite(vv.s or trSprites[(i - 1) % 3], vv.x, vv.y)
+			end
+		end
+	end
+	
+	drawSprites()
+	
+	--draw particles
+	drawParticlesNative()
+end
+
+local renderList
+function drawSprites()
+	if not objectsSorted then
+		renderList = {}
+		for z, objects in pairs(zOrderedObjects) do
+			for _, obj in ipairs(objects) do
+				table.insert(renderList, obj)
+			end
+		end
+		
+		-- sort the flat list by z_order
+		table.sort(renderList, function(a, b) 
+			return a.z_order < b.z_order 
+		end)
+		objectsSorted = true
+	end
+
+	for k, v in ipairs(renderList) do
+		local obj = objects.world[v.name]
+		if not obj then
+			goto continue
+		end
+		
+		local texture = checkSprite(obj.texture) --or blockTable.themes[currentTheme].texture
 		if not texture then --try to find based on a png name
-			texture = findSpriteByPNG(v.texture)
+			texture = findSpriteByPNG(obj.texture)
 		end
 		
 		if texture then
@@ -108,79 +269,84 @@ function drawGameNative() --work in progress
 			
 			love.graphics.setShader(textureShader)
 			
-			drawObject(v)
+			drawObject(obj)
 			
 			love.graphics.setBlendMode(b1, b2)
 			love.graphics.setShader()
 			love.graphics.pop()
+		else
+			drawObject(obj)
 		end
-	end
-
-	--trajectories (thanks again halo)
-	local trSprites = {}
-	for i = 1, 3 do trSprites[i - 1] = "TRAIL_WHITE_"..i end
-	trSprites[#trSprites + 1] = "PARTICLE_SLINGDOT"
-
-	for _,tr in ipairs(trajectory) do
-		for _,v in ipairs(tr) do
-			for i,vv in ipairs(v) do
-				res.drawSprite(vv.s or trSprites[(i - 1) % 3], vv.x, vv.y)
-			end
-		end
-	end
-	
-	--[[
-		LAYER HIEARCHY 
 		
-		- objects (z_order <= 4)
-		- birds
-		- objects (z_order >= 5) 
-		- background sprites (the eagle)
-	
-	]]
-	
-	-- TODO : maybe shorten this.
-	local layers = {
-		{},
-		{},
-		{},
-		{}
-	}
-	
-	for i, v in pairs(objects.world) do
-		if not v.texture then
-			if v.z_order <= 4.0 then
-				if v.controllable ~= true then
-					table.insert(layers[1], 1, i)
-				else
-					table.insert(layers[2], 1, i)
-				end
-			end
-			
-			if v.z_order >= 5.0 then
-				table.insert(layers[3], 1, i)
-			end
-			
-			if v.isBackground then
-				table.insert(layers[4], 1, i)
-			end
-		end
+		::continue::
 	end
-
-	--draw objects
-	for i = 1, #layers do
-		for k, v in _G.pairs(layers[i]) do
-			drawObject(objects.world[v])
-		end
-	end
-	
-	--draw particles
-	drawParticlesNative()
 end
-
+--[[
+function drawSprites()
+	local layers = { {}, {}, {}, {} }
+	
+	for k, v in pairs(objects.world) do
+		local lookup = { [false] = 0, [true] = 1 }
+		local index = 1 + lookup[v.controllable]
+		
+		if v.isBackground then
+			index = 4
+		elseif v.z_order > 4.0 or (v.z_order == 0 and v.body:getType() == "dynamic") then
+			index = 3
+		end
+		
+		table.insert(layers[index], { name = k, z_order = v.z_order or 0 })
+	end
+	
+	-- sort sprites based on depth
+	for i = 1, #layers do
+		table.sort(layers[i], function(a, b)
+			return a.z_order < b.z_order
+		end)
+	end
+	
+	-- draw object
+	for i = 1, #layers do
+		for k, v in ipairs(layers[i]) do
+			local obj = objects.world[v.name]
+			local texture = checkSprite(obj.texture) --or blockTable.themes[currentTheme].texture
+			if not texture then --try to find based on a png name
+				texture = findSpriteByPNG(obj.texture)
+			end
+			
+			if texture then
+				love.graphics.push()
+				local b1, b2 = love.graphics.getBlendMode()
+				love.graphics.setBlendMode("alpha", "alphamultiply")
+				
+				local textureImage = texture.spsh
+				textureImage:setWrap("repeat", "repeat")
+				
+				textureShader:send("textureMask", textureImage)
+				
+				local w, h = textureImage:getDimensions()
+				textureShader:send("textureDimensions", {w, h})
+				
+				textureShader:send("worldScale", worldScale * displayScale * love.graphics.getDPIScale())
+				textureShader:send("camera", {screen.left, screen.top})
+				
+				love.graphics.setShader(textureShader)
+				
+				drawObject(obj)
+				
+				love.graphics.setBlendMode(b1, b2)
+				love.graphics.setShader()
+				love.graphics.pop()
+			else
+				drawObject(obj)
+			end
+		end
+	end
+end
+]]
 function drawObject(v)
 	if v.visible == false then return end
-
+	
 	local x, y = physicsToWorldTransform(v.x, v.y)
 	love.graphics.push()
 
@@ -188,12 +354,19 @@ function drawObject(v)
 	drawangle = v.angle
 	
 	local scale = v.scale or 1
-	if v.isBackground then scale = 2 end
+	
+	if type(scale) == "table" then
+		love.graphics.scale(scale.x, scale.y)
+		
+		res.drawSprite(v.sprite, x / scale.x, y / scale.y)
+	else
+		if v.isBackground then scale = 2 end
 
-	love.graphics.scale(scale)
-	if v.flipx then love.graphics.scale(-1, 1) end
+		love.graphics.scale(scale)
+		if v.flipx then love.graphics.scale(-1, 1) end
 
-	res.drawSprite(v.sprite, x / scale, y / scale)
+		res.drawSprite(v.sprite, x / scale, y / scale)
+	end
 
 	drawangle = 0
 	love.graphics.pop()
