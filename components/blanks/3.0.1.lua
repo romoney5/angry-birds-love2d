@@ -886,5 +886,24 @@ function native.SpecialOffer.hasSpecialOfferAssets()--?
 	return false
 end
 
+function setShaderToGameObject(object, shader)
+	local obj = objects.world[object]
+	if obj then
+		obj.shader = love.graphics.newShader(shader)
+	end
+end
+
+function setObjectColor(object, r, g, b, a)
+	local obj = objects.world[object]
+	if obj then
+		local r, g, b, a = r / 255, g / 255, b / 255, a / 255
+		obj.colors = {r * a, g * a, b * a, a}
+	end
+end
+
+function hasBody(object)
+	return objects.world[object] ~= nil
+end
+
 
 specialOfferMeta = {}

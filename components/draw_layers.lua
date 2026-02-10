@@ -353,6 +353,14 @@ function drawObject(v)
 	drawxp, drawyp = res.getSpritePivot(v.sprite)
 	drawangle = v.angle
 	
+	if v.colors then
+		love.graphics.setColor(v.colors)
+	end
+	
+	if v.shader then
+		love.graphics.setShader(v.shader)
+	end
+	
 	local scale = v.scale or 1
 	
 	if type(scale) == "table" then
@@ -367,6 +375,8 @@ function drawObject(v)
 
 		res.drawSprite(v.sprite, x / scale, y / scale)
 	end
+	
+	love.graphics.setShader()
 
 	drawangle = 0
 	love.graphics.pop()
