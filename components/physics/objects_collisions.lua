@@ -376,7 +376,12 @@ function incrementPortalPingPongCount(object, enterPortal, newPortal)
 end
 
 function getColliderType(object)
-	return objects.world[object].collider or 0
+	local obj = objects.world[object]
+	if obj and obj.collider then
+		return obj.collider
+	end
+	
+	return 0
 end
 
 function inheritTeleportation(object, others) --3.3.0
