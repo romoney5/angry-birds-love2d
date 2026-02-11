@@ -261,13 +261,57 @@ NativeCloudAssets = {}
 local downloads = {}
 NativeCloudAssets.allowNewBackgroundThread = nil --function returns boolean
 
-function NativeCloudAssets.getPackStatus(pack)
+function NativeCloudAssets.getPackStatus(pack) -- there seems to be evidence that this can load levels
 	--UNKNOWN, IDLE, NO CONNECTION, FAILURE, QUEUED, DOWNLOADING, DOWNLOADED, PROCESSING, READY
-	return "DOWNLOADING"--"READY"
+	local owner = "HaloGuy345"
+	local repo = "cloud_assets"
+	local branch = "main"
+
+	local url = string.format(
+		"http://raw.githubusercontent.com/%s/%s/%s/%s",
+		owner, repo, branch, pack
+	)
+	
+	if NativeCloudAssets.getAssetPath(pack) then
+		return "CACHED"
+	end
+	
+	-- TODO : switch to ssl https?
+	local tmp = os.tmpname()
+	local request = io.popen(string.format('curl -w "%%{http_code}" -sS -L "%s" -o "%s"', url, tmp))
+    local code = tonumber(request:read("*a"))
+    request:close()
+	
+	if code == 200 then
+		local file = io.open(tmp, "rb")
+		local data = file:read("*a")
+		file:close()
+		
+		os.remove(tmp)
+		
+		local dataSize = bit.rshift(#data, 10)
+		local printData = string.format("Downloaded %s at %d kb", pack, dataSize)
+		print(printData)
+		
+		local fileData = love.filesystem.newFileData(data, pack)
+		local source = love.sound.newSoundData(fileData)
+		
+		downloads[pack] = { package = data, source = source }
+		
+		--love.filesystem.write(pack, data)
+		
+		return "DOWNLOADED"
+	else
+		os.remove(tmp)
+		return "FAILURE"
+	end
+	
+	
+	return "DOWNLOADING"
 end
 
 function NativeCloudAssets.packStep(episode)
-	downloads[episode] = {progress = 0, processing = false}
+	--downloads[episode] = {progress = 0, processing = false}
 end
 
 function NativeCloudAssets.isProcessing()
@@ -283,20 +327,29 @@ function NativeCloudAssets:onInitialized()
 end
 
 function NativeCloudAssets.deleteAllCloudData()--?
-	return
+	downloads = {}
+end
+
+function createAudioFromAppData(asset, clipName)
+	res.createAudio(downloads[asset].source, clipName, false, true)
+	print(clipName .. " created!")
 end
 
 --4.2.0
 function NativeCloudAssets.getAssetPath(asset)
-	return ""
+	if downloads[asset] then
+		return asset
+	end
+	
+	return nil
 end
 
-function NativeCloudAssets.loadAsset(asset)
-	return
+function NativeCloudAssets.loadAsset(asset, name)
+
 end
 
 function NativeCloudAssets.removeAsset(asset)
-	return
+
 end
 
 NativeCloudAssets.getAssetStatus = NativeCloudAssets.getPackStatus

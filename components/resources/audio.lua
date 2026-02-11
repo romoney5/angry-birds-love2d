@@ -16,8 +16,12 @@ function res.createAudioOutput(channels, bitrate, samplerate)
 	end
 end
 
-function res.createAudio(path, name, streamed)
-	audios[name] = datapath.."/"..path
+function res.createAudio(path, name, streamed, cloudAsset)
+	if cloudAsset then
+		audios[name] = path
+	else
+		audios[name] = datapath.."/"..path
+	end
 end
 
 function createAudioFromLua(path, name, streamed)--?
@@ -82,7 +86,7 @@ function res.playAudio(audio, volume, loop, track)
 	
 	--actually load audios when it's time to play them
 	if not cachedaudios[audio] then
-		if not checkDirectory(audios[audio]) then
+		if type(audios[audio]) == "string" and not checkDirectory(audios[audio]) then
 			cachedaudios[audio] = 0
 			print("Audio file \""..audios[audio].."\" not found.")
 			return
