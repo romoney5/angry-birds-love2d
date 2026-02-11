@@ -296,6 +296,7 @@ local function downloadFile(pack) -- there seems to be evidence that this can lo
 		if code == 404 then -- do not blacklist objects if the internet is down
 			blacklisted[pack] = true
 		end
+		print(code)
         os.remove(tmp)
         return false
     end
@@ -323,7 +324,9 @@ function NativeCloudAssets.getPackStatus(asset)
     if downloads[asset] then
         return "CACHED"
 	else
-		NativeCloudAssets.loadAsset(asset)
+		if NativeCloudAssets.isInternetConnected() then
+			NativeCloudAssets.loadAsset(asset)
+		end
     end
     
     if downloadStatus[asset] then
