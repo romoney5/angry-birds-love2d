@@ -293,7 +293,9 @@ local function downloadFile(pack) -- there seems to be evidence that this can lo
         downloads[pack] = { package = data, source = source }
         return true
     else
-		blacklisted[pack] = true
+		if code == 404 then -- do not blacklist objects if the internet is down
+			blacklisted[pack] = true
+		end
         os.remove(tmp)
         return false
     end
