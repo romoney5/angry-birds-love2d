@@ -366,8 +366,21 @@ function NativeCloudAssets.loadAsset(asset)
     if success then
         downloadStatus[asset] = "SUCCESS"
     else
-        downloadStatus[asset] = "FAILURE"
+		if NativeCloudAssets.isInternetConnected() then
+			downloadStatus[asset] = "FAILURE"
+		else
+			downloadStatus[asset] = "NO CONNECTION"
+		end
     end
+end
+-- connect to a dummy network, and check if there's any feedback
+function NativeCloudAssets.isInternetConnected()
+	local socket = require("socket")
+    local tcp = socket.tcp()
+    tcp:settimeout(2)
+    local result = tcp:connect("8.8.8.8", 53)
+    tcp:close()
+    return result ~= nil
 end
 
 function NativeCloudAssets.removeAsset(asset)
