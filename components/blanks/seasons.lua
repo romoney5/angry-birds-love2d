@@ -259,58 +259,54 @@ NativeCloudAssets = {}
 --NativeCloudPayment = true
 
 local downloads = {}
+local downloadStatus = {}
+local blacklisted = {}
 NativeCloudAssets.allowNewBackgroundThread = nil --function returns boolean
 
-function NativeCloudAssets.getPackStatus(pack) -- there seems to be evidence that this can load levels
+local function downloadFile(pack) -- there seems to be evidence that this can load levels
 	--UNKNOWN, IDLE, NO CONNECTION, FAILURE, QUEUED, DOWNLOADING, DOWNLOADED, PROCESSING, READY
-	local owner = "HaloGuy345"
-	local repo = "cloud_assets"
-	local branch = "main"
+    local owner = "HaloGuy345"
+    local repo = "cloud_assets"
+    local branch = "main"
 
-	local url = string.format(
-		"http://raw.githubusercontent.com/%s/%s/%s/%s",
-		owner, repo, branch, pack
-	)
+    local url = string.format(
+        "http://raw.githubusercontent.com/%s/%s/%s/%s",
+        owner, repo, branch, pack
+    )
 	
-	if NativeCloudAssets.getAssetPath(pack) then
-		return "CACHED"
+	print(string.format("Downloading '%s' ...", pack))
+	
+	if blacklisted[pack] then
+		return false
 	end
-	
-	-- TODO : switch to ssl https?
-	local tmp = os.tmpname()
-	local request = io.popen(string.format('curl -w "%%{http_code}" -sS -L "%s" -o "%s"', url, tmp))
+    
+    local tmp = os.tmpname()
+    local request = io.popen(string.format('curl -w "%%{http_code}" -sS -L "%s" -o "%s"', url, tmp))
     local code = tonumber(request:read("*a"))
     request:close()
-	
-	if code == 200 then
-		local file = io.open(tmp, "rb")
-		local data = file:read("*a")
-		file:close()
-		
-		os.remove(tmp)
-		
-		local dataSize = bit.rshift(#data, 10)
-		local printData = string.format("Downloaded %s at %d kb", pack, dataSize)
-		print(printData)
-		
-		local fileData = love.filesystem.newFileData(data, pack)
-		local source = love.sound.newSoundData(fileData)
-		
-		downloads[pack] = { package = data, source = source }
-		
-		--love.filesystem.write(pack, data)
-		
-		return "DOWNLOADED"
-	else
-		os.remove(tmp)
-		return "FAILURE"
-	end
-	
-	
-	return "DOWNLOADING"
+    
+    if code == 200 then
+        local file = io.open(tmp, "rb")
+        local data = file:read("*a")
+        file:close()
+        os.remove(tmp)
+        
+        local dataSize = bit.rshift(#data, 10)
+        print(string.format("Downloaded %s at %d kb", pack, dataSize))
+        
+        local fileData = love.filesystem.newFileData(data, pack)
+        local source = love.sound.newSoundData(fileData)
+        
+        downloads[pack] = { package = data, source = source }
+        return true
+    else
+		blacklisted[pack] = true
+        os.remove(tmp)
+        return false
+    end
 end
 
-function NativeCloudAssets.packStep(episode)
+function NativeCloudAssets.packStep(episode, b, c)
 	--downloads[episode] = {progress = 0, processing = false}
 end
 
@@ -326,30 +322,57 @@ function NativeCloudAssets:onInitialized()
 	return
 end
 
-function NativeCloudAssets.deleteAllCloudData()--?
-	downloads = {}
+function NativeCloudAssets.getPackStatus(asset)
+	print( downloadStatus[asset] )
+	
+    if downloads[asset] then
+        return "CACHED"
+	else
+		NativeCloudAssets.loadAsset(asset)
+    end
+    
+    if downloadStatus[asset] then
+        return downloadStatus[asset]
+    end
+    
+    return "IDLE"
+end
+
+function NativeCloudAssets.deleteAllCloudData()
+    downloads = {}
+    downloadStatus = {}
 end
 
 function createAudioFromAppData(asset, clipName)
-	res.createAudio(downloads[asset].source, clipName, false, true)
-	print(clipName .. " created!")
+    if downloads[asset] and downloads[asset].source then
+        res.createAudio(downloads[asset].source, clipName, false, true)
+        print(clipName .. " created!")
+    end
 end
 
 --4.2.0
 function NativeCloudAssets.getAssetPath(asset)
-	if downloads[asset] then
-		return asset
-	end
-	
-	return nil
+    if downloads[asset] then
+        return asset
+    end
+    return nil
 end
 
-function NativeCloudAssets.loadAsset(asset, name)
-
+function NativeCloudAssets.loadAsset(asset)
+    downloadStatus[asset] = "DOWNLOADING"
+    
+    local success = downloadFile(asset)
+    
+    if success then
+        downloadStatus[asset] = "SUCCESS"
+    else
+        downloadStatus[asset] = "FAILURE"
+    end
 end
 
 function NativeCloudAssets.removeAsset(asset)
-
+    downloads[asset] = nil
+    downloadStatus[asset] = nil
 end
 
 NativeCloudAssets.getAssetStatus = NativeCloudAssets.getPackStatus
