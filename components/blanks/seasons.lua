@@ -265,14 +265,7 @@ NativeCloudAssets.allowNewBackgroundThread = nil --function returns boolean
 
 local function downloadFile(pack) -- there seems to be evidence that this can load levels
 	--UNKNOWN, IDLE, NO CONNECTION, FAILURE, QUEUED, DOWNLOADING, DOWNLOADED, PROCESSING, READY
-    local owner = "HaloGuy345"
-    local repo = "cloud_assets"
-    local branch = "main"
-
-    local url = string.format(
-        "http://raw.githubusercontent.com/%s/%s/%s/%s",
-        owner, repo, branch, pack
-    )
+    local url = cloudDomain .. "/" .. pack
 	
 	print(string.format("Downloading '%s' ...", pack))
 	
@@ -390,7 +383,7 @@ end
 
 NativeCloudAssets.getAssetStatus = NativeCloudAssets.getPackStatus
 
-cloudDomain = ""
+cloudDomain = "http://raw.githubusercontent.com/HaloGuy345/cloud_assets/main"
 
 
 function readJSONToLuaTable(filename, export)
