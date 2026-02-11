@@ -263,43 +263,55 @@ local downloadStatus = {}
 local blacklisted = {}
 NativeCloudAssets.allowNewBackgroundThread = nil --function returns boolean
 
-local function downloadFile(pack) -- there seems to be evidence that this can load levels
+function NativeCloudAssets.loadAsset(pack)-- there seems to be evidence that this can load levels
 	--UNKNOWN, IDLE, NO CONNECTION, FAILURE, QUEUED, DOWNLOADING, DOWNLOADED, PROCESSING, READY
-    local url = cloudDomain .. "/" .. pack
+	local url = cloudDomain .. "/" .. pack
 	
 	print(string.format("Downloading '%s' ...", pack))
+	downloadStatus[pack] = "QUEUED"
 	
-	if blacklisted[pack] then
-		return false
-	end
-    
-    local tmp = os.tmpname()
-    local request = io.popen(string.format('curl -w "%%{http_code}" -sS -L "%s" -o "%s"', url, tmp))
-    local code = tonumber(request:read("*a"))
-    request:close()
-    
-    if code == 200 then
-        local file = io.open(tmp, "rb")
-        local data = file:read("*a")
-        file:close()
-        os.remove(tmp)
-        
-        local dataSize = bit.rshift(#data, 10)
-        print(string.format("Downloaded %s at %d kb", pack, dataSize))
-        
-        local fileData = love.filesystem.newFileData(data, pack)
-        local source = love.sound.newSoundData(fileData)
-        
-        downloads[pack] = { package = data, source = source }
-        return true
-    else
-		if code == 404 then -- do not blacklist objects if the internet is down
-			blacklisted[pack] = true
+	fetch(url, {}, function(res)
+		local body = res.body
+		local code = res.code
+		local header = res.header
+		local status = res.status
+		
+		downloadStatus[pack] = "DOWNLOADING"
+		
+		if code == 200 then
+			local tmp = os.tmpname()
+			local file = io.open(tmp, "wb")
+			
+			if file then
+				file:write(body)
+				file:close()
+				
+				local reader = io.open(tmp, "rb")
+				local data = reader:read("*a")
+				reader:close()
+				
+				os.remove(tmp)
+				
+				local dataSize = bit.rshift(#data, 10)
+				print(string.format("Downloaded %s at %d kb", pack, dataSize))
+				
+				local fileData = love.filesystem.newFileData(data, pack)
+				local source = love.sound.newSoundData(fileData)
+				
+				downloads[pack] = { package = data, source = source }
+				downloadStatus[pack] = "SUCCESS"
+			end
+		else
+			print("ERROR CODE", code, status)
+			if code == 404 then blacklisted[pack] = true end
+			
+			if NativeCloudAssets.isInternetConnected() then
+				downloadStatus[pack] = "FAILURE"
+			else
+				downloadStatus[pack] = "NO CONNECTION"
+			end
 		end
-		print(code)
-        os.remove(tmp)
-        return false
-    end
+	end)
 end
 
 function NativeCloudAssets.packStep(episode, b, c)
@@ -319,12 +331,10 @@ function NativeCloudAssets:onInitialized()
 end
 
 function NativeCloudAssets.getPackStatus(asset)
-	print( downloadStatus[asset] )
-	
     if downloads[asset] then
         return "CACHED"
 	else
-		if NativeCloudAssets.isInternetConnected() then
+		if NativeCloudAssets.isInternetConnected() and not blacklisted[asset] then
 			NativeCloudAssets.loadAsset(asset)
 		end
     end
@@ -356,21 +366,6 @@ function NativeCloudAssets.getAssetPath(asset)
     return nil
 end
 
-function NativeCloudAssets.loadAsset(asset)
-    downloadStatus[asset] = "DOWNLOADING"
-    
-    local success = downloadFile(asset)
-    
-    if success then
-        downloadStatus[asset] = "SUCCESS"
-    else
-		if NativeCloudAssets.isInternetConnected() then
-			downloadStatus[asset] = "FAILURE"
-		else
-			downloadStatus[asset] = "NO CONNECTION"
-		end
-    end
-end
 -- connect to a dummy network, and check if there's any feedback
 function NativeCloudAssets.isInternetConnected()
 	local socket = require("socket")

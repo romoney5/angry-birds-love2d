@@ -46,6 +46,7 @@ function restoreParticles()
 end
 
 function love.update(dt)
+	fetch.update()
 	if love.window.hasFocus() then
 		if love.joystick then
 			local joysticks = love.joystick.getJoysticks()
