@@ -46,7 +46,6 @@ function restoreParticles()
 end
 
 function love.update(dt)
-	fetch.update()
 	if love.window.hasFocus() then
 		if love.joystick then
 			local joysticks = love.joystick.getJoysticks()
@@ -89,11 +88,12 @@ function love.update(dt)
 		love.window.setTitle("Angry Birds ("..screenWidth.."x"..screenHeight..")")
 
 		restoreParticles()
+		
+		fetch.update()
 
 		--cursor delta for debug scrolling
 		local cx, cy = cursor.x, cursor.y
 		updateCursor(dt)
-
 		--proper multitouch support, at last
 		local mttouches = love.touch.getTouches()
 		touches = {}
