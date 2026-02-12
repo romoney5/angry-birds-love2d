@@ -111,33 +111,35 @@ function drawThemeSprite(v, layer)
 	end
 end
 
-function drawBackgroundNative()
+function drawBackgroundNative(highGFX)
 	local theme = blockTable.themes[currentTheme]
 	if not theme then return end
 
 	if theme.color then setBGColor(theme.color.r, theme.color.g, theme.color.b) end
 
-	for layernum, layer in ipairs(theme.bgLayers) do
-		--theme rect colors
-		love.graphics.push("all")
-		if layercolors[layernum - 1] then
-			local colors = layercolors[layernum - 1]
-			love.graphics.setColor(colors)
-			if layer.rect then
-				local a = colors[4] or layer.rect.a
-				drawRect(layer.rect.r * a, layer.rect.g * a, layer.rect.b * a, a, 0, 0, screenWidth, screenHeight)
+	if highGFX ~= false then
+		for layernum, layer in ipairs(theme.bgLayers) do
+			--theme rect colors
+			love.graphics.push("all")
+			if layercolors[layernum - 1] then
+				local colors = layercolors[layernum - 1]
+				love.graphics.setColor(colors)
+				if layer.rect then
+					local a = colors[4] or layer.rect.a
+					drawRect(layer.rect.r * a, layer.rect.g * a, layer.rect.b * a, a, 0, 0, screenWidth, screenHeight)
+				end
 			end
-		end
 
-		drawLayer(layer)
+			drawLayer(layer)
 
-		love.graphics.pop()
+			love.graphics.pop()
 
-		for k, object in pairs(themeSpriteObjects) do
-			if object.layerNumber == layernum then
-				-- setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, v.angle)
-				-- res.drawSprite(v.sprite, v.x, 0)
-				drawThemeSprite(object, theme.bgLayers[layernum + 1] or layer)
+			for k, object in pairs(themeSpriteObjects) do
+				if object.layerNumber == layernum then
+					-- setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, v.angle)
+					-- res.drawSprite(v.sprite, v.x, 0)
+					drawThemeSprite(object, theme.bgLayers[layernum + 1] or layer)
+				end
 			end
 		end
 	end
