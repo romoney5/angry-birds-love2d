@@ -334,8 +334,12 @@ function NativeCloudAssets.getPackStatus(asset)
     if downloads[asset] then
         return "CACHED"
 	else
-		if NativeCloudAssets.isInternetConnected() and not blacklisted[asset] then
-			NativeCloudAssets.loadAsset(asset)
+		if not downloadStatus[asset] then
+			local connected = NativeCloudAssets.isInternetConnected()
+			if connected and CloudDownloadIndicator.isVisible and not blacklisted[asset] then
+				downloadStatus[asset] = "PROCESSING"
+				NativeCloudAssets.loadAsset(asset)
+			end
 		end
     end
     
