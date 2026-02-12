@@ -350,7 +350,7 @@ function NativeCloudAssets.deleteAllCloudData()
     downloads = {}
     downloadStatus = {}
 end
-
+-- NOTE : the game cashes the data in its settings folder as a fallback
 function createAudioFromAppData(asset, clipName)
     if downloads[asset] and downloads[asset].source then
         res.createAudio(downloads[asset].source, clipName, false, true)
