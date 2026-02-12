@@ -130,10 +130,20 @@ function love.load()
 		commonScriptPath = scriptPath
 	end
 
+	local accountId = 0 -- TODO : add account support
+	
 	--load save data
 	if not disableSaving then
-		runLuaFile("settings.lua", true)
-		runLuaFile("highscores.lua", true)
+		local settingsAccount = "settings_" .. accountId .. ".lua"
+		local highscoresAccount = "highscores_" .. accountId .. ".lua"
+		
+		if checkDirectory(settingsAccount) then
+			runLuaFile(settingsAccount, true)
+			runLuaFile(highscoresAccount, true)
+		else
+			runLuaFile("settings.lua", true)
+			runLuaFile("highscores.lua", true)
+		end
 	end
 	
 	uniqueDeviceId = getDeviceID()
