@@ -20,6 +20,7 @@ function loadLevel(filename)
 	loadLuaFileToObject(filename..".lua", this, loadedObjects)
 	setMaxTranslation(2)
 	setupColliders()
+	clearParticles()
 end
 
 function saveLevel(filename)

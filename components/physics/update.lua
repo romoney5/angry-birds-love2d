@@ -61,7 +61,9 @@ function solvePhysics(updateStep) -- WIP
 end
 
 function updatePhysics(dt)
-	if not physicsEnabled or not physicsWorld then return end
+	if isPhysicsEnabled() ~= true then                 
+		return
+	end
 	
 	if physicsSpeedFactor ~= physicsTimeScale then -- nifty hack, should probably change it later
 		physicsTimeScale = physicsSpeedFactor
