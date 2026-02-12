@@ -67,7 +67,7 @@ function updatePhysics(dt)
 		physicsTimeScale = physicsSpeedFactor
 	end
 
-	updateParticlesNative(dt2)
+	updateGameParticlesNative(dt2)
 	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0)
 	
 	for _, v in pairs(objects.world) do

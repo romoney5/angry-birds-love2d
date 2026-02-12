@@ -156,7 +156,7 @@ function love.update(dt)
 		if speedUpPost then speedUpPost() end
 
 		drawParticlesNative(true)
-		updateParticlesNative(dt2, true)
+		updateScreenParticlesNative(dt2)
 
 		if dmonitor then
 			local v = type(dmonitor) == "string" and _G[dmonitor] or (type(dmonitor)=="table" and dmonitor[1] and _G[dmonitor[1]] and dmonitor[2] and (_G[dmonitor[1]][dmonitor[2]] or "nil"))

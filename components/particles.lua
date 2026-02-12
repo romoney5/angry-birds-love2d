@@ -1,14 +1,17 @@
 --particles
-
+local SCREEN = {}
+local WORLD = {}
 --menu is not used ingame
 function drawParticlesNative(menu)
 	if not particles then return end
-
-	for _, p in _G.pairs(particles) do
-		if menu and p.menu then
+	
+	local activeParticles = menu and SCREEN or WORLD
+	
+	for _, p in _G.pairs(activeParticles) do
+		if menu then
 			setRenderState(0, 0, p.scale, p.scale, p.angle, p.spritePivotX, p.spritePivotY)
 			_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
-		elseif not menu and not p.menu then
+		else
 			setRenderState(-screen.left / p.scale, -screen.top / p.scale, (worldScale or 1) * p.scale, (worldScale or 1) * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
 			_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
 		end
@@ -20,7 +23,8 @@ function loadParticleFile(name) -- check if this is correct?
 end
 
 function clearParticles()
-	particles = {}
+	WORLD = {}
+	SCREEN = {}
 	particleAmount = 0
 	restoreParticles()
 end
@@ -37,39 +41,55 @@ function drawLevelParticlesNative(layer)
 	return
 end
 
-function updateParticlesNative(dt, menu)
-	if not particles or not dt then return end
+local updateParticles = function(dt, activeParticles)
+	for i = #activeParticles, 1, -1 do
+		local p = activeParticles[i]
 
-	for k, v in pairs(particles) do
-		local p = v
-
-		if (menu and p.menu) or (not menu and not p.menu) then
-			p.time = p.time + dt
-			if p.time > p.lifeTime then
-				table.remove(particles, k)
-				particleAmount = particleAmount - 1
-			else
-				pt = particleTable.particles[p.type]
-				p.xVel = p.xVel + pt.gravityX * dt
-				p.yVel = p.yVel + pt.gravityY * dt
-				p.x = p.x + p.xVel * dt
-				p.y = p.y + p.yVel * dt
-				p.angle = p.angle + p.angleVel * dt
-				p.scale = p.scaleBegin + (p.scaleEnd - p.scaleBegin) * (p.time / p.lifeTime)
+		p.time = p.time + dt
+		
+		if p.time > p.lifeTime then
+			table.remove(activeParticles, i)
+			particleAmount = particleAmount - 1
+		else
+			pt = particleTable.particles[p.type]
+			
+			p.xVel = p.xVel + pt.gravityX * dt
+			p.yVel = p.yVel + pt.gravityY * dt
+			p.x = p.x + p.xVel * dt
+			p.y = p.y + p.yVel * dt
+			p.angle = p.angle + p.angleVel * dt
+			
+			local t = p.time / p.lifeTime
+			p.scale = p.scaleBegin + (p.scaleEnd - p.scaleBegin) * t
+			
+			if p.lifeTimeAnimation then
+				local sprite_count = #pt.sprites
+				index = math.ceil(sprite_count * t)
 				
-				if p.lifeTimeAnimation then
-					index = math.ceil(#pt.sprites * (p.time / p.lifeTime))
-					if index < 1 then index = 1 end
-					if index > #pt.sprites then index = #pt.sprites end
-					p.sprite = pt.sprites[index]
-					if p.oldSprite ~= p.sprite then
-						p.spritePivotX, p.spritePivotY = res.getSpritePivot(p.sheet, p.sprite)
-						p.oldSprite = p.sprite
-					end
+				if index < 1 then index = 1 end
+				if index > sprite_count then index = sprite_count end
+				
+				p.sprite = pt.sprites[index]
+				
+				if p.oldSprite ~= p.sprite then
+					p.spritePivotX, p.spritePivotY = res.getSpritePivot(p.sheet, p.sprite)
+					p.oldSprite = p.sprite
 				end
 			end
 		end
 	end
+end
+
+function updateScreenParticlesNative(dt)
+	updateParticles(dt, SCREEN)
+end
+
+function updateGameParticlesNative(dt)
+	updateParticles(dt, WORLD)
+end
+
+function updateParticlesNative(dt)
+
 end
 
 --no, love does not run on an iphone 4
@@ -137,7 +157,11 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 			p.oldSprite = p.sprite
 			p.spritePivotX, p.spritePivotY = _G.res.getSpritePivot(p.sheet, p.sprite)
 
-			_G.table.insert(particles, p)
+			if menu then
+				_G.table.insert(SCREEN, p)
+			else
+				_G.table.insert(WORLD, p)
+			end
 		end
 	end
 end
@@ -155,7 +179,11 @@ local function setSoftLimit(limit, multiplier)
 end
 
 local function clear(kind)
-	return
+	if kind then
+		for k in ipairs(kind) do
+			kind[k] = nil
+		end
+	end
 end
 
 local function addLevelParticles(type, amount, x, y, w, h, angle, ignoreLimits, isWeather)
@@ -178,7 +206,10 @@ getParticles = {
 			return setSoftLimit
 		elseif i == "clear" then
 			return clear
-
+		elseif i == "SCREEN" then
+			return SCREEN
+		elseif i == "WORLD" then
+			return WORLD
 		elseif i == "addLevelParticles" then
 			return addLevelParticles
 
