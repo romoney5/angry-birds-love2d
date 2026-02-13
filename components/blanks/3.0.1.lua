@@ -281,8 +281,14 @@ end
 
 CloudSync = {}
 
-function CloudSync.combineSettings(settings, settings, bool)
-	return
+--almost certainly not right but..
+function CloudSync.combineSettings(cloud, loc, bool)
+	local out = {}
+	
+	for k, v in pairs(cloud or {}) do out[k] = v end
+	for k, v in pairs(loc or {}) do out[k] = v end
+
+	return out
 end
 
 function CloudSync.removeSyncableSettings(settings)

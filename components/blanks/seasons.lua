@@ -112,7 +112,7 @@ function createDynamicHandler(name)
 	function handler.isLoaded(...) return true end
 	
 	function handler.loadInGame(a, theme)--?
-		return
+		handler.load{"ingame"}
 	end
 	
 	function handler.enterIngame(a, theme)
@@ -163,7 +163,11 @@ function createDynamicHandler(name)
 	--classic 8.0.3
 	handler.queue = handler.load
 	handler.queueAssets = handler.load
-	handler.queueInGame = handler.load
+	function handler.queueInGame(a)
+		--a contains sprite names in the level
+		print("handler.queueInGame")
+		handler.load{"ingame"}
+	end
 	handler.releaseAssetGroup = handler.release
 
 	_G[name] = handler
@@ -409,6 +413,7 @@ function readJSONToLuaTable(filename, export)
 
 	return dec --for dynamic handler
 end
+
 
 PortalObjectTeleporter = {}
 -- TODO : fix angles + collision detection
@@ -664,4 +669,94 @@ end
 
 function PortalObjectTeleporter:isComplete()
     return self.finished
+end
+
+
+--5.1.0
+
+function getSystemTimeStamp()
+	return 0
+end
+
+
+function NativeCloudAssets.onInitDone()--?
+    return
+end
+
+function NativeCloudAssets.getCloudDataVersionString()
+    return "" --apparently
+end
+
+function NativeCloudAssets.hasUnlockDates()
+    return false
+end
+
+function NativeCloudAssets.isPackInstalled()--?
+	return false
+end
+
+
+function printAutomation(a)
+	return
+end
+
+native.TimeStamp = {}
+
+function native.TimeStamp.isTimeStampAvailable()
+	return false
+end
+
+function native.TimeStamp.getCurrentYear()
+	return 1970
+end
+
+function native.TimeStamp.getCurrentMonth()
+	return 1
+end
+
+function native.TimeStamp.getCurrentDay()
+	return 1
+end
+
+function native.TimeStamp.checkIfDatePassed(year, month, day)
+	return 0
+end
+
+function native.TimeStamp.getSecondsToDate(year, month, day)
+	return 0
+end
+
+RovioChannel = {}
+
+function RovioChannel.isChannelSupported()--?
+	return false
+end
+
+function RovioChannel.onMenuInitialised()
+	return
+end
+
+function RovioChannel.isAvailable()--?
+	return false
+end
+
+function RovioChannel.isChannelViewOpened()--?
+	return false
+end
+
+function RovioChannel.updateNewContent()--?
+	return
+end
+
+
+function flashAnimationSetShader(tag, shader)
+	return
+end
+
+function flashAnimationSetSpeed(tag, speed)
+	return
+end
+
+function flashAnimationSeek(tag, seek)
+	return
 end

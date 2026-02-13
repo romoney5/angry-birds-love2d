@@ -201,6 +201,12 @@ function love.load()
 		autoScale = 720
 		enableDebug = false
 	end
+	
+	if Analytics and Analytics.logEvent then
+		function Analytics.logEvent(id, params)
+			return
+		end
+	end
 
 	if createStartUpAssets then createStartUpAssets() end
 	if updateValues then updateValues() end

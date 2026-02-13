@@ -130,7 +130,7 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 			x - xpr + drawxp,	--x position
 			y - ypr + drawyp,	--y position
 			drawangle,			--angle
-			wm,					--x scale
+			wm,					--x scale --shockwave problem?
 			hm,					--y scale
 			ox,					--x rotation pivot
 			oy)					--y rotation pivot
@@ -139,6 +139,21 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 	elseif image and image.items then --composprite used in later versions
 		res.drawCompoSprite(sprite,x,y)
 	end
+end
+
+function drawSpriteTinted(sprite, x, y, vanchor, hanchor, r, g, b, a)
+	love.graphics.push("all")
+	love.graphics.setColor(r / 255, g / 255, b / 255, a / 255)
+	res.drawSprite(sprite, x, y, vanchor, hanchor)
+	love.graphics.pop()
+end
+
+function drawSpriteColoured(sprite, x, y, scaleX, scaleY, r, g, b, a, bool)
+	love.graphics.push("all")
+	love.graphics.setColor(r, g, b, a)
+	--setRenderState(rx, ry, rsx * scaleX, rsy * scaleY, drawangle, drawxp, drawyp, alpha)
+	res.drawSprite(sprite, x, y, nil, nil)--, vanchor, hanchor)
+	love.graphics.pop()
 end
 
 function res.getCompoSpriteBounds(sheet, composprite) --not used in 1.6.3.1
@@ -379,8 +394,8 @@ local function loadSheet(sheet, usecomposprites)
 				info.compos[compo.name] = {}
 				
 				for i, sprite in ipairs(compo.sprites) do
-					local scaleX = tonumber(sprite.scale) or sprite.scale[1]
-					local scaleY = tonumber(sprite.scale) or sprite.scale[2]
+					local scaleX = tonumber(sprite.scale or 1) or sprite.scale[1]
+					local scaleY = tonumber(sprite.scale or 1) or sprite.scale[2]
 					
 					--insert at the start
 					table.insert(info.compos[compo.name], 1, {
