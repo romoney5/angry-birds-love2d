@@ -193,8 +193,6 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 	end
 
 	obj.body:setAngularDamping(2)
-	
-	obj.fixture:setRestitutionThreshold(0.3)
 
 	addObjectToRenderQueue(name)
 	obj.radius = 0
@@ -239,8 +237,6 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 	obj.fixture:setUserData(obj)
 	
 	obj.body:setAngularDamping(2)
-	
-	obj.fixture:setRestitutionThreshold(0.3)
 
 	addObjectToRenderQueue(name)
 	if not tonumber(z_order) then objects.world[name].z_order = 0 end
@@ -282,8 +278,6 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	else
 		obj.fixture:setCategory(CATEGORY_BLOCK)
 	end
-	
-	obj.fixture:setRestitutionThreshold(0.3)
 
 	--set type
 	obj.type = "circle"
