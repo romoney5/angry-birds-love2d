@@ -358,11 +358,8 @@ function NativeCloudAssets.getPackStatus(asset)
 end
 
 function NativeCloudAssets.deleteAllCloudData()
-    downloads = {}
-    downloadStatus = {}
-	
-	for i, file in love.filesystem.getDirectoryItems("cdn") do
-		love.filesystem.remove("cdn/"..file)
+	for asset, _ in pairs(downloads) do
+		NativeCloudAssets.removeAsset(asset)
 	end
 end
 -- NOTE : the game cashes the data in its settings folder as a fallback
@@ -376,7 +373,7 @@ end
 --4.2.0
 function NativeCloudAssets.getAssetPath(asset)
     if downloads[asset] then
-        return "cdn/" .. asset
+        return asset
     end
     return nil
 end
@@ -394,6 +391,7 @@ end
 function NativeCloudAssets.removeAsset(asset)
     downloads[asset] = nil
     downloadStatus[asset] = nil
+	love.filesystem.remove("cdn/" .. asset)
 end
 
 NativeCloudAssets.getAssetStatus = NativeCloudAssets.getPackStatus
