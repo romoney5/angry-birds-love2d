@@ -358,8 +358,8 @@ function NativeCloudAssets.getPackStatus(asset)
 end
 
 function NativeCloudAssets.deleteAllCloudData()
-	for asset, _ in pairs(downloads) do
-		NativeCloudAssets.removeAsset(asset)
+	for i, file in love.filesystem.getDirectoryItems("cdn") do
+		NativeCloudAssets.removeAsset(file)
 	end
 end
 -- NOTE : the game cashes the data in its settings folder as a fallback
