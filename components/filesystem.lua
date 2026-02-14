@@ -372,6 +372,25 @@ function exportLua(filename)
 	end
 end
 
+--decrypt all json and lua files in the data folder
+function exportAllScripts(path)
+	local files = native.FileSystem.enumerate(path or "", nil, nil, true)
+	local files2 = {}
+
+	for i, v in pairs(files) do
+		if endsWith(i, ".lua") or endsWith(i, ".json") then
+			table.insert(files2, i)
+		end
+	end
+	
+
+	for i, v in pairs(files2) do
+		decryptSrc(datapath.."/"..v)
+		print(math.floor(i / #files2 * 100).."% ("..i.."/"..#files2..") ("..v..")")
+	end
+	
+	print("Exported all encrypted files (look for the dec folder in the save directory)")
+end
 
 function checkDirectory(directory)
 	return love.filesystem.exists(directory)

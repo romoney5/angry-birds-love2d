@@ -271,8 +271,24 @@ function NativeCloudAssets.loadAsset(pack)-- there seems to be evidence that thi
 	--UNKNOWN, IDLE, NO CONNECTION, FAILURE, QUEUED, DOWNLOADING, DOWNLOADED, PROCESSING, READY
 	local url = cloudDomain .. "/" .. pack
 	
-	print(string.format("Downloading '%s' ...", pack))
+	local save = "cdn/"..pack
+	
+	print(string.format("Downloading asset '%s' ...", pack))
 	downloadStatus[pack] = "QUEUED"
+	
+	local function success(data)
+		local fileData = love.filesystem.newFileData(data, pack)
+		local source = love.sound.newSoundData(fileData)
+		
+		downloads[pack] = { package = data, source = source }
+		downloadStatus[pack] = "SUCCESS"
+	end
+	
+	if checkDirectory(save) then
+		success(love.filesystem.read(save))
+		
+		return
+	end
 	
 	fetch(url, {}, function(res)
 		local body = res.body
@@ -283,30 +299,17 @@ function NativeCloudAssets.loadAsset(pack)-- there seems to be evidence that thi
 		downloadStatus[pack] = "DOWNLOADING"
 		
 		if code == 200 then
-			local tmp = os.tmpname()
-			local file = io.open(tmp, "wb")
+			local data = body
 			
-			if file then
-				file:write(body)
-				file:close()
-				
-				local reader = io.open(tmp, "rb")
-				local data = reader:read("*a")
-				reader:close()
-				
-				os.remove(tmp)
-				
-				local dataSize = bit.rshift(#data, 10)
-				print(string.format("Downloaded %s at %d kb", pack, dataSize))
-				
-				local fileData = love.filesystem.newFileData(data, pack)
-				local source = love.sound.newSoundData(fileData)
-				
-				downloads[pack] = { package = data, source = source }
-				downloadStatus[pack] = "SUCCESS"
-			end
+			local dataSize = math.floor(#data / 1000 * 100) / 100
+			print(string.format("Downloaded '%s', %d kB", pack, dataSize))
+			
+			love.filesystem.createDirectory("cdn")
+			love.filesystem.write(save, data)
+			
+			success(data)
 		else
-			print("ERROR CODE", code, status)
+			print(("Failed to download '%s':"):format(pack), code, status)
 			if code == 404 then blacklisted[pack] = true end
 			
 			if NativeCloudAssets.isInternetConnected() then
@@ -338,9 +341,9 @@ function NativeCloudAssets.getPackStatus(asset)
     if downloads[asset] then
         return "CACHED"
 	else
-		if not downloadStatus[asset] then
+		if not downloadStatus[asset] and not blacklisted[asset] then
 			local connected = NativeCloudAssets.isInternetConnected()
-			if connected and CloudDownloadIndicator.isVisible and not blacklisted[asset] then
+			if connected and CloudDownloadIndicator.isVisible then
 				downloadStatus[asset] = "PROCESSING"
 				NativeCloudAssets.loadAsset(asset)
 			end
@@ -357,6 +360,10 @@ end
 function NativeCloudAssets.deleteAllCloudData()
     downloads = {}
     downloadStatus = {}
+	
+	for i, file in love.filesystem.getDirectoryItems("cdn") do
+		love.filesystem.remove("cdn/"..file)
+	end
 end
 -- NOTE : the game cashes the data in its settings folder as a fallback
 function createAudioFromAppData(asset, clipName)
