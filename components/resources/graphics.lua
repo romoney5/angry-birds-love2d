@@ -36,11 +36,11 @@ function setRenderState(x, y, xs, ys, angle, xp, yp, alpha)
 end
 
 --frontend of drawsprite
-function res.drawSprite(...)
-	if tonumber(({...})[2]) then --sprite, x, y, etc.
-		drawSprite("", ...)
+function res.drawSprite(a, b, ...)
+	if tonumber(b) then --sprite, x, y, etc.
+		drawSprite("", a, b, ...)
 	else
-		drawSprite(...)
+		drawSprite(a, b, ...)
 	end
 end
 
