@@ -376,7 +376,7 @@ end
 --4.2.0
 function NativeCloudAssets.getAssetPath(asset)
     if downloads[asset] then
-        return asset
+        return "cdn/" .. asset
     end
     return nil
 end
