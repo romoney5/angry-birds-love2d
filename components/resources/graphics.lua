@@ -4,6 +4,8 @@ drawxp, drawyp = 0, 0
 drawangle = 0
 alpha = 1
 
+pivotDebug = false
+
 cachedcs = {} --individual composprites
 cachedimgs = {} --individual sprites
 
@@ -17,8 +19,10 @@ end
 --quite literally used everywhere
 function setRenderState(x, y, xs, ys, angle, xp, yp, alpha)
 	love.graphics.origin()
+	if pivotDebug then love.graphics.translate(screenWidth - screenWidth * .75, screenHeight - screenHeight * .75) end
 	love.graphics.scale(xs, ys)
 	love.graphics.scale(displayScale)
+	if pivotDebug then love.graphics.scale(1 / 2) end
 	love.graphics.translate(x, y)
 
 	drawangle = angle or 0
@@ -32,24 +36,42 @@ function setRenderState(x, y, xs, ys, angle, xp, yp, alpha)
 end
 
 --frontend of drawsprite
-function res.drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma) --nopma = no premultiply alpha
-	if tonumber(sprite) then --sprite, x, y, etc.
-		sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma = "", sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight
+function res.drawSprite(...)
+	if tonumber(({...})[2]) then --sprite, x, y, etc.
+		drawSprite("", ...)
+	else
+		drawSprite(...)
 	end
-	drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
 end
 
-function res.drawCompoSprite(sheet, sprite, x, y)
-	if tonumber(sprite) and not y then
-		sprite, x, y = sheet, sprite, x
+function res.drawCompoSprite(...)
+	local sheet, sprite, x, y, vanchor, hanchor, width, height = select(1, ...)
+	
+	if tonumber(sprite) then
+		sheet, sprite, x, y, vanchor, hanchor, width, height = "", select(1, ...)
 	end
 	
 	local image = checkSprite(sprite)
 
 	if image then
-		for i,v in ipairs(image.items) do
+		local xpr, ypr = 0, 0
+
+		if hanchor == "LEFT" or vanchor == "LEFT" then xpr = 0 end
+		if hanchor == "RIGHT" or vanchor == "RIGHT" then xpr = image.width / 2 end
+		if hanchor == "HPIVOT" or vanchor == "HPIVOT" then xpr = 0 end --seems to look right with 0
+		
+		if vanchor == "TOP" or hanchor == "TOP" then ypr = 0 end
+		if vanchor == "BOTTOM" or hanchor == "BOTTOM" then ypr = image.height / 2 end
+		if vanchor == "VPIVOT" or hanchor == "VPIVOT" then ypr = 0 end
+		
+		if vanchor == "HCENTER" or hanchor == "HCENTER" then xpr = image.width / 2 end
+		if vanchor == "VCENTER" or hanchor == "VCENTER" then ypr = image.height / 2 end
+		
+		for i, v in ipairs(image.items) do
 			--TODO: scale and angle
-			drawSprite(sheet, v.n, math.floor(x + v.x), math.floor(y + v.y))
+			local x = math.floor(x + v.x - xpr)
+			local y = math.floor(y + v.y - ypr)
+			res.drawSprite(sheet, v.n, x, y)--, vanchor, hanchor)--, width, height)
 		end
 	end
 end
@@ -82,14 +104,14 @@ function res.getSpritePivot(sheet, sprite)
 	return 0, 0
 end
 
-function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopma)
+function drawSprite(sheet, sprite, x, y, vanchor, hanchor, width, height)
 	if sprite == g_currentCursorName and ((gameOptions and gameOptions.ui and (not gameOptions.ui.enableCursor))
 		or (joystick and physicsEnabled)) then return end
 
 	local image = type(sprite) == "string" and (cachedcs[sprite] or cachedimgs[sprite]) or sprite
 
 	if image and image.quad and image.spsh then
-		local w, h = iwidth or image.width, iheight or image.height
+		local w, h = width or image.width, height or image.height
 		
 		--tiny margin for non-integer scales
 		--x = x + .01
@@ -111,33 +133,32 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, iwidth, iheight, nopm
 		if vanchor == "BOTTOM" or hanchor == "BOTTOM" then ypr = image.height end
 		if vanchor == "VPIVOT" or hanchor == "VPIVOT" then ypr = drawyp end
 		
-		if vanchor == "LEFT" and hanchor == "TOP" then -- fix to the shockwave issue
-			ox = image.px
-			oy = image.py
-		end
-		
-		-- if vanchor == "HCENTER" or hanchor == "HCENTER" then xpr = image.w/2 end
-		-- if vanchor == "VCENTER" or hanchor == "VCENTER" then ypr = image.h/2 end
+		-- if vanchor == "HCENTER" or hanchor == "HCENTER" then xpr = image.width / 2 end
+		-- if vanchor == "VCENTER" or hanchor == "VCENTER" then ypr = image.height / 2 end
 
 		love.graphics.push("all")
 		local r, g, b, a = love.graphics.getColor()
 		love.graphics.setColor(r * alpha, g * alpha, b * alpha, a * alpha)
-		if nopma then love.graphics.setBlendMode("alpha") end
+		--if nopma then love.graphics.setBlendMode("alpha") end
+		
+		love.graphics.translate(x, y)
+		love.graphics.translate(-xpr, -ypr)
+		love.graphics.translate(ox, oy)
+		love.graphics.rotate(drawangle)
+		
+		love.graphics.translate(-ox, -oy)
+		love.graphics.scale(wm, hm)
 
 		love.graphics.draw(
 			image.spsh,			--spritesheet
 			image.quad,			--quad
-			x - xpr + drawxp,	--x position
-			y - ypr + drawyp,	--y position
-			drawangle,			--angle
-			wm,					--x scale --shockwave problem?
-			hm,					--y scale
-			ox,					--x rotation pivot
-			oy)					--y rotation pivot
+			0, 0)
+		
+		if pivotDebug then res.drawString("", tostring(vanchor).." "..tostring(hanchor).."\n"..tostring(image.px)..","..tostring(image.py).."\n"..tostring(drawxp)..","..tostring(drawyp).."\n"..tostring(x)..","..tostring(y), 0, 0) end
 		
 		love.graphics.pop()
 	elseif image and image.items then --composprite used in later versions
-		res.drawCompoSprite(sprite,x,y)
+		res.drawCompoSprite(sprite, x, y, vanchor, hanchor, width, height)
 	end
 end
 
@@ -150,9 +171,15 @@ end
 
 function drawSpriteColoured(sprite, x, y, scaleX, scaleY, r, g, b, a, bool)
 	love.graphics.push("all")
+	love.graphics.origin()
 	love.graphics.setColor(r, g, b, a)
 	--setRenderState(rx, ry, rsx * scaleX, rsy * scaleY, drawangle, drawxp, drawyp, alpha)
-	res.drawSprite(sprite, x, y, nil, nil)--, vanchor, hanchor)
+	local image = checkSprite(sprite)
+	
+	if image then
+		res.drawSprite(sprite, x, y, nil, nil, image.width * scaleX, image.height * scaleY)--, vanchor, hanchor)
+	end
+	
 	love.graphics.pop()
 end
 

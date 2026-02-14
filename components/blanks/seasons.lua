@@ -733,26 +733,9 @@ function native.TimeStamp.getSecondsToDate(year, month, day)
 	return 0
 end
 
-RovioChannel = {}
 
 function RovioChannel.isChannelSupported()--?
 	return false
-end
-
-function RovioChannel.onMenuInitialised()
-	return
-end
-
-function RovioChannel.isAvailable()--?
-	return false
-end
-
-function RovioChannel.isChannelViewOpened()--?
-	return false
-end
-
-function RovioChannel.updateNewContent()--?
-	return
 end
 
 
