@@ -21,6 +21,7 @@ function loadLevel(filename)
 	setMaxTranslation(2)
 	setupColliders()
 	clearParticles()
+	LevelParticlesManager.initialized = false
 end
 
 function saveLevel(filename)

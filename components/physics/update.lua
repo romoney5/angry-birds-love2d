@@ -68,6 +68,13 @@ function updatePhysics(dt)
 	if physicsSpeedFactor ~= physicsTimeScale then -- nifty hack, should probably change it later
 		physicsTimeScale = physicsSpeedFactor
 	end
+	--[[ TODO : fix this
+	if LevelParticlesManager.initialized then
+		LevelParticlesManager.start()
+	else
+		LevelParticlesManager.firstFrame()
+	end
+	]]
 
 	updateGameParticlesNative(dt2)
 	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0)

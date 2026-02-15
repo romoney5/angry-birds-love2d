@@ -52,6 +52,7 @@ runLuaFile(compsPath.."/ui.lua")							--ui components used in debug menus
 runLuaFile(compsPath.."/input.lua")							--input receivers, for keys, touch/mouse, and scrolling
 runLuaFile(compsPath.."/draw_layers.lua")					--draw bg, fg, and game
 runLuaFile(compsPath.."/particles.lua")						--particles update/draw/create
+runLuaFile(compsPath.."/level_particles.lua")				--level particles update/draw/create
 runLuaFile(compsPath.."/something.lua")						--something
 runLuaFile(compsPath.."/iap.lua")							--in app purchases functions
 runLuaFile(compsPath.."/game_loop.lua")						--main game loop, calls update

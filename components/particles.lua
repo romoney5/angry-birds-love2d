@@ -46,8 +46,17 @@ local updateParticles = function(dt, activeParticles)
 		local p = activeParticles[i]
 
 		p.time = p.time + dt
+		--[[
+		local weather = LevelParticlesManager.getWeatherParticles()
+		local isWeatherParticle = activeParticles == WORLD and LevelParticlesManager.initialized
+		local offScreen = isWeatherParticle and (p.y > weather.height or p.x > weather.width)
+		]]
 		
-		if p.time > p.lifeTime then
+		local levelParticles = LevelParticlesManager.getLevelParticles()
+		local isWeatherParticle = activeParticles == WORLD and g_levelParticlesEnabled
+		local offScreen = isWeatherParticle and (p.y > (levelParticles.height or 0.0) or p.x > levelParticles.width)
+		
+		if p.time > p.lifeTime or offScreen then
 			table.remove(activeParticles, i)
 			particleAmount = particleAmount - 1
 		else
@@ -186,9 +195,8 @@ local function clear(kind)
 	end
 end
 
-local function addLevelParticles(type, amount, x, y, w, h, angle, ignoreLimits, isWeather)
-	--objects.levelParticles?
-	return
+local function addLevelParticles(...)
+	addParticles(...)
 end
 
 --absw
