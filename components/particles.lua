@@ -110,7 +110,7 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 	if softLimitSimultaneousParticles < particleAmount + amount and not ignoreLimits then
 		amount = amount * 0.5
 	end
-	
+
 	for i = 1, amount, 1 do
 		if particleAmount < hardLimitSimultaneousParticles or ignoreLimits then
 			particleAmount = particleAmount + 1
@@ -145,6 +145,10 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 			else
 				p.xVel, p.yVel = _G.math.random(mivx, mavx), _G.math.random(mivy, mavy)
 				p.angle = _G.math.random(1, 3.14)
+			end
+			-- i don't know if this is applied elsewhere
+			if type == "theme15rain" then			
+				p.angle = math.atan2(p.yVel, p.xVel)
 			end
 				
 			p.angleVel = _G.math.random(pt.minAngleVel or 0, pt.maxAngleVel or 0)
