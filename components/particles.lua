@@ -138,8 +138,8 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 				local minAngle = p.minAngle and p.minAngle * math.pi / 180 or 0
 				local maxAngle = p.maxAngle and p.maxAngle * math.pi / 180 or 0
 
-				p.x = x + (_G.math.random(0, w) - 0.5*w ) * cos(angle)
-				p.y = y + (_G.math.random(0, h) - 0.5*h ) * sin(angle)
+				p.x = x + (_G.math.random(0, w) - 0.5*w ) * math.cos(angle)
+				p.y = y + (_G.math.random(0, h) - 0.5*h ) * math.sin(angle)
 				p.angle = _G.math.random(minAngle, maxAngle)
 				p.xVel, p.yVel = math.cos(angle) * vel, math.sin(angle) * vel
 			else
@@ -192,7 +192,7 @@ local function setSoftLimit(limit, multiplier)
 end
 
 local function clear(kind)
-	if kind then
+	if kind and type(kind) == "table" then
 		for k in ipairs(kind) do
 			kind[k] = nil
 		end

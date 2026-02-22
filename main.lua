@@ -26,7 +26,7 @@ nuked = {} --nuked
 objects = {}
 blockTable = {}
 starTable = {}
-particleTable = {}
+particleTable = {particles = {}}
 
 touches = {}
 touchcount = 0
