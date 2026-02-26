@@ -192,9 +192,14 @@ local function setSoftLimit(limit, multiplier)
 end
 
 local function clear(kind)
-	if kind and type(kind) == "table" then
-		for k in ipairs(kind) do
-			kind[k] = nil
+	local particleTables = {
+		["menu"] = SCREEN,
+		["ingame"] = WORLD
+	}
+	local tableToClear = particleTables[kind] or kind
+	if tableToClear then
+		for k in ipairs(tableToClear) do
+			tableToClear[k] = nil
 		end
 	end
 end
