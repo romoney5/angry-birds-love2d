@@ -178,6 +178,16 @@ function createDynamicHandler(name)
 	function handler.totalmemory()
 		return collectgarbage("count") * 1024
 	end
+
+	--5.2.5
+	function handler.isLoadgroupLoaded()--?
+		return true --trust
+	end
+
+	--5.3.1
+	function handler.loadAssets()--?
+		return
+	end
 	
 	
 	--classic 6.3.0
@@ -265,6 +275,10 @@ function enablePigDaysVignette(enabled)--?
 	return
 end
 
+function setThemeWithWater(theme)
+	setTheme(theme)
+end
+
 
 function drawAdditiveShaders()--?
 	return
@@ -277,6 +291,11 @@ end
 
 function setCameraViewport(a, b, c, d)--?
 	setTopLeft(a, b)
+end
+
+
+function refreshRovioCloudManager()
+	return
 end
 
 RovioAssetService = {}
@@ -297,6 +316,10 @@ end
 
 function native.GetTimeStamp.hasResult()
 	return false
+end
+
+function native_reloadIngameSprites()--?
+	return
 end
 
 NativeCloudAssets = {}
@@ -437,6 +460,7 @@ end
 NativeCloudAssets.getAssetStatus = NativeCloudAssets.getPackStatus
 
 cloudDomain = "http://raw.githubusercontent.com/HaloGuy345/cloud_assets/main"
+CLOCK_URL_BASE = ""
 
 
 function readJSONToLuaTable(filename, export)
@@ -501,6 +525,13 @@ function MedioEvents.getMedioAnonymousId()
 end
 
 
+--5.3.1
+
+setPhysicsEnabledNative = setPhysicsEnabled
+
+function drawScreenParticlesWithId(particles, bool, number)
+	return
+end
 --portals
 PortalObjectTeleporter = {}
 -- TODO : fix angles + collision detection
@@ -782,6 +813,10 @@ function NativeCloudAssets.isPackInstalled()--?
 	return false
 end
 
+function NativeCloudAssets.syncInstallPack()--?
+	return
+end
+
 
 function printAutomation(a)
 	return
@@ -830,3 +865,25 @@ end
 function flashAnimationSeek(tag, seek)
 	return
 end
+
+
+--isn't actually necessary for the loading screen to work
+function setLoadingScreenActive(active)
+	return
+end
+
+
+--backgrounds
+
+
+--5.2.5
+
+function NativeCloudAssets.startLoading()--?
+	return
+end
+
+function NativeCloudAssets.isPackAccessible()--?
+	return false
+end
+
+setThemeWithCrossFade = setTheme
