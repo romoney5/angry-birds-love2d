@@ -160,6 +160,24 @@ CATEGORY_BLOCK = 0x0004
 CATEGORY_BIRD = 0x0008
 CATEGORY_EAGLE = 0x0010
 
+local function setupObject(obj)
+	if obj.fixture.setRestitutionThreshold then
+		obj.fixture:setRestitutionThreshold(0.2)
+	end
+
+	obj.body:setLinearDamping(0.0)
+	obj.body:setAngularDamping(1.0)
+
+	addObjectToRenderQueue(obj.name)
+
+	if not tonumber(obj.z_order) then obj.z_order = 0 end
+
+	updateObjectMass(obj.name)
+
+	--the engine probably uses classes for objects so they have some default properties
+	obj.animTimer = 0
+end
+
 function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
 	local verts = polyverts
 	if z_order then --1.6.3.1 and below
@@ -188,25 +206,15 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 	obj.fixture:setUserData(obj)
 	obj.fixture:setCategory(CATEGORY_BLOCK)
 	
-	if obj.fixture.setRestitutionThreshold then
-		obj.fixture:setRestitutionThreshold(0.2)
-	end
-	
 	if collision ~= false then
 		obj.fixture:setCategory(CATEGORY_SENSOR)
 	end
 
-	obj.body:setAngularDamping(2)
-
-	addObjectToRenderQueue(name)
-	obj.radius = 0
-
-	if not tonumber(z_order) then objects.world[name].z_order = 0 end
-
 	--set type
 	obj.type = "polygon"
-
-	updateObjectMass(name)
+	obj.radius = 0
+	
+	setupObject(obj)
 end
 
 function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
@@ -227,6 +235,10 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 			obj.fixture:setMask(CATEGORY_EAGLE)
 		end
 	end
+
+	obj.fixture:setRestitution(restitution)
+	obj.fixture:setFriction(friction)
+	obj.fixture:setUserData(obj)
 	
 	if controllable then
 		obj.fixture:setCategory(CATEGORY_BIRD)
@@ -236,23 +248,11 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 		obj.fixture:setFilterData(1, 0, 0)
 	end
 
-	obj.fixture:setRestitution(restitution)
-	obj.fixture:setFriction(friction)
-	obj.fixture:setUserData(obj)
-	
-	if obj.fixture.setRestitutionThreshold then
-		obj.fixture:setRestitutionThreshold(0.2)
-	end
-	
-	obj.body:setAngularDamping(2)
-
-	addObjectToRenderQueue(name)
-	if not tonumber(z_order) then objects.world[name].z_order = 0 end
-
 	--set type
 	obj.type = "box"
-
-	updateObjectMass(name)
+	obj.radius = 0
+	
+	setupObject(obj)
 end
 
 function createCircle(name, sprite, xpos, ypos, w, density, friction, restitution, controllable, z_order)
@@ -271,16 +271,6 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	obj.fixture:setFriction(friction)
 	obj.fixture:setUserData(obj)
 	
-	if obj.fixture.setRestitutionThreshold then
-		obj.fixture:setRestitutionThreshold(0.2)
-	end
-
-	obj.body:setAngularDamping(2)
-
-	addObjectToRenderQueue(name)
-
-	if not tonumber(z_order) then objects.world[name].z_order = 0 end
-	
 	if tonumber(z_order) and z_order >= 999 then
 		obj.isBackground = true
 		obj.fixture:setCategory(CATEGORY_EAGLE)
@@ -293,8 +283,8 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 
 	--set type
 	obj.type = "circle"
-
-	updateObjectMass(name)
+	
+	setupObject(obj)
 end
 
 local function isObjectInRenderQueue(name, z)
@@ -309,7 +299,7 @@ end
 
 function addObjectToRenderQueue(name)
 	local obj = objects.world[name]
-	obj.z_order = obj.z_order or 0
+	obj.z_order = tonumber(obj.z_order) or 0
 	
 	local z = math.floor(obj.z_order)
 	zOrderedObjects[z] = zOrderedObjects[z] or {}

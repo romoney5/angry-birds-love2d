@@ -44,6 +44,14 @@ function setSleeping(object, dozing)
 	end
 end
 
+function hasBody(object)
+	if objects.world[object].body then
+		return true
+	end
+
+	return false
+end
+
 function setRotation(object, rotation)
 	objects.world[object].angle = rotation % (math.pi * 2)
 	if objects.world[object].body then

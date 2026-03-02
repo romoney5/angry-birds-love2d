@@ -20,6 +20,27 @@ function updateBackgroundAndForegroundScrollingNative(dt, _bool)
 	return
 end
 
+function setParticleSystemLimits(leftLimit, rightLimit)
+	return
+end
+
+function setCollisionEnabled(object, enabled)
+	local obj = objects.world[object]
+	if obj and obj.fixture then
+		local categories, _, group = obj.fixture:getFilterData()
+		obj.fixture:setFilterData(categories, enabled and 1 or 0, group)
+	end
+end
+
+--updateThemeSpriteAnimations
+function rotateThemeSprites(dt)
+	return
+end
+
+function removeJointsFromObject(name)
+	return
+end
+
 --latest pc version
 function getGameTimer()
 	return love.timer.getTime()
