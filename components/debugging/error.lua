@@ -1,6 +1,15 @@
 --replacement for love's default error handler
 
+local errors = 0
+
 function love.errorhandler(msg)
+	errors = errors + 1
+
+	--enough
+	if errors >= 3 then
+		return
+	end
+
 	local utf8 = require("utf8")
 	msg = tostring(msg)
 
@@ -50,6 +59,7 @@ function love.errorhandler(msg)
 
 	local err = {}
 
+	table.insert(err, "Error:\n") --make it more clear that an error occurred
 	table.insert(err, sanitizedmsg)
 
 	if #sanitizedmsg ~= #msg then
@@ -70,47 +80,54 @@ function love.errorhandler(msg)
 	p = p:gsub("\t", "")
 	p = p:gsub("%[string \"(.-)\"%]", "%1")
 
-	setTheme("theme"..math.random(1, 15))
-	if not screen then screen = {top = 0, left = 0} end
+	setTheme("theme"..math.random(1, 15)) --TODO: remnant of when it was just 1.6.3.1
+	screen = screen or {top = 0, left = 0}
 
 	local fullErrorText = p
 
-	local function draw()
+	autoScale = 600
+
+	local function draw(dt)
 		if not love.graphics.isActive() then return end
-		local pos = 70 * .6
+		local pos = 40
 		love.graphics.clear(love.graphics.getBackgroundColor())
 		screenHeight = love.graphics.getHeight()
-		screen.top = -400
-		setWorldScale((0.5 * screenHeight / 400) / (0.66))
-		if blockTable and blockTable.themes then
-			drawBackgroundNative()
-			drawForegroundNative()
-		end
+		screen.top = -screenHeight
+		-- setWorldScale(screenHeight / 500)
+		pcall(drawBackgroundNative)
+		pcall(drawForegroundNative)
 
-		screen.left = screen.left + 1
+		screen.left = screen.left + dt * 100
+		setTopLeft(screen.left, screen.top)
 		-- love.graphics.printf(p, pos, pos, love.graphics.getWidth() - pos)
-		setRenderState(pos * 2, pos * 2, 1.2, 1.2)
+		updateDisplayScale()
+		local scale = displayScale
+		setRenderState(0, 0, 1, 1)--scale, scale)
 
 		if res then
 			res.useFont(fontBasic or "FONT_BASIC")
 			-- res.useFont("FONT_MENU") --most newer games don't have letters in FONT_MENU
 			love.graphics.setColor(0, 0, 0, .2)
-			res.drawString("", p, pos + 16, pos + 16)
+			clipText("", p, (screenWidth - pos * 2))
+			local text = table.concat(clippedText.lines, "\n")
+			res.drawString("", text, pos + 16, pos + 16)
 			love.graphics.setColor(1, 1, 1, 1)
-			res.drawString("", p, pos, pos)
+			res.drawString("", text, pos, pos)
 		else
-			love.graphics.print(p, 50, 50)
+			love.graphics.print(p, pos, pos)
 		end
 	end
 
 	return function()
 		love.event.pump()
 		keyReleased = {}
-		screenWidth = math.floor(love.graphics.getWidth() / displayScale)
-		screenHeight = math.floor(love.graphics.getHeight() / displayScale)
-		cursor.x, cursor.y = love.mouse.getPosition()
-		cursor.x = cursor.x / displayScale
-		cursor.y = cursor.y / displayScale
+		pcall(function()
+			screenWidth = math.floor(love.graphics.getWidth() / displayScale)
+			screenHeight = math.floor(love.graphics.getHeight() / displayScale)
+			cursor.x, cursor.y = love.mouse.getPosition()
+			cursor.x = cursor.x / displayScale
+			cursor.y = cursor.y / displayScale
+		end)
 
 		for e, a, b, c in love.event.poll() do
 			if e == "quit" then
@@ -146,7 +163,7 @@ function love.errorhandler(msg)
 			end
 		end
 
-		draw()
+		draw(1 / 100)
 		setRenderState(0, 0, 1, 1)
 		updatePopup()
 		love.graphics.present()
@@ -155,4 +172,9 @@ function love.errorhandler(msg)
 			love.timer.sleep(1 / 100)
 		end
 	end
+end
+
+--thread error handler in case fetch encountered an error
+function love.threaderror(thread, errorstr)
+	print("Error running thread:\n", errorstr)
 end
