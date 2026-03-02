@@ -20,6 +20,10 @@ function res.createSystemFont()--?
 	return
 end
 
+function res.createSystemFontWithStroke()--?
+	return
+end
+
 function facebook.setErrorCallback()--?
 	print("facebook.setErrorCallback")
 	return

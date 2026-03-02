@@ -62,8 +62,15 @@ function drawLayer(layer, yoffset)
 	local px, py = res.getSpritePivot(sprite)
 	local w, h = res.getSpriteBounds(sprite)
 	local wScale = tempWorldScale or worldScale or 1
-	local autoScroll = -scrollFrequency * time / 16
+	local autoScroll = -scrollFrequency * time / 16 --TODO: inaccurate with water
 	local shakeX, shakeY = cameraShakeX or 0, cameraShakeY or 0
+
+	if layer.water then
+		yoffset = -(objects.waterLevel or 0) * physicsToWorld / relativeScale
+	end
+
+	local xScale = layer.scaleWobbleX and math.sin(time) * layer.scaleWobbleX / wScale or 0
+	local yScale = layer.scaleWobbleY and math.sin(time) * layer.scaleWobbleY / wScale or 0
 	
 	if w > 0 and wScale > .02 then --don't draw so many if the scale is too low
 		for x = -1, math.floor(screenWidth / (w - px) / wScale) do
@@ -77,7 +84,7 @@ function drawLayer(layer, yoffset)
 				left = (left + autoScroll) % w
 			end
 			
-			setRenderState(pivotX + left - shakeX / relativeScale, top - shakeY / relativeScale, wScale * relativeScale, wScale * relativeScale, 0, px, py)
+			setRenderState(pivotX + left - shakeX / (relativeScale + xScale), top - shakeY / (relativeScale + yScale), wScale * (relativeScale + xScale), wScale * (relativeScale + yScale), 0, px, py)
 			
 			if not (x ~= 0 and isLooping == false) then
 				res.drawSprite(sprite, 0, 0)

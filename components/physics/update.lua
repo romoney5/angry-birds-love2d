@@ -76,6 +76,8 @@ function updatePhysics(dt)
 	end
 	]]
 
+	if waterUpdate then waterUpdate() end
+
 	updateGameParticlesNative(dt2)
 	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0)
 	

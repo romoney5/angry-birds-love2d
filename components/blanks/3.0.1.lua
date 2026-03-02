@@ -238,10 +238,11 @@ function native_getUnlockRequestChecksum(id, code)
 	return
 end
 
+
 --spirit account?
 RovioAccount = {}
 
-RovioAccount.profile = {id = 0}
+RovioAccount.profile = {id = 0, isConnectedToSocialNetwork = true, isGuest = false}
 
 function loadTableFromFile(filename, tosave)
 	return
@@ -285,8 +286,8 @@ CloudSync = {}
 function CloudSync.combineSettings(cloud, loc, bool)
 	local out = {}
 	
-	for k, v in pairs(cloud or {}) do out[k] = v end
-	for k, v in pairs(loc or {}) do out[k] = v end
+	if cloud then for k, v in pairs(cloud) do out[k] = v end end
+	if loc then for k, v in pairs(loc or {}) do out[k] = v end end
 
 	return out
 end
@@ -566,6 +567,10 @@ function native.Account.register()--?
 	return false
 end
 
+function native.Account.getAccountId()--?
+	return RovioAccount.profile.id
+end
+
 
 native.Notifications = {}
 
@@ -699,6 +704,20 @@ end
 ThemeSystem.createThemeSprite = createThemeSprite
 ThemeSystem.removeThemeSprite = removeThemeSprite
 ThemeSystem.modifyThemeSprite = modifyThemeSprite
+
+
+CLOUD_SERVER = "CLOUD_SERVER"
+
+
+native.Device = {}
+
+function native.Device.getDeviceId()
+	return "0"
+end
+
+function native.Device.getAdvertisementId()
+	return "0"
+end
 
 
 --mighty leg (6.3.0 talkweb)

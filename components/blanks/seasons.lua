@@ -119,6 +119,15 @@ function createDynamicHandler(name)
 		return
 	end
 
+	--2.4.0
+	function handler.delayclear()
+		return
+	end
+
+	function handler.clear()
+		return
+	end
+
 	--4.3.2
 	function handler.cacheProfiles(...)
 		print("cacheProfiles:")
@@ -420,6 +429,48 @@ function readJSONToLuaTable(filename, export)
 end
 
 
+function createProfileTable()
+	return {}
+end
+
+function initLocales()
+	return
+end
+
+function getHardwareModel()
+	return "" --2.4.0 checks for iPhone1,2 iPhone2,1 iPod2,1
+end
+
+--g_requestingInterstitial, g_interstitialReady
+function requestInterstitial()
+	return
+end
+
+function showInterstitial()
+	return
+end
+
+--does not show up at all in luadec
+function updateThemeSprite(dt)
+	return
+end
+
+function loadLevelEditor(name)
+	return
+end
+
+MedioEvents = {}
+
+function MedioEvents.logEvent(text, params)
+	print("Logging MedioEvent: "..text)
+end
+
+function MedioEvents.getMedioAnonymousId()
+	return "0"
+end
+
+
+--portals
 PortalObjectTeleporter = {}
 -- TODO : fix angles + collision detection
 function PortalObjectTeleporter:recalculateLinearVelocity()

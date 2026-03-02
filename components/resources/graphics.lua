@@ -77,6 +77,7 @@ function res.drawCompoSprite(...)
 end
 
 function res.setClipRect(x1, y1, x2, y2)
+	if pivotDebug then return end
 	x1, y1, x2, y2 = math.max(x1 or 0, 0), math.max(y1 or 0, 0), math.max(x2 or 0, 0), math.max(y2 or 0, 0)
 	love.graphics.setScissor(x1 * displayScale, y1 * displayScale, x2 * displayScale, y2 * displayScale)
 end

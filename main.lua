@@ -130,7 +130,7 @@ function love.load()
 		commonScriptPath = scriptPath
 	end
 
-	local accountId = 0 -- TODO : add account support
+	local accountId = RovioAccount.profile.id -- TODO : add account support
 	
 	--load save data
 	if not disableSaving then
@@ -208,6 +208,23 @@ function love.load()
 		end
 	end
 
+	--4.0.0 hack
+	if RovioAnalytics and RovioAnalytics.logEvent then
+		function RovioAnalytics.logEvent(id, params)
+			return
+		end
+	end
+
+	if Analytics and Analytics.logEvent then
+		function Analytics.logEvent(id, params)
+			return
+		end
+	end
+
+	if FlashAnimation and FlashAnimation.update then
+		function FlashAnimation.update(a, b, c) end
+	end
+
 	if createStartUpAssets then createStartUpAssets() end
 	if updateValues then updateValues() end
 
@@ -224,13 +241,6 @@ function love.load()
 				return
 			end
 			uimos(item, dt)
-		end
-	end
-
-	--4.0.0 patch
-	if RovioAnalytics and RovioAnalytics.logEvent then
-		function RovioAnalytics.logEvent(id, params)
-			return
 		end
 	end
 	
