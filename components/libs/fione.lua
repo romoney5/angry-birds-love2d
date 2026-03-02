@@ -29,13 +29,13 @@ if not table.move then
 	end
 end
 
+--luajit SUCKS?!?!
+--jit.off(true, true)
+
 local error_blame = {}
 local error_blame_state
 local og_assert = assert
-local function assert(...)
-	og_assert(...)
-	return ...
-end
+local assert = og_assert
 
 local lua_bc_to_state
 local lua_wrap_state
@@ -685,15 +685,32 @@ local function on_lua_error(failed, err)
 	error(string.format('%s:%i: %s\n%s', src, line or -1, err, bytecode_traceback()), 0)
 end
 
-local function run_lua_func(state, env, upvals)
-	local code = state.code
+local function runfunc(top_index, memory, A, B, C, ...)
+	local ret_num = select("#", ...)
+
+	if C == 0 then
+		top_index = A + ret_num - 1
+	else
+		ret_num = C - 1
+	end
+
+	for i = 0, ret_num - 1 do
+		memory[A + i] = select(1 + i, ...)--ret_list[1 + i]
+	end
+	--table.move(ret_list, 1, ret_num, A, memory)
+	
+	return top_index
+end
+
+local function run_lua_func(vararg, memory, code, subs, pc, state, env, upvals)
+	--[[local code = state.code
 	local subs = state.subs
-	local vararg = state.vararg
+	local vararg = state.vararg]]
 
 	local top_index = -1
 	local open_list = {}
-	local memory = state.memory
-	local pc = state.pc
+	--[[local memory = state.memory
+	local pc = state.pc]]
 
 	error_blame_append(false)
 	while true do
@@ -703,6 +720,7 @@ local function run_lua_func(state, env, upvals)
 		
 		--append to instruction debug list
 		error_blame_append(inst)
+		--table.insert(ops, inst_names[op])
 
 		if op < 18 then
 			if op < 8 then
@@ -804,7 +822,7 @@ local function run_lua_func(state, env, upvals)
 								params = B - 1
 							end
 
-							local ret_list = table.pack(memory[A](table.unpack(memory, A + 1, A + params)))
+							--[[local ret_list = table.pack(memory[A](table.unpack(memory, A + 1, A + params)))
 							local ret_num = ret_list.n
 
 							if C == 0 then
@@ -814,6 +832,10 @@ local function run_lua_func(state, env, upvals)
 							end
 
 							table.move(ret_list, 1, ret_num, A, memory)
+							- -[ [table.clear(ret_list)
+							ret_list = nil ] ]
+							]]
+							top_index = runfunc(top_index, memory, A, B, C, memory[A](table.unpack(memory, A + 1, A + params)))
 						else
 							--[[SETUPVAL]]
 							local uv = upvals[inst.B]
@@ -1177,10 +1199,22 @@ local function run_lua_func(state, env, upvals)
 			pc = pc + inst.sBx
 		end
 
-		state.pc = pc
+		--state.pc = pc
 	end
 	
 	error_blame_append(false)
+end
+
+local function parse(proto, state, env, upval, ...)
+	if select(1, ...) then
+		return select(2, ...)--table.unpack(result, 2, result.n)
+	else
+		local failed = {pc = state.pc, source = proto.source, lines = proto.lines}
+
+		on_lua_error(failed, select(2, ...))--result[2])
+
+		return
+	end
 end
 
 function lua_wrap_state(proto, env, upval)
@@ -1189,6 +1223,10 @@ function lua_wrap_state(proto, env, upval)
 		local memory = table.create(proto.max_stack)
 		local vararg = {len = 0, list = {}}
 
+		--[[for i = 0, proto.num_param - 1 do
+			memory[0 + i] = select(1 + i, ...)--passed[1 + i]
+		end]]
+		--table.move(ret_list, 1, ret_num, A, memory)
 		table.move(passed, 1, proto.num_param, 0, memory)
 
 		if proto.num_param < passed.n then
@@ -1203,15 +1241,16 @@ function lua_wrap_state(proto, env, upval)
 			memory[proto.num_param] = {n = vararg.len, table.unpack(vararg.list, 1, vararg.len)}
 		end
 
-		local state = {vararg = vararg, memory = memory, code = proto.code, subs = proto.subs, pc = 1}
+		--local state = {vararg = vararg, memory = memory, code = proto.code, subs = proto.subs, pc = 1}
 		if fione_errorblame_length > 0 then error_blame_state = state end
 
-		local result = table.pack(pcall(run_lua_func, state, env, upval))
+		local result = table.pack(pcall(run_lua_func, vararg, memory, proto.code, proto.subs, 1, state, env, upval))
+		--return parse(proto, state, env, upval, pcall(run_lua_func, vararg, memory, code, subs, 1, state, env, upval))
 
 		if result[1] then
 			return table.unpack(result, 2, result.n)
 		else
-			local failed = {pc = state.pc, source = proto.source, lines = proto.lines}
+			local failed = {pc = 1, source = proto.source, lines = proto.lines}--{pc = state.pc, source = proto.source, lines = proto.lines}
 
 			on_lua_error(failed, result[2])
 
