@@ -11,19 +11,36 @@ end
 
 function createDynamicHandler(name)
 	local handler = {}
-	local loadlist = {}
+	local requirements = {}
 	local selectAssetProfile = selectAssetProfile or (platform and platform.Profiles and platform.Profiles.selectAssetProfile)
 
 	local loadlists = {loadlist = {}, neatLoadlist = {}}
+	local loadlistNames = {"loadlist", "neatLoadlist"}
+
+	local ingameLoadlist --hacky; for loadInGame
+	local ingameProfile --hacky; for loadInGame
 	
 	--TODO: queue and asset freeing
+	local function loadFromLoadlist(list, profile, group)
+		for _, asset in ipairs(list[group]) do
+			if asset[2] ~= 1 then
+				res.createSpriteSheet(imagePath.."/"..profile.."/"..asset[1])
+			else
+				res.createCompoSpriteSet(imagePath.."/"..profile.."/"..asset[1])
+			end
+		end
+	end
 	
 	local function load(group)
-		if loadlist[group] then
-			for i, v in pairs(loadlist[group]) do
+		if requirements[group] then
+			for i, v in pairs(requirements[group]) do
 				local profile = selectAssetProfile(v)
+				-- print("pr", v, profile)
+				if endsWith(profile, "_cloud") then
+					profile = profile:sub(1, #profile - 6)
+				end
 				
-				for i, list in ipairs{"loadlist", "neatLoadlist"} do
+				for i, list in ipairs(loadlistNames) do
 					if not loadlists[list][profile] then
 						loadLuaFile(imagePath.."/"..profile.."/"..list..".lua")
 
@@ -44,16 +61,18 @@ function createDynamicHandler(name)
 
 						loadlists[list][profile] = assetLoadList[profile]
 					end
-					
-					local dat = loadlists[list] and loadlists[list][profile] and loadlists[list][profile][v]
-					if dat then
-						for _, asset in ipairs(dat) do
-							if asset[2] ~= 1 then
-								res.createSpriteSheet(imagePath.."/"..profile.."/"..asset[1])
-							else
-								res.createCompoSpriteSet(imagePath.."/"..profile.."/"..asset[1])
-							end
+
+					local dat = loadlists[list] and loadlists[list][profile]
+					if dat and dat[v] then
+						-- print("yes", profile, v)
+						loadFromLoadlist(dat, profile, v)
+
+						if dat.INGAME then
+							ingameLoadlist = dat
+							ingameProfile = profile
 						end
+					-- else
+					-- 	print("no", profile, v)
 					end
 				end
 			end
@@ -65,7 +84,7 @@ function createDynamicHandler(name)
 		for i, v in pairs{...} do
 			if type(v) == "table" then
 				for i, v in pairs(v) do
-					loadlist[i] = v
+					requirements[i] = v
 				end
 			end
 		end
@@ -111,8 +130,10 @@ function createDynamicHandler(name)
 	function handler.release(...) end
 	function handler.isLoaded(...) return true end
 	
-	function handler.loadInGame(a, theme)--?
-		handler.load{"ingame"}
+	function handler.loadInGame(sprites, theme)--?
+		-- handler.load{"ingame"}
+		-- error()
+		loadFromLoadlist(ingameLoadlist, ingameProfile, "INGAME")
 	end
 	
 	function handler.enterIngame(a, theme)
@@ -178,6 +199,16 @@ function createDynamicHandler(name)
 		handler.load{"ingame"}
 	end
 	handler.releaseAssetGroup = handler.release
+
+
+	--time travel
+	function handler.loadBdAdsPictureSheets()--?
+		return
+	end
+
+	function handler.releaseBdAdsPictureSheets()--?
+		return
+	end
 
 	_G[name] = handler
 	--print("platform is", tostring(platform))
