@@ -275,6 +275,10 @@ function enablePigDaysVignette(enabled)--?
 	return
 end
 
+function drawPigDaysVignette(a)--?
+	return
+end
+
 function setThemeWithWater(theme)
 	setTheme(theme)
 end
@@ -306,15 +310,22 @@ end
 
 native.GetTimeStamp = {}
 
-function native.GetTimeStamp.fetchTimeStamp()--?
-	return 0
-end
-
-function native.GetTimeStamp.getTimeStamp()--?
-	return 0
+--these functions are probably called in order
+function native.GetTimeStamp.fetchTimeStamp(_, uid)
+	return
 end
 
 function native.GetTimeStamp.hasResult()
+	return true
+end
+
+function native.GetTimeStamp.getTimeStamp()
+	--status can return BadReturnException, NotYetStartedException, or nil for no error
+	local status = nil
+	local stamp = getCurrentTime()
+	stamp.secondsToNext = 1
+	return stamp, status
+end
 	return false
 end
 
@@ -457,7 +468,12 @@ function NativeCloudAssets.removeAsset(asset)
 	love.filesystem.remove("cdn/" .. asset)
 end
 
-NativeCloudAssets.getAssetStatus = NativeCloudAssets.getPackStatus
+function NativeCloudAssets.getAssetStatus(asset)
+	local status = NativeCloudAssets.getPackStatus(asset)
+	if status == "QUEUED" then status = "DOWNLOADING" end
+	if status == "NO CONNECTION" then status = "FAILURE" end
+	return status
+end
 
 cloudDomain = "http://raw.githubusercontent.com/HaloGuy345/cloud_assets/main"
 CLOCK_URL_BASE = ""
@@ -837,6 +853,10 @@ function native.TimeStamp.getCurrentMonth()
 end
 
 function native.TimeStamp.getCurrentDay()
+	return 1
+end
+
+function native.TimeStamp.getCurrentSecondsToNext()
 	return 1
 end
 
