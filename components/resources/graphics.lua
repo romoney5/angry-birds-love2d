@@ -170,18 +170,27 @@ function drawSpriteTinted(sprite, x, y, vanchor, hanchor, r, g, b, a)
 	love.graphics.pop()
 end
 
-function drawSpriteColoured(sprite, x, y, scaleX, scaleY, r, g, b, a, bool)
+--TODO: i cannot get the color blending to be accurate to 5.1.0
+function drawSpriteColoured(sprite, x, y, scaleX, scaleY, r, g, b, a, darken)
 	love.graphics.push("all")
 	love.graphics.origin()
-	love.graphics.setColor(r, g, b, a)
+	love.graphics.setBlendMode("add", "premultiplied")
+	love.graphics.setColor(r * a, g * a, b * a, a)
+	-- love.graphics.setColor(r, g, b, a)
 	--setRenderState(rx, ry, rsx * scaleX, rsy * scaleY, drawangle, drawxp, drawyp, alpha)
 	local image = checkSprite(sprite)
 	
 	if image then
-		res.drawSprite(sprite, x, y, nil, nil, image.width * scaleX, image.height * scaleY)--, vanchor, hanchor)
+		love.graphics.translate(x, y)
+		love.graphics.scale(scaleX, scaleY)
+		res.drawSprite(sprite, 0, 0)--, vanchor, hanchor)
 	end
 	
 	love.graphics.pop()
+end
+
+function setAngleRAD(angle) --5.3.1 what is this?
+	return
 end
 
 function res.getCompoSpriteBounds(sheet, composprite) --not used in 1.6.3.1
@@ -558,10 +567,14 @@ local function loadSheet(sheet, usecomposprites)
 			--json.meta.format to PixelFormat
 			local mapping = {
 				["RGBA4444"] = "rgba4",
+				["RGBA8888"] = "rgba8",
+				["RGB565"] = "rgb565",
 			}
 
 			local format = mapping[info.pixelformat]
 			local src = love.filesystem.read(filename)
+
+			if not format then error("loadSheet: unrecognized stream pixel format", info.pixelformat) end
 
 			for i, sprite in pairs(info.sprites) do
 				-- sprite.width = sprite.stream.width
