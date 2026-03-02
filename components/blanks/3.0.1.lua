@@ -876,6 +876,19 @@ function native.ModernLeague.isLoggedInFacebook()--?
 	return false
 end
 
+function native.ModernLeague.getServerEnvironment()--?
+	return ""
+end
+
+
+function setShaderToGameObject()--?
+	return
+end
+
+function setObjectColor()--?
+	return
+end
+
 
 newPlayerRules = {}
 
@@ -932,3 +945,134 @@ end
 
 
 specialOfferMeta = {}
+
+
+--time travel
+
+function native_startURLTWPostThread()--?
+	return
+end
+
+
+--kakao
+--NOTE: showSplashScreens() must be called on launch
+
+function res.createSystemFontWithStroke()--?
+	return
+end
+
+function addLocalNotificationAfter()--?
+	return
+end
+
+function removeLocalNotification(name)
+	return
+end
+
+function getReceivedLocalNotifications()--?
+	return
+end
+
+function clearReceivedLocalNotifications()--?
+	return
+end
+
+function addTimeDifferenceToLocalTime()--?
+	return
+end
+
+-- function testTournaments()--?
+-- 	return
+-- end
+
+function ServerTime.getTournamentStart(a, b, c)
+	return
+end
+
+function ServerTime.getServerTimeInUTC()
+	return {year = 0, month = 0, day = 0, hour = 0, minutes = 0, seconds = 0}
+end
+
+function ServerTime.hasPeriodAfterTimeInUTCPassed(a, time)--?
+	return true
+end
+
+function RovioAccount.native_isSocialLoginInitiated()--?
+	return true
+end
+
+function RovioAccount.native_isLoginInitiated()--?
+	return true
+end
+
+function RovioAccount.native_refreshFriends()--?
+	return
+end
+
+function RovioAccount.native_saveFriendProfile()--?
+	return
+end
+
+
+RovioAssetService = {}
+
+function RovioAssetService.loadAssets(a)
+	return
+end
+
+
+--flash animations?
+function cutsceneLoad(a)--?
+	return
+end
+
+function cutsceneSeek()--?
+	return
+end
+
+function updateCutscene()--?
+	return
+end
+
+function drawCutscene()--?
+	return
+end
+
+function cutsceneSetTranslation()--?
+	return
+end
+
+function cutsceneSetRotation()--?
+	return
+end
+
+function cutsceneSetScale()--?
+	return
+end
+
+function cutsceneClose(a)--?
+	return
+end
+
+function res.getCompoSpriteEntry(composprite, sprite)
+	composprite = checkSprite(composprite)
+
+	if composprite then
+		for i, v in pairs(composprite.items) do
+			if v.n == sprite then
+				return v
+			end
+		end
+	end
+end
+
+
+RovioMessagingService = {}
+
+function RovioMessagingService.native_syncMailbox()--?
+	return
+end
+
+function RovioMessagingService.native_getReceivedMessages()--?
+	return
+end

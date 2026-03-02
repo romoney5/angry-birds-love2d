@@ -226,6 +226,7 @@ function love.load()
 	end
 
 	if createStartUpAssets then createStartUpAssets() end
+	if showSplashScreens then showSplashScreens() end --kakao
 	if updateValues then updateValues() end
 
 	gpcx, gpcy = love.mouse.getPosition()
@@ -252,6 +253,18 @@ function love.load()
 	end
 	
 	handlePostStartArgs()
+end
+
+function kak()
+	RovioAccount.profile.isConnectedToSocialNetwork = true
+	g_rovio_account_available = true
+	skipSocialLogin = true
+	for i = 1, 5 do initialize() end
+	startMenuFlow()
+end
+
+function kak2()
+	gamelua.notificationsFrame:removeChild(gamelua.notificationsFrame:getChild("KakaoNetworkErrorDialog"))
 end
 
 function setLevelEffects(theme)

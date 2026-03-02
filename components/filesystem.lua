@@ -184,6 +184,7 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 	elseif type(key) == "string" and key ~= "" then
 		--make a new table in ctx with the name of key (this, "ui")
 		ctx[key] = ctx[key] or {}
+		if type(ctx[key]) ~= "table" then ctx[key] = {} end
 		env = ctx[key]
 	else
 		--use ctx table (this.ui, "")
