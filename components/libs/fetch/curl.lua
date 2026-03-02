@@ -53,7 +53,10 @@ end
 
 -- Main function
 local function httpsRequest(host, path, port, method, headers, data)
-    local url = string.format("https://%s:%d%s", host, port or 443, path or "/")
+    --romoney5: curl on linux can error because the library makes the url use port 80 but also changes the url to use https
+    -- local url = string.format("https://%s:%d%s", host, port or 443, path or "/")
+    local url = string.format("https://%s%s", host, path or "/")
+    
     local curlHandle = curl.curl_easy_init()
     if curlHandle == nil then
         error("Failed to initialize curl")
