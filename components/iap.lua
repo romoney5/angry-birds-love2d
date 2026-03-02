@@ -36,6 +36,7 @@ function iapInitItemPurchase(callback) --1.7.0
 	end
 end
 
+--the core function for all iaps
 function iapBuyItem(id, callbackid, statuslist) --1.7.0
 	local callback = type(callbackid) == "function" and callbackid or _G[callbackid]
 	local statuslist = statuslist or statuses
@@ -134,6 +135,6 @@ end
 
 --seasons' take on iap
 
-CloudPayment = {}
+-- CloudPayment = {}
 
-CloudPayment.isInitialized = Payment.iapHasPaymentProvider
+-- CloudPayment.isInitialized = Payment.iapHasPaymentProvider

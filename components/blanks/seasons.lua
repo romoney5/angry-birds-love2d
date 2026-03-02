@@ -326,15 +326,129 @@ function native.GetTimeStamp.getTimeStamp()
 	stamp.secondsToNext = 1
 	return stamp, status
 end
+
+
+NativeCloudPayment = {}
+local iapHasPaymentProvider = false
+
+NativeCloudPayment.PURCHASE_ERROR_UNKNOWN = 1
+NativeCloudPayment.PURCHASE_ERROR_NOT_ALLOWED = 2
+NativeCloudPayment.VOUCHER_ALREADY_HANDLED = 3 --5.3.1
+
+function NativeCloudPayment.isInitialized()
+	return iapHasPaymentProvider
+end
+
+--NativeCloudPayment.onInitialized()
+--NativeCloudPayment.onProductPurchased(product)
+--NativeCloudPayment.onProductPurchasePending(product)
+--NativeCloudPayment.onPurchaseLimitExceeded()
+--NativeCloudPayment.onPurchaseCanceled(product)
+--NativeCloudPayment.onPurchaseFailed(product, reason)
+--NativeCloudPayment.onRestoreComplete(product) --..is empty
+--NativeCloudPayment.userHasNonConsumable(product)
+
+--called after everything is set up
+function NativeCloudPayment.ready()
+	iapHasPaymentProvider = true
+	if NativeCloudPayment.onInitialized then
+		NativeCloudPayment.onInitialized()
+	end
+end
+
+function NativeCloudPayment.getLocalizedPrices()
+	local prices = {}
+
+	setmetatable(prices, {
+		__index = function(self, k)
+			return "idk"
+		end
+	})
+
+	return prices
+end
+
+function NativeCloudPayment.redeemCode(code, callback)
+	local success = 0 --redirects to the shop
+	local invalid = -1 or -5 --everything else shows an error popup
+	local already_used = -3 or -4
+
+	if code == "ANGRY-BIRDS" then
+
+	end
+
+	callback(success)
+end
+
+function NativeCloudPayment.getAvailableProducts()
+	local products = {}
+
+	setmetatable(products, {
+		__index = function(self, k)
+			return {price = 12}
+		end
+	})
+
+	return products
+end
+
+function NativeCloudPayment.getProductDescriptions() --5.3.1
+	local descriptions = {}
+
+	setmetatable(descriptions, {
+		__index = function(self, k)
+			return "a"
+		end
+	})
+
+	return descriptions
+end
+
+function NativeCloudPayment.getProductDatas() --5.3.1
+	local datas = {}
+
+	setmetatable(datas, {
+		__index = function(self, k)
+			return {items = {}}
+		end
+	})
+
+	return datas
+end
+
+function NativeCloudPayment.hasAutomaticRestore()
 	return false
 end
+
+function NativeCloudPayment.isProductAvailableForPurchase(product)
+	return true --i guess
+end
+
+local statuses_new = {
+	PAYMENT_SUCCEEDED = 0,
+	PAYMENT_FAILED = 1,
+	PAYMENT_CANCELLED = 2,
+	PAYMENT_PENDING = 3,
+	PAYMENT_REFUNDED = 4,
+	PAYMENT_RESTORED = 5,
+}
+
+function NativeCloudPayment.buyProduct(product)
+	iapBuyItem(product, function(product, reason)
+		if reason == statuses_new.PAYMENT_SUCCEEDED then
+			NativeCloudPayment.onProductPurchased(product)
+		elseif reason == statuses_new.PAYMENT_CANCELLED then
+			NativeCloudPayment.onPurchaseCanceled(product)
+		end
+	end, statuses_new)
+end
+
 
 function native_reloadIngameSprites()--?
 	return
 end
 
 NativeCloudAssets = {}
---NativeCloudPayment = true
 
 local downloads = {}
 local downloadStatus = {}
@@ -548,6 +662,21 @@ setPhysicsEnabledNative = setPhysicsEnabled
 function drawScreenParticlesWithId(particles, bool, number)
 	return
 end
+
+g_iap_item_info = {}
+
+function getProductWithIapId(id)
+	local type = "specialOffer"
+	return {price = {coins = math.random() * 100}, purchaseType = "coins", amount = 0}, type--nil
+end
+
+setmetatable(g_iap_item_info, {
+	__index = function(self, k)
+		return getProductWithIapId(id)
+	end
+})
+
+
 --portals
 PortalObjectTeleporter = {}
 -- TODO : fix angles + collision detection
