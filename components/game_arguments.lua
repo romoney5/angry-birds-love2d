@@ -7,7 +7,7 @@ function handleStartArgs()
 				print("Opening data deletion prompt...")
 				
 				showPopup("Data",
-					"Delete all data?\nThis will reset all progress!",
+					"Delete save data?\nThis will reset all progress in the current data path!",
 					{
 						{sprite = "MENU_NO", callback = function()
 							return true
