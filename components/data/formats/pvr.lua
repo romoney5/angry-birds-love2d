@@ -33,13 +33,13 @@ function convertImagePVR(data, filename)
 			local expectedSize = w * h * 2 + headerSize
 			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize.." ("..metadatasize.."), got "..data:len())
 
-			rawdata = string.sub(data, headerSize + 1)
+			rawdata = string.sub(data, headerSize + 1, headerSize + 1 + expectedSize - 1)
 			imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
 		elseif format == 19 and support.rgb565 then --r5 g6 b5
 			local expectedSize = w * h * 2 + headerSize
 			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize.." ("..metadatasize.."), got "..data:len())
 			
-			rawdata = string.sub(data, headerSize + 1)
+			rawdata = string.sub(data, headerSize + 1, headerSize + 1 + expectedSize - 1)
 			imagedata = love.image.newImageData(w, h, "rgb565", rawdata)
 		elseif format == 25 then --pvrtc 4bpp rgba
 			--usually unsupported for most devices

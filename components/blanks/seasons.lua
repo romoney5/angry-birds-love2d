@@ -226,39 +226,137 @@ function createDynamicHandler(name)
 	return handler
 end
 
-function flashAnimationPreLoad()--?
+--called for all animations at the start of the game
+local anims = {}
+local preloaded = {}
+function flashAnimationPreLoad(name, filename, bundlename)
+	preloaded[name] = readJSONToLuaTable(filename)
+end
+
+--tag is a unique name, animName is the animation filename
+function flashAnimationLoad(tag, animName)
+	anims[tag] = {
+		name = animName,
+		playing = false,
+		playAction = nil,
+		data = preloaded[animName],
+		replacements = {},
+		time = 0,
+		x = 0,
+		y = 0,
+		rotation = 0,
+		sx = 1,
+		sy = 1,
+	}
+end
+
+function flashAnimationReplaceImage(tag, target, dest)
+	local anim = anims[tag]
+	anim.replacements[target] = dest
+end
+
+function flashAnimationStart(tag, playAction, mode)
+	--flashAnimation1, start, once
+	print(tag, playAction, mode)
+	assert(anims[tag])
+	
+	anims[tag].playing = true
+	anims[tag].playAction = playAction
+end
+
+function flashAnimationStop(tag, a)
 	return
 end
 
-function flashAnimationLoad()--?
+function flashAnimationSetAnimationParameters(tag, x, y, rotation, sx, sy)
+	local anim = anims[tag]
+	
+	anim.x, anim.y = x, y
+	anim.rotation = rotation
+	anim.sx, anim.sy = sx, sy
+end
+
+--gamelua.flashAnimationSetTranslation(r0_12.tag, x, y)
+
+function updateFlashAnimation(dt)
+	for i, anim in pairs(anims) do
+		if anim.playing then
+			anim.time = anim.time + dt
+		end
+	end
+end
+
+local function handleKeyframes(keys, time, easing)
+	for i, key in ipairs(keys) do
+		local keytime = key[1]
+		if time < keytime then break end
+		local nextkey = keys[i + 1]
+		
+		if nextkey and time >= keytime and time < nextkey[1] then
+			local t = (time - keytime) / (nextkey[1] - keytime)
+			local target = key[2]
+			local dest = nextkey[2]
+			
+			if type(target) == "number" then
+				return ease.linear(t, target, dest)
+			end
+			
+			local final = {}
+			for i, v in ipairs(target) do
+				final[i] = ease.linear(t, target[i], dest[i])
+			end
+			
+			return final
+		end
+	end
+	
+	--fall back to the last one (TODO: "after": "REPEAT")
+	return keys[#keys][2]
+end
+
+function drawFlashAnimation(tag)
+	love.graphics.push()
+	local anim = anims[tag]
+	setRenderState(anim.x, anim.y, anim.sx, anim.sy)
+	local data = anim.data
+	
+	local action = data.comps[1].data.actions[anim.playAction]
+	local clip = action.clips[anim.name:lower().."_"..anim.playAction] --does it really lower?
+	
+	--keyframe types: translation, scale, rotation, alpha, sprite
+	local function draw(v)
+		--TODO: move logic to update
+		love.graphics.push()
+		if v.name then
+			local target = clip.targets[v.name]
+			local translation = handleKeyframes(target.translation.keyframes, anim.time, easing)
+			local scale = handleKeyframes(target.scale.keyframes, anim.time, easing)
+			local aalpha = handleKeyframes(target.scale.keyframes, anim.time, easing)
+			alpha = alpha
+			love.graphics.translate(translation[1], translation[2])
+			love.graphics.scale(scale[1], scale[2])
+			res.drawSprite(anim.replacements[v.name] or v.name, 0, 0)
+		end
+		
+		if v.children then
+			for i, vv in ipairs(v.children) do
+				draw(vv)
+			end
+		end
+		love.graphics.pop()
+	end
+	draw(data)
+	--res.drawSprite("RED", 100, 100)
+	--res.drawSprite("RED_BAND", 100, 100)
+	love.graphics.pop()
+	alpha = 1
+end
+
+function flashAnimationClose(tag)
 	return
 end
 
-function flashAnimationReplaceImage()--?
-	return
-end
-
-function flashAnimationStart()--?
-	return
-end
-
-function flashAnimationSetAnimationParameters()--?
-	return
-end
-
-function updateFlashAnimation()--?
-	return
-end
-
-function drawFlashAnimation()--?
-	return
-end
-
-function flashAnimationClose()--?
-	return
-end
-
-function flashAnimationPauseToLast()--?
+function flashAnimationPauseToLast(tag)
 	return
 end
 
