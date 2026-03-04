@@ -44,8 +44,6 @@ flurry = {}
 
 enableDebug = false
 
-targetFPS = 1000 --love's love.run function uses 0.001 by default
-
 fione_errorblame_length = 0
 
 function endsWith(str, ending)
@@ -95,20 +93,10 @@ function print(...)
 	orig_print(prints)
 end
 
-function love.load()
-	 --love.filesystem.exists should no longer be deprecated in 12
-	if love.setDeprecationOutput then
-		love.setDeprecationOutput(false)
-	end
-	
+function loadGameFiles()
 	--cache original image path
 	local og_imagePath = imagePath
 	local og_fontPath = fontPath
-
-	love.filesystem.load(compsPath.."/load_all.lua")()
-	handleStartArgs()
-	
-	updateDisplayScale()
 	
 	--load only certain properties from config.lua
 	local config = {}
@@ -123,14 +111,27 @@ function love.load()
 	scriptPath = config.scriptPath or scriptPath
 	--deviceModel = config.deviceModel or deviceModel
 
-	if not checkDirectory(datapath) then
+	--start by setting the background to white and using premultiplied alpha
+	setBGColor(255, 255, 255)
+	love.graphics.setBlendMode("alpha", "premultiplied")
+	blockTable.themes, blockTable.blocks = {}, {}
+
+	if not checkDirectory(datapath) or datapath == "" then
 		print("Data path \""..tostring(datapath).."\" wasn't found.\nTry the --datapath argument to specify a custom path.")
+		return
+	elseif not checkDirectory(datapath.."/"..scriptPath) then
+		--classic 1.0
+		commonScriptPath = ""
+		scriptPath = ""
+		audioPath = ""
+		imagePath = ""
+		levelPath = ""
 	elseif not checkDirectory(datapath.."/"..commonScriptPath) then
 		--versions around classic 7.3.0 remove scripts_common again
 		commonScriptPath = scriptPath
 	end
 
-	local accountId = RovioAccount.profile.id -- TODO : add account support
+	local accountId = RovioAccount and RovioAccount.profile.id or "0" -- TODO : add account support
 	
 	--load save data
 	if not disableSaving then
@@ -149,24 +150,20 @@ function love.load()
 	uniqueDeviceId = getDeviceID()
 	uniqueInstallationId = ""
 
-	love.graphics.setNewFont(24)
-
-	local function loadlua(filename, ctx, env, lenient)
-		loadLuaFileToObject(filename, ctx, env)--, lenient)
-	end
-
 	loadLuaFileToObject(scriptPath.."/options.lua", this, nil, true)
 	--and now start the actual game
 	if gamelogicPath then
-		loadlua(gamelogicPath, this, nil, true)
+		loadLuaFileToObject(gamelogicPath, this, nil)
 	elseif checkDirectory(datapath.."/"..commonScriptPath .. "/gamelogic.lua") then
-		loadlua(commonScriptPath.."/gamelogic.lua", this, nil, true)--, settings)
+		loadLuaFileToObject(commonScriptPath.."/gamelogic.lua", this, nil)--, settings)
+	elseif checkDirectory(datapath.."/".."common/scripts/game" .. "/gamelogic.lua") then
+		commonScriptPath = "common/scripts/game"
+		loadLuaFileToObject(commonScriptPath.."/gamelogic.lua", this, nil)--, settings)
 	end
 
 	-- loadLuaFileToObject(scriptPath .. "/animations.lua", this)
 	loadLuaFileToObject(scriptPath.."/particles.lua", this, particleTable, true)
 	loadLuaFileToObject(scriptPath.."/starLimits.lua", this, starTable, true)
-	blockTable.themes, blockTable.blocks = {}, {}
 	
 	loadLuaFileToObject(scriptPath.."/blocks.lua", this, blockTable, true)
 
@@ -174,10 +171,6 @@ function love.load()
 
 	loadLuaFileToObject(scriptPath.."/episodes.lua", this, "episodes", true)
 	loadLuaFileToObject(scriptPath.."/cutscenes.lua", this, "cutscenes", true)
-
-	--start by setting the background to white and using premultiplied alpha
-	setBGColor(255, 255, 255)
-	love.graphics.setBlendMode("alpha", "premultiplied")
 
 	--set an icon
 	if checkDirectory(datapath_base.."/Icon.png") then
@@ -229,8 +222,6 @@ function love.load()
 	if showSplashScreens then showSplashScreens() end --kakao
 	if updateValues then updateValues() end
 
-	gpcx, gpcy = love.mouse.getPosition()
-
 	--override releaseBuild
 	--releaseBuild = false
 	--showEditor = true
@@ -253,6 +244,23 @@ function love.load()
 	end
 	
 	handlePostStartArgs()
+end
+
+function love.load()
+	 --love.filesystem.exists should no longer be deprecated in 12
+	if love.setDeprecationOutput then
+		love.setDeprecationOutput(false)
+	end
+
+	love.filesystem.load(compsPath.."/load_all.lua")()
+	handleStartArgs()
+	
+	updateDisplayScale()
+
+	love.graphics.setNewFont(24)
+	
+	gpcx, gpcy = love.mouse.getPosition()
+	loadGameFiles()
 end
 
 function kak()
@@ -457,40 +465,6 @@ function setDeltaTimeMultiplier(dt)
 	physicsTimeScale = dt
 end
 
---override run function to allow drawing in the update hook
-function loveUpdate(pause, freeze)
-	-- Process events.
-	if love.event then
-		love.event.pump()
-		for name, a,b,c,d,e,f in love.event.poll() do
-			if name == "quit" then
-				if not love.quit or not love.quit() then
-					return a or 0
-				end
-			end
-			love.handlers[name](a,b,c,d,e,f)
-		end
-	end
-
-	-- Call update and draw
-	--don't step if the game should be paused while resizing
-	local dt = love.timer.step()
-	if love.update and not freeze then love.update(pause and 0 or dt) end
-
-	if love.graphics and love.graphics.isActive() then
-		if love.draw then love.draw() end
-	end
-
-	if love.timer then love.timer.sleep(1 / targetFPS) end
-end
-
-function love.run()
-	if love.load then love.load(love.arg.parseGameArguments(arg), arg) end
-	if love.timer then love.timer.step() end
-
-	return loveUpdate
-end
-
 
 function showPopup(title, text, buttons, pause, extra, height)
 	keyReleased.LBUTTON = false
@@ -506,8 +480,8 @@ function showPopup(title, text, buttons, pause, extra, height)
 		end},
 	}
 
-	--add a popup at the end of the queue
-	table.insert(openPopups, {title = title, text = text, buttons = buttons, extra = extra, h = height, pause = pause})
+	--add a popup at the start of the queue
+	table.insert(openPopups, 1, {title = title, text = text, buttons = buttons, extra = extra, h = height, pause = pause})
 
 	--if it's important then run it immediately
 	if pause and #openPopups == 1 then

@@ -90,7 +90,7 @@ function love.errorhandler(msg)
 	local function draw(dt)
 		if not love.graphics.isActive() then return end
 		local pos = 40
-		love.graphics.clear(love.graphics.getBackgroundColor())
+		lgClear(love.graphics.getBackgroundColor())
 		screenHeight = love.graphics.getHeight()
 		screen.top = -screenHeight
 		-- setWorldScale(screenHeight / 500)
@@ -109,7 +109,7 @@ function love.errorhandler(msg)
 			-- res.useFont("FONT_MENU") --most newer games don't have letters in FONT_MENU
 			love.graphics.setColor(0, 0, 0, .2)
 			clipText("", p, (screenWidth - pos * 2))
-			local text = table.concat(clippedText.lines, "\n")
+			local text = clippedText and table.concat(clippedText.lines, "\n") or p
 			res.drawString("", text, pos + 16, pos + 16)
 			love.graphics.setColor(1, 1, 1, 1)
 			res.drawString("", text, pos, pos)
@@ -120,7 +120,10 @@ function love.errorhandler(msg)
 
 	return function()
 		love.event.pump()
-		keyReleased = {}
+		table.clear(keyReleased)
+		table.clear(keyPressed)
+		
+		local cx, cy = cursor.x, cursor.y
 		pcall(function()
 			screenWidth = math.floor(love.graphics.getWidth() / displayScale)
 			screenHeight = math.floor(love.graphics.getHeight() / displayScale)
@@ -129,43 +132,66 @@ function love.errorhandler(msg)
 			cursor.y = cursor.y / displayScale
 		end)
 
-		for e, a, b, c in love.event.poll() do
-			if e == "quit" then
+		for name, a, b, c, d, e, f, g, h in love.event.poll() do
+			if name == "quit" then
 				return 1
-			elseif e == "keypressed" and a == "escape" then
+			elseif name == "keypressed" and a == "escape" then
 				return 1
-			elseif e == "touchpressed" or e == "mousepressed" then
-				if not openPopups[1] then
-					showPopup("Angry Birds", "Exit the game?", {
-						-- {sprite = "BUTTON_RESTART", callback = function()
-						-- 	love.event.quit("restart")
-						-- end},
-						{sprite = "MENU_NO", callback = function()
-							return true
-						end},
-						{sprite = "TUTORIAL_OK", callback = function()
-							requestExit()
-						end},
-					})
-					-- local buttons = {"Exit", "Cancel"}
-					-- if love.system then
-					-- 	buttons[3] = "Copy Error"
-					-- end
-					-- local pressed = love.window.showMessageBox("Angry Birds", "Exit the game?", buttons)
-					-- if pressed == 1 then
-					-- 	return 1
-					-- elseif pressed == 3 then
-					-- 	love.system.setClipboardText(fullErrorText)
-					-- end
-				else
-					keyReleased.LBUTTON = true
-				end
+			elseif name:find("mouse") or name:find("touch") or name:find("key") or name:find("textinput") then
+				love.handlers[name](a,b,c,d,e,f,g,h)
+			end
+		end
+		
+		if keyReleased.LBUTTON and not debugOpen then
+			if not openPopups[1] then
+				showPopup("Angry Birds", "Exit the game?", {
+					-- {sprite = "BUTTON_RESTART", callback = function()
+					-- 	love.event.quit("restart")
+					-- end},
+					{sprite = "MENU_NO", callback = function()
+						return true
+					end},
+					{sprite = "TUTORIAL_OK", callback = function()
+						requestExit()
+					end},
+				})
+				-- local buttons = {"Exit", "Cancel"}
+				-- if love.system then
+				-- 	buttons[3] = "Copy Error"
+				-- end
+				-- local pressed = love.window.showMessageBox("Angry Birds", "Exit the game?", buttons)
+				-- if pressed == 1 then
+				-- 	return 1
+				-- elseif pressed == 3 then
+				-- 	love.system.setClipboardText(fullErrorText)
+				-- end
 			end
 		end
 
 		draw(1 / 100)
 		setRenderState(0, 0, 1, 1)
 		updatePopup()
+		
+		if checkDebugOpen then checkDebugOpen() end
+		if debugOpen then
+			updateDebug(dt, cx, cy)
+		end
+
+		if optionsOpen then
+			updateOptions(dt)
+		end
+		
+		net.update(1 / 100)
+
+		cursor.wheelTriggered = nil
+		setRenderState(0, 0, 1, 1)
+		updatePopup()
+		
+		if debugOpen then
+			love.keyboard.setKeyRepeat(true)
+		else
+			love.keyboard.setKeyRepeat(false)
+		end
 		love.graphics.present()
 
 		if love.timer then

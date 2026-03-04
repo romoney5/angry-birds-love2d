@@ -45,6 +45,14 @@ function restoreParticles()
 	end
 end
 
+lgClear = love.graphics.clear
+
+function love.graphics.clear(...)
+	-- if a == true then
+	-- 	return lgClear(...)
+	-- end
+end
+
 function love.update(dt)
 	if love.window.hasFocus() then
 		if love.joystick then
@@ -64,7 +72,7 @@ function love.update(dt)
 		hasfocus = true
 		if love.graphics and love.graphics.isActive() then
 			love.graphics.origin()
-			love.graphics.clear(love.graphics.getBackgroundColor())
+			lgClear(love.graphics.getBackgroundColor())
 		end
 		
 		if audiochannels then
@@ -130,7 +138,7 @@ function love.update(dt)
 		end
 
 		if currentGameMode and currentGameMode == updateSomething then
-			currentGameMode(dt2)
+			currentGameMode(dt2, cx, cy)
 		elseif update then
 			--pause the game if there's an important popup
 			local t1 = love.timer.getTime()
@@ -179,10 +187,7 @@ function love.update(dt)
 		end
 
 		if debugOpen then
-			love.keyboard.setKeyRepeat(true)
 			updateDebug(dt, cx, cy)
-		else
-			love.keyboard.setKeyRepeat(false)
 		end
 
 		if optionsOpen then
@@ -192,9 +197,24 @@ function love.update(dt)
 		cursor.wheelTriggered = nil
 		setRenderState(0, 0, 1, 1)
 		updatePopup()
+		
+		if debugOpen then
+			love.keyboard.setKeyRepeat(true)
+		else
+			love.keyboard.setKeyRepeat(false)
+		end
+		
+		if CUI.currentTextboxState and CUI.currentTextboxState.timer then
+			CUI.currentTextboxState.timer = CUI.currentTextboxState.timer - 1
+			love.keyboard.setKeyRepeat(true)
+			
+			if CUI.currentTextboxState.timer <= 0 then
+				CUI.currentTextboxState = nil
+			end
+		end
 
 		if not (debugPaused and dt2 == 0) then
-			love.graphics.present()
+			-- love.graphics.present()
 		end
 	elseif hasfocus then
 		hasfocus = false
@@ -218,18 +238,26 @@ function love.update(dt)
 	table.clear(keyReleased)
 end
 
+--TODO: this probably belongs in ui.lua
 function updatePopup()
 	local popup = openPopups[1]
+	dt = love.timer.getDelta()
 
 	if popup then
 		local function update()
-			local w, h = math.max(res.getStringWidth(popup.title, "FONT_MENU") - 50, res.getStringWidth(popup.text, "FONT_BASIC") + 50) + 320, 300 + (popup.h or 0)
+			popup.anim = popup.anim or 0
+			popup.anim = math.max(math.min(popup.anim + (popup.closing and -dt * 2 or dt), .25), 0)
+			love.graphics.push()
+			local w, h = math.max(res.getStringWidth(popup.title, "FONT_MENU") - 50, res.getStringWidth(popup.text, "FONT_BASIC"), 480) + 100, 300 + (popup.h or 0)
 			w = math.min(w, screenWidth * .9)
 
 			local ox, oy = screenWidth * .5, screenHeight * .5
 			local x, y = ox - w * .5, oy - h * .5
 
-			drawRect2(0, 0, 0, .6, 0, 0, screenWidth, screenHeight)
+			drawRect2(0, 0, 0, ease.outCubic(popup.anim / .25, 0, .6), 0, 0, screenWidth, screenHeight)
+			love.graphics.translate(x + w / 2, y + h / 2)
+			love.graphics.scale(ease.outCubic(popup.anim / .25, .8, 1))
+			love.graphics.translate(-(x + w / 2), -(y + h / 2))
 			drawRect2(10 / 255, 10 / 255, 10 / 255, .3, x + 10, y + 10, w, h, 16)
 			drawRect2(24 / 255, 50 / 255, 75 / 255, 1, x, y, w, h, 16)
 
@@ -246,21 +274,38 @@ function updatePopup()
 				drawDebugButton(v.sprite, ox + (i - (btns + 1) / 2) * sx, oy + h * .5, nil, nil, 1, function()
 					-- optionsOpen = false
 					if v.callback and v.callback() then
-						table.remove(openPopups, 1)
+						popup.closing = true
 					end
 				end, true, v.sound or "menu_confirm")
+			end
+			
+			love.graphics.pop()
+			
+			if popup.closing and popup.anim <= 0 then
+				table.remove(openPopups, 1)
 			end
 		end
 
 		if popup.pause then
 			while popup and popup.pause do
-				update()
-				if loveUpdate(true, true) then
-					openPopups = {}
-					break
+				local dt = love.timer and love.timer.step() or 0
+				love.event.pump()
+				for name, a,b,c,d,e,f,g,h in love.event.poll() do
+					if name == "quit" then
+						if c or not love.quit or not love.quit() then
+							-- return a or 0, b
+							openPopups = {}
+							break
+						end
+					end
+					love.handlers[name](a,b,c,d,e,f,g,h)
 				end
-				updateCursor(love.timer.getDelta())
+
+				dt = love.timer.getDelta()
+				update()
+				updateCursor(dt)
 				love.graphics.present()
+				love.timer.sleep(0.001)
 
 				popup = openPopups[1]
 			end
@@ -278,5 +323,5 @@ end
 
 --set dt to 0 resizing
 if love.event.setModalDrawCallback then
-	love.event.setModalDrawCallback(function() loveUpdate(true) if clearLuaForceFunctions then clearLuaForceFunctions() end end)
+	--love.event.setModalDrawCallback(function() loveUpdate(true) if clearLuaForceFunctions then clearLuaForceFunctions() end end)
 end

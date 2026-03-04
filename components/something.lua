@@ -18,17 +18,108 @@ something = {
 	cmenu = {
 		attach = nil,
 		hovering = false,
-		w=200,
-		h=300,
-		x=0,
-		y=0,
+		w = 0,
+		h = 0,
+		x = 0,
+		y = 0,
+		anim = 0,
 
-		items={
+		items = {
 			{text = "Open with..", callback = function()
 				
 			end},
+			{text = "Run File", callback = function(f)
+				local path = f.path
+				local ogDatapath = datapath
+				local openedDatapath = openedDatapath
+				local success = setDataPathFromFile(path)
+				--print(#requestPool)
+
+				if not success then
+					showPopup(f.name, "Could not find a valid data path in \""..f.name.."\".", nil)
+					datapath = ogDatapath
+					return
+				end
+
+				if openedDatapath then
+					love.event.restart({runfilePath = path})
+					datapath = ogDatapath
+					return
+				end
+
+				--go!
+				res.stopAudio("somethingTheme")
+				currentGameMode = something.pgm
+				loadGameFiles()
+			end},
+			{text = "Run File params", callback = function(f)
+				local states = {}
+				showPopup(
+					"Run File with Params",
+					"Choose extra parameters to launch \""..f.name.."\"...",
+					{
+						{sprite = "MENU_NO", callback = function()
+							return true
+						end},
+						{sprite = "TUTORIAL_OK", callback = function()
+							local path = f.path
+							local ogDatapath = datapath
+							local openedDatapath = openedDatapath
+							local success = setDataPathFromFile(path)
+							--print(#requestPool)
+
+							if not success then
+								showPopup(f.name, "Could not find a valid data path in \""..f.name.."\".", nil)
+								datapath = ogDatapath
+								return true
+							end
+
+							if openedDatapath then
+								love.event.restart{runfilePath = path, arg = states}
+								datapath = ogDatapath
+								return true
+							end
+
+							--go!
+							res.stopAudio("somethingTheme")
+							currentGameMode = something.pgm
+							loadGameFiles()
+							return true
+						end},
+					}, false,
+					function(x,y,w,h,p)
+						local totaly = 0
+						for i, v in ipairs(arguments) do
+							if v.type == "bool" then
+								states[i] = states[i] or {}
+								CUI.Checkbox(states[i], x, totaly + y, 50, 50, v.display)
+								totaly = totaly + 60
+							elseif v.type == "string" then
+								states[i] = states[i] or {}
+								states[i].placeholder = v.display
+								CUI.Textbox(states[i], x, totaly + y, w, 30, v.display)
+								totaly = totaly + 40
+							elseif v.type == "number" then
+								states[i] = states[i] or {}
+								states[i].placeholder = v.display
+								states[i].numeric = true
+								CUI.Textbox(states[i], x, totaly + y, w, 30, v.display)
+								totaly = totaly + 40
+							else
+								error("something: unknown type for game argument" + v.type)
+							end
+						end
+						
+						p.h = totaly * .75
+								--CUI.Textbox(textboxState, x, y, w, 30, "Device Model")
+					end, 20
+				)
+			end},
 			false,
 			{text = "Rename", callback = function(f)
+				local textboxState = {}
+				textboxState.value = f.name
+				
 				showPopup(
 					"Rename",
 					"Rename \""..f.name.."\" to...",
@@ -37,11 +128,13 @@ something = {
 							return true
 						end},
 						{sprite = "TUTORIAL_OK", callback = function()
-							return true
+							showPopup(f.name, "Could not rename to \""..textboxState.value.."\". Choose a different name.")
+							--return true
 						end},
 					}, false,
 					function(x,y,w,h,p)
-						love.graphics.rectangle("fill", x, y, w, h)
+						--love.graphics.rectangle("fill", x, y, w, h) --text field?
+						CUI.Textbox(textboxState, x, y, w, 30)
 					end, 20
 				)
 			end},
@@ -65,7 +158,7 @@ something = {
 
 local dance = 0
 
-function updateSomething(dt)
+function updateSomething(dt, cx, cy)
 	local so = something
 
 	--on first load
@@ -110,58 +203,77 @@ function updateSomething(dt)
 
 	res.setClipRect(x, y, w, h)
 
+	--touch scrolling
+	if (keyHold.LBUTTON or keyReleased.LBUTTON) and not keyPressed.LBUTTON then --try not to snap the cursor on touchscreens
+		so.scrollto = so.scrollto + (cursor.y - cy) * 1.2
+		so.curscroll = so.curscroll or 0
+		so.curscroll = so.curscroll + (cursor.y - cy)
+		so.highscroll = so.highscroll or 0
+		so.highscroll = math.max(so.highscroll, math.abs(so.curscroll))
+	else
+		so.curscroll = nil
+		so.highscroll = nil
+	end
+
 	so.scrollto = so.scrollto + cursor.wheel * 48
-	so.scroll = (so.scroll * 9 + so.scrollto) * .1
+	so.scroll = ease.linear(dt * 16, so.scroll, so.scrollto)
 	local yoffset = 0 + so.scroll
 
 	so.cmenu.hovering = so.cmenu.attach and checkBounds(so.cmenu.x, so.cmenu.y, so.cmenu.w, so.cmenu.h, cursor.x, cursor.y)
-	if keyPressed.LBUTTON and not so.cmenu.hovering then
-		so.cmenu.attach = nil
-	end
 
-	local f_padding = 50
-	for i,v in pairs(so.files) do
-		local fx, fy = 250, 230 + yoffset
-		local selected = not so.cmenu.hovering and (fy >= y and fy <= y + h) and checkBounds(x, fy - 12, w, 36, cursor.x, cursor.y)
-		if selected then
-			fx = fx + 10
+	for i, v in pairs(so.files) do
+		local fx, fy = 200, 190 + yoffset
 
-			if keyPressed.LBUTTON then
-				res.playAudio("menu_confirm",1)
-				if v.info.type == "directory" then
-					so.path = resolvePath(so.path..v.name).."/"
-					if so.path == "//" then so.path = "/" end
-					so.files = reloadSomething(so, so.path)
-				--else
-					
+		--drawing a lot of text can lag
+		if fy + 36 >= y and fy - 12 < y + h then
+			local selected = not so.cmenu.hovering and not so.cmenu.attach and (fy >= y and fy <= y + h) and checkBounds(x, fy - 12, w, 36, cursor.x, cursor.y)
+			selected = selected and not (so.highscroll and so.highscroll >= 10) and not debugOpen and not openPopups[1]
+			if selected then
+				--fx = fx + 10
+
+				if keyReleased.LBUTTON then
+					res.playAudio("menu_confirm",1)
+					if v.info.type == "directory" then
+						so.path = (resolvePath(so.path..v.name).."/"):sub(2)
+						so.files = reloadSomething(so, so.path)
+						so.scrollto = 0
+					--else
+						
+					end
+					--break
+				elseif keyReleased.RBUTTON then
+					res.playAudio("menu_select", 1)
+					so.cmenu.attach = v
+					so.cmenu.x, so.cmenu.y = cursor.x + 1, cursor.y + 1 --nudge by 1 pixel to make clicking out easier
 				end
-				break
-			elseif keyPressed.RBUTTON then
-				res.playAudio("menu_select", 1)
-				so.cmenu.attach = v
-				so.cmenu.x, so.cmenu.y = cursor.x, cursor.y
 			end
-		end
+			
+			if v.info.type == "directory" then
+				drawFolder(fx,fy)
+			else
+				drawFile(fx,fy)
+			end
+			
+			if selected then
+				if keyHold.LBUTTON then
+					drawRect2(.1, .1, .1, .1, x, fy - 12, w, 36)
+				else
+					drawRect2(.2, .2, .2, .2, x, fy - 12, w, 36)
+				end
+			end
 
-		if v.info.type == "directory" then
-			drawFolder(fx,fy)
-		else
-			drawFile(fx,fy)
+			drawDebugText(v.name, fx + 30, fy, "LEFT", "FONT_BASIC")
 		end
 		
-		if selected then
-			drawRect2(.2, .2, .2, .2, x, fy - 12, w, 36)
-		end
-
-		drawDebugText(v.name, fx + 30, fy, "LEFT", "FONT_BASIC")
 		yoffset = yoffset + 36
 	end
 
-	local maxscroll = -(yoffset - so.scroll) + h - 72
+	local maxscroll = -(yoffset - so.scroll) + h - 190
 	so.scrollto = math.max(so.scrollto, maxscroll)
 	so.scrollto = math.min(so.scrollto, 0)
 
 	--scroll bar indicator
+	local f_padding = 50
 	CUI.Scrollbar(
 		screenWidth - padding / 2 - f_padding / 2,
 		padding / 2 + f_padding / 2,
@@ -172,22 +284,52 @@ function updateSomething(dt)
 		yoffset - so.scroll)
 
 	love.graphics.setScissor()
+	
+	if keyReleased.LBUTTON and not so.cmenu.hovering then
+		so.cmenu.attach = nil
+	end
 
-	if so.cmenu.attach then
+	if so.cmenu.attach or so.cmenu.anim > 0 then
 		local attach = so.cmenu.attach
-		drawRect2(10 / 255, 10 / 255, 10 / 255, 10 / 255, so.cmenu.x + 8, so.cmenu.y + 8, so.cmenu.w, so.cmenu.h, 5)
-		drawRect2(48 / 255, 60 / 255, 75 / 255, 1, so.cmenu.x, so.cmenu.y, so.cmenu.w, so.cmenu.h, 5)
+		local width, height = 0, 0
+		
+		so.cmenu.anim = math.min(math.max(so.cmenu.anim + (attach and dt or -dt * 2), 0), 1 / 4)
+		
+		for i, v in ipairs(so.cmenu.items) do
+			if v then
+				width = math.max(width, res.getStringWidth(v.text) + 16 + 16)
+				height = height + 18
+			end
+			height = height + 18
+		end
+		
+		height = height + 16 + 16
+		
+		so.cmenu.w, so.cmenu.h = width, height
+		
+		love.graphics.push()
+		love.graphics.translate(so.cmenu.x, so.cmenu.y)
+		love.graphics.scale(ease.outCubic(so.cmenu.anim / (1 / 4), .7, 1))
+		love.graphics.translate(-so.cmenu.x, -so.cmenu.y)
+		
+		drawRect2(10 / 255, 10 / 255, 10 / 255, 10 / 255, so.cmenu.x + 8, so.cmenu.y + 8, width, height, 5)
+		drawRect2(48 / 255, 60 / 255, 75 / 255, 1, so.cmenu.x, so.cmenu.y, width, height, 5)
 
 		local itemy = 0
-		for i,v in pairs(so.cmenu.items) do
+		for i, v in ipairs(so.cmenu.items) do
 			if v then
 				local ix, iy = so.cmenu.x + 16, itemy + so.cmenu.y + 16
-				local selected = so.cmenu.hovering and checkBounds(0, iy, screenWidth, 36, cursor.x, cursor.y)
+				local selected = so.cmenu.hovering and checkBounds(0, iy, screenWidth, 36, cursor.x, cursor.y) and attach ~= nil
 				if selected then
-					ix = ix + 12
-					drawRect2(60 / 255, 80 / 255,100 / 255, 1, so.cmenu.x, iy, so.cmenu.w, 36, 5)
+					--ix = ix + 12
 					if keyHold.LBUTTON then
-						ix = ix - 12
+						drawRect2(60 / 255 / 2, 80 / 255 / 2, 100 / 255 / 2, 1 / 2, so.cmenu.x, iy, width, 36, 5)
+					else
+						drawRect2(60 / 255, 80 / 255, 100 / 255, 1, so.cmenu.x, iy, width, 36, 5)
+					end
+					
+					if keyHold.LBUTTON then
+						--ix = ix - 12
 					end
 
 					if keyReleased.LBUTTON then
@@ -202,6 +344,8 @@ function updateSomething(dt)
 			end
 			itemy = itemy + 18
 		end
+		
+		love.graphics.pop()
 	end
 
 	drawDebugText(so.path or "Files", screenWidth * .5, math.min(padding / 2, 100), "HCENTER", "FONT_MENU")
@@ -243,7 +387,7 @@ function reloadSomething(so,path)
 	for i,v in pairs(items) do
 		local info = love.filesystem.getInfo(path..v)
 		-- if info.type == "symlink" then info.type = "directory" end
-		table.insert(files, {name = v, info = info})
+		table.insert(files, {name = v, info = info, path = (path:sub(2))..v})
 	end
 
 	table.sort(files, function(a,b) local a_info, b_info = a.info, b.info

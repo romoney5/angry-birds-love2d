@@ -198,4 +198,6 @@ function love.textinput(key)
 	elseif somethingTextInput then
 		somethingTextInput = key
 	end
+	
+	CUI.OnTextInput(key)
 end
