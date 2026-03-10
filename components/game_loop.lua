@@ -241,42 +241,64 @@ end
 --TODO: this probably belongs in ui.lua
 function updatePopup()
 	local popup = openPopups[1]
-	dt = love.timer.getDelta()
+	local dt = love.timer.getDelta()
 
 	if popup then
 		local function update()
 			popup.anim = popup.anim or 0
 			popup.anim = math.max(math.min(popup.anim + (popup.closing and -dt * 2 or dt), .25), 0)
+
+			local maxWidth = math.max(res.getStringWidth(popup.title, "FONT_MENU") - 50, res.getStringWidth(popup.text, "FONT_BASIC"), 480) + 100
+			maxWidth = math.min(maxWidth, screenWidth * .9)
+			popup.w = popup.w or maxWidth
+			popup.h = popup.h or 0
+			popup.h_anim = popup.h_anim or 0
+			popup.h_anim = ease.linear(dt * 16, popup.h_anim, popup.h)
+
 			love.graphics.push()
-			local w, h = math.max(res.getStringWidth(popup.title, "FONT_MENU") - 50, res.getStringWidth(popup.text, "FONT_BASIC"), 480) + 100, 300 + (popup.h or 0)
+			local w = popup.w
+			local h = 300 + (popup.h_anim or 0)
 			w = math.min(w, screenWidth * .9)
 
 			local ox, oy = screenWidth * .5, screenHeight * .5
 			local x, y = ox - w * .5, oy - h * .5
 
-			drawRect2(0, 0, 0, ease.outCubic(popup.anim / .25, 0, .6), 0, 0, screenWidth, screenHeight)
+			drawRect2(0, 0, 0, #openPopups > 1 and .6 or ease.outCubic(popup.anim / .25, 0, .6), 0, 0, screenWidth, screenHeight)
 			love.graphics.translate(x + w / 2, y + h / 2)
 			love.graphics.scale(ease.outCubic(popup.anim / .25, .8, 1))
 			love.graphics.translate(-(x + w / 2), -(y + h / 2))
 			drawRect2(10 / 255, 10 / 255, 10 / 255, .3, x + 10, y + 10, w, h, 16)
 			drawRect2(24 / 255, 50 / 255, 75 / 255, 1, x, y, w, h, 16)
 
-			drawDebugText(popup.title, ox, y, "HCENTER", "FONT_MENU")
-			drawDebugText(popup.text, x + 50, y + 75, "LEFT", "FONT_BASIC")
+			drawDebugText(popup.title, ox, y, "HCENTER", "FONT_MENU", maxWidth)
+			local twidth, theight = drawDebugText(popup.text, x + 50, y + 75, "LEFT", "FONT_BASIC", maxWidth - 50 - 50)
+			popup.w = math.max(twidth, 480) + 100
+			popup.h = theight
 
 			local btns = #popup.buttons
 			local sx = w / (btns + 1) --start x
 			if popup.extra then
-				popup.extra(x + 50, y + 100, w - 50 - 50, h - 50 - 90, popup)
+				popup.extra(x + 50, y + 100 + theight, w - 50 - 50, h - 50 - 80 - theight, popup)
 			end
 
 			for i,v in pairs(popup.buttons) do
 				drawDebugButton(v.sprite, ox + (i - (btns + 1) / 2) * sx, oy + h * .5, nil, nil, 1, function()
-					-- optionsOpen = false
-					if v.callback and v.callback() then
+					local len = #openPopups
+					if not popup.closing and v.callback and v.callback() then
 						popup.closing = true
+
+						--hack
+						if #openPopups ~= len then
+							popup.closing = false
+							table.remove(openPopups, #openPopups - len + 1)
+						end
 					end
 				end, true, v.sound or "menu_confirm")
+			end
+
+			--i lost my number one status
+			if popup ~= openPopups[1] then
+				popup.anim = 0
 			end
 			
 			love.graphics.pop()
@@ -288,7 +310,7 @@ function updatePopup()
 
 		if popup.pause then
 			while popup and popup.pause do
-				local dt = love.timer and love.timer.step() or 0
+				--[[local ]]dt = love.timer and love.timer.step() or 0
 				love.event.pump()
 				for name, a,b,c,d,e,f,g,h in love.event.poll() do
 					if name == "quit" then
@@ -301,7 +323,7 @@ function updatePopup()
 					love.handlers[name](a,b,c,d,e,f,g,h)
 				end
 
-				dt = love.timer.getDelta()
+				--dt = love.timer.getDelta()
 				update()
 				updateCursor(dt)
 				love.graphics.present()

@@ -189,7 +189,7 @@ end
 
 function clipText(group, text, size)
 	local font = fonts[drawfont]
-	if not font then return end
+	--if not font then return end
 
 	clippedText = {lines = {}, widestLine = 0}
 	

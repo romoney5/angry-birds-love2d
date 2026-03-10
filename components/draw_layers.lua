@@ -120,7 +120,7 @@ end
 
 function drawBackgroundNative(highGFX)
 	local theme = blockTable.themes[currentTheme]
-	if not theme then return end
+	if not (theme and theme.bgLayers) then return end
 
 	if theme.color then setBGColor(theme.color.r, theme.color.g, theme.color.b) end
 
@@ -154,7 +154,7 @@ end
 
 function drawForegroundNative()
 	local theme = blockTable.themes[currentTheme]
-	if not theme then return end
+	if not (theme and theme.fgLayers) then return end
 
 	local s = worldScale or 1
 	setRenderState(0, 0, 1, 1)

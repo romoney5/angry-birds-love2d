@@ -42,7 +42,7 @@ function iapBuyItem(id, callbackid, statuslist) --1.7.0
 	local statuslist = statuslist or statuses
 	
 	if callback then
-		showPopup(
+		openPopup(
 			"In-app Purchase",
 			"Buy item \""..id.."\"?",
 			{

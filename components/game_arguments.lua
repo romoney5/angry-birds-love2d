@@ -6,7 +6,7 @@ arguments = {
 	{display = "Delete Data", names = {"--deletedata", "-dd"}, args = 0, type = "bool", call = function()
 		print("Opening data deletion prompt...")
 		
-		showPopup("Data",
+		openPopup("Data",
 			"Delete save data?\nThis will reset all progress in the current data path!",
 			{
 				{sprite = "MENU_NO", callback = function()
@@ -16,11 +16,11 @@ arguments = {
 					local success1 = love.filesystem.remove("settings.lua")
 					local success2 = love.filesystem.remove("highscores.lua")
 					if success1 or success2 then
-						showPopup("Data", "Successfully deleted save data.", nil, true)
+						openPopup("Data", "Successfully deleted save data.", nil, true)
 					elseif not checkDirectory("settings.lua") and not checkDirectory("highscores.lua") then
-						showPopup("Data", "Save data does not exist.", nil, true)
+						openPopup("Data", "Save data does not exist.", nil, true)
 					else
-						showPopup("Data", "Could not properly delete save data.", nil, true)
+						openPopup("Data", "Could not properly delete save data.", nil, true)
 					end
 					settings, highscores = {}, {}
 
@@ -111,14 +111,41 @@ function setDataPathFromFile(file)
 			return true
 		end
 	elseif info and (info.type == "directory" or info.type == "symlink") then
-		openedDatapath = true
+		print("Opening \""..file.."\" as a folder...")
+		if file ~= "" then
+			openedDatapath = true
+		end
 		
-		if datapath ~= "data" then
+		datapath = file
+		if datapath ~= "data" and datapath ~= "" then
 			love.filesystem.setIdentity(identity.."/DATA_"..datapath)
 		end
-		datapath = file
 
 		return true
+	end
+end
+
+function processArgsTable(restart)
+	if restart and type(restart) == "table" then
+		if restart.runfilePath then
+			setDataPathFromFile(restart.runfilePath or datapath)
+		end
+		
+		if restart.arg then
+			for i, arg in ipairs(restart.arg) do
+				local v = arguments[i]
+				
+				if v.type == "bool" then
+					if arg.value then
+						v.call()
+					end
+				elseif v.type == "string" then
+					if arg.value ~= "" then
+						v.call(arg.value)
+					end
+				end
+			end
+		end
 	end
 end
 
@@ -160,27 +187,7 @@ function handleStartArgs()
 	
 	process(arg)
 
-	if love.restart and type(love.restart) == "table" then
-		if love.restart.runfilePath then
-			setDataPathFromFile(love.restart.runfilePath or datapath)
-		end
-		
-		if love.restart.arg then
-			for i, arg in ipairs(love.restart.arg) do
-				local v = arguments[i]
-				
-				if v.type == "bool" then
-					if arg.value then
-						v.call()
-					end
-				elseif v.type == "string" then
-					if arg.value ~= "" then
-						v.call(arg.value)
-					end
-				end
-			end
-		end
-	end
+	processArgsTable(love.restart)
 end
 
 function handlePostStartArgs()

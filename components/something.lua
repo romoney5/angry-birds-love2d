@@ -1,5 +1,4 @@
 --something
---TODO: remove in accordance to future plans
 
 function sgm()
 	something.pgm = currentGameMode
@@ -26,17 +25,16 @@ something = {
 
 		items = {
 			{text = "Open with..", callback = function()
-				
+				openPopup("Something", "Not implemented.")
 			end},
 			{text = "Run File", callback = function(f)
 				local path = f.path
 				local ogDatapath = datapath
 				local openedDatapath = openedDatapath
 				local success = setDataPathFromFile(path)
-				--print(#requestPool)
 
 				if not success then
-					showPopup(f.name, "Could not find a valid data path in \""..f.name.."\".", nil)
+					openPopup(f.name, "Could not find a valid data path in \""..f.name.."\".", nil)
 					datapath = ogDatapath
 					return
 				end
@@ -54,7 +52,7 @@ something = {
 			end},
 			{text = "Run File params", callback = function(f)
 				local states = {}
-				showPopup(
+				openPopup(
 					"Run File with Params",
 					"Choose extra parameters to launch \""..f.name.."\"...",
 					{
@@ -66,10 +64,9 @@ something = {
 							local ogDatapath = datapath
 							local openedDatapath = openedDatapath
 							local success = setDataPathFromFile(path)
-							--print(#requestPool)
 
 							if not success then
-								showPopup(f.name, "Could not find a valid data path in \""..f.name.."\".", nil)
+								openPopup(f.name, "Could not find a valid data path in \""..f.name.."\".", nil)
 								datapath = ogDatapath
 								return true
 							end
@@ -83,6 +80,7 @@ something = {
 							--go!
 							res.stopAudio("somethingTheme")
 							currentGameMode = something.pgm
+							processArgsTable{arg = states}
 							loadGameFiles()
 							return true
 						end},
@@ -110,7 +108,7 @@ something = {
 							end
 						end
 						
-						p.h = totaly * .75
+						p.h = p.h + totaly * .75
 								--CUI.Textbox(textboxState, x, y, w, 30, "Device Model")
 					end, 20
 				)
@@ -120,7 +118,7 @@ something = {
 				local textboxState = {}
 				textboxState.value = f.name
 				
-				showPopup(
+				openPopup(
 					"Rename",
 					"Rename \""..f.name.."\" to...",
 					{
@@ -128,8 +126,21 @@ something = {
 							return true
 						end},
 						{sprite = "TUTORIAL_OK", callback = function()
-							showPopup(f.name, "Could not rename to \""..textboxState.value.."\". Choose a different name.")
-							--return true
+							local name = textboxState.value
+							local realDir = love.filesystem.getRealDirectory(f.path)
+							
+							if not realDir then
+								openPopup(f.name, "Could not rename to \""..textboxState.value.."\":\ndoes not exist.\nChoose a different name.")
+								return
+							end
+							
+							local success, failure = os.rename(realDir.."/"..f.path, realDir.."/"..f.folder..name)
+							if not success then
+								openPopup(f.name, "Could not rename to \""..textboxState.value.."\":\n"..tostring(failure)..".\nChoose a different name.")
+								return
+							end
+							
+							return true
 						end},
 					}, false,
 					function(x,y,w,h,p)
@@ -139,15 +150,68 @@ something = {
 				)
 			end},
 			{text = "Delete", callback = function(f)
-				showPopup(f.name, "Permanently delete \""..f.name.."\"?",
+				openPopup(f.name, "Permanently delete \""..f.name.."\"?",
 					{
 						{sprite = "MENU_NO", callback = function()
 							return true
 						end},
 						{sprite = "TUTORIAL_OK", callback = function()
+							if not love.filesystem.getRealDirectory(f.path) then
+								openPopup(f.name, "Could not delete \""..f.name.."\":\ndoes not exist.")
+								return true
+							end
+							
+							--inspired by https://love2d.org/wiki/love.filesystem.remove
+							local function del(path)
+								if love.filesystem.getInfo(path, "directory") then
+									for i, file in ipairs(love.filesystem.getDirectoryItems(path)) do
+										del(path.."/"..file)
+										love.filesystem.remove(path.."/"..file)
+									end
+								end
+								
+								return love.filesystem.remove(path)
+							end
+							
+							local success = del(f.path)
+							if not success then
+								openPopup(f.name, "Could not delete \""..f.name.."\".\nThe file could be in the base directory.")
+								return true
+							end
+							
 							return true
 						end},
-					})
+					}
+				)
+			end},
+			false,
+			{text = "New file", callback = function(f)
+				local textboxState = {}
+				
+				openPopup(
+					"New File",
+					"Create file in the save directory...",
+					{
+						{sprite = "MENU_NO", callback = function()
+							return true
+						end},
+						{sprite = "TUTORIAL_OK", callback = function()
+							local name = textboxState.value
+							
+							local success, failure = love.filesystem.write(f.folder..name, "")
+							if not success then
+								openPopup(f.name, "Could not create file \""..textboxState.value.."\":\n"..tostring(failure)..".\nChoose a different name.")
+								return
+							end
+							
+							return true
+						end},
+					}, false,
+					function(x,y,w,h,p)
+						--love.graphics.rectangle("fill", x, y, w, h) --text field?
+						CUI.Textbox(textboxState, x, y, w, 30)
+					end, 20
+				)
 			end},
 		}
 	},
@@ -233,10 +297,11 @@ function updateSomething(dt, cx, cy)
 
 				if keyReleased.LBUTTON then
 					res.playAudio("menu_confirm",1)
-					if v.info.type == "directory" then
+					if v.info.type == "directory" or v.info.type == "up" then
 						so.path = (resolvePath(so.path..v.name).."/"):sub(2)
 						so.files = reloadSomething(so, so.path)
 						so.scrollto = 0
+						so.scroll = 60
 					--else
 						
 					end
@@ -248,7 +313,7 @@ function updateSomething(dt, cx, cy)
 				end
 			end
 			
-			if v.info.type == "directory" then
+			if v.info.type == "directory" or v.info.type == "up" then
 				drawFolder(fx,fy)
 			else
 				drawFile(fx,fy)
@@ -348,7 +413,7 @@ function updateSomething(dt, cx, cy)
 		love.graphics.pop()
 	end
 
-	drawDebugText(so.path or "Files", screenWidth * .5, math.min(padding / 2, 100), "HCENTER", "FONT_MENU")
+	drawDebugText(so.path or "Files", screenWidth * .5, math.min(padding / 2, 100), "HCENTER", "FONT_MENU", w)
 	if currentGameMode and currentGameMode == updateSomething then
 		drawDebugButton("BUTTON_ARROW_LEFT", padding / 3, padding / 3, nil, nil, 1, function()
 			res.stopAudio("somethingTheme")
@@ -356,7 +421,7 @@ function updateSomething(dt, cx, cy)
 		end, true, "menu_back")
 	else
 		drawDebugButton("BUTTON_RESTART", padding / 3, padding / 3, nil, nil, .9, function()
-			showPopup("Restart", "The game has not been properly loaded.\nRestart the game?",
+			openPopup("Restart", "The game has not been properly loaded.\nRestart the game?",
 				{
 					{sprite = "BUTTON_RESTART", callback = function()
 						love.event.quit()
@@ -381,23 +446,32 @@ function reloadSomething(so,path)
 	local items = love.filesystem.getDirectoryItems(path)
 	files = {}
 	if path ~= "/" then
-		table.insert(files, {name = "..", info = {type = "directory"}})
+		table.insert(files, {name = "..", info = {type = "up"}})
 	end
 
 	for i,v in pairs(items) do
 		local info = love.filesystem.getInfo(path..v)
 		-- if info.type == "symlink" then info.type = "directory" end
-		table.insert(files, {name = v, info = info, path = (path:sub(2))..v})
+		local outpath = path
+		if outpath:sub(1, 1) == "/" then outpath = outpath:sub(2) end
+		
+		table.insert(files, {name = v, info = info, path = outpath..v, folder = outpath})
 	end
 
-	table.sort(files, function(a,b) local a_info, b_info = a.info, b.info
-	if a_info.type == "directory" and b_info.type ~= "directory" then --dir and not dir?
-		return true
-	elseif a_info.type ~= "directory" and b_info.type == "directory" then --not dir and dir?
-		return false
-	else --fine, sort it by name
-		return a.name:lower() < b.name:lower()
-	end end)
+	table.sort(files, function(a,b) --TODO: sorting table
+		local a_info, b_info = a.info, b.info
+		if a_info.type == "up" and b_info.type ~= "up" then --..
+			return true
+		elseif a_info.type ~= "up" and b_info.type == "up" then --..
+			return false
+		elseif a_info.type == "directory" and b_info.type ~= "directory" then --dir and not dir?
+			return true
+		elseif a_info.type ~= "directory" and b_info.type == "directory" then --not dir and dir?
+			return false
+		else --fine, sort it by name
+			return a.name:lower() < b.name:lower()
+		end
+	end)
 
 	return files
 end

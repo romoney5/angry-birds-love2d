@@ -144,7 +144,7 @@ function love.errorhandler(msg)
 		
 		if keyReleased.LBUTTON and not debugOpen then
 			if not openPopups[1] then
-				showPopup("Angry Birds", "Exit the game?", {
+				openPopup("Angry Birds", "Exit the game?", {
 					-- {sprite = "BUTTON_RESTART", callback = function()
 					-- 	love.event.quit("restart")
 					-- end},

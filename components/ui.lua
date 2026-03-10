@@ -57,6 +57,8 @@ end
 --console ui
 CUI = {}
 
+CUI.BGColor_Blue = {24 / 255, 50 / 255, 75 / 255}
+
 CUI.currentTextboxState = nil
 
 --unused right now
@@ -196,6 +198,13 @@ function CUI.DrawIcon(icon)
 	end
 end
 
+function CUI.DrawWrappedString(group, text, x, y, w, aligny, alignx)
+	clipText(group, text, w)
+	local text = clippedText and table.concat(clippedText.lines, "\n") or text
+	
+	res.drawString(group, text, x, y, aligny, alignx)
+end
+
 function drawDebugButton(sprite, x, y, w, h, scale, call, enabled, sound)
 	local image = checkSprite(sprite)
 	
@@ -235,6 +244,10 @@ function drawDebugButton(sprite, x, y, w, h, scale, call, enabled, sound)
 
 	if sprite then
 		if not image then
+			love.graphics.push("all")
+			love.graphics.setColor(table.unpack(CUI.BGColor_Blue))
+			love.graphics.circle("fill", 0, 0, w/2)
+			love.graphics.pop()
 			love.graphics.circle("line", 0, 0, w/2)
 			if sprite == "TUTORIAL_OK" then
 				CUI.DrawIcon("check")
@@ -253,11 +266,20 @@ function drawDebugButton(sprite, x, y, w, h, scale, call, enabled, sound)
 	love.graphics.pop()
 end
 
-function drawDebugText(text,x,y, align, font)
+function drawDebugText(text, x, y, align, font, w)
+	if w then
+		clipText(group, text, w)
+		text = clippedText and table.concat(clippedText.lines, "\n") or text
+	end
+	
 	align = align or "LEFT"
 	res.useFont(font)
 	love.graphics.setColor(0, 0, 0, .2)
 	res.drawString("", text, x + 8, y + 8, align, "VCENTER")
 	love.graphics.setColor(1, 1, 1, 1)
 	res.drawString("", text, x, y, align, "VCENTER")
+	
+	if w then
+		return clippedText and clippedText.widestLine, res.getStringHeight(text)
+	end
 end

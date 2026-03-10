@@ -233,7 +233,7 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 		else
 			print("Could not load Lua file: "..filename.."\n"..tostring(err))
 			if enableDebug then
-				showPopup("Warning",
+				openPopup("Warning",
 						"Could not load Lua file: "..filename.."\n"..tostring(err),
 						{
 							{sprite = "TUTORIAL_OK", callback = function()

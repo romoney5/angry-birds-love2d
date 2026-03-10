@@ -369,7 +369,7 @@ local registered
 function openRegistrationDialog(message, validationURL, registrationURL, fullGame)
 	local returnedKey = ""
 
-	showPopup(
+	openPopup(
 		message,
 		"The game is not registered.\nRegister now?",
 		{
@@ -379,7 +379,7 @@ function openRegistrationDialog(message, validationURL, registrationURL, fullGam
 			{sprite = "TUTORIAL_OK", callback = function()
 				returnedKey = true
 				registered = true
-				showPopup("Registration", "Full game registered.", nil, true)
+				openPopup("Registration", "Full game registered.", nil, true)
 
 				return true
 			end},
@@ -466,7 +466,8 @@ function setDeltaTimeMultiplier(dt)
 end
 
 
-function showPopup(title, text, buttons, pause, extra, height)
+--showPopup is not available because ab talkweb sucks
+function openPopup(title, text, buttons, pause, extra, height)
 	keyReleased.LBUTTON = false
 
 	if audiochannels then
