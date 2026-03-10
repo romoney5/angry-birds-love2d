@@ -180,8 +180,6 @@ function love.errorhandler(msg)
 		if optionsOpen then
 			updateOptions(dt)
 		end
-		
-		net.update(1 / 100)
 
 		cursor.wheelTriggered = nil
 		setRenderState(0, 0, 1, 1)
