@@ -133,6 +133,74 @@ function Payment.isReady()
 	return true
 end
 
+--ab classic talkweb's opinion on iap
+
+native = native or {} --load orders
+native.Payment = {}
+
+native.Payment.PurchaseStatus = {
+	PURCHASE_CANCELED = 2,
+}
+
+native.Payment.ProductSource = {
+	RESTORE = 1,
+}
+
+function native.Payment.setOnProductReceived(callback)
+	native.Payment.onProductReceived = callback
+end
+
+function native.Payment.setOnOperationFailed(callback)
+	native.Payment.onOperationFailed = callback
+end
+
+function native.Payment.setOnPurchaseFailed(callback)
+	native.Payment.onPurchaseFailed = callback
+end
+
+function native.Payment.setOnRedeemCodeFailed(callback)
+	native.Payment.onRedeemCodeFailed = callback
+end
+
+function native.Payment.setOnRestoreSucceeded(callback)
+	native.Payment.onRestoreSucceeded = callback
+end
+
+function native.Payment.setOnCatalogFetched(callback)
+	native.Payment.onCatalogFetched = callback
+end
+
+function native.Payment.setOnCatalogFetchFailed(callback)
+	native.Payment.onCatalogFetchFailed = callback
+end
+
+function native.Payment.initialize(success, fail)
+	success()
+	--fail(0)
+end
+
+function native.Payment.catalog()
+	local catalog = {}
+	setmetatable(catalog, {
+		__index = function(self, k)
+			return {price = "$0.00"}
+		end
+	})
+	return catalog
+end
+
+function native.Payment.buy(item_id)
+	iapBuyItem(item_id, function(id, status)
+		if status == statuses.PAYMENT_SUCCEEDED then
+			native.Payment.onProductReceived(id, 0)
+		elseif status == statuses.PAYMENT_CANCELLED then
+			native.Payment.onPurchaseFailed(id, "idk", statuses.PURCHASE_CANCELED)
+		elseif status == statuses.PAYMENT_FAILED then
+			native.Payment.onPurchaseFailed(id, "idk", 0)
+		end
+	end)
+end
+
 --seasons' take on iap
 
 -- CloudPayment = {}

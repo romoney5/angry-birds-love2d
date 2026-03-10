@@ -156,7 +156,7 @@ function setGCPopupAllowed(allowed)
 end
 
 --4.0.0 pc
-native = {}
+native = native or {}
 
 --comment this portion out to disable apprater support
 -- native.apprater = {}
@@ -666,41 +666,6 @@ function native.Storage.initialize()--?
 end
 
 
-native.Payment = Payment
-
-function native.Payment.setOnProductReceived()--?
-	return
-end
-
-function native.Payment.setOnOperationFailed()--?
-	return
-end
-
-function native.Payment.setOnPurchaseFailed()--?
-	return
-end
-
-function native.Payment.setOnRedeemCodeFailed()--?
-	return
-end
-
-function native.Payment.setOnRestoreSucceeded()--?
-	return
-end
-
-function native.Payment.setOnCatalogFetched()--?
-	return
-end
-
-function native.Payment.setOnCatalogFetchFailed()--?
-	return
-end
-
-function native.Payment.initialize()--?
-	return
-end
-
-
 ThemeSystem.createThemeSprite = createThemeSprite
 ThemeSystem.removeThemeSprite = removeThemeSprite
 ThemeSystem.modifyThemeSprite = modifyThemeSprite
@@ -746,6 +711,10 @@ end
 
 function native.ModernLeague.getMessageOfTheDay()--?
 	return "r"
+end
+
+function native.ModernLeague.setLoginParameters(login)--?
+	return
 end
 
 function native.ModernLeague.getBoosterTimeLeft(item)
