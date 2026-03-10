@@ -823,9 +823,9 @@ function PortalObjectTeleporter:recalculateLinearVelocity()
 		local cosAngle = math.cos(newAngle)
 		local sinAngle = math.sin(newAngle)
 		
-		transformedVelocity.x = angleReflected.x * cosAngle + angleReflected.y * sinAngle
-		transformedVelocity.y = angleReflected.y * cosAngle - angleReflected.x * sinAngle
-		print("false", newAngle)
+		transformedVelocity.x = angleReflected.x * cosAngle - angleReflected.y * sinAngle
+		transformedVelocity.y = angleReflected.y * cosAngle + angleReflected.x * sinAngle
+		print("false", newAngle, self.destAngle)
 	end
 	
 	if speed < self.minSpeed then
