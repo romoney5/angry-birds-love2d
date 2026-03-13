@@ -190,7 +190,8 @@ function drawSpriteColoured(sprite, x, y, scaleX, scaleY, r, g, b, a, darken)
 end
 
 function setAngleRAD(angle) --5.3.1 what is this?
-	return
+	--return
+	drawangle = angle * 180 / math.pi
 end
 
 function res.getCompoSpriteBounds(sheet, composprite) --not used in 1.6.3.1
