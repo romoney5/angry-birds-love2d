@@ -191,7 +191,7 @@ end
 
 function setAngleRAD(angle) --5.3.1 what is this?
 	--return
-	drawangle = angle * 180 / math.pi
+	drawangle = angle * math.pi / 180
 end
 
 function res.getCompoSpriteBounds(sheet, composprite) --not used in 1.6.3.1
