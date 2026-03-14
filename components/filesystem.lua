@@ -75,11 +75,16 @@ function decryptSrc(filename, src)
 		if AES then
 			local iv = nil --iv is always nil
 			local key = AES.FindKey(src, AES.Keys.Assets, iv)
-			src = AES.Decrypt(src, key, iv)
-			--equivalent to openssl enc -aes-256-cbc -d -K <key> -iv 0 -in <file>
 
-			--make sure it worked..
-			assert(src, "decryptSrc: libcrypto failure")
+			if key then
+				src = AES.Decrypt(src, key, iv)
+				--equivalent to openssl enc -aes-256-cbc -d -K <key> -iv 0 -in <file>
+
+				--make sure it worked..
+				assert(src, "decryptSrc: libcrypto failure")
+			else
+				print("decryptSrc: could not find valid key, skipping")
+			end
 			
 			--reidentify it
 			kind = identifySrc(src)
