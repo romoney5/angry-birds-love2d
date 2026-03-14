@@ -59,12 +59,27 @@ end
 function loadLevelFile(filename, date)
 	loadLevel(filename)
 end
-
+-- check if this works
 function getLoadStatus()
 	--0=not finished, 1 or 2=finished, 3=christmas?
 	--timetonext can be a number
 	--today: "yyyy-mm-dd"
-	return {status = 1, timeToNext = "", today = ""}
+	local today = bi_data.last_launch_date
+	today.min = today.minutes
+	today.sec = today.seconds
+	
+	local function formatDate(t)
+		return string.format("%04d-%02d-%02d", t.year, t.month, t.day)
+	end
+	
+	local tomorrow = {year = today.year, month = today.month, day = today.day + 1}
+	local time_for_next = os.difftime(os.time(tomorrow), os.time(today))
+	
+	local tomorrow_string = formatDate(tomorrow)
+	local current_today = os.date("%Y-%m-%d")
+	local status = (current_today == tomorrow_string) and 1 or 0
+	
+	return {status = status, timeToNext = time_for_next, today = formatDate(today)}
 end
 
 --4.3.1

@@ -896,6 +896,7 @@ end
 function setShaderToGameObject(object, shader)
 	local obj = objects.world[object]
 	if obj then
+		-- FIXME : love doesn't support the input shader format, and so the data must be parsed.
 		obj.shader = love.graphics.newShader(shader)
 	end
 end
