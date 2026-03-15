@@ -57,10 +57,11 @@ end
 --lite
 --[[ for testing purposes
 local realTime = os.time
+fakeTime = 0
 
 function os.time(t)
     if t then return realTime(t) end
-    return 1291161600 -- dec 1st, 2010
+    return 1291161600 + fakeTime -- dec 1st, 2010
 end
 ]]
 
@@ -81,7 +82,8 @@ function loadLevelFile(levelName, dateString)
 	
 	local seconds_to_open = os.difftime(unlockTime, date)
 	if seconds_to_open <= 0 then
-		status = 3
+		local level = levelName:match("([^/]+)$")
+		status = highscores[level] and 2 or 3
 	else
 		status = -1
 		error = NativeCloudAssets.isInternetConnected() and 1 or -1
