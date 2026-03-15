@@ -272,7 +272,7 @@ function drawSprites()
 				textureShader:send("textureDimensions", {w, h})
 				
 				textureShader:send("worldScale", worldScale * displayScale * love.graphics.getDPIScale())
-				textureShader:send("camera", {screen.native_left or 0, screen.native_top or 0})
+				textureShader:send("camera", {screen.native_left or screen.left, screen.native_top or screen.top})
 				
 				love.graphics.setShader(textureShader)
 				
