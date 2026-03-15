@@ -278,6 +278,7 @@ local function rd_int_be(src, s, e) return rd_int_basic(src, e - 1, s, -1) end
 -- @src - Source binary string
 -- @s - Start index of little endian float
 local function rd_flt_le(src, s) return rd_flt_basic(string.byte(src, s, s + 3)) end
+local function rd_flt_le(src, s) return love.data.unpack("<f", src, s) end
 
 -- float rd_flt_be(string src, int s)
 -- @src - Source binary string
@@ -291,6 +292,7 @@ end
 -- @src - Source binary string
 -- @s - Start index of little endian double
 local function rd_dbl_le(src, s) return rd_dbl_basic(string.byte(src, s, s + 7)) end
+local function rd_dbl_le(src, s) return love.data.unpack("<d", src, s) end
 
 -- double rd_dbl_be(string src, int s)
 -- @src - Source binary string

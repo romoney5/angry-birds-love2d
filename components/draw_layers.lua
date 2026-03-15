@@ -251,43 +251,40 @@ function drawSprites()
 
 	for k, v in ipairs(renderList) do
 		local obj = objects.world[v.name]
-		if not obj then
-			goto continue
-		end
 		
-		local texture = checkSprite(obj.texture) --or blockTable.themes[currentTheme].texture
-		if not texture then --try to find based on a png name
-			texture = findSpriteByPNG(obj.texture)
+		if obj then
+			local texture = checkSprite(obj.texture) --or blockTable.themes[currentTheme].texture
+			if not texture then --try to find based on a png name
+				texture = findSpriteByPNG(obj.texture)
+			end
+			
+			if texture then
+				love.graphics.push()
+				local b1, b2 = love.graphics.getBlendMode()
+				love.graphics.setBlendMode("alpha", "alphamultiply")
+				
+				local textureImage = texture.spsh
+				textureImage:setWrap("repeat", "repeat")
+				
+				textureShader:send("textureMask", textureImage)
+				
+				local w, h = textureImage:getDimensions()
+				textureShader:send("textureDimensions", {w, h})
+				
+				textureShader:send("worldScale", worldScale * displayScale * love.graphics.getDPIScale())
+				textureShader:send("camera", {screen.native_left or 0, screen.native_top or 0})
+				
+				love.graphics.setShader(textureShader)
+				
+				drawObject(obj)
+				
+				love.graphics.setBlendMode(b1, b2)
+				love.graphics.setShader()
+				love.graphics.pop()
+			else
+				drawObject(obj)
+			end
 		end
-		
-		if texture then
-			love.graphics.push()
-			local b1, b2 = love.graphics.getBlendMode()
-			love.graphics.setBlendMode("alpha", "alphamultiply")
-			
-			local textureImage = texture.spsh
-			textureImage:setWrap("repeat", "repeat")
-			
-			textureShader:send("textureMask", textureImage)
-			
-			local w, h = textureImage:getDimensions()
-			textureShader:send("textureDimensions", {w, h})
-			
-			textureShader:send("worldScale", worldScale * displayScale * love.graphics.getDPIScale())
-			textureShader:send("camera", {screen.left, screen.top})
-			
-			love.graphics.setShader(textureShader)
-			
-			drawObject(obj)
-			
-			love.graphics.setBlendMode(b1, b2)
-			love.graphics.setShader()
-			love.graphics.pop()
-		else
-			drawObject(obj)
-		end
-		
-		::continue::
 	end
 end
 --[[

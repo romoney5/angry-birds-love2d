@@ -17,24 +17,7 @@ end
 
 --used by rvio composprites
 function readFloat(data, index)
-	local b1, b2, b3, b4 = data:byte(index, index + 3)
-
-	local unsigned = bit.bor(
-		bit.lshift(b1, 24),
-		bit.lshift(b2, 16),
-		bit.lshift(b3, 8),
-		b4
-	)
-
-	local buffer = ffi.new("uint8_t[4]", {
-		bit.band(bit.rshift(unsigned, 24), 0xFF),
-		bit.band(bit.rshift(unsigned, 16), 0xFF),
-		bit.band(bit.rshift(unsigned, 8), 0xFF),
-		bit.band(unsigned, 0xFF),
-	})
-
-	local float_ptr = ffi.cast("float *", buffer)
-	return float_ptr[0]
+	return love.data.unpack("<f", data, index)
 end
 
 --used by rvio composprites

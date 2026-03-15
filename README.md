@@ -50,4 +50,6 @@ The libcrypto library, a part of [OpenSSL](https://github.com/openssl/openssl), 
 
 [love-webp](https://github.com/ImagicTheCat/love-webp) is used to read WebP images.
 
+[lua-bit-numberlua](https://github.com/davidm/lua-bit-numberlua) is used as a replacement for LuaJIT's bit library if it's not present.
+
 This port is not affiliated with or endorsed by Rovio Entertainment Corporation.

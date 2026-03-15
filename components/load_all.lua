@@ -1,4 +1,7 @@
 --load components
+if not jit then
+	print("LuaJIT not found; disabling libcrypto and WebP")
+end
 
 --first load filesystem functions
 love.filesystem.load(compsPath.."/filesystem.lua")()		--filesystem functions
@@ -8,6 +11,7 @@ pcall(require, "table.clear")                               --clear key* tables 
 _, ffi = pcall(require, "ffi")                              --luajit ffi
 _, utf8 = pcall(require, "utf8")							--utf8 library, now required for utf8 text
 
+bit = bit or runLuaFile(compsPath.."/libs/numberlua.lua")   --bit library since https://github.com/davidm/lua-bit-numberlua/blob/master/lmod/bit/numberlua.lua
 loadbytecode = runLuaFile(compsPath.."/libs/fione.lua")     --run lua 5.1 bytecode because loadstring
 json = runLuaFile(compsPath.."/libs/json.lua")				--json support for modern seasons versions
 runLuaFile(compsPath.."/libs/aes.lua")                      --aes-256-cbc decryption powered by none other than luajit ffi

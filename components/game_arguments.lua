@@ -171,7 +171,7 @@ function handleStartArgs()
 							
 							if matches then
 								if v.call then
-									v.call(table.unpack(arg, i + 1, i + v.args))
+									v.call(unpack(arg, i + 1, i + v.args))
 								end
 								
 								skip = v.args

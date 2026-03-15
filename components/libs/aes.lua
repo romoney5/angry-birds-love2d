@@ -1,7 +1,7 @@
 --magic
 
 --not even ffi is present?
-if not ffi then return end
+if not jit then return end
 
 _, libcrypto = pcall(ffi.load, "libcrypto")
 

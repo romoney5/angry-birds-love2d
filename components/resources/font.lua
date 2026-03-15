@@ -113,23 +113,23 @@ function res.drawString(group, text, x, y, aligny, alignx)
 			--don't calculate the widths and draw everything if it goes off screen
 			local _, miny = love.graphics.transformPoint(x + i + ax, (y + ay - font.leading + (line * font.leading)))
 			local _, maxy = love.graphics.transformPoint(x + i + ax, (y + ay + font.leading + (line * font.leading)))
-			if miny > height or maxy < 0 then goto continue end
 			
-			if alignx=="HCENTER" or aligny=="HCENTER" then ax = -res.getStringWidth(l) / 2 end
-			if alignx=="RIGHT" or aligny=="RIGHT" then ax = -res.getStringWidth(l) end
+			if not (miny > height or maxy < 0) then
+				if alignx=="HCENTER" or aligny=="HCENTER" then ax = -res.getStringWidth(l) / 2 end
+				if alignx=="RIGHT" or aligny=="RIGHT" then ax = -res.getStringWidth(l) end
 
-			for p, c in utf8.codes(l) do
-				local char = font.chars[c]
-				if char then
-					local charX = (x + i + ax)
-					local charY = (y + ay - char.pivoty + (line * font.leading))
-					
-					love.graphics.draw(font.spritesheet, char.quad, textFloor(charX), textFloor(charY), drawangle)
-					i = i + (char.width + font.tracking)
+				for p, c in utf8.codes(l) do
+					local char = font.chars[c]
+					if char then
+						local charX = (x + i + ax)
+						local charY = (y + ay - char.pivoty + (line * font.leading))
+						
+						love.graphics.draw(font.spritesheet, char.quad, textFloor(charX), textFloor(charY), drawangle)
+						i = i + (char.width + font.tracking)
+					end
 				end
 			end
-			
-			::continue::
+
 			line = line + 1
 		end
 	else

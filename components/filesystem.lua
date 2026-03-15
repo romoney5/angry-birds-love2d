@@ -50,6 +50,15 @@ end
 --load either plain text lua, a precompiled chunk with fione,
 --a 7-zipped file, an aes-256 encrypted file, or all of the above
 function decryptSrc(filename, src)
+	--use already-decrypted assets if available, moved here for json support
+	local decinfo = ALLOW_LUA_CACHE and love.filesystem.getInfo("/dec/"..filename)
+	local info = decinfo and love.filesystem.getInfo(filename)
+	
+	if decinfo and decinfo.modtime and info and info.modtime and decinfo.modtime >= info.modtime then
+		src = love.filesystem.read("/dec/"..filename)
+		return src
+	end
+
 	src = src or love.filesystem.read(filename)
 
 	if not src then return end
@@ -89,7 +98,7 @@ function decryptSrc(filename, src)
 			--reidentify it
 			kind = identifySrc(src)
 		else
-			print("decryptSrc: Could not run libcrypto")
+			print("decryptSrc: Could not run libcrypto for "..tostring(filename))
 			return --just don't bother trying to run an encrypted file
 		end
 	end
@@ -149,15 +158,8 @@ function decryptSrc(filename, src)
 end
 
 function makeChunk(filename, env)
-	local decinfo = ALLOW_LUA_CACHE and love.filesystem.getInfo("/dec/"..filename)
-	local info = decinfo and love.filesystem.getInfo(filename)
-	
-	if decinfo and decinfo.modtime and info and info.modtime and decinfo.modtime >= info.modtime then
-		src = love.filesystem.read("/dec/"..filename)
-	else
-		--we need runnable lua code
-		src = decryptSrc(filename)
-	end
+	--we need runnable lua code
+	src = decryptSrc(filename)
 
 	if not src then
 		return nil, nil, "No source"
@@ -234,7 +236,7 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 	elseif not lenient then
 		if checkDirectory(filename) then
 			--error("Could not load Lua file: "..filename.."\n"..tostring(err))
-			print("Could not load Lua file: "..filename.."\n"..tostring(err))
+			print("Could not load Lua file: "..filename.."\n"..tostring(lua))
 		else
 			print("Could not load Lua file: "..filename.."\n"..tostring(err))
 			if enableDebug then
@@ -358,6 +360,17 @@ function resolvePath(path)
 		end
 	end
 	return "/"..table.concat(resolved, "/"), resolved
+end
+
+local req = require
+function require(filename)
+	if filename:sub(1, 4) == "data" then
+		local newname, paths = resolvePath("/"..(filename:gsub("\\", "/")))
+		newname = table.concat(paths, "/", 2, #paths)
+		return req(datapath.."/"..newname)
+	end
+
+	return req(filename)
 end
 
 --debugging function to decrypt and save a lua file into the save directory
