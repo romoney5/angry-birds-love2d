@@ -77,7 +77,6 @@ function loadLevelFile(levelName, dateString)
         year  = tonumber(year),
         month = tonumber(month),
         day   = tonumber(day),
-        hour  = 0, min = 0, sec = 0
     })
 	
 	local seconds_to_open = os.difftime(unlockTime, date)
@@ -89,7 +88,7 @@ function loadLevelFile(levelName, dateString)
 		error = NativeCloudAssets.isInternetConnected() and 1 or -1
 	end
 	
-	today = string.format("%04d-%02d-%02d", now.year, now.month, now.day)
+	today = string.format("%d-%d-%d", now.year, now.month, now.day)
 	timeToNext = math.max(os.difftime(tomorrow, date), 0)
 end
 
