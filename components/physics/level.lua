@@ -55,31 +55,49 @@ function setPhysicsEnabled(enabled)
 end
 
 --lite
+--[[ for testing purposes
+local realTime = os.time
 
-function loadLevelFile(filename, date)
-	loadLevel(filename)
+function os.time(t)
+    if t then return realTime(t) end
+    return 1291161600 -- dec 1st, 2010
 end
--- check if this works
-function getLoadStatus()
-	--0=not finished, 1 or 2=finished, 3=christmas?
-	--timetonext can be a number
-	--today: "yyyy-mm-dd"
-	local today = bi_data.last_launch_date
-	today.min = today.minutes
-	today.sec = today.seconds
+]]
+
+local status, timeToNext, today, error
+
+function loadLevelFile(levelName, dateString)
+    local date = os.time()
+    local now = os.date("*t", date)
+	local tomorrow = os.time({year = now.year, month = now.month, day = now.day + 1})
 	
-	local function formatDate(t)
-		return string.format("%04d-%02d-%02d", t.year, t.month, t.day)
+	local year, month, day = dateString:match("(%d+)-(%d+)-(%d+)")
+    local unlockTime = os.time({
+        year  = tonumber(year),
+        month = tonumber(month),
+        day   = tonumber(day),
+        hour  = 0, min = 0, sec = 0
+    })
+	
+	local seconds_to_open = os.difftime(unlockTime, date)
+	if seconds_to_open <= 0 then
+		status = 3
+	else
+		status = -1
+		error = NativeCloudAssets.isInternetConnected() and 1 or -1
 	end
 	
-	local tomorrow = {year = today.year, month = today.month, day = today.day + 1}
-	local time_for_next = os.difftime(os.time(tomorrow), os.time(today))
-	
-	local tomorrow_string = formatDate(tomorrow)
-	local current_today = os.date("%Y-%m-%d")
-	local status = (current_today == tomorrow_string) and 1 or 0
-	
-	return {status = status, timeToNext = time_for_next, today = formatDate(today)}
+	today = string.format("%04d-%02d-%02d", now.year, now.month, now.day)
+	timeToNext = math.max(os.difftime(tomorrow, date), 0)
+end
+
+function getLoadStatus()
+	return {
+		status = status,
+		timeToNext = timeToNext,
+		today = today,
+		error = error
+	}
 end
 
 --4.3.1
