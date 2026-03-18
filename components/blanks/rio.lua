@@ -115,3 +115,69 @@ end
 function checkJointLimits(name)
 	return
 end
+
+--1.0.0
+
+function createRovioNews(x, y, width, height)
+	return
+end
+
+function loadRovioNewsContent(rovioNewsURL)
+	return
+end
+
+--epacs
+
+drawForeground = drawForegroundNative
+
+function setPivotOffset(object, x, y)
+	return
+end
+
+function setDecorationObjects(name)
+	return
+end
+
+function renderGravityVisualsNative(v, sx, sy, worldScale)
+	return --8532
+end
+
+function setAimingAidSprite(aimingAidSprite)
+	return
+end
+
+function ClearSimulationTrajectory()
+	return
+end
+
+function clearAimingAid(num)
+	return
+end
+
+function populateAimingAid()
+	return
+end
+
+function setObjectGravityCategory(str, category)
+	return
+end
+
+function setSelectedBirdDuringSimulation(name)
+	return
+end
+
+function updateBirdTrajectoryTable()
+	return --5393
+end
+
+function setNormalTrailSprite(normalTrailSprite)
+	return
+end
+
+function setSpecialTrailSprite(specialTrailSprite)
+	return
+end
+
+function getAimingTime()
+	return 0
+end

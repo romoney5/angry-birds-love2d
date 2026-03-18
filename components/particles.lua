@@ -226,6 +226,7 @@ local lookup = {
     native_addParticlesWithMode = native_addParticlesWithMode,
     update = updateParticlesNative,
     add = addParticles2,
+    addParticlesWithProperties = function() return end, --11022
 }
 
 getParticles = {

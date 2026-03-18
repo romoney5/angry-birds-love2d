@@ -1121,7 +1121,7 @@ function basicBeginContact(obj1, obj2, contact)
 	
 	--use deadBlocks table in non-pc versions
 	if deadBlocks then
-		if o1.strength <= 0 then deadBlocks[o1.name] = o1 end
-		if o2.strength <= 0 then deadBlocks[o2.name] = o2 end
+		if o1.strength and o1.strength <= 0 then deadBlocks[o1.name] = o1 end
+		if o2.strength and o2.strength <= 0 then deadBlocks[o2.name] = o2 end
 	end
 end
