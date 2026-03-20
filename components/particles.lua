@@ -60,7 +60,7 @@ local updateParticles = function(dt, activeParticles)
 			table.remove(activeParticles, i)
 			particleAmount = particleAmount - 1
 		else
-			pt = particleTable.particles[p.type]
+			pt = particles[p.type]
 			
 			p.xVel = p.xVel + pt.gravityX * dt
 			p.yVel = p.yVel + pt.gravityY * dt
@@ -105,8 +105,9 @@ end
 -- ignoreParticleLimits = true
 
 local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
-	if not particleTable.particles or not particleTable.particles[type] then return end
-	local pt = particleTable.particles[type]
+	local pt = particles[type]
+	if not pt then return end
+	
 	if softLimitSimultaneousParticles < particleAmount + amount and not ignoreLimits then
 		amount = amount * 0.5
 	end
@@ -213,30 +214,22 @@ local function native_addParticlesWithMode(particle)
 	return
 end
 
+-- __index can be a table
+local lookup = {
+    addParticles = addParticles,
+    setHardLimit = setHardLimit,
+    setSoftLimit = setSoftLimit,
+    clear = clear,
+    SCREEN = SCREEN,
+    WORLD = WORLD,
+    addLevelParticles = addLevelParticles,
+    native_addParticlesWithMode = native_addParticlesWithMode,
+    update = updateParticlesNative,
+    add = addParticles2,
+}
+
 getParticles = {
-	__index = function(self, i)
-		if i == "addParticles" then
-			return addParticles
-		elseif i == "setHardLimit" then
-			return setHardLimit
-		elseif i == "setSoftLimit" then
-			return setSoftLimit
-		elseif i == "clear" then
-			return clear
-		elseif i == "SCREEN" then
-			return SCREEN
-		elseif i == "WORLD" then
-			return WORLD
-		elseif i == "addLevelParticles" then
-			return addLevelParticles
-
-		elseif i == "native_addParticlesWithMode" then
-			return native_addParticlesWithMode
-
-		elseif i == "update" then
-			return updateParticlesNative
-		elseif i == "add" then
-			return addParticles2
-		end
-	end
+    __index = function(self, i)
+        return lookup[i] or particleTable.particles[i]
+    end
 }

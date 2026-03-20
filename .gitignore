@@ -2,5 +2,4 @@ run.bat
 data_*/
 7z.exe
 assets/
-4.1.0.apk
-sea4.2.0.apk
+*.apk
