@@ -327,15 +327,22 @@ function worldToPhysicsTransform(x, y)
 end
 
 function worldToScreenTransform(x, y)
-	local sx = (x - screen.left) * worldScale
-	local sy = (y - screen.top) * worldScale
+	local screenLeft = renderLeft or screen.left
+	local screenTop = renderTop or screen.top
+	local worldScale = renderScale or worldScale or 1
+	
+	local sx = (x - screenLeft) * worldScale
+	local sy = (y - screenTop) * worldScale
 	return sx, sy
 end
 
 function screenToWorldTransform(x, y)
-	local worldScale = worldScale or 1
-	local wx = x / worldScale + screen.left
-	local wy = y / worldScale + screen.top
+	local screenLeft = renderLeft or screen.left
+	local screenTop = renderTop or screen.top
+	
+	local worldScale = renderScale or worldScale or 1
+	local wx = x / worldScale + screenLeft
+	local wy = y / worldScale + screenTop
 	return wx, wy
 end
 
@@ -430,15 +437,31 @@ end
 
 CameraNative = {}
 
-CameraNative.setCameraZoomScale = setWorldScale
-CameraNative.setCameraTopLeft = setTopLeft
+--CameraNative.setCameraZoomScale = setWorldScale
+function CameraNative.setCameraZoomScale(scale)
+	renderScale = scale
+	--setWorldScale(scale)
+end
+function CameraNative.setCameraTopLeft(left, top)
+	renderLeft = left
+	renderTop = top
+	--setTopLeft(left, top)
+end
 CameraNative.drawGame = drawGameNative
 
 function CameraNative.updateGFXEffects(dt)
 	return
 end
 
-screenToWorldDistance = screenToWorldTransform
+function screenToWorldDistance(x, y)
+	local screenLeft = renderLeft or screen.left
+	local screenTop = renderTop or screen.top
+	
+	local worldScale = renderScale or worldScale or 1
+	local wx = x / worldScale-- + screenLeft
+	local wy = y / worldScale-- + screenTop
+	return wx, wy
+end
 
 
 function createMaskRenderer(name, sprite, texture, collider)

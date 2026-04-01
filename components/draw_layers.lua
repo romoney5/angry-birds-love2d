@@ -61,7 +61,7 @@ function drawLayer(layer, yoffset)
 	
 	local px, py = res.getSpritePivot(sprite)
 	local w, h = res.getSpriteBounds(sprite)
-	local wScale = tempWorldScale or worldScale or 1
+	local wScale = tempWorldScale or renderScale or worldScale or 1
 	local autoScroll = -scrollFrequency * time / 16 --TODO: inaccurate with water
 	local shakeX, shakeY = cameraShakeX or 0, cameraShakeY or 0
 
@@ -72,11 +72,14 @@ function drawLayer(layer, yoffset)
 	local xScale = layer.scaleWobbleX and math.sin(time) * layer.scaleWobbleX / wScale or 0
 	local yScale = layer.scaleWobbleY and math.sin(time) * layer.scaleWobbleY / wScale or 0
 	
+	local screenLeft = renderLeft or screen.left
+	local screenTop = renderTop or screen.top
+	
 	if w > 0 and wScale > .02 then --don't draw so many if the scale is too low
 		for x = -1, math.floor(screenWidth / (w - px) / wScale) do
 			local pivotX = w * x + startX
-			local left = -screen.left * relativeSpeed / relativeScale
-			local top = -screen.top / relativeScale + (yoffset or 0)
+			local left = -screenLeft * relativeSpeed / relativeScale
+			local top = -screenTop / relativeScale + (yoffset or 0)
 			
 			if episode4BGCranes and sprite:find("CRANE") then
 				left = left + episode4BGCranes.startX / 16
@@ -97,17 +100,20 @@ function drawThemeSprite(v, layer)
 	local px, py = res.getSpritePivot("", v.sprite)
 	local w, h = res.getSpriteBounds("", layer[2])
 
-	local wScale = tempWorldScale or worldScale
+	local wScale = tempWorldScale or renderScale or worldScale
 	local relativeSpeed = layer[3] or 1
 	local relativeScale = layer[4] or 1.5
 	local isLooping = layer[5]
 	local shakeX, shakeY = cameraShakeX or 0, cameraShakeY or 0
 	
+	local screenLeft = renderLeft or screen.left
+	local screenTop = renderTop or screen.top
+	
 	if w > 0 and wScale > .02 then --don't draw so many if the scale is too low
 		for x = -1, math.floor(screenWidth / w / wScale) do
 			local pivotX = w * x
-			local left = (-screen.left * relativeSpeed / relativeScale) % w
-			local top = (-screen.top / v.scaleY)
+			local left = (-screenLeft * relativeSpeed / relativeScale) % w
+			local top = (-screenTop / v.scaleY)
 
 			setRenderState(pivotX + left - shakeX, top - shakeY, wScale * v.scaleX, wScale * v.scaleY, v.angle, px, py)
 
@@ -155,9 +161,14 @@ end
 function drawForegroundNative()
 	local theme = blockTable.themes[currentTheme]
 	if not (theme and theme.fgLayers) then return end
+	
+	local screenLeft = renderLeft or screen.left
+	local screenTop = renderTop or screen.top
 
-	local s = worldScale or 1
+	local s = renderScale or worldScale or 1
 	setRenderState(0, 0, 1, 1)
+	
+	realrenderLeft, realrenderTop, realrenderScale = renderLeft, renderTop, renderScale
 
 	--draw ground color
 	local fgLayers = theme.fgLayers
@@ -181,7 +192,7 @@ function drawForegroundNative()
 			
 			local scale = fgLayers[ground_num][4] or 1.5
 			local rect_x = 0
-			local rect_y = (-screen.top - (cameraShakeY or 0) + (ground_h - ground_py) * scale) * s
+			local rect_y = (-screenTop - (cameraShakeY or 0) + (ground_h - ground_py) * scale) * s
 			rect_y = rect_y + (yoffsets[#fgLayers - 1] or 0) * s
 
 			drawRect(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, rect_x, rect_y, screenWidth, screenHeight + screen.top * s + rect_y)
@@ -211,7 +222,11 @@ local textureShader = love.graphics.newShader([[
 )
 
 function drawGameNative()
-	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, 1)
+	local screenLeft = renderLeft or screen.left
+	local screenTop = renderTop or screen.top
+	local scale = renderScale or worldScale
+	
+	setRenderState(-screenLeft - (cameraShakeX or 0), -screenTop - (cameraShakeY or 0), scale, scale, 0, 0, 1)
 
 	--trajectories (thanks again halo)
 	local trSprites = {}
@@ -234,6 +249,10 @@ end
 
 local renderList
 function drawSprites()
+	local screenLeft = renderLeft or screen.left
+	local screenTop = renderTop or screen.top
+	local scale = renderScale or worldScale
+	
 	if not objectsSorted then
 		renderList = {}
 		for z, objects in pairs(zOrderedObjects) do
@@ -271,8 +290,8 @@ function drawSprites()
 				local w, h = textureImage:getDimensions()
 				textureShader:send("textureDimensions", {w, h})
 				
-				textureShader:send("worldScale", worldScale * displayScale * love.graphics.getDPIScale())
-				textureShader:send("camera", {screen.native_left or screen.left, screen.native_top or screen.top})
+				textureShader:send("worldScale", scale * displayScale * love.graphics.getDPIScale())
+				textureShader:send("camera", {screenLeft, screenTop})
 				
 				love.graphics.setShader(textureShader)
 				
