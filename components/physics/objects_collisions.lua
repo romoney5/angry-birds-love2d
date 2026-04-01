@@ -1065,7 +1065,7 @@ function basicBeginContact(obj1, obj2, contact)
 						local overkillDamage
 						if bird.useLegacyCollisionPath then
 							--60.0 * (math.abs(newStrength) / birdMass) / effectiveDamage * 1.2 NEW
-							overkillDamage = ((-newStrength / birdMass) / effectiveDamage) * 10.0 * 1.75
+							overkillDamage = ((-newStrength / birdMass) / effectiveDamage) * 10.0 * 1.75 * velocityMultiplier
 						else
 							overkillDamage = ((effectiveDamage - strength) / effectiveDamage) * velocityMultiplier
 						end
