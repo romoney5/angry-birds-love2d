@@ -925,8 +925,24 @@ function basicBeginContact(obj1, obj2, contact)
 	
 	solvePhysics()
 	
-	local contactPoint = contact:getPositions()
-	local contactNormal = contact:getNormal()
+	local x1, y1, x2, y2 = contact:getPositions()
+	local contactNormalX, contactNormalY = contact:getNormal()
+	
+	--later versions from 5.1.0(?) basically reimplement collision, so just do it through there instead
+	if onCollision then
+		--onCollision(o1.name, o2.name, effectiveDamage, math.floor(damage), contactNormalX, contactNormalY, nil, 1, {})
+		--hack
+		o1.recordTrajectory, o2.recordTrajectory = false, false
+		local results = {}
+		onCollision(o1.name, o2.name, contactNormalX, contactNormalY, 1, 1, results)
+		local shouldDisableContact, newCollisionPathParameters = results.shouldDisableContact, results.newCollisionPathParameters
+		
+		if shouldDisableContact then
+			contact:setEnabled(false)
+		end
+		
+		return
+	end
 	
 	if not o1.controllable and not o2.controllable then -- object to object collision
 		
@@ -996,7 +1012,10 @@ function basicBeginContact(obj1, obj2, contact)
 
 		local old_score = currentScore
 		
-		if blockCollision then blockCollision(o1.name, o2.name, linearForce, damageDone, contactPoint, -contactNormal) end
+		if blockCollision then blockCollision(o1.name, o2.name, linearForce, damageDone, 0, -contactNormalX) end
+		if onCollision then
+			onCollision(o1.name, o2.name, contactNormalX, contactNormalY, 1, 1, {})
+		end
 
 		if joystick and linearForce >= 6 then
 			joystick:setVibration(math.min(linearForce / 15, 1), math.min(linearForce / 15, 1), .1)
@@ -1093,7 +1112,11 @@ function basicBeginContact(obj1, obj2, contact)
 				m2 = math.floor((o2.strength + damage or -1) * 10) / 10})
 		end
 		
-		if birdCollision then birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage), contactPoint, contactNormal) end
+		if birdCollision then birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage), 0, contactNormalX) end
+		if onCollision then
+			--onCollision(o1.name, o2.name, effectiveDamage, math.floor(damage), contactNormalX, contactNormalY, nil, 1, {})
+			onCollision(o1.name, o2.name, contactNormalX, contactNormalY, 1, 1, {})
+		end
 		if joystick and effectiveDamage >= 6 then
 			joystick:setVibration(math.min(effectiveDamage / 15, 1), math.min(effectiveDamage / 15, 1), .1)
 		end
@@ -1116,7 +1139,7 @@ function basicBeginContact(obj1, obj2, contact)
 		
 		local force = (collisionVelocity * mass) / 10.0
 		
-		if birdCollision then birdCollision(o1.name, o2.name, force, 0, contactPoint, contactNormal) end
+		if birdCollision then birdCollision(o1.name, o2.name, force, 0, 0, contactNormalX) end
 	end
 	
 	--use deadBlocks table in non-pc versions

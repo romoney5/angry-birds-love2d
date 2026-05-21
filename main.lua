@@ -49,6 +49,7 @@ fione_errorblame_length = 0
 function endsWith(str, ending)
 	return string.sub(str, -string.len(ending)) == ending
 end
+renderLeft, renderTop, renderScale = 0, 0, 0
 
 function requestExit()
 	print("Quitting...")
