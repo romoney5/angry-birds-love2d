@@ -289,8 +289,16 @@ function setGameOn(on)
 end
 
 function setTopLeft(left,top)
-	screen.left = left
-	screen.top = top
+	renderLeft = left
+	renderTop = top
+end
+
+function setWorldScale(num)
+	renderScale = num
+end
+
+function setMaxWorldScale(s)
+	maxWorldScale = s
 end
 
 function serializeTable(t, indent, noIndexes)

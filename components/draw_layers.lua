@@ -57,6 +57,7 @@ function drawLayer(layer, yoffset)
 	local relativeScale = layer[4] or 1.5
 	local isLooping = layer[5]
 	local startX = layer[6] or 0
+	local startY = layer[7] or 0
 	local scrollFrequency = layer.v or 0
 	
 	local px, py = res.getSpritePivot(sprite)
@@ -79,7 +80,7 @@ function drawLayer(layer, yoffset)
 		for x = -1, math.floor(screenWidth / (w - px) / wScale) do
 			local pivotX = w * x + startX
 			local left = -screenLeft * relativeSpeed / relativeScale
-			local top = -screenTop / relativeScale + (yoffset or 0)
+			local top = -(screenTop - startY) / relativeScale + (yoffset or 0)
 			
 			if episode4BGCranes and sprite:find("CRANE") then
 				left = left + episode4BGCranes.startX / 16
@@ -167,8 +168,6 @@ function drawForegroundNative()
 
 	local s = renderScale or worldScale or 1
 	setRenderState(0, 0, 1, 1)
-	
-	realrenderLeft, realrenderTop, realrenderScale = renderLeft, renderTop, renderScale
 
 	--draw ground color
 	local fgLayers = theme.fgLayers
@@ -189,13 +188,14 @@ function drawForegroundNative()
 		if layernum == ground_num then
 			local _, ground_h = res.getSpriteBounds(fgLayers[ground_num][1], fgLayers[ground_num][2])
 			local _, ground_py = res.getSpritePivot(fgLayers[ground_num][1], fgLayers[ground_num][2])
+			local startY = fgLayers[ground_num][7] or 0
 			
 			local scale = fgLayers[ground_num][4] or 1.5
 			local rect_x = 0
-			local rect_y = (-screenTop - (cameraShakeY or 0) + (ground_h - ground_py) * scale) * s
+			local rect_y = (-screenTop + startY - (cameraShakeY or 0) + (ground_h - ground_py) * scale) * s
 			rect_y = rect_y + (yoffsets[#fgLayers - 1] or 0) * s
 
-			drawRect(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, rect_x, rect_y, screenWidth, screenHeight + screen.top * s + rect_y)
+			drawRect(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, rect_x, rect_y, screenWidth, screenHeight + screenTop * s + rect_y)
 		end
 
 		drawLayer(layer, yoffsets[layernum - 1])
@@ -373,6 +373,7 @@ function drawObject(v)
 	if v.visible == false then return end
 	
 	local x, y = physicsToWorldTransform(v.x, v.y)
+	
 	love.graphics.push()
 
 	drawxp, drawyp = res.getSpritePivot(v.sprite)

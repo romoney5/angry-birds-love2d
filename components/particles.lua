@@ -5,6 +5,10 @@ local WORLD = {}
 function drawParticlesNative(menu)
 	if not particles then return end
 	
+	local screenLeft = renderLeft
+	local screenTop = renderTop
+	local scale = renderScale or worldScale or 1
+	
 	local activeParticles = menu and SCREEN or WORLD
 	
 	for _, p in _G.pairs(activeParticles) do
@@ -12,7 +16,7 @@ function drawParticlesNative(menu)
 			setRenderState(0, 0, p.scale, p.scale, p.angle, p.spritePivotX, p.spritePivotY)
 			_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
 		else
-			setRenderState(-screen.left / p.scale, -screen.top / p.scale, (worldScale or 1) * p.scale, (worldScale or 1) * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
+			setRenderState(-screenLeft / p.scale, -screenTop / p.scale, scale * p.scale, scale * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
 			_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
 		end
 	end

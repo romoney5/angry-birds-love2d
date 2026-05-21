@@ -34,14 +34,6 @@ function setPhysicsSimulationScale(scale)
 	love.physics.setMeter(physicsSimulationScale * 0.5)
 end
 
-function setWorldScale(num)
-	worldScale = num
-end
-
-function setMaxWorldScale(s)
-	maxWorldScale = s
-end
-
 function setLevelLimits(minx, miny, maxx, maxy)
 	objects.limits = {mix = minx, miy = miny, max = maxx, may = maxy}
 end
