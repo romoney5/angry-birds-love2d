@@ -128,7 +128,7 @@ function decryptSrc(filename, src)
 	
 	if kind == "7z" then --looks like it's 7-zipped too
 		--because 7-zip sucks we have to do file operations first
-		local dec_filename = temp_file()
+		--[[local dec_filename = temp_file()
 		
 		--now use 7-zip with stdin and open it in binary mode on windows
 		local mode = love._os == "Windows" and "rb" or "r"
@@ -144,7 +144,22 @@ function decryptSrc(filename, src)
 			kind = identifySrc(src)
 		else
 			print("decryptSrc: Could not run 7-zip")
+		end]]
+		local temp = "temp_file"
+		local filedata = love.filesystem.newFileData(src, temp)
+		local success = love.filesystem.mount(filedata, temp)
+		
+		if success then
+			for i, file in ipairs(love.filesystem.getDirectoryItems(temp)) do --most optimal?
+				src = love.filesystem.read(temp.."/"..file)
+			end
+			love.filesystem.unmount(temp)
+		else
+			print("decryptSrc: Could not mount file")
 		end
+		
+		--reidentify it
+		kind = identifySrc(src)
 	end
 	
 	if ALLOW_LUA_CACHE then
@@ -173,7 +188,14 @@ function makeChunk(filename, env)
 		return true, lua, not err
 	elseif kind == "plain" then --that's just plain old lua.. boring..
 		print("Loading Lua \""..filename.."\"...")
-		local lua, err = loadstring(src, filename)
+		
+		--shorten the filename because lua's traceback truncates filenames.. at the end
+		local shortname = filename
+		local datapath = "/"..datapath
+		if shortname:sub(1, datapath:len()) == datapath then
+			shortname = "dp"..shortname:sub(datapath:len() + 1, -1)
+		end
+		local lua, err = loadstring(src, shortname)
 		return false, lua, err
 	end
 end
