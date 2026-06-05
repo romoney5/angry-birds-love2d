@@ -1,6 +1,6 @@
 # Angry Birds LÖVE2D
 
-An accurate work-in-progress port of Angry Birds' proprietary engine to LÖVE (the free game framework that uses Lua). Currently, Classic PC version 1.6.3.1 is bundled by default, but many other versions (Classic, Seasons, and their platform variants) work well.
+An accurate *work-in-progress* port of Angry Birds' proprietary engine to LÖVE (the free game framework that uses Lua). Currently, AB Classic version 1.6.3.1 for PC is bundled by default, but many other versions (Classic, Seasons, and their platform variants) are supported.
 
 To download, first make sure you have [LÖVE](https://love2d.org/) installed, as it is required to run this project. Head to [the latest release](https://github.com/romoney5/angry-birds-love2d/releases/latest) and get `angrybirds_love2d.love`. You can simply double-click the .love file to play.
 
@@ -12,11 +12,11 @@ If you are on Linux, it's as easy as downloading a LÖVE Flatpak, navigating to 
 - `--datapath`/`-dp` overrides the default path to `data/` and uses a new save data subfolder. Useful for playing mods or from app files. Can also be used to boot from .zip/.ipa/.apk or other zipped files. Example: `--datapath 2.2.0.apk`
 - `--model`/`-m` overrides the `deviceModel`. Handy for testing for other devices, such as Android or Roku.
 - `--skipintro`/`-si` automatically skips the game's splash screen.
-- `--run`/`+".."` runs a line of Lua code before starting the game. Examples: `--run "releaseBuild = true"` `+"autoScale = 240"`
+- `--run`/`+..."` runs a line of Lua code before starting the game. Examples: `--run "releaseBuild = true"` `+"autoScale = 240"`
 - `--deletedata`/`-dd` prompts to delete save data (settings.lua and highscores.lua).
 - `--cheats`/`-c` enables cheats. (Enabled `cheatsEnabled`, overrides options.lua)
 - `--blamelength`/`-bl` sets the length of bytecode tracebacks (a list of previously run instructions shown upon getting an error; very useful for debugging compiled Luas). Set to 0 by default for performance reasons.
-- `--nosave`/`-ns` disables saving any Lua files (settings and highscores will not save).
+- `--nosave`/`-ns` disables saving any Lua files (e.g. settings and highscores will not save).
 
 ## Keybinds
 Some debug keybinds have been added:
@@ -36,17 +36,19 @@ Here are some variables that can be changed by the debug console:
 - `displayScale`: Defaults to 1, scales the whole display of the game. Controlled by `autoScale` if it's not zero.
 
 ## Dependencies
+These projects can be added to support more versions:
+
 The libcrypto library, a part of [OpenSSL](https://github.com/openssl/openssl), is used to decrypt encrypted Lua files.
 - You must get libcrypto-3.dll to use it: https://slproweb.com/products/Win32OpenSSL.html
-
-[7-Zip](https://www.7-zip.org/) is used to extract Lua files compressed with 7z.
-- You must get 7z.exe to use it.
 
 [LZMA](https://www.7-zip.org/sdk.html) is used to extract Lua files compressed with LZMA.
 - You must get lzma.exe (found in bin/x64/lzma.exe) to use it.
 
 ## Acknowledgments
-[FiOne](https://github.com/Rerumu/FiOne) is used to run compiled Lua files (with some edits).
+These projects are included within the engine:
+
+[FiOne](https://github.com/Rerumu/FiOne) (with some edits) is used to run compiled Lua files.
+- May be replaced soon as it's licensed under the GPL and uses a lot of memory; the garbage collector runs often and slows the game down
 
 [love-webp](https://github.com/ImagicTheCat/love-webp) is used to read WebP images.
 
