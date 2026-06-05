@@ -358,18 +358,11 @@ local function releaseSheet(sheet, usecomposprites)
 	if not lsheet then return end --just ignore it if it's already unloaded
 	
 	for i, sprite in ipairs(lsheet.sprites) do
-		--local sprite = cache[v]
-		--if sprite.name == "MENU_LOGO" then print("-----------------res.releaseSpriteSheet: freeing sprite "..tostring(sprite.name).." from "..sheet.." - "..tostring(sprite.history).." - "..tostring(sprite.history and sprite.history.sheet == lsheet)) end
 		sprite.quad:release()
 		
-		--[[if sprite.history and sprite.history.sheet == lsheet then
-			sprite.history = nil
-		end]]
-		
-		if sprite == cache[sprite.name] then --mostly
+		if sprite == cache[sprite.name] then --should work?
 			cache[sprite.name] = nil
 		end
-		--cache[v] = sprite.forward --or nil
 	end
 
 	for i, v in pairs(pngMapping) do
@@ -597,16 +590,12 @@ local function loadSheet(sheet, usecomposprites)
 		pngMapping[info.filename:sub(1, -extensionlength - 1)] = sheet --filename is the index for easy finding in drawGameNative
 
 		for i, spr in pairs(info.sprites) do
-			--[[if i:lower():find("pig") then
-				print("res.createSpriteSheet: adding sprite "..tostring(i))
-			end]]
-			if i == "MENU_LOGO" then print("-----------------res.createSpriteSheet: adding sprite "..tostring(i).." from "..sheet) end
 			local sheet = spr.sheet or lsheet.sheet
 			--store previous versions of a sprite in case one of them is freed
 			local history = cachedimgs[i]
 			
 			cachedimgs[i] = {quad = love.graphics.newQuad(spr.x, spr.y, spr.width, spr.height, sheet:getWidth(), sheet:getHeight()),
-				spsh = sheet, px = spr.pivotX, py = spr.pivotY, width = spr.width, height = spr.height, history = history, sheet = lsheet, name = i}
+				spsh = sheet, px = spr.pivotX, py = spr.pivotY, width = spr.width, height = spr.height, sheet = lsheet, name = i}
 			
 			if history then
 				history.forward = cachedimgs[i]
