@@ -617,7 +617,7 @@ function native.Cloud.setLoginSucceededListener()--?
 end
 
 native.RovioShelf = {}
-native.RovioShelf.__index = RovioShelf
+native.RovioShelf.__index = native.RovioShelf
 
 function native.RovioShelf:initialize(isAllowed)
     self.allow = false
