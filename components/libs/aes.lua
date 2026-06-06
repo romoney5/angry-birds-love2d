@@ -63,8 +63,8 @@ const EVP_CIPHER *EVP_aes_256_xts(void);
 --taken from angry birds cryptor
 AES.Keys = {
     Assets = {
-        Classic     = "USCaPQpA4TSNVxMI1v9SK9UC0yZuAnb2",
-        Rio         = "USCaPQpA4TSNVxMI1v9SK9UC0yZuAnb2",
+        ClassicRio  = "USCaPQpA4TSNVxMI1v9SK9UC0yZuAnb2",
+        --Rio         = "USCaPQpA4TSNVxMI1v9SK9UC0yZuAnb2",
         Seasons     = "zePhest5faQuX2S2Apre@4reChAtEvUt",
         Space       = "RmgdZ0JenLFgWwkYvCL2lSahFbEhFec4",
         StarWars    = "An8t3mn8U6spiQ0zHHr3a1loDrRa3mtE",
@@ -74,8 +74,8 @@ AES.Keys = {
     },
 
     Saves = {
-        Classic     = "44iUY5aTrlaYoet9lapRlaK1Ehlec5i0",
-        Rio         = "44iUY5aTrlaYoet9lapRlaK1Ehlec5i0",
+        ClassicRio  = "44iUY5aTrlaYoet9lapRlaK1Ehlec5i0",
+        --Rio         = "44iUY5aTrlaYoet9lapRlaK1Ehlec5i0",
         Seasons     = "brU4u=EbR4s_A3APu6U#7B!axAm*We#5",
         Space       = "TpeczKQL07HVdPbVUhAr6FjUsmRctyc5",
         StarWars    = "e83Tph0R3aZ2jGK6eS91uLvQpL33vzNi",
@@ -85,8 +85,8 @@ AES.Keys = {
     },
 
     OnlineAssets = {
-        Classic     = "",
-        Rio         = "",
+        ClassicRio  = "",
+        --Rio         = "",
         Seasons     = "",
         Space       = "",
         StarWars    = "",
