@@ -449,12 +449,14 @@ function getRayCastedObjects(info)
 				local name = userdata and userdata.name
 				if not name then return 1 end
 
-				table.insert(hits, name)
-				table.insert(hits, x)
-				table.insert(hits, y)
-				table.insert(hits, xn)
-				table.insert(hits, yn)
-				table.insert(hits, fraction)
+				table.insert(hits, {
+					name     = name,
+					x        = x,
+					y        = y,
+					xn       = xn,
+					yn       = yn,
+					fraction = fraction,
+				})
 
 				return 1
 			end
