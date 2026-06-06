@@ -21,6 +21,7 @@ function loadLevel(filename)
 	setMaxTranslation(2)
 	setupColliders()
 	clearParticles()
+	clearLuaAssetRender()
 	LevelParticlesManager.initialized = false
 end
 
