@@ -619,9 +619,9 @@ end
 native.RovioShelf = {}
 native.RovioShelf.__index = native.RovioShelf
 
-function native.RovioShelf:initialize(isAllowed)
+function native.RovioShelf:initialize()
     self.allow = false
-	self.inputeCapture = false
+	self.inputCapture = false
 end
 
 function native.RovioShelf:setAllowed(isAllowed)
@@ -629,7 +629,7 @@ function native.RovioShelf:setAllowed(isAllowed)
 end
 
 function native.RovioShelf:setInputCapturing(capture)
-    self.inputCapture = inputCapture
+    self.inputCapture = capture
 end
 
 function native.RovioShelf:isCapturingInput()
