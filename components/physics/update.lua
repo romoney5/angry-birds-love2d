@@ -110,7 +110,6 @@ function updatePhysics(dt)
 	if clearLuaForceFunctions then clearLuaForceFunctions() end
 
 	--update the trajectory in the case of a newer version, on older versions the distance check prevents it from running twice
-	updateTrajectory()
 	
 	if removeBlocks then
 		removeBlocks()

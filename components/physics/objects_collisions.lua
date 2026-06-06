@@ -929,16 +929,19 @@ function basicBeginContact(obj1, obj2, contact)
 	local contactNormalX, contactNormalY = contact:getNormal()
 	
 	--later versions from 5.1.0(?) basically reimplement collision, so just do it through there instead
-	if onCollision then
+	if MuseumCollisions then
 		--onCollision(o1.name, o2.name, effectiveDamage, math.floor(damage), contactNormalX, contactNormalY, nil, 1, {})
-		--hack
-		o1.recordTrajectory, o2.recordTrajectory = false, false
 		local results = {}
-		onCollision(o1.name, o2.name, contactNormalX, contactNormalY, 1, 1, results)
+		MuseumCollisions.onCollision(o1.name, o2.name, contactNormalX, contactNormalY, x1, y1, results)
 		local shouldDisableContact, newCollisionPathParameters = results.shouldDisableContact, results.newCollisionPathParameters
 		
 		if shouldDisableContact then
 			contact:setEnabled(false)
+		end
+		
+		local params = results.newCollisionPathParameters
+		if params then
+			setVelocity(params.birdName, params.afterCollisionVelocityX, params.afterCollisionVelocityY)
 		end
 		
 		return

@@ -616,6 +616,31 @@ function native.Cloud.setLoginSucceededListener()--?
 	return
 end
 
+native.RovioShelf = {}
+native.RovioShelf.__index = RovioShelf
+
+function native.RovioShelf:initialize(isAllowed)
+    self.allow = false
+	self.inputeCapture = false
+end
+
+function native.RovioShelf:setAllowed(isAllowed)
+    self.allow = isAllowed
+end
+
+function native.RovioShelf:setInputCapturing(capture)
+    self.inputCapture = inputCapture
+end
+
+function native.RovioShelf:isCapturingInput()
+    return false
+end
+
+function native.RovioShelf:update(dt)
+end
+
+function native.RovioShelf:render()
+end
 
 native.RovioChannel = {}
 
@@ -936,6 +961,40 @@ function hasBody(object)
 	return objects.world[object] ~= nil
 end
 
+native.luaRenderBuffer = {}
+-- special drawing routine for later versions
+function createLuaAssetRenderer(self, sprite, zOrder)
+	local renderer = {
+		sprite = sprite,
+		z = zOrder,
+		position = {x = 0, y = 0},
+		startPosition = {x = 0, y = 0},
+		angle = 0,
+		scale = {x = 1, y = 1},
+		visible = true,
+	}
+
+	self.luaAssetRenderer = renderer
+	
+	local id = tostring(self.luaAssetRenderer) .. "_" .. sprite
+	native.luaRenderBuffer[id] = {owner = self, renderer = renderer}
+	objectsSorted = false
+	return id
+end
+
+function disposeLuaAssetRenderer(renderId)
+	local render = native.luaRenderBuffer[renderId]
+	if render then
+		render.owner.luaAssetRenderer = nil
+		native.luaRenderBuffer[renderId] = nil
+	end
+end
+
+function clearLuaAssetRender()
+	for renderId, _ in pairs(native.luaRenderBuffer) do
+		disposeLuaAssetRenderer(renderId)
+	end
+end
 
 specialOfferMeta = {}
 

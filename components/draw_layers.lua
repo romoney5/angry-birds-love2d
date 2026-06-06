@@ -247,6 +247,7 @@ function drawGameNative()
 	drawParticlesNative()
 end
 
+--TODO : unwind everything and make this look cleaner
 local renderList
 function drawSprites()
 	local screenLeft = renderLeft or screen.left
@@ -261,9 +262,13 @@ function drawSprites()
 			end
 		end
 		
+		for _, entry in pairs(native.luaRenderBuffer) do
+			table.insert(renderList, entry.renderer)
+		end
+		
 		-- sort the flat list by z_order
 		table.sort(renderList, function(a, b) 
-			return a.z_order < b.z_order 
+			return (a.z or a.z_order) < (b.z or b.z_order) 
 		end)
 		objectsSorted = true
 	end
@@ -303,6 +308,8 @@ function drawSprites()
 			else
 				drawObject(obj)
 			end
+		else
+			drawObject(v)
 		end
 	end
 end
@@ -372,7 +379,12 @@ end
 function drawObject(v)
 	if v.visible == false then return end
 	
-	local x, y = physicsToWorldTransform(v.x, v.y)
+	local x, y
+	if v.position then
+		x, y = v.position.x, v.position.y
+	else
+		x, y = physicsToWorldTransform(v.x or 0, v.y or 0) -- fix this
+	end
 	
 	love.graphics.push()
 
@@ -407,7 +419,6 @@ function drawObject(v)
 	drawangle = 0
 	love.graphics.pop()
 end
-
 --massive thanks halo
 function addToTrajectory(index, x, y)
 	table.insert(trajectory[#trajectory][index], {x = x, y = y})
