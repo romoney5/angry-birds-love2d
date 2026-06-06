@@ -45,6 +45,12 @@ function setTheme(theme)
 	restoreParticles()
 end
 
+local function getScreenTopLeft()
+	local screenLeft = renderLeft or screen.left - (cameraShakeX or 0)
+	local screenTop = renderTop or screen.top - (cameraShakeY or 0)
+	return screenLeft, screenTop
+end
+
 --[1] = sheet
 --[2] = sprite
 --[3] = parallax speed
@@ -73,8 +79,8 @@ function drawLayer(layer, yoffset)
 	local xScale = layer.scaleWobbleX and math.sin(time) * layer.scaleWobbleX / wScale or 0
 	local yScale = layer.scaleWobbleY and math.sin(time) * layer.scaleWobbleY / wScale or 0
 	
-	local screenLeft = renderLeft or screen.left
-	local screenTop = renderTop or screen.top
+	local screenLeft = renderLeft - shakeX or screen.left -- really weird hack, change this asap
+	local screenTop = renderTop - shakeY or screen.top
 	
 	if w > 0 and wScale > .02 then --don't draw so many if the scale is too low
 		for x = -1, math.floor(screenWidth / (w - px) / wScale) do
@@ -222,11 +228,10 @@ local textureShader = love.graphics.newShader([[
 )
 
 function drawGameNative()
-	local screenLeft = renderLeft or screen.left
-	local screenTop = renderTop or screen.top
+	local screenLeft, screenTop = getScreenTopLeft()
 	local scale = renderScale or worldScale
 	
-	setRenderState(-screenLeft - (cameraShakeX or 0), -screenTop - (cameraShakeY or 0), scale, scale, 0, 0, 1)
+	setRenderState(-screenLeft, -screenTop, scale, scale, 0, 0, 1)
 
 	--trajectories (thanks again halo)
 	local trSprites = {}
@@ -250,8 +255,7 @@ end
 --TODO : unwind everything and make this look cleaner
 local renderList
 function drawSprites()
-	local screenLeft = renderLeft or screen.left
-	local screenTop = renderTop or screen.top
+	local screenLeft, screenTop = getScreenTopLeft()
 	local scale = renderScale or worldScale
 	
 	if not objectsSorted then
