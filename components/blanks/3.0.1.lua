@@ -276,6 +276,10 @@ function RovioAccount.shouldCloudOverwriteLocalSave()
 	return false
 end
 
+function RovioAccount.isProcessing()
+	return false
+end
+
 --rovio account can prevent settings.lua from saving properly
 --but is also required in later (mobile) versions
 -- RovioAccount = nil
