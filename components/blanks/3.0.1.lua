@@ -510,23 +510,20 @@ function toggleZoom2(a, b)--?
 	wantedZoomLevel = a
 end
 
---[[
 function raycast(x1, y1, x2, y2)
-	local hit, name, px, py
-	local ray = getRayCastedObjects{x1 = x1, y1 = y1, x2 = x2, y2 = y2}
-	hit = ray[1] ~= nil
-	name, px, py = ray[1], ray[2], ray[3]
-	return hit, name, px, py
-end
-]]
+    local hit, hit_name, hit_x, hit_y = false, nil, nil, nil
 
-function raycast(x1, y1, x2, y2)
-	local ray = getRayCastedObjects{x1 = x1, y1 = y1, x2 = x2, y2 = y2}
-	local hit = ray[1]
-	if hit then
-		return true, hit.name, hit.x, hit.y
-	end
-	return false
+    physicsWorld:rayCast(x1, y1, x2, y2, function(fixture, x, y, xn, yn, fraction)
+        local userdata = fixture and fixture:getUserData()
+        local name = userdata and userdata.name
+
+        if name then
+            hit, hit_name, hit_x, hit_y = true, name, x, y
+            return 0
+        end
+    end)
+
+    return hit, hit_name, hit_x, hit_y
 end
 
 native.FileSystem = {}
