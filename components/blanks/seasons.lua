@@ -1134,3 +1134,53 @@ function NativeCloudAssets.isPackAccessible()--?
 end
 
 setThemeWithCrossFade = setTheme
+
+
+--1.5.1
+
+WebView = {}
+
+WebView.LOAD_PAGE_INTO_EXTERNAL_BROWSER = 1
+
+function WebView.new(x, y, height, width)
+	local view = {}
+
+	function view:setOnLinkClickedCallback(callback)
+		--[[
+		local onLinkClicked = function(view, url)
+			return _G.WebView.LOAD_PAGE_INTO_EXTERNAL_BROWSER
+		end
+		]]
+		return
+	end
+
+	function view:setOnPageLoadedCallback(callback)
+		--[[
+		local onPageLoaded = function(view, success, pageTitle)
+			if success and pageTitle == "Rovio News [hjsdu]" then
+				rovioNewsIsLoaded = true
+				if rovioNewsShowWhenLoaded then
+					hideAd()
+					view:show()
+					rovioNewsIsShown = true
+				end
+			end
+		end
+		]]
+		return
+	end
+
+	function view:loadPage(url)
+		return
+	end
+
+	function view:hide()
+		return
+	end
+
+	function view:show()
+		return
+	end
+
+	return view
+end
