@@ -933,9 +933,8 @@ function basicBeginContact(obj1, obj2, contact)
 		--onCollision(o1.name, o2.name, effectiveDamage, math.floor(damage), contactNormalX, contactNormalY, nil, 1, {})
 		local results = {}
 		MuseumCollisions.onCollision(o1.name, o2.name, contactNormalX, contactNormalY, x1, y1, results)
-		local shouldDisableContact, newCollisionPathParameters = results.shouldDisableContact, results.newCollisionPathParameters
-		
-		if shouldDisableContact then
+
+		if results.shouldDisableContact then
 			contact:setEnabled(false)
 		end
 		
