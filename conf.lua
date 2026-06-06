@@ -7,8 +7,8 @@ function love.conf(t)
 
 	t.window.width = 1024--864
 	t.window.height = 600--480
-	t.window.minwidth = 1
-	t.window.minheight = 1
+	t.window.minwidth = 2
+	t.window.minheight = 2
 	-- t.window.minwidth = 480--864
 	-- t.window.minheight = 320--480
 	t.window.resizable = true
@@ -24,5 +24,5 @@ function love.conf(t)
 		-- t.graphics.lowpower = true
 	end
     
---     t.version = "11.5" 11.5 and 12.0 are supported
+--     t.version = "11.5" --11.5 and 12.0 are supported
 end
