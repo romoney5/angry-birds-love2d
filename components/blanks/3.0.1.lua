@@ -617,29 +617,28 @@ function native.Cloud.setLoginSucceededListener()--?
 end
 
 native.RovioShelf = {}
-native.RovioShelf.__index = native.RovioShelf
 
-function native.RovioShelf:initialize()
-    self.allow = false
-	self.inputCapture = false
+function native.RovioShelf.initialize()
+    native.RovioShelf.allow = false
+	native.RovioShelf.inputCapture = false
 end
 
-function native.RovioShelf:setAllowed(isAllowed)
-    self.allow = isAllowed
+function native.RovioShelf.setAllowed(isAllowed)
+    native.RovioShelf.allow = isAllowed
 end
 
-function native.RovioShelf:setInputCapturing(capture)
-    self.inputCapture = capture
+function native.RovioShelf.setInputCapturing(capture)
+    native.RovioShelf.inputCapture = capture
 end
 
-function native.RovioShelf:isCapturingInput()
+function native.RovioShelf.isCapturingInput()
     return false
 end
 
-function native.RovioShelf:update(dt)
+function native.RovioShelf.update(dt)
 end
 
-function native.RovioShelf:render()
+function native.RovioShelf.render()
 end
 
 native.RovioChannel = {}
