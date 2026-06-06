@@ -1,44 +1,5 @@
 --update physics every frame
 
-local function updateTrajectory()
-	-- trajectory
-	local recordTrajectory = false
-	if flyingBird ~= nil then
-		if flyingBird.recordTrajectory ~= false then
-			recordTrajectory = true
-			local lx, ly = physicsToWorldTransform(flyingBird.x, flyingBird.y)
-			local bt = birdTrajectory[1] 
-			if #bt < 1 or vLength(lx - bt[#bt].x, ly - bt[#bt].y) > 20 then
-				-- if getObjectDefinition(flyingBird.name).particlesTrail ~= nil then
-					-- addParticles(flyingBird.name, getObjectDefinition(flyingBird.name).particlesTrail, 1)
-				-- end
-				_G.table.insert(bt, { x = lx, y = ly })
-				addToTrajectory(1, lx, ly)
-			end
-		end
-	end
-	
-	if otherBirds ~= nil then
-		for i = 1, 2 do
-			local obj = objects.world[otherBirds[i]]
-			if obj ~= nil then
-				if obj.recordTrajectory ~= false then
-					recordTrajectory = true
-					local lx, ly = physicsToWorldTransform(obj.x, obj.y)
-					local bt = birdTrajectory[i+1] 
-					if #bt < 1 or vLength(lx - bt[#bt].x, ly - bt[#bt].y) > 20 then
-						-- if getObjectDefinition(obj.name).particlesTrail ~= nil then
-							-- addParticles(obj.name, getObjectDefinition(obj.name).particlesTrail, 1)
-						-- end
-						_G.table.insert(bt, { x = lx, y = ly })
-						addToTrajectory(i+1, lx, ly)
-					end
-				end
-			end
-		end
-	end
-end
-
 function solvePhysics(updateStep) -- WIP
 	local delta = math.floor(dt2 * 10000) / 10000
 	local timeStep = delta * (physicsTimeScale or 1)
@@ -108,8 +69,6 @@ function updatePhysics(dt)
 	solvePhysics(true)
 
 	if clearLuaForceFunctions then clearLuaForceFunctions() end
-
-	--update the trajectory in the case of a newer version, on older versions the distance check prevents it from running twice
 	
 	if removeBlocks then
 		removeBlocks()
