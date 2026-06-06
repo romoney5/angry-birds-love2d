@@ -526,6 +526,20 @@ function raycast(x1, y1, x2, y2)
     return hit, hit_name, hit_x, hit_y
 end
 
+function raycastAll(info)
+	local results = getRayCastedObjects(info)
+	local hits = {}
+	for i = 1, #results do
+		local target = results[i]
+		local dx = target.x - info.x1
+		local dy = target.y - info.y1
+		local dist = math.sqrt(dx*dx+dy*dy)
+		table.insert(hits, {contactPointX = target.x, contactPointY = target.y, distance = dist})
+	end
+	
+	return hits
+end
+
 native.FileSystem = {}
 native.FileSystem.TYPE_FILE = "file"
 
