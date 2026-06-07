@@ -170,7 +170,7 @@ local function setupObject(obj)
 
 	addObjectToRenderQueue(obj.name)
 
-	if not tonumber(obj.z_order) then obj.z_order = 0 end
+	--if not tonumber(obj.z_order) then obj.z_order = 0 end
 
 	updateObjectMass(obj.name)
 
@@ -313,7 +313,7 @@ end
 
 function addObjectToRenderQueue(name)
 	local obj = objects.world[name]
-	obj.z_order = obj.z_order == 0 and getZOrder(name) or tonumber(obj.z_order)
+	obj.z_order = tonumber(obj.z_order) or getZOrder(name)
 	
 	local z = math.floor(obj.z_order)
 	zOrderedObjects[z] = zOrderedObjects[z] or {}
