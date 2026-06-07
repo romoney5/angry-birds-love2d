@@ -297,9 +297,23 @@ local function isObjectInRenderQueue(name, z)
 	return false
 end
 
+local function getZOrder(name)
+	local def = blockTable.blocks[loadedObjects.world[name].definition]
+	
+	if def.controllable then
+		return 2
+	end
+	
+	if def.levelGoal then
+		return 1
+	end
+	
+	return 0
+end
+
 function addObjectToRenderQueue(name)
 	local obj = objects.world[name]
-	obj.z_order = tonumber(obj.z_order) or 0
+	obj.z_order = obj.z_order == 0 and getZOrder(name) or tonumber(obj.z_order)
 	
 	local z = math.floor(obj.z_order)
 	zOrderedObjects[z] = zOrderedObjects[z] or {}
