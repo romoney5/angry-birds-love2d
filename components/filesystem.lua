@@ -38,6 +38,22 @@ function findCaseInsensitive(dir)
 	return nil, nil
 end
 
+--look recursively for any file and return its path
+local function findAnything(dir)
+	for i, file in ipairs(love.filesystem.getDirectoryItems(dir)) do
+		local path = dir.."/"..file
+		local info = love.filesystem.getInfo(path)
+
+		if info.type == "file" then --ding ding ding!!!
+			return path
+		elseif info.type == "directory" then --look inside it then
+			local result = findAnything(path)
+
+			if result then return result end --ding ding ding 2!!
+		end
+	end
+end
+
 function identifySrc(src)
 	--lzma support?
 	if src:sub(1, 6) == "7z\xbc\xaf\x27\x1c" then return "7z" end
@@ -127,32 +143,19 @@ function decryptSrc(filename, src)
 	end
 	
 	if kind == "7z" then --looks like it's 7-zipped too
-		--because 7-zip sucks we have to do file operations first
-		--[[local dec_filename = temp_file()
-		
-		--now use 7-zip with stdin and open it in binary mode on windows
-		local mode = love._os == "Windows" and "rb" or "r"
-		local file = io.popen("7z e -so -t7z \""..love.filesystem.getSaveDirectory()..dec_filename.."\"", mode) --no -si
-		if file then
-			src = file:read("*a")
-			file:close()
-			
-			--did it do anything?
-			assert(src and src:len() > 0, "decryptSrc: 7-zip returned nothing")
-			
-			--reidentify it
-			kind = identifySrc(src)
-		else
-			print("decryptSrc: Could not run 7-zip")
-		end]]
+		--use 7-zip using love2d itself, many times faster than using 7-zip from the command line
 		local temp = "temp_file"
 		local filedata = love.filesystem.newFileData(src, temp)
 		local success = love.filesystem.mount(filedata, temp)
 		
 		if success then
-			for i, file in ipairs(love.filesystem.getDirectoryItems(temp)) do --most optimal?
-				src = love.filesystem.read(temp.."/"..file)
+			--look everywhere for any sort of file
+			local path = findAnything(temp)
+
+			if path then
+				src = love.filesystem.read(path)
 			end
+
 			love.filesystem.unmount(temp)
 		else
 			print("decryptSrc: Could not mount file")
