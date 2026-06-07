@@ -51,12 +51,12 @@ function convertImagePVR(data, filename)
 				rawdata = string.sub(data, headerSize + 1)
 				imagedata = love.image.newImageData(w, h, "PVR1rgba4", rawdata)
 			elseif support.rgba4 then
-				print(w, h)
-				imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
-				local result = {}
-				local a, resultdat = PVRTDecompressPVRTC(data:sub(headerSize + 1), 2, w, h, result)
-				print(filename..", "..a)
-				print(w, h)
+				-- print(w, h)
+				-- imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
+				-- local result = {}
+				-- local a, resultdat = PVRTDecompressPVRTC(data:sub(headerSize + 1), 2, w, h, result)
+				-- print(filename..", "..a)
+				-- print(w, h)
 				--print(resultstr:len())
 
 				--for i, v in ipairs(result) do
@@ -66,7 +66,7 @@ function convertImagePVR(data, filename)
 				--imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
 				-- rawdata = resultstr
 				-- imagedata = love.image.newImageData(w, h, "rgba8", rawdata)
-				imagedata = resultdat
+				-- imagedata = resultdat
 				-- print(w, h)
 			end
 		elseif format == 54 and support.ETC1 then --etc1 compressed, 4bpp
