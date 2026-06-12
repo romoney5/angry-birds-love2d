@@ -221,7 +221,7 @@ function drawDebugButton(sprite, x, y, w, h, scale, call, enabled, sound)
 		if enabled and checkBounds(x - w/2, y - h/2, w * scale, h * scale, cursor.x, cursor.y)then
 			if keyHold["LBUTTON"] then
 				s = .9
-			elseif (gameOptions.ui and gameOptions.ui.enableHoverScaling) or not gameOptions.ui then
+			else
 				s = 1.1
 			end
 

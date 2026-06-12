@@ -23,7 +23,6 @@ _ = nil --really weird hack
 runLuaFile(compsPath.."/debugging/console.lua")				--debug console
 runLuaFile(compsPath.."/debugging/fps.lua")					--debug fps
 runLuaFile(compsPath.."/debugging/collisions.lua")			--debug collisions
-runLuaFile(compsPath.."/debugging/options.lua")				--debug options
 runLuaFile(compsPath.."/debugging/speed_up.lua")			--debug speed-up with shift+a
 
 --readers for proprietary formats

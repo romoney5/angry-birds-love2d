@@ -155,7 +155,7 @@ function updateDebug(dt, cx, cy)
 		scrollLimit,
 		logHeight)
 
-	--files/options
+	--files link
 	local tlw, tlh = 35, 36--tl.width, tl.height
 	local x, y = screenWidth - debugPadding - round_padding - tlw, debugPadding + round_padding * 2
 	x, y = math.floor(x), math.floor(y)
@@ -163,7 +163,6 @@ function updateDebug(dt, cx, cy)
 	local s = 1
 	drawDebugButton(nil, x, y, w, h, s, function()
 		debugOpen = false
-		-- optionsOpen = true
 		sgm()
 		return
 	end, true, "menu_confirm")
@@ -172,18 +171,6 @@ function updateDebug(dt, cx, cy)
 	res.drawString("", "Files", 0, 0, "HCENTER", "VCENTER")
 
 	setRenderState(0,0,1,1)
-
-	local w, h = 60 + tlw*2, 20 + tlh*2
-	local x, y = screenWidth - w * 2, debugPadding + round_padding * 2
-	local s = 1
-	drawDebugButton(nil, x, y, w, h, s, function()
-		debugOpen = false
-		optionsOpen = true
-		return
-	end, true, "menu_confirm")
-	love.graphics.translate(x, y)
-	love.graphics.scale(s)
-	res.drawString("", "Options", 0, 0, "HCENTER", "VCENTER")
 end
 
 function love.textinput(key)

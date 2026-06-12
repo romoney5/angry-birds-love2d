@@ -177,10 +177,6 @@ function love.errorhandler(msg)
 			updateDebug(dt, cx, cy)
 		end
 
-		if optionsOpen then
-			updateOptions(dt)
-		end
-
 		cursor.wheelTriggered = nil
 		setRenderState(0, 0, 1, 1)
 		updatePopup()

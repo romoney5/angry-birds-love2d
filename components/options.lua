@@ -24,8 +24,6 @@ physicsTimeScale = 1
 audioSpeed = 1
 accurateAudioSpeed = {on = false, _hz = 0}
 
-gameOptions = {}
-
 worldgravity = {x = 0, y = 20}
 gravity = setmetatable({}, {__newindex = function(_, i, v)
 	if tonumber(v) then

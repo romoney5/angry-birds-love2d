@@ -61,16 +61,14 @@ function love.wheelmoved(x, y)
 	-- cursor.wheelTriggered = -y ~= 0
 	cursor.wheel = y
 
-	if not optionsOpen then
-		-- zoomLevel = zoomLevel + y/16
-		wantedZoomLevel = wantedZoomLevel + y / 16
+	-- zoomLevel = zoomLevel + y/16
+	wantedZoomLevel = wantedZoomLevel + y / 16
 
-		-- if zoomLevel > 1.5 then zoomLevel = 1.5 end
-		-- if wantedZoomLevel > 1.5 then wantedZoomLevel = 1.5 end
-		-- if wantedZoomLevel > maxWorldScale then wantedZoomLevel = maxWorldScale end
-		-- if wantedZoomLevel < maxWorldScale then wantedZoomLevel = maxWorldScale end
-		-- if zoomLevel < -1.1 then zoomLevel = -1.1 end
-	end
+	-- if zoomLevel > 1.5 then zoomLevel = 1.5 end
+	-- if wantedZoomLevel > 1.5 then wantedZoomLevel = 1.5 end
+	-- if wantedZoomLevel > maxWorldScale then wantedZoomLevel = maxWorldScale end
+	-- if wantedZoomLevel < maxWorldScale then wantedZoomLevel = maxWorldScale end
+	-- if zoomLevel < -1.1 then zoomLevel = -1.1 end
 end
 
 function doesMouseClickSetsTouchCount() --probably returns if on windows

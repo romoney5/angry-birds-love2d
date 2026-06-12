@@ -33,8 +33,8 @@ local function updateCursor(dt)
 		updateGamepad(dt)
 	end
 
-	love.mouse.setVisible(not (gameOptions and gameOptions.ui and gameOptions.ui.enableCursor) or deviceModel ~= "windows"
-		or debugOpen or optionsOpen or openPopups[1] ~= nil)
+	love.mouse.setVisible(deviceModel ~= "windows"
+		or debugOpen or openPopups[1] ~= nil)
 end
 
 --restore particle functions
@@ -129,10 +129,10 @@ function love.update(dt)
 
 		love.graphics.setScissor()
 
-		dt2 = speedUpPre(math.min(dt, 1/30) * ((debugOpen or optionsOpen) and 0.2 or 1) * timeScale)
+		dt2 = speedUpPre(math.min(dt, 1/30) * (debugOpen and 0.2 or 1) * timeScale)
 
 		local kp, kr, kh, cw = keyPressed, keyReleased, keyHold, cursor.wheel
-		if openPopups[1] or debugOpen or fmOpen or optionsOpen then
+		if openPopups[1] or debugOpen or fmOpen then
 			keyPressed, keyReleased, keyHold = {}, {}, {}
 			cursor.wheel = 0
 		end
@@ -194,10 +194,6 @@ function love.update(dt)
 
 		if debugOpen then
 			updateDebug(dt, cx, cy)
-		end
-
-		if optionsOpen then
-			updateOptions(dt)
 		end
 
 		cursor.wheelTriggered = nil

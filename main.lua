@@ -212,20 +212,9 @@ function loadGameFiles()
 	
 	--mobile-specific options
 	if love._os == "Android" then
-		if gameOptions and gameOptions.ui then
-			gameOptions.ui.enableHoverScaling = false
-			gameOptions.ui.enableCursor = false
-		end
-
 		setFullScreenMode(true)
 		autoScale = 720
 		enableDebug = false
-	end
-	
-	if Analytics and Analytics.logEvent then
-		function Analytics.logEvent(id, params)
-			return
-		end
 	end
 
 	--4.0.0 hack
@@ -252,16 +241,6 @@ function loadGameFiles()
 	--override releaseBuild
 	--releaseBuild = false
 	--showEditor = true
-
-	local uimos = updateItemMouseOverState
-	if uimos then
-		function updateItemMouseOverState(item,dt)
-			if gameOptions and gameOptions.ui and not gameOptions.ui.enableHoverScaling then
-				return
-			end
-			uimos(item, dt)
-		end
-	end
 	
 	toggleZoom_GameLua = toggleZoom2
 	
