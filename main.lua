@@ -79,10 +79,14 @@ end
 local orig_print = print
 
 function print(...)
+	orig_print(...)
+
 	local prints = (... == nil and "nil") or ""
-	for i,v in ipairs{...} do
-		prints = prints..tostring(v).."\t"
+
+	for i = 1, select("#", ...) do
+		prints = prints..tostring(select(i, ...)).."\t"
 	end
+
 	if debugPrints then
 		table.insert(debugPrints, 1, prints)
 		if #debugPrints > debugPrintsLimit then
@@ -91,7 +95,6 @@ function print(...)
 			end
 		end
 	end
-	orig_print(prints)
 end
 
 function loadGameFiles()
