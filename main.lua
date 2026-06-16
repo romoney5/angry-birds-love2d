@@ -166,7 +166,54 @@ function loadGameFiles()
 	loadLuaFileToObject(scriptPath.."/particles.lua", this, particleTable, true)
 	loadLuaFileToObject(scriptPath.."/starLimits.lua", this, starTable, true)
 	
-	loadLuaFileToObject(scriptPath.."/blocks.lua", this, blockTable, true)
+	local rootPath = datapath .. "/" .. scriptPath
+	if checkDirectory(rootPath .. "/blocks.lua") then
+		loadLuaFileToObject(scriptPath .. "/blocks.lua", this, blockTable, true)
+	else
+		blockTable = {blocks = {
+				Ground = {
+					type = "box",
+					material = "staticGround",
+				}
+			},
+			materials = {}, 
+			themes = {},
+			damageFactors = {}
+		}
+		
+		local extras = {"birds", "scoreobjects", "levelgoals"}
+		for i, file in ipairs(love.filesystem.getDirectoryItems(rootPath)) do
+			local found = false
+			if file:match("blocks_") then
+				found = true
+			else
+				for _, extra in ipairs(extras) do
+					if file:match(extra) then
+						found = true
+					end
+				end
+			end
+			
+			if found then
+				local temp = {}
+				loadLuaFileToObject(scriptPath .. "/" .. file, this, temp, true)
+				
+				for n, key in pairs(temp) do
+					if type(key) == "table" and key[1].definition then
+						print(n)
+						for k, v in ipairs(key) do
+							blockTable.blocks[v.definition] = v
+							print(v.definition, v)
+						end
+					end
+				end
+			end
+		end
+		
+		loadLuaFileToObject(scriptPath .. "/damagefactors.lua", this, blockTable.damageFactors, true)
+		loadLuaFileToObject(scriptPath .. "/materials.lua", this, blockTable.materials, true)
+		loadLuaFileToObject(scriptPath .. "/themes.lua", this, blockTable.themes, true)
+	end
 
 	loadLuaFileToObject(scriptPath.."/loadlist.lua", this, _G, true)
 
