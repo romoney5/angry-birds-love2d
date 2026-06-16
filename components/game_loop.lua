@@ -179,6 +179,12 @@ function love.update(dt)
 		end
 		
 		keyPressed, keyReleased, keyHold, cursor.wheel = kp, kr, kh, cw
+		-- temporary fix for rio/space
+		if sm and sm.currentScene == sm.scenes.pause then
+			setPhysicsEnabled(false)
+			g_gamePaused = true
+		end
+		
 		updatePhysics(dt)
 
 		zoomLevel = lerp(zoomLevel, wantedZoomLevel, dt * 8)
