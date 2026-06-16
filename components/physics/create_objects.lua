@@ -176,6 +176,8 @@ local function setupObject(obj)
 
 	--the engine probably uses classes for objects so they have some default properties
 	obj.animTimer = 0
+	
+	obj.bounce = {time = 0, maxAmplitude = 0}
 end
 
 function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
@@ -298,13 +300,18 @@ local function isObjectInRenderQueue(name, z)
 end
 
 local function getZOrder(name)
-	local def = blockTable.blocks[loadedObjects.world[name].definition]
+	local data
+	if loadedObjects then
+		data = blockTable.blocks[loadedObjects.world[name].definition]
+	else
+		data = objects.world[name]
+	end
 	
-	if def.controllable then
+	if data.controllable then
 		return 2
 	end
 	
-	if def.levelGoal then
+	if data.levelGoal then
 		return 1
 	end
 	

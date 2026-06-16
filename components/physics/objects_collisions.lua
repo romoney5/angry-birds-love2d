@@ -1,13 +1,9 @@
 --functions related to objects and collisions
-
 function removeObject(name)
 	local obj = objects.world[name]
 
 	if obj and obj.body then
 		obj.body:destroy()
-		if not obj.controllable then
-			objects.world[name] = nil -- DO NOT REMOVE THIS!!! 
-		end
 	end
 	
 	removeJoints()
@@ -26,9 +22,9 @@ end
 function removeJoints()
 	if g_jointsToDestroy then
 		for jointName, joint in pairs(objects.joints) do
-			if not objects.world[joint.end1] or not objects.world[joint.end2] then
+			local end1, end2 = objects.world[joint.end1], objects.world[joint.end2]
+			if not end1 or not end2 or end1.body:isDestroyed() or end2.body:isDestroyed() then
 				destroyJointDeferred(jointName)
-				print(joint.end1, joint.end2)
 			end
 		end
 		
@@ -196,6 +192,10 @@ function getTrajectory(name)
 	return trajectoryTable
 end
 
+function setObjectAsForceAdder(name, bool)
+	object.disableForce = not bool
+end
+
 -- RMF related stuff
 function updateForceAdder(object, dt)
 	
@@ -250,7 +250,7 @@ function updateForceAdder(object, dt)
 				forceY = math.sin(bodyAngle) * forceRelative
 			end
 		else
-			local baseForce = object.force or 1.0 -- whatever this is???
+			local baseForce = object.airResistance or 1.0
 			if object.forceX then
 				forceX = baseForce * object.forceX
 			end
@@ -511,7 +511,9 @@ function setObjectParameter(object, parameter, value)
 				setScale(object, value)
 			end
 		elseif parameter == 6 then -- ?
-
+			obj.bounce.amplitudeMultiplier = value
+		elseif parameter == 7 then
+			obj.bounce.frequencyMultiplier = value
 		end
 	end
 end
@@ -892,6 +894,19 @@ function physicsEndContact(obj1, obj2, contact)
 	end
 end
 
+local function applyBouncing(obj1, obj2)
+	if not (obj1.bounce.amplitudeMultiplier and obj1.bounce.frequencyMultiplier) then
+		return
+	end
+	local dx = obj1.xVel - obj2.xVel
+	local dy = obj1.yVel - obj2.yVel
+	local relativeVelocity = math.sqrt(dx*dx+dy*dy) * obj1.mass / 10
+	local maxBounceAmplitude = math.min(relativeVelocity * 0.02, 0.1)
+	
+	obj1.bounce.maxAmplitude = maxBounceAmplitude
+	--obj2.bounce.maxAmplitude = maxBounceAmplitude
+end
+
 function physicsBeginContact(obj1, obj2, contact)
 	local o1 = obj1:getUserData()
 	local o2 = obj2:getUserData()
@@ -913,6 +928,8 @@ function physicsBeginContact(obj1, obj2, contact)
 	else
 		basicBeginContact(obj1, obj2, contact)
 	end
+	
+	applyBouncing(o1, o2)
 end
 
 --vastly improved damage system, credits to halo
@@ -963,12 +980,18 @@ function basicBeginContact(obj1, obj2, contact)
 		
 		local currentScore = scoreTable.blocks.score
 		
+		local function isStatic(object)
+			return object.name == "ground" or object.collider == colliders.static or getMaterial(object.name) == "immovable"
+		end
+		
+		local ignoreGroundDamage = (not o1.ignoreGroundDamage or not isStatic(o2)) and o2.ignoreGroundDamage and isStatic(o1)
 		local ignoreAllDamage = o1.ignoreAllDamage or o2.ignoreAllDamage
 		local damage = 0
+		
 		local block1Destroyed = true
-		if o2.strength then
+		if o2.strength and o1.noCollisionDamage ~= true then
 			local defence = o2.defence or 0
-			if linearForce < defence or o2.defence >= 1000 or ignoreAllDamage then
+			if linearForce < defence or ignoreGroundDamage or ignoreAllDamage then
 				block1Destroyed = false
 			else
 				local finalDamage = linearForce - defence
@@ -981,9 +1004,9 @@ function basicBeginContact(obj1, obj2, contact)
 		end
 		
 		local block2Destroyed = true
-		if o1.strength then
+		if o1.strength and o2.noCollisionDamage ~= true then
 			local defence = o1.defence or 0
-			if linearForce < defence or o1.defence >= 1000 or ignoreAllDamage then
+			if linearForce < defence or ignoreGroundDamage or ignoreAllDamage then
 				block2Destroyed = false
 			else
 				local finalDamage = linearForce - defence
@@ -1006,10 +1029,8 @@ function basicBeginContact(obj1, obj2, contact)
 				m2 = math.floor((o2.strength + damage or -1) * 10) / 10})
 		end
 		
-		local relativeSpeed = linearForce --* 6.0
-		
-		destroyBreakableJoints(o1.name, relativeSpeed)
-		destroyBreakableJoints(o2.name, relativeSpeed)
+		destroyBreakableJoints(o1.name, linearForce)
+		destroyBreakableJoints(o2.name, linearForce)
 		
 		--assert(damage >= 0, "damage < 0 "..o1.name..", "..o2.name)
 		damageDone = linearForce

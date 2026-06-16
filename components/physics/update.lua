@@ -116,6 +116,27 @@ function updatePhysics(dt)
 				end
 			end
 			
+			local bounceThreshold = 0.01
+			local bounceMax = 4.0
+			
+			if obj.bounce.maxAmplitude > 0 then
+				obj.bounce.time = obj.bounce.time + dt2
+				local factor = math.pow(obj.bounce.time, 0.25)
+				obj.bounce.amplitude = obj.bounce.maxAmplitude - obj.bounce.maxAmplitude * factor
+				obj.bounce.amplitude = math.min(obj.bounce.amplitude * obj.bounce.amplitudeMultiplier, bounceMax)
+				
+				if obj.bounce.amplitude <= bounceThreshold then
+					obj.bounce.time = 0
+					obj.bounce.amplitude = 0
+					obj.bounce.maxAmplitude = 0
+				else
+					local frequency = obj.bounce.frequencyMultiplier * 5 + obj.bounce.amplitude * 100;
+					local scaleX = 1 + math.sin(frequency * obj.bounce.time) * obj.bounce.amplitude;
+					local scaleY = 1 + math.cos(frequency * obj.bounce.time) * obj.bounce.amplitude;
+					obj.scale = { x = scaleX, y = scaleY }
+				end
+			end
+			
 			--grab objects
 			if not releaseBuild and keyHold.RBUTTON and checkObjectBounds(obj.x, obj.y, (obj.width or obj.radius) + 5, (obj.height or obj.radius) + 5, obj.angle, cx, cy) then
 				res.drawString("", obj.name, obj.x * 20, obj.y * 20 + 50)

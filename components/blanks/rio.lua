@@ -1,4 +1,9 @@
 --rio and related games
+function logMedioEvent()
+end
+
+function logMedioAnonymousIDtoFlurry()
+end
 
 function setRetinaResolution(retina)
 	print("Retina is now set to "..tostring(retina))
@@ -22,6 +27,10 @@ end
 
 function setParticleSystemLimits(leftLimit, rightLimit)
 	return
+end
+
+function requestAndShowInterstitialAd()
+
 end
 
 function setCollisionEnabled(object, enabled)
