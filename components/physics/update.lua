@@ -78,12 +78,7 @@ function updatePhysics(dt)
 	hasMovingObjects = false
 	hasMovingObjectsAboveTolerance = false
 	
-	local rollingVolumes = {
-		light = 0,
-		wood = 0, 
-		rock = 0,
-	}
-	
+	local rollingVolumes = {}
 	local cx, cy = cursorPhysics.x, cursorPhysics.y
 	for _, obj in pairs(objects.world) do
 		if obj.body and not obj.body:isDestroyed() then
@@ -112,15 +107,13 @@ function updatePhysics(dt)
 			obj.yVel = yVel
 			hasAwakeObjects = true
 			
-			local material = getMaterial(obj.name)
-			local volume = (math.abs(angularVelocity) * obj.mass / 400.0) * obj.body:getInertia()
-			
-			if volume > 1.0 then
-				volume = 1.0
-			end
-
-			if obj.type == "circle" and not birds[obj.name] and rollingVolumes[material] and volume > rollingVolumes[material] then
-				rollingVolumes[material] = volume
+			local mat = blockTable.materials[getMaterial(obj.name)]
+			if obj.controllable ~= true and mat and obj.radius then
+				local sound = mat.rollingSound
+				if sound then
+					local volume = math.min(1, math.abs(angularVelocity) * obj.mass / 400.0 * obj.body:getInertia())
+					rollingVolumes[sound] = math.max(rollingVolumes[sound] or 0, volume)
+				end
 			end
 			
 			--grab objects
@@ -161,19 +154,15 @@ function updatePhysics(dt)
 		end
 	end
 	
-	for material, volume in pairs(rollingVolumes) do
-		local rollingSound = blockTable.materials[material] and blockTable.materials[material].rollingSound
-		
-		if rollingSound then
-			if volume > 0 then
-				if not res.isAudioPlaying(rollingSound) then
-					res.playAudio(rollingSound, volume, true, 2)
-				else
-					cachedaudios[rollingSound]:setVolume(volume) -- make a standalone function for this?
-				end
+	for rollingSound, volume in pairs(rollingVolumes) do
+		if volume > 0 then
+			if not res.isAudioPlaying(rollingSound) then
+				res.playAudio(rollingSound, volume, true, 2)
 			else
-				res.stopAudio(rollingSound)
+				cachedaudios[rollingSound]:setVolume(volume) -- make a standalone function for this?
 			end
+		else
+			res.stopAudio(rollingSound)
 		end
 	end
 
