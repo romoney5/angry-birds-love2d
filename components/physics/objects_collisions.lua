@@ -930,6 +930,7 @@ function physicsBeginContact(obj1, obj2, contact)
 	end
 	
 	applyBouncing(o1, o2)
+	applyBouncing(o2, o1)
 end
 
 --vastly improved damage system, credits to halo

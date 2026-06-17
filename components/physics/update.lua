@@ -78,6 +78,7 @@ function updatePhysics(dt)
 	hasMovingObjects = false
 	hasMovingObjectsAboveTolerance = false
 	
+	local objIndex = 0
 	local rollingVolumes = {}
 	local cx, cy = cursorPhysics.x, cursorPhysics.y
 	for _, obj in pairs(objects.world) do
@@ -120,22 +121,27 @@ function updatePhysics(dt)
 			local bounceMax = 4.0
 			
 			if obj.bounce.maxAmplitude > 0 then
-				obj.bounce.time = obj.bounce.time + dt2
-				local factor = math.pow(obj.bounce.time, 0.25)
-				obj.bounce.amplitude = obj.bounce.maxAmplitude - obj.bounce.maxAmplitude * factor
-				obj.bounce.amplitude = math.min(obj.bounce.amplitude * obj.bounce.amplitudeMultiplier, bounceMax)
+				obj.bounce.time = obj.bounce.time + dt
+				local factor = 1.0 - obj.bounce.time
+				obj.bounce.amplitude = factor * obj.bounce.maxAmplitude * obj.bounce.frequencyMultiplier
+				obj.bounce.amplitude = math.min(obj.bounce.amplitude, bounceMax)
 				
 				if obj.bounce.amplitude <= bounceThreshold then
 					obj.bounce.time = 0
 					obj.bounce.amplitude = 0
 					obj.bounce.maxAmplitude = 0
 				else
-					local frequency = obj.bounce.frequencyMultiplier * 5 + obj.bounce.amplitude * 100;
-					local scaleX = 1 + math.sin(frequency * obj.bounce.time) * obj.bounce.amplitude;
-					local scaleY = 1 + math.cos(frequency * obj.bounce.time) * obj.bounce.amplitude;
+					local offset = objIndex * (math.pi / 2) -- rio uses an object index as an offset for every object
+					local frequency = (obj.bounce.amplitude * 100 + obj.bounce.frequencyMultiplier * 5) * obj.bounce.time + offset
+					
+					local scaleX = 1 + math.sin(frequency) * obj.bounce.amplitude
+					local scaleY = 1 - math.sin(frequency) * obj.bounce.amplitude 
+
 					obj.scale = { x = scaleX, y = scaleY }
 				end
 			end
+			
+			objIndex = objIndex + 1
 			
 			--grab objects
 			if not releaseBuild and keyHold.RBUTTON and checkObjectBounds(obj.x, obj.y, (obj.width or obj.radius) + 5, (obj.height or obj.radius) + 5, obj.angle, cx, cy) then

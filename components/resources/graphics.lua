@@ -67,11 +67,18 @@ function res.drawCompoSprite(...)
 		if vanchor == "HCENTER" or hanchor == "HCENTER" then xpr = image.width / 2 end
 		if vanchor == "VCENTER" or hanchor == "VCENTER" then ypr = image.height / 2 end
 		
+		-- fix this
 		for i, v in ipairs(image.items) do
-			--TODO: scale and angle
-			local x = math.floor(x + v.x - xpr)
-			local y = math.floor(y + v.y - ypr)
-			res.drawSprite(sheet, v.n, x, y)--, vanchor, hanchor)--, width, height)
+			local px = v.x - xpr
+			local py = v.y - ypr
+
+			local sin = math.sin(drawangle)
+			local cos = math.cos(drawangle)
+
+			local transformX = (px * cos) - (py * sin) + x
+			local transformY = (px * sin) + (py * cos) + y
+
+			res.drawSprite(sheet, v.n, transformX, transformY)
 		end
 	end
 end
