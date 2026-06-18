@@ -350,8 +350,9 @@ function setTexture(object, texture)
 	objects.world[object].texture = texture
 end
 
+-- changed due to blu's animation breaking when checking for the variable type
 function setSprite(object, sprite)
-	objects.world[object].sprite = sprite
+	objects.world[object].objectSprite = sprite
 end
 
 function setRollingSound(object, rollingSound) --3.0.1 only

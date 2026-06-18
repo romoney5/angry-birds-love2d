@@ -47,7 +47,11 @@ function rotateThemeSprites(dt)
 end
 
 function removeJointsFromObject(name)
-	return
+	for jointName, joint in pairs(objects.joints) do
+		if joint.end1 == name or joint.end2 == name then
+			destroyJoint(jointName)
+		end
+	end
 end
 
 --latest pc version

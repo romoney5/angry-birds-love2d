@@ -410,7 +410,7 @@ function drawObject(v)
 	
 	love.graphics.push()
 
-	drawxp, drawyp = res.getSpritePivot(v.sprite)
+	drawxp, drawyp = res.getSpritePivot(v.objectSprite)
 	drawangle = v.angle
 	
 	if v.colors then
@@ -426,14 +426,14 @@ function drawObject(v)
 	if type(scale) == "table" then
 		love.graphics.scale(scale.x, scale.y)
 		
-		res.drawSprite(v.sprite, x / scale.x, y / scale.y)
+		res.drawSprite(v.objectSprite, x / scale.x, y / scale.y)
 	else
 		if v.isBackground then scale = 2 end
 
 		love.graphics.scale(scale)
 		if v.flipx then love.graphics.scale(-1, 1) end
 
-		res.drawSprite(v.sprite, x / scale, y / scale)
+		res.drawSprite(v.objectSprite, x / scale, y / scale)
 	end
 	
 	love.graphics.setShader()

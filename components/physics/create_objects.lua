@@ -178,6 +178,7 @@ local function setupObject(obj)
 	obj.animTimer = 0
 	
 	obj.bounce = {time = 0, maxAmplitude = 0}
+	setSprite(obj.name, obj.sprite)
 end
 
 function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)

@@ -21,6 +21,16 @@ function solvePhysics(updateStep) -- WIP
 	--return timeStep, velocityIterations, positionIterations --ab uses 1/30, 10, 10
 end
 
+local function getObjectCount()
+	local total = 0
+	
+	for _, count in pairs(objects.counts) do
+		total = total + count
+	end
+	
+	return total
+end
+
 function updatePhysics(dt)
 	if isPhysicsEnabled() ~= true then                 
 		return
@@ -131,7 +141,7 @@ function updatePhysics(dt)
 					obj.bounce.amplitude = 0
 					obj.bounce.maxAmplitude = 0
 				else
-					local offset = objIndex * (math.pi / 2) -- rio uses an object index as an offset for every object
+					local offset = (objIndex / getObjectCount()) * (math.pi / 2) -- rio uses an object index as an offset for every object
 					local frequency = (obj.bounce.amplitude * 100 + obj.bounce.frequencyMultiplier * 5) * obj.bounce.time + offset
 					
 					local scaleX = 1 + math.sin(frequency) * obj.bounce.amplitude
@@ -139,6 +149,10 @@ function updatePhysics(dt)
 
 					obj.scale = { x = scaleX, y = scaleY }
 				end
+			end
+			
+			if selectObjectAnimation then
+				selectObjectAnimation(obj.name, math.sqrt(velMagnitude), obj.angle, dt)
 			end
 			
 			objIndex = objIndex + 1
