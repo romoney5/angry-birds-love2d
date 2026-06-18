@@ -5,9 +5,19 @@ trajectory = {{{}, {}, {}}}
 
 
 themeSpriteObjects = {}
-
+--[[
 function createThemeSprite(name, sprite, x, y, speedX, scaleX, scaleY, angle, layerNumber)
 	themeSpriteObjects[name] = {sprite = sprite, x = x, y = y, speedX = speedX, scaleX = scaleX, scaleY = scaleY, angle = angle, layerNumber = layerNumber}
+end
+]]
+
+function createThemeSprite(name, sprite, x, y, scaleX, scaleY, angle, layerNumber, angleVel, horFlip)
+	if horFlip ~= nil then
+		themeSpriteObjects[name] = {sprite = sprite, x = x, y = y, scaleX = scaleX, scaleY = scaleY, angle = angle, 
+		layerNumber = layerNumber, angleVel = angleVel, horFlip = horFlip}
+	else
+		themeSpriteObjects[name] = {sprite = sprite, x = x, y = y, speedX = scaleX, scaleX = scaleY, scaleY = angle, angle = layerNumber, layerNumber = angleVel}
+	end
 end
 
 function removeThemeSprite(name, layerNumber)
@@ -22,6 +32,11 @@ function modifyThemeSprite(name, x, y, scaleX, scaleY, angle, layerNumber)
 	themeSpriteObjects[name].scaleY = scaleY
 	themeSpriteObjects[name].angle = angle
 	themeSpriteObjects[name].layerNumber = layerNumber
+end
+
+function setThemeSprite(name, sprite, layer)
+	themeSpriteObjects[name].layerNumber = layer
+	themeSpriteObjects[name].sprite = sprite
 end
 
 local yoffsets = {}
@@ -116,13 +131,16 @@ function drawThemeSprite(v, layer)
 	local screenLeft = renderLeft or screen.left
 	local screenTop = renderTop or screen.top
 	
+	local xs = v.scaleX or v.scale.x
+	local ys = v.scaleY or v.scale.y
+
 	if w > 0 and wScale > .02 then --don't draw so many if the scale is too low
 		for x = -1, math.floor(screenWidth / w / wScale) do
 			local pivotX = w * x
 			local left = (-screenLeft * relativeSpeed / relativeScale) % w
-			local top = (-screenTop / v.scaleY)
+			local top = (-screenTop / ys)
 
-			setRenderState(pivotX + left - shakeX, top - shakeY, wScale * v.scaleX, wScale * v.scaleY, v.angle, px, py)
+			setRenderState(pivotX + left - shakeX, top - shakeY, wScale * xs, wScale * ys, v.angle, px, py)
 
 			if not (x ~= 0 and isLooping == false) then
 				res.drawSprite(v.sprite, v.x * 16, v.y)
