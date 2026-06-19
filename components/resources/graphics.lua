@@ -67,18 +67,32 @@ function res.drawCompoSprite(...)
 		if vanchor == "HCENTER" or hanchor == "HCENTER" then xpr = image.width / 2 end
 		if vanchor == "VCENTER" or hanchor == "VCENTER" then ypr = image.height / 2 end
 		
-		-- fix this
 		for i, v in ipairs(image.items) do
-			local px = v.x - xpr
-			local py = v.y - ypr
+			local sprite = checkSprite(v.n)
+			if sprite.quad and sprite.spsh then
+				local w, h = width or sprite.width, height or sprite.height
+				local wm = w / sprite.width
+				local hm = h / sprite.height
+				
+				love.graphics.push("all")
+				local r, g, b, a = love.graphics.getColor()
+				love.graphics.setColor(r * alpha, g * alpha, b * alpha, a * alpha)
+				
+				love.graphics.translate(x, y)
+				love.graphics.translate(xpr, ypr)
+				love.graphics.rotate(drawangle)
+				love.graphics.translate(-xpr, -ypr)
+				-- move parts by their offset and pivot point.
+				love.graphics.translate(v.x - sprite.px, v.y - sprite.py)
+				love.graphics.scale(wm, hm)
 
-			local sin = math.sin(drawangle)
-			local cos = math.cos(drawangle)
-
-			local transformX = (px * cos) - (py * sin) + x
-			local transformY = (px * sin) + (py * cos) + y
-
-			res.drawSprite(sheet, v.n, transformX, transformY)
+				love.graphics.draw(
+					sprite.spsh,
+					sprite.quad,
+					0, 0)
+					
+				love.graphics.pop()
+			end
 		end
 	end
 end
