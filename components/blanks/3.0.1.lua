@@ -511,19 +511,20 @@ function toggleZoom2(a, b)--?
 end
 
 function raycast(x1, y1, x2, y2)
-    local hit, hit_name, hit_x, hit_y = false, nil, nil, nil
+	local hit, hit_name, hit_x, hit_y = false, nil, nil, nil
 
     physicsWorld:rayCast(x1, y1, x2, y2, function(fixture, x, y, xn, yn, fraction)
-        local userdata = fixture and fixture:getUserData()
-        local name = userdata and userdata.name
+		local userdata = fixture and fixture:getUserData()
+		local name = userdata and userdata.name
 
-        if name then
-            hit, hit_name, hit_x, hit_y = true, name, x, y
-            return 0
-        end
-    end)
+		if name then
+			hit, hit_name, hit_x, hit_y = true, name, x, y
 
-    return hit, hit_name, hit_x, hit_y
+			return 0
+		end
+	end)
+
+	return hit, hit_name, hit_x, hit_y
 end
 
 function raycastAll(info)
