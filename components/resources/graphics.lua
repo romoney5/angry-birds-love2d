@@ -69,7 +69,7 @@ function res.drawCompoSprite(...)
 		
 		for i, v in ipairs(image.items) do
 			local sprite = checkSprite(v.n)
-			if sprite.quad and sprite.spsh then
+			if sprite and sprite.quad and sprite.spsh then
 				local w, h = width or sprite.width, height or sprite.height
 				local wm = w / sprite.width
 				local hm = h / sprite.height

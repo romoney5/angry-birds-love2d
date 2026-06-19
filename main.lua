@@ -183,7 +183,7 @@ function loadGameFiles()
 				loadLuaFileToObject(scriptPath .. "/" .. file, this, temp, true)
 				
 				for n, key in pairs(temp) do
-					if type(key) == "table" and key[1].definition then
+					if type(key) == "table" and key[1] and key[1].definition then
 						for k, v in ipairs(key) do
 							blockTable.blocks[v.definition] = v
 						end
