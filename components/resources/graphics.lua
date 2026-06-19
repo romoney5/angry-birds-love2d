@@ -84,7 +84,7 @@ function res.drawCompoSprite(...)
 				love.graphics.translate(-xpr, -ypr)
 				-- move parts by their offset and pivot point.
 				love.graphics.translate(v.x - sprite.px, v.y - sprite.py)
-				love.graphics.scale(wm, hm)
+				--love.graphics.scale(wm, hm)
 
 				love.graphics.draw(
 					sprite.spsh,
