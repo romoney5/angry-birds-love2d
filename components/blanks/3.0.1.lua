@@ -1003,7 +1003,21 @@ function createLuaAssetRenderer(self, sprite, zOrder)
 	
 	local id = tostring(self.luaAssetRenderer) .. "_" .. sprite
 	native.luaRenderBuffer[id] = {owner = self, renderer = renderer}
-	objectsSorted = false
+
+	local lo, hi = 1, #renderList
+	while lo <= hi do
+		local mid = math.floor((lo + hi) / 2)
+		
+		local sprite = renderList[mid]
+		if (sprite.z or sprite.z_order) <= zOrder then
+			lo = mid + 1
+		else
+			hi = mid - 1
+		end
+	end
+	
+	table.insert(renderList, lo, renderer)
+	
 	return id
 end
 

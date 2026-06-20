@@ -250,7 +250,7 @@ function updateForceAdder(object, dt)
 				forceY = math.sin(bodyAngle) * forceRelative
 			end
 		else
-			local baseForce = object.airResistance or 1.0
+			local baseForce = 1.0 --object.airResistance or 1.0
 			if object.forceX then
 				forceX = baseForce * object.forceX
 			end
@@ -746,8 +746,8 @@ function bubbleBeginContact(obj1, obj2, contact)
 	local o1 = obj1:getUserData()
 	local o2 = obj2:getUserData()
 	
-	local contactPoint = contact:getPositions()
-	local contactNormal = contact:getNormal()
+	local px, py = contact:getPositions()
+	local nx, ny = contact:getNormal()
 	
 	local bubble, collider = o1, o2
 	
@@ -764,7 +764,11 @@ function bubbleBeginContact(obj1, obj2, contact)
 		collider.bubbleSprite = bubble.sprite
 		
 		trappedInBubble(collider)
-		birdCollision(bubble.name, collider.name, 1.0, 0.0, contactPoint, contactNormal)
+		if birdCollision then
+			birdCollision(bubble.name, collider.name, 1.0, 0.0, px, py, nx, ny)
+		else
+			CollisionCallbacks.birdCollision(bubble.name, collider.name, 1.0, 0.0, px, py, nx, ny)
+		end
 		
 		removeObject(bubble.name)
 		objects.world[bubble.name] = nil

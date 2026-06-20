@@ -271,21 +271,19 @@ function drawGameNative()
 end
 
 --TODO : unwind everything and make this look cleaner
-local renderList
+local textureCache = {}
+
 function drawSprites()
 	local screenLeft, screenTop = getScreenTopLeft()
 	local scale = renderScale or worldScale
 	
 	if not objectsSorted then
 		renderList = {}
+		
 		for z, objects in pairs(zOrderedObjects) do
 			for _, obj in ipairs(objects) do
 				table.insert(renderList, obj)
 			end
-		end
-		
-		for _, entry in pairs(native.luaRenderBuffer) do
-			table.insert(renderList, entry.renderer)
 		end
 		
 		-- sort the flat list by z_order
@@ -294,45 +292,48 @@ function drawSprites()
 		end)
 		objectsSorted = true
 	end
-
+	
+	local b1, b2 = love.graphics.getBlendMode()
+	textureShader:send("worldScale", scale * displayScale * love.graphics.getDPIScale())
+	textureShader:send("camera", {screenLeft, screenTop})
+	
 	for k, v in ipairs(renderList) do
-		local obj = objects.world[v.name]
+		local obj = objects.world[v.name] or v
+		local texture = checkSprite(obj.texture) or findSpriteByPNG(obj.texture)
+		local shader = love.graphics.getShader()
 		
-		if obj then
-			local texture = checkSprite(obj.texture) --or blockTable.themes[currentTheme].texture
-			if not texture then --try to find based on a png name
-				texture = findSpriteByPNG(obj.texture)
-			end
+		if texture then
+			love.graphics.setBlendMode("alpha", "alphamultiply")
 			
-			if texture then
-				love.graphics.push()
-				local b1, b2 = love.graphics.getBlendMode()
-				love.graphics.setBlendMode("alpha", "alphamultiply")
-				
+			if not textureCache[obj.texture] then
 				local textureImage = texture.spsh
+				local w, h = textureImage:getDimensions()
 				textureImage:setWrap("repeat", "repeat")
 				
-				textureShader:send("textureMask", textureImage)
-				
-				local w, h = textureImage:getDimensions()
 				textureShader:send("textureDimensions", {w, h})
-				
-				textureShader:send("worldScale", scale * displayScale * love.graphics.getDPIScale())
-				textureShader:send("camera", {screenLeft, screenTop})
+				textureShader:send("textureMask", textureImage)
 				
 				love.graphics.setShader(textureShader)
 				
-				drawObject(obj)
-				
-				love.graphics.setBlendMode(b1, b2)
-				love.graphics.setShader()
-				love.graphics.pop()
-			else
-				drawObject(obj)
+				textureCache[obj.texture] = textureShader
+			elseif shader ~= textureCache[obj.texture] then
+				love.graphics.setShader(textureCache[obj.texture])
 			end
-		else
-			drawObject(v)
 		end
+		
+		love.graphics.push()
+		
+		drawObject(obj)
+		
+		if texture then
+			love.graphics.setBlendMode(b1, b2)
+		end
+		
+		if shader ~= love.graphics.getShader() then
+			love.graphics.setShader(shader)
+		end
+		
+		love.graphics.pop()
 	end
 end
 --[[
@@ -407,8 +408,6 @@ function drawObject(v)
 	else
 		x, y = physicsToWorldTransform(v.x or 0, v.y or 0) -- fix this
 	end
-	
-	love.graphics.push()
 
 	drawxp, drawyp = res.getSpritePivot(v.objectSprite)
 	drawangle = v.angle
@@ -435,11 +434,8 @@ function drawObject(v)
 
 		res.drawSprite(v.objectSprite, x / scale, y / scale)
 	end
-	
-	love.graphics.setShader()
 
 	drawangle = 0
-	love.graphics.pop()
 end
 --massive thanks halo
 function addToTrajectory(index, x, y)
