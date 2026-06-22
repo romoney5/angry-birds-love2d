@@ -290,6 +290,42 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	setupObject(obj)
 end
 
+-- used for crates in rio (WIP)
+function createBlock(data)
+	local def = data.block
+	objects.world[data.name] = {name = data.name, sprite = data.sprite, y = data.y, x = data.x, width = data.w, height = data.h, density = def.density,
+	friction = def.friction, restitution = def.restitution, controllable = data.controllable, z_order = data.z_order, mass = 1, xVel = 0, yVel = 0, angle = 0}
+	
+	local obj = objects.world[data.name]
+	local thickness = 1
+    local w, h = obj.width, obj.height
+    local halfw, halfh = w*0.5, h*0.5
+	
+	obj.body = love.physics.newBody(physicsWorld, obj.x, obj.y, "dynamic")
+	
+    local edges = {
+        love.physics.newRectangleShape(0, -halfh + thickness/2, w,  thickness),
+        love.physics.newRectangleShape(0,  halfh - thickness/2, w,  thickness),
+        love.physics.newRectangleShape(-halfw + thickness/2, 0, thickness,  h),
+        love.physics.newRectangleShape( halfw - thickness/2, 0, thickness,  h),
+    }
+	
+    obj.fixtures = {}
+    for _, shape in ipairs(edges) do
+        local fix = love.physics.newFixture(obj.body, shape, def.density)
+        fix:setRestitution(def.restitution)
+        fix:setFriction(def.friction)
+        fix:setUserData(obj)
+        table.insert(obj.fixtures, fix)
+    end
+	
+    obj.fixture = obj.fixtures[1]
+    obj.shape = edges[1]
+	
+	obj.type = "block"
+	setupObject(obj)
+end
+
 local function getZOrder(name)
 	local data
 	if loadedObjects then
