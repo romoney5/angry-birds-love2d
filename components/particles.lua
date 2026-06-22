@@ -112,6 +112,8 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 	local pt = particles[type]
 	if not pt then return end
 	
+	ignoreLimits = pt.ignoreLimits or ignoreLimits -- rio
+	
 	if softLimitSimultaneousParticles < particleAmount + amount and not ignoreLimits then
 		amount = amount * 0.5
 	end
@@ -155,10 +157,16 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 			if type == "theme15rain" then			
 				p.angle = math.atan2(p.yVel, p.xVel)
 			end
+			
+			-- BUGFIX : fixed RNG adding unintended extra values to the output
+			local function randomize(min, max)
+				min = min or 0; max = max or 0
+				return min + math.random() * (max - min)
+			end
 				
-			p.angleVel = _G.math.random(pt.minAngleVel or 0, pt.maxAngleVel or 0)
-			p.scaleBegin = _G.math.random(pt.minScaleBegin or 0, pt.maxScaleBegin or 0)
-			p.scaleEnd = _G.math.random(pt.minScaleEnd or 0, pt.maxScaleEnd or 0)
+			p.angleVel = randomize(pt.minAngleVel, pt.maxAngleVel)
+			p.scaleBegin = randomize(pt.minScaleBegin, pt.maxScaleBegin)
+			p.scaleEnd = randomize(pt.minScaleEnd, pt.maxScaleEnd)
 			p.scale = p.scaleBegin
 			p.type = type
 			p.sprite = pt.sprites[_G.math.random(1, #pt.sprites)]
@@ -209,6 +217,14 @@ local function clear(kind)
 	end
 end
 
+local function clearMenuParticlesNative()
+	clear("menu")
+end
+
+local function clearGameParticlesNative()
+	clear("ingame")
+end
+
 local function addLevelParticles(...)
 	addParticles(...)
 end
@@ -224,6 +240,8 @@ local lookup = {
     setHardLimit = setHardLimit,
     setSoftLimit = setSoftLimit,
     clear = clear,
+	clearMenuParticlesNative = clearMenuParticlesNative,
+	clearGameParticlesNative = clearGameParticlesNative,
     SCREEN = SCREEN,
     WORLD = WORLD,
     addLevelParticles = addLevelParticles,
@@ -231,6 +249,7 @@ local lookup = {
     update = updateParticlesNative,
     add = addParticles2,
     addParticlesWithProperties = function() return end, --11022
+	updateMenuParticlesNative = function() end
 }
 
 getParticles = {

@@ -474,16 +474,12 @@ function getIntersectingObjects(info)
     
     local hits = {}
         
-	physicsWorld:queryBoundingBox(x - left, y - up, x + right, y + down, function(fixture)
-		local body = fixture:getBody()
-		local userdata = body and body:getUserData()
+	physicsWorld:queryBoundingBox(x + left, y + down, x + right, y + up, function(fixture)
+		local userdata = fixture and fixture:getUserData()
 		local name = userdata and userdata.name
 		
 		if name then
-			table.insert(hits, {
-				name = name,
-				fixture = fixture
-			})
+			table.insert(hits, name)
 		end
 		
 		return true
@@ -612,6 +608,10 @@ function getScale(name)
 			return obj.scale or 1
 		end
     end
+end
+
+function setStatic(name, static)
+	setObjectParameter(name, 2, static and 0 or 1)
 end
 
 --5.0.1

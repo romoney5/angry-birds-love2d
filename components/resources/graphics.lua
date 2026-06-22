@@ -52,6 +52,10 @@ function res.drawCompoSprite(...)
 	end
 	
 	local image = checkSprite(sprite)
+	
+	if not image.items then
+		return res.drawSprite(...)
+	end
 
 	if image then
 		local xpr, ypr = 0, 0
@@ -314,6 +318,8 @@ function drawSlingScopeNative(s_vx, s_vy, vertical_force)
 	local amount = 16
 
 	local offset = g_sling_scope_animation % 1
+	
+	vertical_force = vertical_force or 0
 
 	s_vy = s_vy - worldgravity.y / physicsToWorld * spacing / 2
 	s_vy = s_vy + worldgravity.y / physicsToWorld * spacing * (offset)
@@ -341,7 +347,8 @@ function drawSlingScopeNative(s_vx, s_vy, vertical_force)
 		lsx = lsx + s_vx * spacing
 		lsy = lsy + s_vy * spacing
 
-		res.drawSprite("PARTICLE_SLINGDOT", 0, 0)
+		local sprite = checkSprite("SLINGSCOPE_DOT") and "SLINGSCOPE_DOT" or "PARTICLE_SLINGDOT"
+		res.drawSprite(sprite, 0, 0)
 
 		love.graphics.pop()
 	end

@@ -6,7 +6,7 @@ function loadLevel(filename)
 	print("Loading level \""..filename..".lua\"...")
 
 	birdTrajectory = {{}, {}, {}}
-	trajectory = {{{}, {}, {}}}
+	resetTrajectory()
 
 	if physicsWorld then physicsWorld:destroy() end --clear all the objects before continuing
 

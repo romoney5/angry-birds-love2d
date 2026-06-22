@@ -1,7 +1,7 @@
 --draw bg, fg, and game
 
 local drawSprites --old seasons versions define drawSprites
-trajectory = {{{}, {}, {}}}
+local trajectory
 
 
 themeSpriteObjects = {}
@@ -451,4 +451,8 @@ function startNewTrajectory()
 	if #trajectory > 2 then
 		table.remove(trajectory, 1)
 	end
+end
+
+function resetTrajectory()
+	trajectory = {{{}, {}, {}}}
 end

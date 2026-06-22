@@ -139,6 +139,29 @@ function loadRovioNewsContent(rovioNewsURL)
 	return
 end
 
+function getTimeDifference(a, b)
+	local function getDate(t)
+		local timestamp = t
+		timestamp.hour = t.hours
+		timestamp.min = t.minutes
+		timestamp.sec = t.seconds
+		return os.time(timestamp)
+	end
+	
+	local timeDiff = getDate(b) - getDate(a)
+	local direction = 0
+	
+	if timeDiff > 0 then direction = 1
+	elseif timeDiff < 0 then direction = -1 end
+	
+	return {diff = timeDiff, direction = direction}
+end
+
+function getTimeDifferenceInCalendarDays(a, b)
+	local timeDiff = getTimeDifference(a, b).diff
+	return math.floor(timeDiff / 86400 + 0.5)
+end
+
 --epacs
 
 drawForeground = drawForegroundNative
