@@ -37,6 +37,14 @@ function deactivateDebugConsole()
 	return
 end
 
+function getCurrentTime()
+	local currentTime = os.date("*t")
+	local t = {year = currentTime.year, month = currentTime.month, day = currentTime.day, hour = currentTime.hour}
+	t.minutes = currentTime.min
+	t.seconds = currentTime.sec
+	return t
+end
+
 --3.2.0 hd ipad
 RovioAds = {}
 
@@ -1004,19 +1012,7 @@ function createLuaAssetRenderer(self, sprite, zOrder)
 	local id = tostring(self.luaAssetRenderer) .. "_" .. sprite
 	native.luaRenderBuffer[id] = {owner = self, renderer = renderer}
 
-	local lo, hi = 1, #renderList
-	while lo <= hi do
-		local mid = math.floor((lo + hi) / 2)
-		
-		local sprite = renderList[mid]
-		if (sprite.z or sprite.z_order) <= zOrder then
-			lo = mid + 1
-		else
-			hi = mid - 1
-		end
-	end
-	
-	table.insert(renderList, lo, renderer)
+	insertSortedByDepth(zOrder, renderer)
 	
 	return id
 end

@@ -277,27 +277,11 @@ function drawSprites()
 	local screenLeft, screenTop = getScreenTopLeft()
 	local scale = renderScale or worldScale
 	
-	if not objectsSorted then
-		renderList = {}
-		
-		for z, objects in pairs(zOrderedObjects) do
-			for _, obj in ipairs(objects) do
-				table.insert(renderList, obj)
-			end
-		end
-		
-		-- sort the flat list by z_order
-		table.sort(renderList, function(a, b) 
-			return (a.z or a.z_order) < (b.z or b.z_order) 
-		end)
-		objectsSorted = true
-	end
-	
 	local b1, b2 = love.graphics.getBlendMode()
 	textureShader:send("worldScale", scale * displayScale * love.graphics.getDPIScale())
 	textureShader:send("camera", {screenLeft, screenTop})
 	
-	for k, v in ipairs(renderList) do
+	for k, v in ipairs(zOrderedObjects) do
 		local obj = objects.world[v.name] or v
 		local texture = checkSprite(obj.texture) or findSpriteByPNG(obj.texture)
 		local shader = love.graphics.getShader()

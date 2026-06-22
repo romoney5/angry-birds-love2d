@@ -142,7 +142,7 @@ end
 function getTimeDifference(a, b)
 	local function getDate(t)
 		local timestamp = t
-		timestamp.hour = t.hours
+		timestamp.hour = timestamp.hour or t.hours
 		timestamp.min = t.minutes
 		timestamp.sec = t.seconds
 		return os.time(timestamp)
@@ -154,7 +154,12 @@ function getTimeDifference(a, b)
 	if timeDiff > 0 then direction = 1
 	elseif timeDiff < 0 then direction = -1 end
 	
-	return {diff = timeDiff, direction = direction}
+	return {
+		days = math.floor(timeDiff / 86400),
+		hours = math.floor((timeDiff % 86400) / 3600),
+		minutes = math.floor((timeDiff % 3600) / 60),
+		seconds = math.floor(timeDiff % 60),
+		diff = timeDiff, direction = direction }
 end
 
 function getTimeDifferenceInCalendarDays(a, b)

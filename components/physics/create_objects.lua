@@ -290,16 +290,6 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	setupObject(obj)
 end
 
-local function isObjectInRenderQueue(name, z)
-	for k, v in ipairs(zOrderedObjects[z]) do
-		if v.name == name then
-			return true
-		end
-	end
-	
-	return false
-end
-
 local function getZOrder(name)
 	local data
 	if loadedObjects then
@@ -319,15 +309,40 @@ local function getZOrder(name)
 	return 0
 end
 
+local function isObjectInRenderQueue(name)
+	for k, v in ipairs(zOrderedObjects) do
+		if v.name == name then
+			return true
+		end
+	end
+	
+	return false
+end
+
+
+function insertSortedByDepth(z, content)
+	local lo, hi = 1, #zOrderedObjects
+	while lo <= hi do
+		local mid = math.floor((lo + hi) / 2)
+		
+		local sprite = zOrderedObjects[mid]
+		if sprite.z <= z then
+			lo = mid + 1
+		else
+			hi = mid - 1
+		end
+	end
+	
+	table.insert(zOrderedObjects, lo, content)
+end
+
 function addObjectToRenderQueue(name)
 	local obj = objects.world[name]
 	obj.z_order = tonumber(obj.z_order) or getZOrder(name)
 	
 	local z = math.floor(obj.z_order)
-	zOrderedObjects[z] = zOrderedObjects[z] or {}
-	if not isObjectInRenderQueue(obj.name, z) then -- don't add a sprite element if it already exists
-		table.insert(zOrderedObjects[z], {name = obj.name, z_order = obj.z_order})
-		objectsSorted = false
+	if not isObjectInRenderQueue(name) then
+		insertSortedByDepth(z, {name = obj.name, z = obj.z_order})
 	end
 end
 

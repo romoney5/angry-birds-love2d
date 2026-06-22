@@ -34,6 +34,12 @@ function removeJoints()
 	end
 end
 
+function destroyAllJoints()
+	for jointName in pairs(objects.joints) do
+		destroyJoint(jointName)
+	end
+end
+
 function setSleeping(object, dozing)
 	if objects.world[object].body then
 		objects.world[object].body:setAwake(not dozing)
@@ -511,6 +517,10 @@ function setObjectParameter(object, parameter, value)
 			obj.bounce.amplitudeMultiplier = value
 		elseif parameter == 7 then
 			obj.bounce.frequencyMultiplier = value
+		elseif parameter == 15 then
+			obj.fixture:setMask(CATEGORY_IMMOVABLE)
+		elseif parameter == 16 then
+			obj.fixture:setMask(CATEGORY_BIRD)
 		end
 	end
 end

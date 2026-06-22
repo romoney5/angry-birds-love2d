@@ -73,6 +73,9 @@ local updateParticles = function(dt, activeParticles)
 			p.angle = p.angle + p.angleVel * dt
 			
 			local t = p.time / p.lifeTime
+			if p.scaleBackAndForth then
+				t = 1.0 - math.abs(1.0 - 2.0 * t)
+			end
 			p.scale = p.scaleBegin + (p.scaleEnd - p.scaleBegin) * t
 			
 			if p.lifeTimeAnimation then
@@ -153,6 +156,11 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 				p.xVel, p.yVel = _G.math.random(mivx, mavx), _G.math.random(mivy, mavy)
 				p.angle = _G.math.random(1, 3.14)
 			end
+			
+			if pt.randomizeBirthPosition == false then
+				p.x = x; p.y = y
+			end
+			
 			-- i don't know if this is applied elsewhere
 			if type == "theme15rain" then			
 				p.angle = math.atan2(p.yVel, p.xVel)
@@ -174,6 +182,7 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 			p.time = 0
 			p.lifeTime = pt.lifeTime
 			p.lifeTimeAnimation = pt.animation == "lifeTime"
+			p.scaleBackAndForth = pt.scaleBackAndForth
 
 			p.menu = menu
 
