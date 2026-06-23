@@ -523,6 +523,10 @@ local ENUM_PARAMS = {
 		object.ignoreMotionCheck = bool
 	end,
 	
+	[14] = function(object, value, bool)
+		object.ignoreGroundDamage = bool
+	end,
+	
 	[15] = function(object, value, bool)
 		object.fixture:setMask(CATEGORY_IMMOVABLE)
 	end,
@@ -1017,7 +1021,7 @@ function basicBeginContact(obj1, obj2, contact)
 			return object.name == "ground" or object.collider == colliders.static or getMaterial(object.name) == "immovable"
 		end
 		
-		local ignoreGroundDamage = (not o1.ignoreGroundDamage or not isStatic(o2)) and o2.ignoreGroundDamage and isStatic(o1)
+		local ignoreGroundDamage = (o1.ignoreGroundDamage and isStatic(o2)) or (o2.ignoreGroundDamage and isStatic(o1))
 		local ignoreAllDamage = o1.ignoreAllDamage or o2.ignoreAllDamage
 		local damage = 0
 		
@@ -1066,7 +1070,7 @@ function basicBeginContact(obj1, obj2, contact)
 		destroyBreakableJoints(o2.name, linearForce)
 		
 		--assert(damage >= 0, "damage < 0 "..o1.name..", "..o2.name)
-		damageDone = linearForce
+		--damageDone = linearForce
 
 		local old_score = currentScore
 		
