@@ -1022,13 +1022,12 @@ function basicBeginContact(obj1, obj2, contact)
 		end
 		
 		local ignoreGroundDamage = (o1.ignoreGroundDamage and isStatic(o2)) or (o2.ignoreGroundDamage and isStatic(o1))
-		local ignoreAllDamage = o1.ignoreAllDamage or o2.ignoreAllDamage
 		local damage = 0
 		
 		local block1Destroyed = true
 		if o2.strength and o1.noCollisionDamage ~= true then
 			local defence = o2.defence or 0
-			if linearForce < defence or ignoreGroundDamage or ignoreAllDamage then
+			if linearForce < defence or ignoreGroundDamage or o2.ignoreAllDamage then
 				block1Destroyed = false
 			else
 				local finalDamage = linearForce - defence
@@ -1043,7 +1042,7 @@ function basicBeginContact(obj1, obj2, contact)
 		local block2Destroyed = true
 		if o1.strength and o2.noCollisionDamage ~= true then
 			local defence = o1.defence or 0
-			if linearForce < defence or ignoreGroundDamage or ignoreAllDamage then
+			if linearForce < defence or ignoreGroundDamage or o1.ignoreAllDamage then
 				block2Destroyed = false
 			else
 				local finalDamage = linearForce - defence
