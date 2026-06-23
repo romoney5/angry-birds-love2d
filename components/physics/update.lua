@@ -105,12 +105,14 @@ function updatePhysics(dt)
 				obj.outsideBoundaries = obj.frozen
 			end
 			
-			if velMagnitude >= 0.0005 then
-				hasMovingObjectsAboveTolerance = true
-			end
-			
-			if velMagnitude >= 9.0 or angularVelocity >= 1.0 then
-				hasMovingObjects = true
+			if obj.ignoreMotionCheck ~= true then
+				if velMagnitude >= 0.0005 then
+					hasMovingObjectsAboveTolerance = true
+				end
+				
+				if velMagnitude >= 9.0 or angularVelocity >= 1.0 then
+					hasMovingObjects = true
+				end
 			end
 			
 			obj.angle = (obj.body:getAngle() + math.pi) % (math.pi * 2) - math.pi

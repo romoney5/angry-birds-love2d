@@ -494,34 +494,51 @@ function getIntersectingObjects(info)
 	return hits
 end
 
+local ENUM_PARAMS = {
+	[1] = function(object, value, bool)
+		object.body:setActive(bool)
+	end,
+	
+	[2] = function(object, value, bool)
+		object.body:setType(bool and "dynamic" or "static")
+	end,
+	
+	[5] = function(object, value)
+		setScale(object.name, value)
+	end,
+	
+	[6] = function(object, value)
+		object.bounce.amplitudeMultiplier = value
+	end,
+	
+	[7] = function(object, value)
+		object.bounce.frequencyMultiplier = value
+	end,
+	
+	[10] = function(object, value, bool)
+		object.body:setFixedRotation(bool)
+	end,
+	
+	[12] = function(object, value, bool)
+		object.ignoreMotionCheck = bool
+	end,
+	
+	[15] = function(object, value, bool)
+		object.fixture:setMask(CATEGORY_IMMOVABLE)
+	end,
+	
+	[16] = function(object, value, bool)
+		object.fixture:setMask(CATEGORY_BIRD)
+	end,
+}
+
 function setObjectParameter(object, parameter, value)
 	local obj = objects.world[object]
-	if obj then
-		--NOTE: the c code subtracts 1 from parameter
-		--print("setObjectParameter: "..object.." "..parameter.." "..value)
-		if parameter == 1 then -- is object enabled
-			if obj.body then
-				obj.body:setActive(value == 1)
-			end
-		elseif parameter == 2 then -- set object type
-			if obj.body then
-				obj.body:setType(value == 0 and "static" or "dynamic")
-			end
-		elseif parameter == 3 then -- nothing
-		elseif parameter == 4 then -- nothing
-		elseif parameter == 5 then -- scale
-			if obj.body then
-				setScale(object, value)
-			end
-		elseif parameter == 6 then -- ?
-			obj.bounce.amplitudeMultiplier = value
-		elseif parameter == 7 then
-			obj.bounce.frequencyMultiplier = value
-		elseif parameter == 15 then
-			obj.fixture:setMask(CATEGORY_IMMOVABLE)
-		elseif parameter == 16 then
-			obj.fixture:setMask(CATEGORY_BIRD)
-		end
+	
+	local paramAction = ENUM_PARAMS[parameter]
+	if paramAction and obj.body then
+		local bool = value == 1 and true or false
+		paramAction(obj, value, bool)
 	end
 end
 
