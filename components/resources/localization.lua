@@ -15,6 +15,11 @@ function res.createTextGroupSet(texts)
 	local path = datapath.."/"..texts
 	print("Loading text group set \""..texts.."\"...")
 	
+	if not checkDirectory(path) then
+		print("Localization file \""..texts.."\" not found.")
+		return
+	end
+	
 	local info = getDatInfo(love.filesystem.read(path), path, "TEXT")
 	local filename = ""
 	for i, v in texts:gmatch("([^/]+)") do
