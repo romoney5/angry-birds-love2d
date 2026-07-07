@@ -1,19 +1,32 @@
 --something
 
 function sgm()
-	something.pgm = currentGameMode
-	currentGameMode = updateSomething
+	something.on = true
 end
+
+local function close()
+	res.stopAudio("somethingTheme")
+	something.on = false
+end
+
+local android = love._os == "Android"
 
 something = {
 	loaded = false,
 	pgm = nil,
+	
+	on = false,
 
 	starttime = 0,
 	time = 0,
 
 	path = "/",
 	files = {},
+	
+	code = {
+		on = false,
+	},
+	
 	cmenu = {
 		attach = nil,
 		hovering = false,
@@ -24,8 +37,30 @@ something = {
 		anim = 0,
 
 		items = {
-			{text = "Open with..", callback = function()
-				openPopup("Something", "Not implemented.")
+			{text = "Open with..", callback = function(f)
+				openPopup(
+					"Open With",
+					"Open \""..f.name.."\" with...",
+					{
+						{sprite = "MENU_NO", callback = function()
+							return true
+						end},
+					},
+					false,
+					function(x, y, w, h, p)
+						local opened
+						drawDebugButton("", x + 25, y + 25, 50, 50, 1, function()
+							something.code.on = true
+							
+							something.code.data = love.filesystem.read(f.path) or ""
+							something.code.textboxState = nil
+							
+							opened = true
+						end, true, "menu_confirm")
+						
+						return opened
+					end
+				)
 			end},
 			{text = "Run File", callback = function(f)
 				local path = f.path
@@ -46,11 +81,10 @@ something = {
 				end
 
 				--go!
-				res.stopAudio("somethingTheme")
-				currentGameMode = something.pgm
+				close()
 				loadGameFiles()
 			end},
-			{text = "Run File params", callback = function(f)
+			{text = "Run File Params", callback = function(f)
 				local states = {}
 				openPopup(
 					"Run File with Params",
@@ -78,8 +112,7 @@ something = {
 							end
 
 							--go!
-							res.stopAudio("somethingTheme")
-							currentGameMode = something.pgm
+							close()
 							processArgsTable{arg = states}
 							loadGameFiles()
 							return true
@@ -119,7 +152,7 @@ something = {
 				textboxState.value = f.name
 				
 				openPopup(
-					"Rename",
+					f.name,
 					"Rename \""..f.name.."\" to...",
 					{
 						{sprite = "MENU_NO", callback = function()
@@ -185,8 +218,9 @@ something = {
 				)
 			end},
 			false,
-			{text = "New file", callback = function(f)
+			{text = "New...", callback = function(f)
 				local textboxState = {}
+				local state2 = {value = false}
 				
 				openPopup(
 					"New File",
@@ -198,10 +232,31 @@ something = {
 						{sprite = "TUTORIAL_OK", callback = function()
 							local name = textboxState.value
 							
-							local success, failure = love.filesystem.write(f.folder..name, "")
+							local success, failure
+							if state2.value then --folder
+								success, failure = love.filesystem.createDirectory(f.folder..name)
+							else --file
+								success, failure = love.filesystem.write(f.folder..name, "")
+							end
+							
 							if not success then
-								openPopup(f.name, "Could not create file \""..textboxState.value.."\":\n"..tostring(failure)..".\nChoose a different name.")
+								openPopup("New File", "Could not create file \""..textboxState.value.."\":\n"..tostring(failure)..".\nChoose a different name.")
 								return
+							end
+							
+							--auto-scroll to the file you just made
+							something.files = reloadSomething(something, something.path)
+							
+							local yoffset = 0
+							for i, file in ipairs(something.files) do --distinguish files/folders?
+								local fx, fy = 200, -yoffset
+								
+								if file.name == name then
+									something.scrollto = fy
+									break
+								end
+								
+								yoffset = yoffset + 36
 							end
 							
 							return true
@@ -210,20 +265,60 @@ something = {
 					function(x,y,w,h,p)
 						--love.graphics.rectangle("fill", x, y, w, h) --text field?
 						CUI.Textbox(textboxState, x, y, w, 30)
+						CUI.Checkbox(state2, x, y + 40, 50, 50, "Folder")
 					end, 20
 				)
 			end},
 		}
 	},
 
-	scrollto = 0,
-	scroll = 0,
+	--scrollto = 0,
+	--scroll = 0,
+	scroll = {},
 }
 
 local dance = 0
 
-function updateSomething(dt, cx, cy)
+local function updateCode()
 	local so = something
+
+	local padding = math.min(200, math.min(screenWidth, screenHeight) / 4)
+	local w, h = screenWidth - padding, screenHeight - padding
+	local x, y = screenWidth*.5 - w*.5, screenHeight*.5 - h*.5
+	drawRect2(10 / 255, 10 / 255, 10 / 255, .3, x + 10, y + 10, w, h, 16)
+	drawRect2(24 / 255, 50 / 255, 75 / 255, 1, x, y, w, h, 16)
+	
+	local innerPadding = 60
+	
+	local code = so.code
+	code.textboxState = code.textboxState or {}
+	code.textboxState.value = code.textboxState.value or code.data or ""
+	code.textboxState.multiline = true
+	
+	CUI.Textbox(code.textboxState, x + innerPadding, y + innerPadding, w - innerPadding * 2, h - innerPadding * 2)
+	
+	drawDebugButton("BUTTON_ARROW_LEFT", padding / 3, padding / 3, nil, nil, 1, function()
+		openPopup("Code", "Save changes?",
+			{
+				{sprite = "BUTTON_RESTART", callback = function()
+					return true
+				end},
+				{sprite = "MENU_NO", callback = function()
+					code.on = false
+					return true
+				end},
+				{sprite = "TUTORIAL_OK", callback = function()
+					code.on = false
+					return true
+				end},
+			})
+	end, true, "menu_back")
+end
+
+function updateSomething(dt)
+	local so = something
+	
+	drawfont = nil
 
 	--on first load
 	if not so.loaded then
@@ -232,6 +327,16 @@ function updateSomething(dt, cx, cy)
 		screen = screen or {top = 0, left = 0}
 
 		res.createAudio("KAKAO_MAP_THEME_HQ.ogg", "somethingTheme")
+
+		if android and love.filesystem.mountFullPath then
+			local success = love.filesystem.mountFullPath("/storage/emulated/0", "sdcard", "readwrite")
+			
+			if not success then
+				openPopup("Notice", "Couldn't mount /storage/emulated/0 for reading/writing.\nMake sure the \"all files access\" permission is enabled for the app.")
+			end
+		end
+
+		so.files = reloadSomething(so, so.path)
 	end
 
 	--on load
@@ -239,8 +344,6 @@ function updateSomething(dt, cx, cy)
 		res.stopAllAudio()
 		res.playAudio("somethingTheme", 0.5, true)
 		so.time = 0
-
-		so.files = reloadSomething(so, so.path)
 	end
 
 	time = time or love.timer.getTime()
@@ -258,6 +361,11 @@ function updateSomething(dt, cx, cy)
 	setRenderState(0, 0, 1, 1)
 
 	drawRect2(0, 0, 0, .6, 0, 0, screenWidth, screenHeight)
+	
+	if so.code.on then
+		updateCode()
+		return
+	end
 
 	local padding = math.min(200, math.min(screenWidth, screenHeight) / 4)
 	local w, h = screenWidth - padding,screenHeight - padding
@@ -268,48 +376,50 @@ function updateSomething(dt, cx, cy)
 	res.setClipRect(x, y, w, h)
 
 	--touch scrolling
-	if (keyHold.LBUTTON or keyReleased.LBUTTON) and not keyPressed.LBUTTON then --try not to snap the cursor on touchscreens
-		so.scrollto = so.scrollto + (cursor.y - cy) * 1.2
-		so.curscroll = so.curscroll or 0
-		so.curscroll = so.curscroll + (cursor.y - cy)
-		so.highscroll = so.highscroll or 0
-		so.highscroll = math.max(so.highscroll, math.abs(so.curscroll))
-	else
-		so.curscroll = nil
-		so.highscroll = nil
-	end
-
-	so.scrollto = so.scrollto + cursor.wheel * 48
-	so.scroll = ease.linear(dt * 16, so.scroll, so.scrollto)
-	local yoffset = 0 + so.scroll
+	so.scroll.height = h
+	local scroll, disable = CUI.HandleScroll(so.scroll, dt)
+	local yoffset = 0 + scroll
 
 	so.cmenu.hovering = so.cmenu.attach and checkBounds(so.cmenu.x, so.cmenu.y, so.cmenu.w, so.cmenu.h, cursor.x, cursor.y)
 
-	for i, v in pairs(so.files) do
-		local fx, fy = 200, 190 + yoffset
+	for i, v in ipairs(so.files) do
+		local fx, fy = x + 60, y + 60 + yoffset
 
 		--drawing a lot of text can lag
 		if fy + 36 >= y and fy - 12 < y + h then
 			local selected = not so.cmenu.hovering and not so.cmenu.attach and (fy >= y and fy <= y + h) and checkBounds(x, fy - 12, w, 36, cursor.x, cursor.y)
-			selected = selected and not (so.highscroll and so.highscroll >= 10) and not debugOpen and not openPopups[1]
+			selected = selected and not disable and not debugOpen and not openPopups[1]
 			if selected then
 				--fx = fx + 10
-
-				if keyReleased.LBUTTON then
-					res.playAudio("menu_confirm",1)
-					if v.info.type == "directory" or v.info.type == "up" then
-						so.path = (resolvePath(so.path..v.name).."/"):sub(2)
-						so.files = reloadSomething(so, so.path)
-						so.scrollto = 0
-						so.scroll = 60
-					--else
-						
-					end
-					--break
-				elseif keyReleased.RBUTTON then
+				
+				v.presstime = v.presstime or 0
+				if keyReleased.RBUTTON or v.presstime >= .35 then
 					res.playAudio("menu_select", 1)
+					v.presstime = 0
 					so.cmenu.attach = v
-					so.cmenu.x, so.cmenu.y = cursor.x + 1, cursor.y + 1 --nudge by 1 pixel to make clicking out easier
+					so.cmenu.noClose = keyHold.LBUTTON
+					so.cmenu.x, so.cmenu.y = cursor.x + 5, cursor.y + 5 --nudge by a couple pixels to make clicking out easier
+				elseif keyHold.LBUTTON then
+					v.presstime = v.presstime + dt
+				else
+					v.presstime = 0
+					if keyReleased.LBUTTON then
+						res.playAudio("menu_confirm",1)
+						if v.info.type == "directory" or v.info.type == "up" then
+							so.path = (resolvePath(so.path..v.name).."/"):sub(2)
+							so.files = reloadSomething(so, so.path)
+							
+							so.scroll.overscroll = .5 / 2
+							so.scroll.scroll = 60 * 4
+							so.scroll.overscrollPosition = so.scroll.scroll
+							so.scroll.overscrollDest = 0
+							--[[so.scrollto = 0
+							so.scroll = 60]]
+						--else
+							
+						end
+						--break
+					end
 				end
 			end
 			
@@ -333,25 +443,25 @@ function updateSomething(dt, cx, cy)
 		yoffset = yoffset + 36
 	end
 
-	local maxscroll = -(yoffset - so.scroll) + h - 190
-	so.scrollto = math.max(so.scrollto, maxscroll)
-	so.scrollto = math.min(so.scrollto, 0)
+	so.scroll.contentHeight = yoffset - scroll
+	--print(so.scroll.height, so.scroll.contentHeight)
 
 	--scroll bar indicator
 	local f_padding = 50
-	CUI.Scrollbar(
-		screenWidth - padding / 2 - f_padding / 2,
-		padding / 2 + f_padding / 2,
-		10,
-		screenHeight - padding / 2 * 2 - f_padding / 2 * 2,
-		so.scroll,
-		maxscroll,
-		yoffset - so.scroll)
+	CUI.ScrollbarFromScrollState(so.scroll, --scroll state
+		screenWidth - padding / 2 - f_padding / 2, --x
+		padding / 2 + f_padding / 2, --y
+		screenHeight - padding / 2 * 2 - f_padding / 2 * 2, --height
+		yoffset - scroll) --content height
 
 	love.graphics.setScissor()
 	
 	if keyReleased.LBUTTON and not so.cmenu.hovering then
-		so.cmenu.attach = nil
+		if not so.cmenu.noClose then
+			so.cmenu.attach = nil
+		end
+		
+		so.cmenu.noClose = nil
 	end
 
 	if so.cmenu.attach or so.cmenu.anim > 0 then
@@ -370,11 +480,13 @@ function updateSomething(dt, cx, cy)
 		
 		height = height + 16 + 16
 		
+		local scale = ease.outCubic(so.cmenu.anim / (1 / 4), .7, 1)
 		so.cmenu.w, so.cmenu.h = width, height
+		so.cmenu.y = math.min(so.cmenu.y, screenHeight - height * scale)
 		
 		love.graphics.push()
 		love.graphics.translate(so.cmenu.x, so.cmenu.y)
-		love.graphics.scale(ease.outCubic(so.cmenu.anim / (1 / 4), .7, 1))
+		love.graphics.scale(scale)
 		love.graphics.translate(-so.cmenu.x, -so.cmenu.y)
 		
 		drawRect2(10 / 255, 10 / 255, 10 / 255, 10 / 255, so.cmenu.x + 8, so.cmenu.y + 8, width, height, 5)
@@ -446,7 +558,7 @@ function reloadSomething(so,path)
 	local items = love.filesystem.getDirectoryItems(path)
 	files = {}
 	if path ~= "/" then
-		table.insert(files, {name = "..", info = {type = "up"}})
+		table.insert(files, {name = "..", info = {type = "up"}, folder = path})
 	end
 
 	for i,v in pairs(items) do

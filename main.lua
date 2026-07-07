@@ -46,26 +46,11 @@ enableDebug = false
 
 fione_errorblame_length = 0
 
-function endsWith(str, ending)
-	return string.sub(str, -string.len(ending)) == ending
-end
 renderLeft, renderTop, renderScale = 0, 0, 0
 
 function requestExit()
 	print("Quitting...")
 	love.event.quit()
-end
-
-function string.insert(str1, str2, pos)
-	return str1:sub(1, pos)..str2..str1:sub(pos + 1)
-end
-
-function string.back(str1, pos)
-	pos = pos + 1
-	if pos <= 1 or pos > #str1 + 1 then
-		return str1
-	end
-	return str1:sub(1, pos - 2)..str1:sub(pos)
 end
 
 function getDeviceID()

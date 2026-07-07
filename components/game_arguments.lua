@@ -1,6 +1,8 @@
---handles arguments passed to love at the start of the game
+--handles arguments passed to love at the start of the game, as well as other post-start arguments
 
 local identity = love.filesystem.getIdentity()
+
+autoboot_path = "autoboot.lua"
 
 arguments = {
 	{display = "Delete Data", names = {"--deletedata", "-dd"}, args = 0, type = "bool", call = function()
@@ -18,7 +20,7 @@ arguments = {
 					if success1 or success2 then
 						openPopup("Data", "Successfully deleted save data.", nil, true)
 					elseif not checkDirectory("settings.lua") and not checkDirectory("highscores.lua") then
-						openPopup("Data", "Save data does not exist.", nil, true)
+						openPopup("Data", "There is no existing save data.", nil, true)
 					else
 						openPopup("Data", "Could not properly delete save data.", nil, true)
 					end
@@ -30,7 +32,29 @@ arguments = {
 		, true)
 	end},
 	
-	--{display = "Clear Cache", names = {"--clearcache", "-cc"}, args = 0, type = "bool"}, --nothing
+	{display = "Clear Cache", names = {"--clearcache", "-cc"}, args = 0, type = "bool", call = function()
+		print("Clearing dec/...")
+		
+		--code duplication
+		local function del(path)
+			if love.filesystem.getInfo(path, "directory") then
+				for i, file in ipairs(love.filesystem.getDirectoryItems(path)) do
+					del(path.."/"..file)
+					love.filesystem.remove(path.."/"..file)
+				end
+			end
+			
+			return love.filesystem.remove(path)
+		end
+		
+		local success = del("dec")
+		if not success then
+			print("Could not clear dec/")
+			openPopup("dec", "Could not clear the \"".."dec".."\"folder.")
+		else
+			print("Cleared dec/")
+		end
+	end},
 	
 	{display = "Device Model", names = {"--model", "-m"}, args = 1, type = "string", call = function(arg1)
 		deviceModel = arg1 or deviceModel
@@ -61,6 +85,7 @@ arguments = {
 
 function setDataPathFromFile(file)
 	--TODO: move zip handling to another file
+	love.filesystem.setIdentity(identity)
 	local info = love.filesystem.getInfo(file)
 	if info and info.type == "file" then
 		print("Opening \""..file.."\" as a ZIP file...")
@@ -69,9 +94,8 @@ function setDataPathFromFile(file)
 		local src = love.filesystem.newFileData(file)
 		local success = love.filesystem.mount(src, file)
 
+		datapath = file
 		if success then
-			datapath = file
-
 			--look recursively for a data folder,
 			--it varies between pc installations, ipas, and apks
 			local function look(dir, target)
@@ -96,19 +120,25 @@ function setDataPathFromFile(file)
 			end
 			
 			--make a guess
-			--TODO: make a better guess
+			--TODO: make a better guess by looking at the binary
 			if endsWith(datapath, ".ipa") then
 				deviceModel = "iphone"
 			elseif endsWith(datapath, ".apk") then
 				deviceModel = "android"
 			end
 			
-			love.filesystem.setIdentity(identity.."/DATA_"..datapath)
-			datapath = look(datapath, "^data")
+			local found = look(datapath, "^data")
+			
+			if not found then
+				love.filesystem.unmount(file)
+				return false
+			end
+			
+			datapath = found
 
 			openedDatapath = true
-
-			return true
+		else
+			return false
 		end
 	elseif info and (info.type == "directory" or info.type == "symlink") then
 		print("Opening \""..file.."\" as a folder...")
@@ -117,12 +147,25 @@ function setDataPathFromFile(file)
 		end
 		
 		datapath = file
-		if datapath ~= "data" and datapath ~= "" then
-			love.filesystem.setIdentity(identity.."/DATA_"..datapath)
-		end
-
-		return true
+	else
+		datapath = file
+		
+		return false
 	end
+	
+	--write to autoboot.lua to make playing on mobile less of a hassle
+	if mobileDevice then
+		love.filesystem.write(autoboot_path,
+([[--Auto-generated autoboot file.
+--This file will be run and overridden on next launch.
+setDataPathFromFile("%s")]]):format(file))
+	end
+	
+	if file ~= "data" and file ~= "" then
+		love.filesystem.setIdentity(identity.."/DATA_"..file)
+	end
+
+	return true
 end
 
 function processArgsTable(restart)
@@ -149,6 +192,7 @@ function processArgsTable(restart)
 	end
 end
 
+--this is only called at boot
 function handleStartArgs()
 	local function process(arg)
 		if arg then
@@ -183,6 +227,12 @@ function handleStartArgs()
 				end
 			end
 		end
+	end
+	
+	--automatically boot to the last datapath on mobile systems that don't have an accessible file manager
+	if mobileDevice and checkDirectory(autoboot_path) and not openedDatapath then
+		ranAutoboot = true
+		loadLuaFile(autoboot_path)
 	end
 	
 	process(arg)

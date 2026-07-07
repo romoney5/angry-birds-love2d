@@ -9,8 +9,17 @@ function love.errorhandler(msg)
 	if errors >= 3 then
 		return
 	end
+	
+	pcall(function()
+		--reset identity
+		setDataPathFromFile("")
+		
+		--clear autoboot if it exists
+		if mobileDevice and love.filesystem.remove(autoboot_path) then
+			print("Removed "..autoboot_path)
+		end
+	end)
 
-	local utf8 = require("utf8")
 	msg = tostring(msg)
 
 	print((debug.traceback("Error: "..tostring(msg), 1 + (layer or 1)):gsub("\n[^\n]+$", "")))

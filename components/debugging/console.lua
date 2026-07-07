@@ -52,7 +52,7 @@ function debugExecute(text)
 	end
 end
 
-function updateDebug(dt, cx, cy)
+function updateDebug(dt)
 	setRenderState(0,0,1,1)
 
 	debugCursorBlink = debugCursorBlink + dt
@@ -123,7 +123,7 @@ function updateDebug(dt, cx, cy)
 
 	--touch scrolling
 	if keyHold.LBUTTON and not keyPressed.LBUTTON then --try not to snap the cursor on touchscreens
-		debugScrollTarget = debugScrollTarget + (cursor.y - cy)
+		debugScrollTarget = debugScrollTarget + (cursor.y - prevCursor.y)
 	end
 
 	debugScroll = lerp(debugScroll, debugScrollTarget, dt * 16)

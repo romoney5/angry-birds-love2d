@@ -257,14 +257,14 @@ function res.getStringWidth(text, font, _, _, resetline)
 		local i = 0
 		for p, c in utf8.codes(text) do
 			local char = font.chars[c]
-			if char then
-				i = i + char.width + font.tracking
-				highscore = math.max(highscore, i)
-			elseif c == "\n" then
+			if c == "\n" then
 				i = 0
 				if resetline then
 					highscore = 0
 				end
+			elseif char then
+				i = i + char.width + font.tracking
+				highscore = math.max(highscore, i)
 			end
 		end
 		return highscore - font.tracking
@@ -280,7 +280,7 @@ end
 function res.getStringHeight(text, font, start)
 	text = text or ""
 	local font = fonts[font or drawfont]
-	local increment = font and font.leading or (love.graphics.getFont():getHeight() + love.graphics.getFont():getLineHeight())
+	local increment = font and font.leading or (love.graphics.getFont():getHeight() - .5)
 	local i = start and increment or 0
 	for c in text:gmatch(".") do
 		if c == "\n" then
@@ -312,4 +312,91 @@ function res.getFontHeight()
 	local font = fonts[drawfont]
 	if font then return font.height end
 	return 24
+end
+
+--global string functions
+
+function endsWith(str, ending)
+	return string.sub(str, -string.len(ending)) == ending
+end
+
+function string.insert(str1, str2, pos)
+	--[[local len = utf8.len(str1, 1, pos)
+	return str1:sub(1, len)..str2..str1:sub(len + 1)]]
+	local final = ""
+	local amount = 0
+	if pos == 0 then
+		return str2..str1
+	end
+	
+	for p, c in utf8.codes(str1) do
+		amount = amount + 1
+		final = final..utf8.char(c)
+		
+		if amount == pos then
+			final = final..str2
+		end
+	end
+	
+	return final
+end
+
+function string.back(str1, pos)
+	--[[pos = pos + 1
+	if pos <= 1 or pos > #str1 + 1 then
+		return str1
+	end
+	return str1:sub(1, pos - 2)..str1:sub(pos)]]
+	local final = ""
+	local amount = 0
+	
+	for p, c in utf8.codes(str1) do
+		amount = amount + 1
+		
+		if amount ~= pos then
+			final = final..utf8.char(c)
+		end
+	end
+	
+	return final
+end
+
+function string.getLineAt(text, cursor)
+	local len = 0
+	local last = ""
+	local lines = 0
+	
+	for line in text:gmatch("[^\n]+") do
+		len = len + line:len()
+		lines = lines + 1
+		
+		if cursor < 0 then
+			last = line
+		elseif cursor <= len then
+			return line, lines
+		end
+	end
+	
+	if text:sub(text:len(), text:len()) == "\n" then
+		return "", lines
+	end
+	
+	return last, lines
+end
+
+--string.sub but respects utf8, from https://love2d.org/wiki/TextInputField
+
+function utf8.sub(s, i, j)
+	if not s then return "" end
+	local len = utf8.len(s) or 0
+	i = i or 1
+	j = j or len
+	if i < 0 then i = len + i + 1 end
+	if j < 0 then j = len + j + 1 end
+	if i < 1 then i = 1 end
+	if j > len then j = len end
+	if i > j then return "" end
+	local startByte = utf8.offset(s, i)
+	local endByte = utf8.offset(s, j + 1)
+	return string.sub(s, startByte, endByte and endByte - 1 or -1)
 end

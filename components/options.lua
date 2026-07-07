@@ -15,6 +15,14 @@ local deviceModelMapping = {
 }
 deviceModel = deviceModelMapping[love.system.getOS()] or "windows"
 
+--use autoboot.lua on mobile devices
+local mobileMapping = {
+	Android = true,
+	iOS = true,
+}
+
+mobileDevice = mobileMapping[love.system.getOS()]
+
 displayScale = 1
 autoScale = 0 --0 to disable, anything else as a target screen height
 
