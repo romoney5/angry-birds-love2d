@@ -111,6 +111,10 @@ function Payment.iapIsEnabled()--?
 	return iapEnabled
 end
 
+function Payment.isProductAvailable(item)
+	return iapEnabled
+end
+
 function replacePaymentFunctions()
 	if iap then
 		function iap.getItemPrice(item)
