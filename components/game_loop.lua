@@ -34,7 +34,7 @@ local function updateCursor(dt)
 	end
 
 	love.mouse.setVisible(deviceModel ~= "windows"
-		or debugOpen or openPopups[1] ~= nil)
+		or debugOpen or openPopups[1] ~= nil or currentGameMode == updateSomething)
 end
 
 --restore particle functions
