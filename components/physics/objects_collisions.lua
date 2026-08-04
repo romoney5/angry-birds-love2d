@@ -362,7 +362,7 @@ function setSprite(object, sprite)
 end
 
 function getSprite(object)
-	return tostring(objects.world[object].objectSprite)
+	return objects.world[object].objectSprite
 end
 
 function setRollingSound(object, rollingSound) --3.0.1 only
