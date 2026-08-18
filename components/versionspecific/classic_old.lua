@@ -1,4 +1,4 @@
---1.6.3.1
+--below 3.x misc functions, basically all of these are dummies for long-dead online features
 
 function logFlurryEvent(text)
 	print("Logging flurry event: "..text)
@@ -27,20 +27,20 @@ end
 
 
 function checkForUpdates()
-	print("checkForUpdates: No updates")
+	print("checkForUpdates() called")
 end
 
 
 function requestAd()
-	print("Ad requested")
+	print("requestAd() called")
 end
 
 function requestVideoAd()
-	print("Video Ad requested")
+	print("requestVideoAd() called")
 end
 
 function requestAndShowVideo()
-	print("Video requested")
+	print("requestAndShowVideo() called")
 end
 
 function checkMainMenuAd(url)
@@ -48,15 +48,15 @@ function checkMainMenuAd(url)
 end
 
 function native_requestBannerAd()
-	print("Banner Ad requested")
+	return
 end
 
 function native_requestExpandableAd()
-	print("Expandable Ad requested")
+	return
 end
 
 function native_requestInterstitialAd()
-	requestVideoAd()
+	print("native_requestInterstitialAd() called")
 end
 
 
@@ -65,11 +65,11 @@ function avoidCrystalBackgroundActivity(avoid)
 end
 
 
-function setEditing(isediting)
+function setEditing(enabled)
 	return
 end
 
---hatchery
+--hatchery, in-between 1.6.3 and 2.0.0
 
 function requestCurrentTimeOnServer()
 	return
@@ -90,32 +90,33 @@ function showLeaderboards()
 end
 
 function requestBannerAd()
-	print("Banner Ad requested")
+	print("requestBannerAd() called")
 end
 
 function requestExpandableAd()
-	print("Expandable Ad requested")
+	print("requestExpandableAd() called")
 end
 
 function requestInterstitialAd()
-	requestVideoAd()
+	print("requestInterstitialAd() called")
 end
 
---found in ghidra: --setNotificationCallback(function,string) hasLocationCapability()=0 openProgram(string)=bool
+--found in ghidra but seemingly unused:
+--setNotificationCallback(function,string) hasLocationCapability()=0 openProgram(string)=bool
 --canOpenProgram(string)=bool getManufacturer()=? printGlobals() playVideo(string)
 --other hatchery functions
 
 --notifications
 function addNotificationAfter(id, time, text)
-	print("Queue notification \""..tostring(id).."\" after "..(tonumber(time) or 0) / (60).." minutes:\n"..tostring(text))
+	print("addNotificationAfter(): queued notification \""..tostring(id).."\" after "..(tonumber(time) or 0) / (60).." minutes:\n"..tostring(text))
 end
 
 function removeNotification(id)
-	print("Remove notification \""..tostring(id).."\"")
+	print("removeNotification(): removed notification \""..tostring(id).."\"")
 end
 
 function removeAllNotifications()
-	print("Remove all notifications")
+	print("removeAllNotifications() called")
 end
 
 --crystal

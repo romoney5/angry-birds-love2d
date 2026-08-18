@@ -62,11 +62,11 @@ runLuaFile(compsPath.."/iap.lua")							--in app purchases functions
 runLuaFile(compsPath.."/game_loop.lua")						--main game loop, calls update
 runLuaFile(compsPath.."/gamepad.lua")						--controller related functions
 
---dummy functions
-runLuaFile(compsPath.."/blanks/classic.lua")				--blank functions for 1.6.3.1
-runLuaFile(compsPath.."/blanks/3.0.1.lua")					--blank functions for 3.0.1
-runLuaFile(compsPath.."/blanks/seasons.lua")				--blank functions for modern seasons
-runLuaFile(compsPath.."/blanks/rio.lua")					--blank functions for rio 1.4.0
-runLuaFile(compsPath.."/blanks/friends.lua")				--blank functions for friends mobile
+--functions and global libraries introduced in later game versions
+runLuaFile(compsPath.."/versionspecific/classic_old.lua")	--functions for classic versions below 3.x
+runLuaFile(compsPath.."/versionspecific/classic.lua")		--functions for 3.0.1 and later
+runLuaFile(compsPath.."/versionspecific/seasons.lua")		--functions for modern seasons
+runLuaFile(compsPath.."/versionspecific/rio.lua")			--functions for rio 1.4.0
+runLuaFile(compsPath.."/versionspecific/friends.lua")		--functions for friends mobile
 
 runLuaFile(compsPath.."/debugging/error.lua")				--run the error handler after everything is loaded

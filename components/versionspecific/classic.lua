@@ -25,7 +25,7 @@ function checkInstalledAppsOnline(url)
 	return
 end
 
-function setChannelCountLimit(channel,limit)
+function setChannelCountLimit(channel, limit)
 	return
 end
 
@@ -49,27 +49,27 @@ end
 RovioAds = {}
 
 function RovioAds.show(ad)
-	print("Showing RovioAd "..ad)
+	print("RovioAds.show(): "..ad)
 end
 
 function RovioAds.hide(ad)
-	print("Hiding RovioAd "..ad)
+	print("RovioAds.hide(): "..ad)
 end
 
 function RovioAds.addPlacement(ad)
-	print("Placing RovioAd "..ad)
+	print("RovioAds.addPlacement(): "..ad)
 end
 
 function RovioAds.addPlacementNative(ad)
-	print("Placing RovioAd "..ad)
+	print("RovioAds.addPlacementNative(): "..ad)
 end
 
 function RovioAds.addPlacementWithGeometry(ad, x, y, w, h) --right parameters?
-	print("Placing RovioAd "..ad)
+	print("RovioAds.addPlacementWithGeometry(): "..ad)
 end
 
 function RovioAds.click(ad)
-	print("Clicking RovioAd "..ad)
+	print("RovioAds.click(): "..ad)
 end
 
 function RovioAds.refresh()
@@ -141,6 +141,8 @@ end
 --hooks: onPaymentProviderSelected(?) onPurchaseStatusChanged(item,?) onPurchaseHistoryRetrieved(?)
 --onRestoreDone(restored) onPaymentError(error)
 
+--magic places support breaks later versions as it's not supposed to be defined
+--[[
 magicplaces = {}
 
 function magicplaces.gameMenuInitialised()
@@ -154,9 +156,7 @@ end
 function magicplaces.openMapView(width, height)
 	return
 end
-
---magic places breaks later versions
-magicplaces = nil
+]]
 
 
 function setGCPopupAllowed(allowed)
