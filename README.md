@@ -9,7 +9,7 @@ You can also test from the source code without a .love file. This is more prefer
 If you are on Linux, it's as easy as downloading a LÖVE Flatpak, navigating to the project folder, and running `love .` in a terminal.
 
 > [!Note]
-> Angry Birds LÖVE2D is currently not intended to be used for modding; only for people curious about the engine and its inner workings. It has many discrepancies with the original engine and it's better to just save yourself the headache.
+> Angry Birds LÖVE2D is currently not intended to be used for modding; only for people curious about the engine and its inner workings. By all means you're allowed to use it for modding, but please note it has many discrepancies with the original engine.
 
 ## Command line arguments
 - `--datapath`/`-dp` overrides the default path to `data/` and uses a new save data subfolder. Useful for playing mods or from app files. Can also be used to boot from .zip/.ipa/.apk or other zipped files. Example: `--datapath 2.2.0.apk`
