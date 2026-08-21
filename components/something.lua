@@ -315,20 +315,19 @@ local function updateCode()
 	end, true, "menu_back")
 end
 
-function updateSomething(dt)
-	local so = something
-	
-	drawfont = nil
+function something:update(dt)
+	res.useFont(nil)
 
 	--on first load
-	if not so.loaded then
-		so.loaded = true
+	if not self.loaded then
+		self.loaded = true
 		currentTheme = currentTheme or "theme1"
 		screen = screen or {top = 0, left = 0}
 
 		res.createAudio("KAKAO_MAP_THEME_HQ.ogg", "somethingTheme")
 
 		if android and love.filesystem.mountFullPath then
+			--TODO: should this be writeable?
 			local success = love.filesystem.mountFullPath("/storage/emulated/0", "sdcard", "readwrite")
 			
 			if not success then
@@ -336,21 +335,21 @@ function updateSomething(dt)
 			end
 		end
 
-		so.files = reloadSomething(so, so.path)
+		self.files = self:reload(self.path)
 	end
 
 	--on load
 	if not res.isAudioPlaying("somethingTheme") then
 		res.stopAllAudio()
 		res.playAudio("somethingTheme", 0.5, true)
-		so.time = 0
+		self.time = 0
 	end
 
 	time = time or love.timer.getTime()
 	cameraShakeX, cameraShakeY = 0, 0
 
 	-- res.drawString("", "DT "..tostring(dt), 50, 50)
-	local dance = math.abs(math.cos(so.time * (123 / 20))) * 100
+	local dance = math.abs(math.cos(self.time * (123 / 20))) * 100
 
 	screen.top = -400
 	screen.left = screen.left + dt * 120
@@ -362,7 +361,7 @@ function updateSomething(dt)
 
 	drawRect2(0, 0, 0, .6, 0, 0, screenWidth, screenHeight)
 	
-	if so.code.on then
+	if self.code.on then
 		updateCode()
 		return
 	end
@@ -376,18 +375,19 @@ function updateSomething(dt)
 	res.setClipRect(x, y, w, h)
 
 	--touch scrolling
-	so.scroll.height = h
-	local scroll, disable = CUI.HandleScroll(so.scroll, dt)
+	self.scroll.height = h
+	local scroll, disable = CUI.HandleScroll(self.scroll, dt)
 	local yoffset = 0 + scroll
 
-	so.cmenu.hovering = so.cmenu.attach and checkBounds(so.cmenu.x, so.cmenu.y, so.cmenu.w, so.cmenu.h, cursor.x, cursor.y)
+	self.cmenu.hovering = self.cmenu.attach and checkBounds(self.cmenu.x, self.cmenu.y, self.cmenu.w, self.cmenu.h, cursor.x, cursor.y)
 
-	for i, v in ipairs(so.files) do
+	--draw all files
+	for i, v in ipairs(self.files) do
 		local fx, fy = x + 60, y + 60 + yoffset
 
 		--drawing a lot of text can lag
 		if fy + 36 >= y and fy - 12 < y + h then
-			local selected = not so.cmenu.hovering and not so.cmenu.attach and (fy >= y and fy <= y + h) and checkBounds(x, fy - 12, w, 36, cursor.x, cursor.y)
+			local selected = not self.cmenu.hovering and not self.cmenu.attach and (fy >= y and fy <= y + h) and checkBounds(x, fy - 12, w, 36, cursor.x, cursor.y)
 			selected = selected and not disable and not debugOpen and not openPopups[1]
 			if selected then
 				--fx = fx + 10
@@ -396,9 +396,9 @@ function updateSomething(dt)
 				if keyReleased.RBUTTON or v.presstime >= .35 then
 					res.playAudio("menu_select", 1)
 					v.presstime = 0
-					so.cmenu.attach = v
-					so.cmenu.noClose = keyHold.LBUTTON
-					so.cmenu.x, so.cmenu.y = cursor.x + 5, cursor.y + 5 --nudge by a couple pixels to make clicking out easier
+					self.cmenu.attach = v
+					self.cmenu.noClose = keyHold.LBUTTON
+					self.cmenu.x, self.cmenu.y = cursor.x + 5, cursor.y + 5 --nudge by a couple pixels to make clicking out easier
 				elseif keyHold.LBUTTON then
 					v.presstime = v.presstime + dt
 				else
@@ -406,15 +406,15 @@ function updateSomething(dt)
 					if keyReleased.LBUTTON then
 						res.playAudio("menu_confirm",1)
 						if v.info.type == "directory" or v.info.type == "up" then
-							so.path = (resolvePath(so.path..v.name).."/"):sub(2)
-							so.files = reloadSomething(so, so.path)
+							self.path = (resolvePath(self.path..v.name).."/"):sub(2)
+							self.files = reloadSomething(self, self.path)
 							
-							so.scroll.overscroll = .5 / 2
-							so.scroll.scroll = 60 * 4
-							so.scroll.overscrollPosition = so.scroll.scroll
-							so.scroll.overscrollDest = 0
-							--[[so.scrollto = 0
-							so.scroll = 60]]
+							self.scroll.overscroll = .5 / 2
+							self.scroll.scroll = 60 * 4
+							self.scroll.overscrollPosition = self.scroll.scroll
+							self.scroll.overscrollDest = 0
+							--[[self.scrollto = 0
+							self.scroll = 60]]
 						--else
 							
 						end
@@ -443,12 +443,12 @@ function updateSomething(dt)
 		yoffset = yoffset + 36
 	end
 
-	so.scroll.contentHeight = yoffset - scroll
+	self.scroll.contentHeight = yoffset - scroll
 	--print(so.scroll.height, so.scroll.contentHeight)
 
 	--scroll bar indicator
 	local f_padding = 50
-	CUI.ScrollbarFromScrollState(so.scroll, --scroll state
+	CUI.ScrollbarFromScrollState(self.scroll, --scroll state
 		screenWidth - padding / 2 - f_padding / 2, --x
 		padding / 2 + f_padding / 2, --y
 		screenHeight - padding / 2 * 2 - f_padding / 2 * 2, --height
@@ -456,21 +456,21 @@ function updateSomething(dt)
 
 	love.graphics.setScissor()
 	
-	if keyReleased.LBUTTON and not so.cmenu.hovering then
-		if not so.cmenu.noClose then
-			so.cmenu.attach = nil
+	if keyReleased.LBUTTON and not self.cmenu.hovering then
+		if not self.cmenu.noClose then
+			self.cmenu.attach = nil
 		end
 		
-		so.cmenu.noClose = nil
+		self.cmenu.noClose = nil
 	end
 
-	if so.cmenu.attach or so.cmenu.anim > 0 then
-		local attach = so.cmenu.attach
+	if self.cmenu.attach or self.cmenu.anim > 0 then
+		local attach = self.cmenu.attach
 		local width, height = 0, 0
 		
-		so.cmenu.anim = math.min(math.max(so.cmenu.anim + (attach and dt or -dt * 2), 0), 1 / 4)
+		self.cmenu.anim = math.min(math.max(self.cmenu.anim + (attach and dt or -dt * 2), 0), 1 / 4)
 		
-		for i, v in ipairs(so.cmenu.items) do
+		for i, v in ipairs(self.cmenu.items) do
 			if v then
 				width = math.max(width, res.getStringWidth(v.text) + 16 + 16)
 				height = height + 18
@@ -480,29 +480,29 @@ function updateSomething(dt)
 		
 		height = height + 16 + 16
 		
-		local scale = ease.outCubic(so.cmenu.anim / (1 / 4), .7, 1)
-		so.cmenu.w, so.cmenu.h = width, height
-		so.cmenu.y = math.min(so.cmenu.y, screenHeight - height * scale)
+		local scale = ease.outCubic(self.cmenu.anim / (1 / 4), .7, 1)
+		self.cmenu.w, self.cmenu.h = width, height
+		self.cmenu.y = math.min(self.cmenu.y, screenHeight - height * scale)
 		
 		love.graphics.push()
-		love.graphics.translate(so.cmenu.x, so.cmenu.y)
+		love.graphics.translate(self.cmenu.x, self.cmenu.y)
 		love.graphics.scale(scale)
-		love.graphics.translate(-so.cmenu.x, -so.cmenu.y)
+		love.graphics.translate(-self.cmenu.x, -self.cmenu.y)
 		
-		drawRect2(10 / 255, 10 / 255, 10 / 255, 10 / 255, so.cmenu.x + 8, so.cmenu.y + 8, width, height, 5)
-		drawRect2(48 / 255, 60 / 255, 75 / 255, 1, so.cmenu.x, so.cmenu.y, width, height, 5)
+		drawRect2(10 / 255, 10 / 255, 10 / 255, 10 / 255, self.cmenu.x + 8, self.cmenu.y + 8, width, height, 5)
+		drawRect2(48 / 255, 60 / 255, 75 / 255, 1, self.cmenu.x, self.cmenu.y, width, height, 5)
 
 		local itemy = 0
-		for i, v in ipairs(so.cmenu.items) do
+		for i, v in ipairs(self.cmenu.items) do
 			if v then
-				local ix, iy = so.cmenu.x + 16, itemy + so.cmenu.y + 16
-				local selected = so.cmenu.hovering and checkBounds(0, iy, screenWidth, 36, cursor.x, cursor.y) and attach ~= nil
+				local ix, iy = self.cmenu.x + 16, itemy + self.cmenu.y + 16
+				local selected = self.cmenu.hovering and checkBounds(0, iy, screenWidth, 36, cursor.x, cursor.y) and attach ~= nil
 				if selected then
 					--ix = ix + 12
 					if keyHold.LBUTTON then
-						drawRect2(60 / 255 / 2, 80 / 255 / 2, 100 / 255 / 2, 1 / 2, so.cmenu.x, iy, width, 36, 5)
+						drawRect2(60 / 255 / 2, 80 / 255 / 2, 100 / 255 / 2, 1 / 2, self.cmenu.x, iy, width, 36, 5)
 					else
-						drawRect2(60 / 255, 80 / 255, 100 / 255, 1, so.cmenu.x, iy, width, 36, 5)
+						drawRect2(60 / 255, 80 / 255, 100 / 255, 1, self.cmenu.x, iy, width, 36, 5)
 					end
 					
 					if keyHold.LBUTTON then
@@ -512,7 +512,7 @@ function updateSomething(dt)
 					if keyReleased.LBUTTON then
 						res.playAudio("menu_confirm", 1)
 						v.callback(attach)
-						so.cmenu.attach = nil
+						self.cmenu.attach = nil
 					end
 				end
 
@@ -525,11 +525,11 @@ function updateSomething(dt)
 		love.graphics.pop()
 	end
 
-	drawDebugText(so.path or "Files", screenWidth * .5, math.min(padding / 2, 100), "HCENTER", "FONT_MENU", w)
+	drawDebugText(self.path or "Files", screenWidth * .5, math.min(padding / 2, 100), "HCENTER", "FONT_MENU", w)
 	if currentGameMode and currentGameMode == updateSomething then
 		drawDebugButton("BUTTON_ARROW_LEFT", padding / 3, padding / 3, nil, nil, 1, function()
 			res.stopAudio("somethingTheme")
-			currentGameMode = so.pgm
+			currentGameMode = self.pgm
 		end, true, "menu_back")
 	else
 		drawDebugButton("BUTTON_RESTART", padding / 3, padding / 3, nil, nil, .9, function()
@@ -551,17 +551,17 @@ function updateSomething(dt)
 	res.drawSprite("SOUNDBOARD_2_BIRD", screenWidth - 100, dance + screenHeight - 200)
 	res.drawSprite(g_currentCursorName, cursor.x, cursor.y)
 
-	so.time = so.time + dt
+	self.time = self.time + dt
 end
 
-function reloadSomething(so,path)
+function something:reload(path)
 	local items = love.filesystem.getDirectoryItems(path)
 	files = {}
 	if path ~= "/" then
 		table.insert(files, {name = "..", info = {type = "up"}, folder = path})
 	end
 
-	for i,v in pairs(items) do
+	for i,v in ipairs(items) do
 		local info = love.filesystem.getInfo(path..v)
 		-- if info.type == "symlink" then info.type = "directory" end
 		local outpath = path

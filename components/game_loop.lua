@@ -113,7 +113,7 @@ function love.update(dt)
 		end
 
 		if something.on then
-			updateSomething(dt2)
+			something:update(dt2)
 		elseif update then
 			--pause the game if there's an important popup
 			local t1 = love.timer.getTime()
