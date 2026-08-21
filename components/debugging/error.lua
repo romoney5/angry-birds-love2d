@@ -89,25 +89,16 @@ function love.errorhandler(msg)
 	p = p:gsub("\t", "")
 	p = p:gsub("%[string \"(.-)\"%]", "%1")
 
-	setTheme("theme"..math.random(1, 15)) --TODO: remnant of when it was just 1.6.3.1
-	screen = screen or {top = 0, left = 0}
-
 	local fullErrorText = p
 
-	autoScale = 600
+	autoScale = 1000
 
 	local function draw(dt)
 		if not love.graphics.isActive() then return end
+		
 		local pos = 40
 		lgClear(love.graphics.getBackgroundColor())
 		screenHeight = love.graphics.getHeight()
-		screen.top = -screenHeight
-		-- setWorldScale(screenHeight / 500)
-		pcall(drawBackgroundNative)
-		pcall(drawForegroundNative)
-
-		screen.left = screen.left + dt * 100
-		setTopLeft(screen.left, screen.top)
 		-- love.graphics.printf(p, pos, pos, love.graphics.getWidth() - pos)
 		updateDisplayScale()
 		local scale = displayScale
@@ -118,8 +109,10 @@ function love.errorhandler(msg)
 			-- res.useFont("FONT_MENU") --most newer games don't have letters in FONT_MENU
 			love.graphics.setColor(0, 0, 0, .2)
 			clipText("", p, (screenWidth - pos * 2))
+			
 			local text = clippedText and table.concat(clippedText.lines, "\n") or p
-			res.drawString("", text, pos + 16, pos + 16)
+			
+			res.drawString("", text, pos + 8, pos + 8)
 			love.graphics.setColor(1, 1, 1, 1)
 			res.drawString("", text, pos, pos)
 		else
@@ -128,6 +121,8 @@ function love.errorhandler(msg)
 	end
 
 	return function()
+		local dt = 1 / 100
+
 		love.event.pump()
 		table.clear(keyReleased)
 		table.clear(keyPressed)
@@ -164,26 +159,17 @@ function love.errorhandler(msg)
 						requestExit()
 					end},
 				})
-				-- local buttons = {"Exit", "Cancel"}
-				-- if love.system then
-				-- 	buttons[3] = "Copy Error"
-				-- end
-				-- local pressed = love.window.showMessageBox("Angry Birds", "Exit the game?", buttons)
-				-- if pressed == 1 then
-				-- 	return 1
-				-- elseif pressed == 3 then
-				-- 	love.system.setClipboardText(fullErrorText)
-				-- end
 			end
 		end
 
-		draw(1 / 100)
+		draw(dt)
 		setRenderState(0, 0, 1, 1)
 		updatePopup()
 		
+		prevCursor.x, prevCursor.y = cx, cy
 		if checkDebugOpen then checkDebugOpen() end
 		if debugOpen then
-			updateDebug(dt, cx, cy)
+			updateDebug(dt)
 		end
 
 		cursor.wheelTriggered = nil
@@ -198,7 +184,7 @@ function love.errorhandler(msg)
 		love.graphics.present()
 
 		if love.timer then
-			love.timer.sleep(1 / 100)
+			love.timer.sleep(dt)
 		end
 	end
 end
