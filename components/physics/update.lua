@@ -158,12 +158,6 @@ function updatePhysics(dt)
 			end
 			
 			objIndex = objIndex + 1
-			
-			--grab objects
-			if not releaseBuild and keyHold.RBUTTON and checkObjectBounds(obj.x, obj.y, (obj.width or obj.radius) + 5, (obj.height or obj.radius) + 5, obj.angle, cx, cy) then
-				res.drawString("", obj.name, obj.x * 20, obj.y * 20 + 50)
-				obj.body:setLinearVelocity((cx - obj.x) * 4, (cy - obj.y) * 4)
-			end
 		end
 	end
 	
@@ -210,20 +204,8 @@ function updatePhysics(dt)
 	end
 
 	--ab aimbot
-	if not releaseBuild and cameraTargetObject then
-		local obj = cameraTargetObject
-		--_G.res.drawString("", _G.tostring(obj.xVel), obj.x * 20, obj.y * 20 + 50)
-		--_G.res.drawString("", _G.tostring(obj.yVel), obj.x * 20, obj.y * 20 + 100)
-		local x, y = 0, 0
-		if keyHold["UP"] then y = y - 1 end
-		if keyHold["DOWN"] then y = y + 1 end
-		if keyHold["LEFT"] then x = x - 1 end
-		if keyHold["RIGHT"] then x = x + 1 end
-
-		if x ~= 0 or y ~= 0 then
-			setVelocity(obj.name, x * 20, y * 20)
-			setRotation(obj.name, math.atan2(obj.yVel or 0, obj.xVel or 1))
-		end
+	if not releaseBuild then
+		updatePhysicsCheats(dt)
 	end
 end
 

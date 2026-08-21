@@ -37,7 +37,7 @@ function updateGamepad(dt)
 			cursor.x, cursor.y = (sx - screen.left) * worldScale + (x * rubberBandMaximumLength * 20 * worldScale),
 				(sy - screen.top) * worldScale + (y * rubberBandMaximumLength * 20 * worldScale)
 			if joystick:isGamepadDown("a") then
-				registerGamepadKey(joystick, "LBUTTON" ,false)
+				registerGamepadKey(joystick, "LBUTTON", false)
 			end
 			gpc = .01
 		else
@@ -62,8 +62,11 @@ function updateGamepad(dt)
 		if gpc <= 0 then
 			registerGamepadKey(joystick, "LBUTTON", "a")
 
-			cursor.x = gpcx
-			cursor.y = gpcy
+			--only update the cursor variables if you are actually moving the cursor
+			if x ~= 0 or y ~= 0 then
+				cursor.x = gpcx
+				cursor.y = gpcy
+			end
 		end
 	end
 

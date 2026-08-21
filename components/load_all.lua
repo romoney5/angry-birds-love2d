@@ -22,7 +22,6 @@ _ = nil --really weird hack
 
 --debug
 runLuaFile(compsPath.."/debugging/console.lua")				--debug console
-runLuaFile(compsPath.."/debugging/fps.lua")					--debug fps
 runLuaFile(compsPath.."/debugging/collisions.lua")			--debug collisions
 runLuaFile(compsPath.."/debugging/speed_up.lua")			--debug speed-up with shift+a
 
