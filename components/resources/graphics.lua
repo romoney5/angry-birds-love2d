@@ -438,7 +438,7 @@ local function loadSheet(sheet, usecomposprites)
 			info.pixelformat = jsondata.meta.format
 			
 			for i, sprite in ipairs(jsondata.frames) do
-				info.sprites[sprite.filename] = {
+				local sprite_out = {
 					x = sprite.frame.x,
 					y = sprite.frame.y,
 					width = sprite.frame.w,
@@ -450,6 +450,17 @@ local function loadSheet(sheet, usecomposprites)
 					--for .stream files
 					stream = sprite.stream,
 				}
+				
+				--fix up .stream sprites that have coordinates WAY outside the sprite
+				--might not be perfect, but..
+				if sprite.stream then
+					sprite_out.x = math.min(sprite_out.x, sprite_out.stream.width - sprite_out.width)
+					sprite_out.y = math.min(sprite_out.y, sprite_out.stream.height - sprite_out.height)
+					sprite_out.x = sprite_out.x + (sprite_out.width - sprite_out.stream.width) / 2
+					sprite_out.y = sprite_out.y + (sprite_out.height - sprite_out.stream.height) / 2
+				end
+				
+				info.sprites[sprite.filename] = sprite_out
 			end
 			--print(jsondata.meta.app, jsondata.meta.image)
 		else
@@ -552,7 +563,8 @@ local function loadSheet(sheet, usecomposprites)
 			end
 		end
 
-		local zipped7 = not checkDirectory(filename) and (checkDirectory(filename..".7z") and ".7z")
+		--TODO: make this suck less?
+		local zipped7 = not checkDirectory(filename) and checkDirectory(filename..".7z")
 		
 		if zipped7 then
 			local src = decryptSrc(filename..".7z")
@@ -561,7 +573,7 @@ local function loadSheet(sheet, usecomposprites)
 
 		if endsWith(filename, ".pvr") then
 			extensionlength = 4
-			--most angry birds pvrs are usually listed as R4 G4 B4 A4 UNorm Linear under pvrtextool, so 16bpp
+			--most angry birds pvrs are usually listed as "R4 G4 B4 A4 UNorm Linear" under pvrtextool, so 16bpp
 			--the file size also lines up, width x height x 2 (bytes per pixel) + 52 bytes of headers = filesize
 			--the headers and formats differ however
 			local data = love.filesystem.read(filename)
@@ -582,15 +594,14 @@ local function loadSheet(sheet, usecomposprites)
 				extensionlength = 5 + 4 --.webp + .png
 				filename = filename..".png"
 
-				--lsheet.sheet = love.graphics.newImage(filename)
 				lsheet.sheet = love.graphics.newImage(love.image.newImageData(1, 1, nil, nil))
 			else
 				local src = love.filesystem.read(filename)
 				lsheet.sheet = love.graphics.newImage(webp.loadImage(src, src:len()))
 			end
-		elseif endsWith(filename, ".stream") or endsWith(filename, ".stream.7z") then
+		elseif endsWith(filename, ".stream") or endsWith(filename, ".stream.7z") or endsWith(filename, ".stream.zip") then
 			--TODO: another file
-			--the json files basically handle everything for us at least for seasons
+			--the json files basically handle everything for us, at least for seasons
 
 			--json.meta.format to PixelFormat
 			local mapping = {
@@ -605,10 +616,14 @@ local function loadSheet(sheet, usecomposprites)
 			if not format then error("loadSheet: unrecognized stream pixel format", info.pixelformat) end
 
 			for i, sprite in pairs(info.sprites) do
-				-- sprite.width = sprite.stream.width
-				-- sprite.height = sprite.stream.height
-				-- print(i)
-				sprite.sheet = love.graphics.newImage(love.image.newImageData(sprite.stream.width, sprite.stream.height, format, src:sub(sprite.stream.position + 1 + 40, sprite.stream.position + 40 + sprite.stream.length)))
+				local width = sprite.stream.width
+				local height = sprite.stream.height
+				local imagedata = love.image.newImageData(width, height, format,
+					src:sub(sprite.stream.position + 1 + 40,
+					sprite.stream.position + 40 + sprite.stream.length))
+				
+				sprite.sheet = love.graphics.newImage(imagedata)
+				--sprite.sheet:setWrap("repeat")
 			end
 		else
 			lsheet.sheet = love.graphics.newImage(filename)
