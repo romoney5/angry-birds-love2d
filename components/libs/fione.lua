@@ -395,11 +395,12 @@ local function stm_inst_list(S)
 
 			if op == 10 then -- decode NEWTABLE array size, store it as constant value
 				local e = bit.band(bit.rshift(data.B, 3), 31)
-				if e == 0 then
-					data.const = data.B
-				else
-					data.const = bit.lshift(bit.band(data.B, 7) + 8, e - 1)
-				end
+				data.const_B = e == 0 and data.B or bit.lshift(bit.band(data.B, 7) + 8, e - 1)
+				
+				--if _VERSION ~= "Luau" then -- Don't decode hash size for Luau
+					local e = bit.band(bit.rshift(data.C, 3), 31)
+					data.const_C = e == 0 and data.C or bit.lshift(bit.band(data.C, 7) + 8, e - 1)
+				--end
 			end
 		elseif args == 'ABx' then
 			data.Bx = bit.band(bit.rshift(ins, 14), 0x3FFFF)
@@ -910,7 +911,7 @@ local function run_lua_func(vararg, memory, code, subs, pc, state, env, upvals)
 						end
 					elseif op > 16 then
 						--[[NEWTABLE]]
-						memory[inst.A] = table.create(inst.const) -- inst.const contains array size
+						memory[inst.A] = table.create(inst.const_B, inst.const_C) -- b and c registers contain array and hash size
 					else
 						--[[DIV]]
 						local lhs, rhs
