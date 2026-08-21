@@ -79,7 +79,7 @@ arguments = {
 	{display = "Cheats", names = {"--cheats", "-c"}, args = 0, type = "bool", call = function()
 		--[[releaseBuild = false
 		showEditor = true]]
-		queueCheatsEnabled = true --filesystem.lua
+		queueCheatsEnabled = true --look at filesystem.lua
 	end},
 }
 

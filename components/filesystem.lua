@@ -257,6 +257,7 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 		
 		if filename == "/"..datapath.."/"..scriptPath.."/options.lua" and queueCheatsEnabled then
 			cheatsEnabled = true
+			releaseBuild = false
 		end
 	elseif not lenient then
 		if checkDirectory(filename) then
