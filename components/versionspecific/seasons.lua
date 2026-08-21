@@ -1,4 +1,7 @@
 -- seasons 4.2.0
+
+local isOffline = false
+
 NativePlatformScore = {}
 
 function NativePlatformScore.getPerformanceScore()
@@ -9,6 +12,7 @@ function NativePlatformScore.getMemoryScore()
     return 2 
 end
 
+--dynamic assets handler, this was also used for classic but seasons did it way earlier so it's here
 function createDynamicHandler(name)
 	local handler = {}
 	local requirements = {}
@@ -19,6 +23,8 @@ function createDynamicHandler(name)
 
 	local ingameLoadlist --hacky; for loadInGame
 	local ingameProfile --hacky; for loadInGame
+	
+	local graphics_stats = {} --for love.graphics.getStats()
 	
 	--TODO: queue and asset freeing
 	local function loadFromLoadlist(list, profile, group)
@@ -176,7 +182,16 @@ function createDynamicHandler(name)
 	end
 	
 	function handler.totalmemory()
-		return collectgarbage("count") * 1024
+		--return collectgarbage("count") * 1024
+		--return graphics memory instead of lua memory
+		love.graphics.getStats(graphics_stats)
+		
+		return graphics_stats.texturememory * 1024
+	end
+	
+	--5.1.0
+	function handler.loadAsset(asset, _)
+		return
 	end
 
 	--5.2.5
@@ -287,6 +302,10 @@ function updateFlashAnimation(dt)
 end
 
 local function handleKeyframes(keys, time, easing)
+	if not keys then return end
+	
+	keys = keys.keyframes
+
 	for i, key in ipairs(keys) do
 		local keytime = key[1]
 		if time < keytime then break end
@@ -314,6 +333,9 @@ local function handleKeyframes(keys, time, easing)
 	return keys[#keys][2]
 end
 
+local vector2_empty = {0, 0}
+local vector2_one = {1, 1}
+
 function drawFlashAnimation(tag)
 	love.graphics.push()
 	local anim = anims[tag]
@@ -327,12 +349,12 @@ function drawFlashAnimation(tag)
 	local function draw(v)
 		--TODO: move logic to update
 		love.graphics.push()
-		if v.name then
+		if v.name and clip then
 			local target = clip.targets[v.name]
-			local translation = handleKeyframes(target.translation.keyframes, anim.time, easing)
-			local scale = handleKeyframes(target.scale.keyframes, anim.time, easing)
-			local aalpha = handleKeyframes(target.scale.keyframes, anim.time, easing)
-			alpha = alpha
+			local translation = handleKeyframes(target.translation, anim.time, easing) or vector2_empty
+			local scale = handleKeyframes(target.scale, anim.time, easing) or vector2_one
+			local aalpha = handleKeyframes(target.alpha, anim.time, easing) or 1
+			alpha = aalpha
 			love.graphics.translate(translation[1], translation[2])
 			love.graphics.scale(scale[1], scale[2])
 			res.drawSprite(anim.replacements[v.name] or v.name, 0, 0)
@@ -555,6 +577,8 @@ NativeCloudAssets.allowNewBackgroundThread = nil --function returns boolean
 
 function NativeCloudAssets.loadAsset(pack)-- there seems to be evidence that this can load levels
 	--UNKNOWN, IDLE, NO CONNECTION, FAILURE, QUEUED, DOWNLOADING, DOWNLOADED, PROCESSING, READY
+	if isOffline then return end
+	
 	local url = cloudDomain .. "/" .. pack
 	
 	local save = "cdn/"..pack
@@ -666,6 +690,8 @@ end
 
 -- connect to a dummy network, and check if there's any feedback
 function NativeCloudAssets.isInternetConnected()
+	if isOffline then return false end
+
 	local socket = require("socket")
     local tcp = socket.tcp()
     tcp:settimeout(2)
@@ -1117,6 +1143,13 @@ end
 --isn't actually necessary for the loading screen to work
 function setLoadingScreenActive(active)
 	return
+end
+
+function useAdditiveBlendingForObject(name)--?
+    local obj = objects.world[name]
+    if obj then
+		return
+    end
 end
 
 
