@@ -1,6 +1,6 @@
 -- seasons 4.2.0
 
-local isOffline = false
+local isOffline = true
 
 NativePlatformScore = {}
 
@@ -277,6 +277,8 @@ function flashAnimationStart(tag, playAction, mode)
 	
 	anims[tag].playing = true
 	anims[tag].playAction = playAction
+	
+	return 1 --TODO: replace this
 end
 
 function flashAnimationStop(tag, a)
