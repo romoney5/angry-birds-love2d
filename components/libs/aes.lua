@@ -8,7 +8,7 @@ _, libcrypto = pcall(ffi.load, "libcrypto")
 --doesn't have a dll for libcrypto
 if not libcrypto then return end
 
-AES = {}
+local AES = {}
 
 --relevant declarations from libcrypto
 ffi.cdef[[
@@ -170,3 +170,5 @@ function AES.FindKey(ciphertext, keys, iv)
         end
     end
 end
+
+return AES
