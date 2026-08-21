@@ -197,7 +197,7 @@ end
 --TODO: i cannot get the color blending to be accurate to 5.1.0
 function drawSpriteColoured(sprite, x, y, scaleX, scaleY, r, g, b, a, darken)
 	love.graphics.push("all")
-	love.graphics.origin()
+	setRenderState(0, 0)
 	love.graphics.setBlendMode("add", "premultiplied")
 	love.graphics.setColor(r * a, g * a, b * a, a)
 	-- love.graphics.setColor(r, g, b, a)
@@ -254,21 +254,22 @@ function drawRect(r, g, b, a, x, y, w, h, inWorld)
 	love.graphics.rotate(drawangle)
 	love.graphics.translate(-drawxp, -drawyp)
 
-	local r2,y2,b2,a2 = love.graphics.getColor()
 	love.graphics.setColor(r, g, b, a)
 	w = w - x
 	h = h - y
 	love.graphics.rectangle("fill", 0, 0, w, h)
-	love.graphics.setColor(r2, y2, b2, a2)
 
 	love.graphics.pop()
 end
 
 function drawRect2(r, g, b, a, x, y, w, h, round)
-	local r2, y2, b2, a2 = love.graphics.getColor()
+	love.graphics.push("all")
+
+	love.graphics.setBlendMode("alpha", "alphamultiply")
 	love.graphics.setColor(r, g, b, a)
 	love.graphics.rectangle("fill", x, y, w, h, round)
-	love.graphics.setColor(r2, y2, b2, a2)
+
+	love.graphics.pop()
 end
 
 function drawLine2D(x0, y0, x1, y1, w, r, g, b, a)

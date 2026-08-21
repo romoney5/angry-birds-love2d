@@ -431,9 +431,9 @@ function updateSomething(dt)
 			
 			if selected then
 				if keyHold.LBUTTON then
-					drawRect2(.1, .1, .1, .1, x, fy - 12, w, 36)
+					drawRect2(1, 1, 1, .1, x, fy - 12, w, 36)
 				else
-					drawRect2(.2, .2, .2, .2, x, fy - 12, w, 36)
+					drawRect2(1, 1, 1, .2, x, fy - 12, w, 36)
 				end
 			end
 
