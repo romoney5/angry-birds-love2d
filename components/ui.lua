@@ -567,13 +567,13 @@ function updatePopup()
 
 	if popup then
 		local function update()
-			love.graphics.origin()
+			setRenderState(0, 0, 1, 1, 0, 0, 0, 1)
 			popup.anim = popup.anim or 0
 			popup.anim = math.max(math.min(popup.anim + (popup.closing and -dt * 2 or dt), .25), 0)
 			
 			popup.scroll = popup.scroll or {}
 
-			local maxWidth = math.max(res.getStringWidth(popup.title, "FONT_MENU") - 50, res.getStringWidth(popup.text, "FONT_BASIC"), 480) + 100
+			local maxWidth = math.max(res.getStringWidth(popup.title) - 50, res.getStringWidth(popup.text), 480) + 100
 			maxWidth = math.min(maxWidth, screenWidth * .9)
 			popup.w = popup.w or maxWidth
 			popup.h = popup.h or 0
@@ -609,8 +609,8 @@ function updatePopup()
 			drawRect2(10 / 255, 10 / 255, 10 / 255, .3, x + 10, y + 10, w, h, 16)
 			drawRect2(24 / 255, 50 / 255, 75 / 255, 1, x, y, w, h, 16)
 
-			drawDebugText(popup.title, ox, y, "HCENTER", "FONT_MENU", maxWidth)
-			local twidth, theight = drawDebugText(popup.text, x + 50, y + 75, "LEFT", "FONT_BASIC", maxWidth - 50 - 50)
+			drawDebugText(popup.title, ox, y, "HCENTER", nil, maxWidth)
+			local twidth, theight = drawDebugText(popup.text, x + 50, y + 75, "LEFT", nil, maxWidth - 50 - 50)
 			popup.w = math.max(twidth, 480) + 100
 			popup.h = theight
 			
