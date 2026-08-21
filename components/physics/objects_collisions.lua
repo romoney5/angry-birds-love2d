@@ -690,7 +690,8 @@ end
 	this function is supposed to roughly estimate box2D's restitution
 	i commented it in its unfinished state, so feel free to work on it.
 ]]
-	
+
+--[[
 function postSolveBounce(obj1, obj2, contact)
 	local b1 = obj1:getBody()
 	local b2 = obj2:getBody()
@@ -775,7 +776,7 @@ function postSolveBounce(obj1, obj2, contact)
 		contact:setRestitution(0)
 	end
 end
-postSolveBounce = nil
+]]
 
 function bubbleBeginContact(obj1, obj2, contact)
 	local o1 = obj1:getUserData()
@@ -1077,7 +1078,7 @@ function basicBeginContact(obj1, obj2, contact)
 
 		local old_score = currentScore
 		
-		if blockCollision then blockCollision(o1.name, o2.name, linearForce, damageDone, 0, -contactNormalX) end
+		if blockCollision then blockCollision(o1.name, o2.name, linearForce, linearForce or damageDone, 0, -contactNormalX) end
 		if onCollision then
 			onCollision(o1.name, o2.name, contactNormalX, contactNormalY, 1, 1, {})
 		end

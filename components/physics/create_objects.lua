@@ -122,12 +122,12 @@ end
 local polyverts = {}
 
 function addVertex(x, y)
-	table.insert(polyverts,x)
-	table.insert(polyverts,y)
+	table.insert(polyverts, x)
+	table.insert(polyverts, y)
 end
 
 function clearVertices()
-	polyverts = {}
+	table.clear(polyverts)
 end
 
 function updateObjectMass(name)
@@ -160,10 +160,19 @@ CATEGORY_BLOCK = 0x0004
 CATEGORY_BIRD = 0x0008
 CATEGORY_EAGLE = 0x0010
 
+--general function for finishing setup of all kinds of objects
 local function setupObject(obj)
 	if obj.fixture.setRestitutionThreshold then
 		obj.fixture:setRestitutionThreshold(0.2)
 	end
+
+	if obj.density <= 0 then
+		obj.density = 1
+	end
+	
+	obj.fixture:setRestitution(obj.restitution)
+	obj.fixture:setFriction(obj.friction)
+	obj.fixture:setUserData(obj)
 
 	obj.body:setLinearDamping(0.0)
 	obj.body:setAngularDamping(1.0)
@@ -195,18 +204,14 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 			table.insert(verts, v.y)
 		end
 
-		density,friction,restitution = h,density,friction
+		density, friction, restitution = h, density, friction
 	end
 
 	local obj = objects.world[name]
-	obj.body = love.physics.newBody(physicsWorld, xpos, ypos, density == 0 and "static" or "dynamic") --dynamic is very important!!
+	obj.body = love.physics.newBody(physicsWorld, xpos, ypos, density <= 0 and "static" or "dynamic") --dynamic is very important!!
 	obj.shape = love.physics.newPolygonShape(verts)
 	obj.fixture = love.physics.newFixture(obj.body, obj.shape, density)
-	if density == 0 then obj.density = 1 end
-
-	obj.fixture:setRestitution(restitution)
-	obj.fixture:setFriction(friction)
-	obj.fixture:setUserData(obj)
+	
 	obj.fixture:setCategory(CATEGORY_BLOCK)
 	
 	if collision ~= false then
@@ -224,24 +229,22 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 	objects.world[name] = {name = name, sprite = sprite, y = ypos, x = xpos, width = w, height = h or w, density = density,
 		friction = friction, restitution = restitution, controllable = controllable or false, z_order = z_order, mass = 1, xVel = 0, yVel = 0, angle = 0}
 	local obj = objects.world[name]
+	
+	--seasons has flipped/negative width objects
+	w, h = math.abs(w), math.abs(h)
 
-	obj.body = love.physics.newBody(physicsWorld, xpos, ypos, density == 0 and "static" or "dynamic") --dynamic is very important!!
+	obj.body = love.physics.newBody(physicsWorld, xpos, ypos, density <= 0 and "static" or "dynamic") --dynamic is very important!!
 	obj.shape = love.physics.newRectangleShape(w, h)
 	obj.fixture = love.physics.newFixture(obj.body, obj.shape, density)
 	
 	obj.fixture:setCategory(CATEGORY_BLOCK)
 	
-	if density == 0 then 
-		obj.density = 1
+	if density <= 0 then 
 		if name ~= "ground" then
 			obj.fixture:setCategory(CATEGORY_IMMOVABLE)
 			obj.fixture:setMask(CATEGORY_EAGLE)
 		end
 	end
-
-	obj.fixture:setRestitution(restitution)
-	obj.fixture:setFriction(friction)
-	obj.fixture:setUserData(obj)
 	
 	if controllable then
 		obj.fixture:setCategory(CATEGORY_BIRD)
@@ -268,11 +271,6 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	obj.body = love.physics.newBody(physicsWorld, xpos, ypos, obj.density <= 0 and "static" or "dynamic")
 	obj.shape = love.physics.newCircleShape(w or 1)
 	obj.fixture = love.physics.newFixture(obj.body, obj.shape, obj.density)
-	if density == 0 then obj.density = 1 end
-
-	obj.fixture:setRestitution(restitution)
-	obj.fixture:setFriction(friction)
-	obj.fixture:setUserData(obj)
 	
 	if tonumber(z_order) and z_order >= 999 then
 		obj.isBackground = true
