@@ -114,7 +114,7 @@ function updateDebug(dt)
 	end
 
 	--scrolling
-	res.useFont("FONT_BASIC")
+	res.useFont(nil)
 
 	local logText = table.concat(debugPrints, "\n")
 	local logHeight = res.getStringHeight(logText, nil, true) --there can be line breaks in some prints

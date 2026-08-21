@@ -1,9 +1,8 @@
 --fonts (if no font is present, a fallback is used)
 
-fonts = {}
-textGroups = {}
+local fonts = {}
 
-drawfont = ""
+local drawfont = ""
 
 --if the displayscale is not 1, text snapping to pixels is probably more important than non-crisp text
 --(the text would be blurry already)
@@ -83,7 +82,7 @@ function res.createBitmapFont(font, silent)
 end
 
 function res.useFont(font)
-	if fonts[font] then
+	if fonts[font] or font == nil then
 		drawfont = font
 	end
 end

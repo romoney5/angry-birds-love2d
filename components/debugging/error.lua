@@ -92,6 +92,7 @@ function love.errorhandler(msg)
 	local fullErrorText = p
 
 	autoScale = 1000
+	res.useFont(nil)
 
 	local function draw(dt)
 		if not love.graphics.isActive() then return end

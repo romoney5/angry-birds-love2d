@@ -1,6 +1,7 @@
 --localization
 
-locale = "en_EN"
+local textGroups = {}
+local locale = "en_EN"
 
 function res.getString(category, key) --return a string from localization
 	local group = textGroups[category]
