@@ -3,6 +3,8 @@
 local drawSprites --old seasons versions define drawSprites
 local trajectory
 
+local currentTheme
+
 
 themeSpriteObjects = {}
 --[[
@@ -53,7 +55,6 @@ end
 
 function setTheme(theme)
 	currentTheme = theme
-	objects.theme = theme
 	yoffsets = {}
 	layercolors = {}
 
@@ -150,8 +151,9 @@ function drawThemeSprite(v, layer)
 end
 
 function drawBackgroundNative(highGFX)
-	local theme = blockTable.themes[currentTheme]
-	if not (theme and theme.bgLayers) then return end
+	--seasons 5.1.0 made the theme variable into a table
+	local theme = blockTable.themes[currentTheme] or currentTheme
+	if not (theme and type(theme) == "table" and theme.bgLayers) then return end
 
 	if theme.color then setBGColor(theme.color.r, theme.color.g, theme.color.b) end
 
