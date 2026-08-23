@@ -31,8 +31,7 @@ end
 
 if not table.unpack then table.unpack = unpack end
 
--- if not table.pack then function table.pack(...) return {n = select('#', ...), ...} end end
-if not table.pack then function table.pack(...) return {...} end end
+if not table.pack then function table.pack(...) return {n = select('#', ...), ...} end end
 
 if not table.move then
 	function table.move(src, first, last, offset, dst)
@@ -1234,7 +1233,6 @@ end
 function lua_wrap_state(proto, env, upval)
 	local function wrapped(...)
 		local passed = table.pack(...)
-		local len = select("#", ...)
 		local memory = table.create(proto.max_stack)
 		local vararg = {len = 0, list = {}}
 
@@ -1244,9 +1242,9 @@ function lua_wrap_state(proto, env, upval)
 		--table.move(ret_list, 1, ret_num, A, memory)
 		table.move(passed, 1, proto.num_param, 0, memory)
 
-		if proto.num_param < len then
+		if proto.num_param < passed.n then
 			local start = proto.num_param + 1
-			local len = len - proto.num_param
+			local len = passed.n - proto.num_param
 
 			vararg.len = len
 			table.move(passed, start, start + len - 1, 1, vararg.list)
