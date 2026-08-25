@@ -32,34 +32,34 @@ runLuaFile(compsPath.."/data/formats/ka3d_sprt.lua")		--spritesheet format
 runLuaFile(compsPath.."/data/formats/ka3d_font.lua")		--font format
 runLuaFile(compsPath.."/data/formats/ka3d_comp.lua")		--composprites format
 runLuaFile(compsPath.."/data/formats/ka3d_text.lua")		--localization format
-runLuaFile(compsPath.."/data/data_readers.lua")				--functions for reading
-runLuaFile(compsPath.."/data/read.lua")						--read dat
+runLuaFile(compsPath.."/data/data_readers.lua")				--functions for reading dat formats
+runLuaFile(compsPath.."/data/read.lua")						--general reader for dat files
 
 --_G.res
-runLuaFile(compsPath.."/resources/res.lua")					--misc resources
+runLuaFile(compsPath.."/resources/res.lua")					--initialize res. (resources) library
 runLuaFile(compsPath.."/resources/graphics.lua")			--graphics functions
-runLuaFile(compsPath.."/resources/draw_box.lua")			--drawboxnative
+runLuaFile(compsPath.."/resources/draw_box.lua")			--just drawboxnative
 runLuaFile(compsPath.."/resources/audio.lua")				--audio functions
-runLuaFile(compsPath.."/resources/localization.lua")		--localization functions
-runLuaFile(compsPath.."/resources/font.lua")				--font functions
+runLuaFile(compsPath.."/resources/localization.lua")		--localization/text group functions
+runLuaFile(compsPath.."/resources/font.lua")				--font/text functions
 
 --physics
-runLuaFile(compsPath.."/physics/create_objects.lua")		--create box, circle, polygon, etc
+runLuaFile(compsPath.."/physics/create_objects.lua")		--create box, circle, polygon, etc. box2d objects
 runLuaFile(compsPath.."/physics/level.lua")					--level saving/loading, world functions, trajectory
-runLuaFile(compsPath.."/physics/objects_collisions.lua")	--object params functions, damage system
-runLuaFile(compsPath.."/physics/update.lua")				--physics update function
+runLuaFile(compsPath.."/physics/objects_collisions.lua")	--object functions, damage system
+runLuaFile(compsPath.."/physics/update.lua")				--physics update functions
 
-runLuaFile(compsPath.."/game_arguments.lua")				--handles arguments passed on to love
+runLuaFile(compsPath.."/game_arguments.lua")				--handles arguments passed in to love
 runLuaFile(compsPath.."/options.lua")						--extra options, like devicemodel or gravity
 runLuaFile(compsPath.."/ui.lua")							--ui components used in debug menus
 runLuaFile(compsPath.."/input.lua")							--input receivers, for keys, touch/mouse, and scrolling
 runLuaFile(compsPath.."/draw_layers.lua")					--draw bg, fg, and game
-runLuaFile(compsPath.."/particles.lua")						--particles update/draw/create
-runLuaFile(compsPath.."/level_particles.lua")				--level particles update/draw/create
-runLuaFile(compsPath.."/something.lua")						--something
-runLuaFile(compsPath.."/iap.lua")							--in app purchases functions
-runLuaFile(compsPath.."/game_loop.lua")						--main game loop, calls update
-runLuaFile(compsPath.."/gamepad.lua")						--controller related functions
+runLuaFile(compsPath.."/particles.lua")						--update/draw/create particles
+runLuaFile(compsPath.."/level_particles.lua")				--update/draw/create level particles
+runLuaFile(compsPath.."/something.lua")						--something (file manager)
+runLuaFile(compsPath.."/iap.lua")							--iap (in app purchase) functions
+runLuaFile(compsPath.."/game_loop.lua")						--main game loop, calls update function
+runLuaFile(compsPath.."/gamepad.lua")						--controller-related functions
 
 --functions and global libraries introduced in later game versions
 runLuaFile(compsPath.."/versionspecific/classic_old.lua")	--functions for classic versions below 3.x
