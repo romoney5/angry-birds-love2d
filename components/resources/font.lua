@@ -280,12 +280,8 @@ function res.getStringHeight(text, font, start)
 	text = text or ""
 	local font = fonts[font or drawfont]
 	local increment = font and font.leading or (love.graphics.getFont():getHeight() - .5)
-	local i = start and increment or 0
-	for c in text:gmatch(".") do
-		if c == "\n" then
-			i = i + increment
-		end
-	end
+	local i = increment * (text:getLines() + (start and 0 or -1))
+	
 	return i
 end
 
@@ -316,7 +312,14 @@ end
 --global string functions
 
 function endsWith(str, ending)
-	return string.sub(str, -string.len(ending)) == ending
+	return str:sub(-ending:len()) == ending
+end
+
+--custom function, returns total amount of lines
+function string.getLines(str)
+	local _, newlines = str:gsub("\n", "")
+	
+	return newlines + 1
 end
 
 function string.insert(str1, str2, pos)

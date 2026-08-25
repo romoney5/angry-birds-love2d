@@ -421,7 +421,7 @@ function CUI.HandleScroll(state, dt)
 	if state.overscroll > 0 then
 		state.overscroll = math.max(state.overscroll - dt, 0)
 		
-		local sc = 1 - (state.overscroll * 2)
+		local sc = 1 - (state.overscroll / .5)
 		local new = ease.outCubic(sc, state.overscrollPosition, state.overscrollDest)
 		
 		if not state.touch_scrolling and math.abs(new - state.scroll) > math.abs(state.velocity_y) then

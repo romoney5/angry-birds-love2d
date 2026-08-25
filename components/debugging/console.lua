@@ -2,34 +2,46 @@
 
 debugOpen = false
 
-debugText = ""
-debugCursorPosition = 0
-debugCursorBlink = 0
+local debugPrevious = {}
+local debugPreviousIndex = 1
 
-debugPrevious = {}
-debugPreviousIndex = 1
+local output_scroll = {}
+
+local textbox_state = {
+	multiline = true,
+	
+	on_confirm = function(self)
+		if self.value ~= debugPrevious[debugPreviousIndex + 1] and self.value ~= "" then --prevent duplicate indexes
+			table.insert(debugPrevious, 1, self.value)
+		end
+		
+		debugExecute(self.value)
+		self.value = ""--debugText:sub(1,-2)
+		self.cursor = 0
+		self.cursorBlink = 0
+		
+		output_scroll.overscroll = .5 / 2
+		output_scroll.overscrollPosition = output_scroll.scroll / ease.inCubic(.5, 0, 1)
+		output_scroll.overscrollDest = 0
+	end,
+}
 
 debugPrints = {}
 debugPrintsLimit = 200
 
-debugScroll = 0
-debugScrollTarget = 0
-
-debugPadding = 50
+local debugPadding = 50
 
 function checkDebugOpen()
 	if (keyHold["SHIFT"] and keyPressed["D"]) or (keyPressed["LBUTTON"] and cursor.x >= screenWidth - 20 and cursor.y >= screenHeight - 20) or (debugOpen and keyPressed["ESCAPE"]) then
 		keyPressed["ESCAPE"] = nil
 		debugOpen = not debugOpen
-		-- debugText = ""
-		-- debugCursorPosition = 0
 		debugPreviousIndex = 0
-		debugScroll = 0
-		debugScrollTarget = 0
+		textbox_state.cursorBlink = 0
 
 		res.playAudio("menu_confirm", 1, false)
 		if debugOpen then
 			love.keyboard.setTextInput(true)
+			CUI.currentTextboxState = textbox_state
 		end
 	end
 end
@@ -55,52 +67,8 @@ end
 function updateDebug(dt)
 	setRenderState(0,0,1,1)
 
-	debugCursorBlink = debugCursorBlink + dt
-	-- local font = love.graphics.getFont()
-	
-	if keyPressed["BACKSPACE"] then
-		res.playAudio("menu_back", 1, false)
-		debugText = string.back(debugText, debugCursorPosition)
-		debugCursorPosition = math.max(debugCursorPosition - 1, 0)
-		debugCursorBlink = 0
-	end
-
-	if keyPressed["DELETE"] then
-		res.playAudio("menu_back", 1, false)
-		debugText = string.back(debugText, debugCursorPosition + 1)
-		-- debugCursorPosition = math.max(debugCursorPosition, 0)
-		debugCursorBlink = 0
-	end
-
-	if keyPressed["RETURN"] then
-		res.playAudio("menu_confirm", 1, false)
-		debugCursorBlink = 0
-		if keyHold["SHIFT"] then
-			debugText = debugText.."\n"
-			debugCursorPosition = math.min(debugCursorPosition + 1, string.len(debugText))
-		else
-			if debugText ~= debugPrevious[debugPreviousIndex + 1] and debugText ~= "" then --prevent duplicate indexes
-				table.insert(debugPrevious, 1, debugText)
-			end
-
-			-- print(debugText)
-			debugExecute(debugText)
-			debugText = ""--debugText:sub(1,-2)
-			debugCursorPosition = 0
-			debugPreviousIndex = 0
-		end
-	end
-
-	--move the selection left/right
-	if keyPressed.LEFT or keyPressed.RIGHT and not (keyPressed.LEFT and keyPressed.RIGHT) then
-		local direction = (keyPressed.RIGHT and 1 or -1)
-		res.playAudio("menu_select", 1, false)
-
-		debugCursorPosition = math.min(math.max(debugCursorPosition + direction, 0), debugText:len())
-		debugCursorBlink = 0
-	end
-
 	--swap to the next/previous entry
+	--TODO: only do this if the cursor is at the last/first line
 	if keyPressed.UP or keyPressed.DOWN and not (keyPressed.UP and keyPressed.DOWN) then
 		local direction = (keyPressed.UP and 1 or -1)
 		if (direction == 1 and debugPreviousIndex < #debugPrevious) or (direction == -1 and debugPreviousIndex > 0) then
@@ -108,56 +76,57 @@ function updateDebug(dt)
 
 			if direction == 1 and debugPreviousIndex == 0 then debugPrevious[0] = debugText end
 			debugPreviousIndex = debugPreviousIndex + direction
-			debugText = debugPrevious[debugPreviousIndex]
-			debugCursorPosition = #debugText
+			textbox_state.value = debugPrevious[debugPreviousIndex]
+			textbox_state.cursor = textbox_state.value:len()
 		end
 	end
 
 	--scrolling
 	res.useFont(nil)
 
-	local logText = table.concat(debugPrints, "\n")
-	local logHeight = res.getStringHeight(logText, nil, true) --there can be line breaks in some prints
-	local scrollLimit = -logHeight + screenHeight - debugPadding * 2 - 70
-	debugScrollTarget = debugScrollTarget + math.min(math.max(cursor.wheel, -10), 10) * 64
-
-	--touch scrolling
-	if keyHold.LBUTTON and not keyPressed.LBUTTON then --try not to snap the cursor on touchscreens
-		debugScrollTarget = debugScrollTarget + (cursor.y - prevCursor.y)
-	end
-
-	debugScroll = lerp(debugScroll, debugScrollTarget, dt * 16)
-	debugScrollTarget = math.min(math.max(debugScrollTarget, scrollLimit), 0)
-
+	--local logText = table.concat(debugPrints, "\n")
 	local round_padding = debugPadding / 4
-	local input_h = debugPadding * 2 + 50 - round_padding * 2 + math.max(res.getStringHeight(debugText) - 50, 0)
+	local input_h = debugPadding * 2 + 50 - round_padding * 2 + math.max(res.getStringHeight(textbox_state.value) - 50, 0)
+	
 	love.graphics.setColor(0, 0, 0, .5)
 	love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
-	love.graphics.rectangle("fill", round_padding, round_padding, screenWidth - round_padding * 2, input_h, 20, 20)-- + (#linesTotal * font:getHeight()))
 	love.graphics.setColor(1, 1, 1, 1)
+	
+	--update the text box
+	CUI.Textbox(textbox_state, round_padding, round_padding, screenWidth - round_padding * 2, input_h)
 
-	res.drawString("", debugText, debugPadding, debugPadding)
-	res.drawString("", (debugCursorBlink % .5 <= .25 and "|" or ""),
-		res.getStringWidth(debugText:sub(1, debugCursorPosition), nil, nil, nil, true) + debugPadding,
-		res.getStringHeight(debugText:sub(1, debugCursorPosition)) + (debugPadding + 3))
-
-	love.graphics.setScissor(0, (input_h + 20) * displayScale, love.graphics.getDimensions())
-	res.drawString("", logText, debugPadding, input_h + round_padding + 40 + debugScroll)
+	--draw the logs
+	--TODO: kill out of bounds lines
+	local log_y = 0
+	local clip_y1 = input_h + 20
+	local clip_y2 = screenHeight
+	love.graphics.setScissor(0, clip_y1 * displayScale, screenWidth * displayScale, clip_y2 * displayScale)
+	for i, line in ipairs(debugPrints) do
+		local total_y = input_h + round_padding + log_y + 40 + (output_scroll.scroll or 0)
+		local height = res.getStringHeight(line, nil, true)
+		
+		if total_y < clip_y2 and total_y >= clip_y1 - height then
+			res.drawString("", line, debugPadding, total_y)
+		end
+		log_y = log_y + height
+	end
 	love.graphics.setScissor()
 
-	--scroll bar indicator
-	CUI.Scrollbar(
-		screenWidth - round_padding,
-		input_h + round_padding * 2,
-		10,
-		screenHeight - (input_h + round_padding * 3),
-		debugScroll,
-		scrollLimit,
-		logHeight)
+	--update scrolling logic
+	output_scroll.height = screenHeight
+	output_scroll.contentHeight = log_y
+	CUI.HandleScroll(output_scroll, dt)
+	
+	--draw the scroll bar
+	CUI.ScrollbarFromScrollState(output_scroll, --scroll state
+		screenWidth - round_padding / 2, --x
+		(input_h + round_padding) + round_padding / 2, --y
+		screenHeight - round_padding / 2 * 2 - (input_h + round_padding), --height
+		output_scroll.contentHeight) --content height
 
 	--files link
 	local tlw, tlh = 35, 36--tl.width, tl.height
-	local x, y = screenWidth - debugPadding - round_padding - tlw, debugPadding + round_padding * 2
+	local x, y = screenWidth - debugPadding - round_padding * 3 - tlw, debugPadding + round_padding * 2
 	x, y = math.floor(x), math.floor(y)
 	local w, h = 60 + tlw*2, 20 + tlh*2
 	local s = 1
@@ -174,17 +143,11 @@ function updateDebug(dt)
 end
 
 function love.textinput(key)
-	-- print(key)
-	if debugOpen then
-		if not (keyHold["SHIFT"] and keyPressed["D"]) then --hack to stop D from being added
-			res.playAudio("menu_confirm", 1, false)
-			debugText = string.insert(debugText, key, debugCursorPosition)
-			debugCursorPosition = debugCursorPosition + 1
-			debugCursorBlink = 0
-		end
-	elseif somethingTextInput then
+	if not debugOpen and somethingTextInput then
 		somethingTextInput = key
 	end
 	
-	CUI.OnTextInput(key)
+	if not (keyHold["SHIFT"] and keyPressed["D"]) then --hack to stop D from being added
+		CUI.OnTextInput(key)
+	end
 end
