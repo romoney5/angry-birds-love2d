@@ -26,8 +26,13 @@ SOFTWARE.
 ]]
 
 local ffi = require("ffi")
-local webp = ffi.load("webp")
-local webpdemux = ffi.load("webpdemux")
+local success, webp = pcall(ffi.load, "webp")
+if not success then success, webp = pcall(ffi.load, "libwebp") end
+local success, webpdemux = pcall(ffi.load, "webpdemux")
+if not success then success, webpdemux = pcall(ffi.load, "libwebpdemux") end
+
+assert(webp and webpdemux)
+
 ffi.cdef([[
 int WebPGetInfo(const uint8_t* data, size_t data_size,
 														int* width, int* height);
