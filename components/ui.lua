@@ -109,7 +109,10 @@ function CUI.Textbox(state, x, y, w, h)
 	state.cursorBlink = state.cursorBlink + love.timer.getDelta()
 	state.timer = 2
 	
-	state.scroll = state.scroll or {}
+	state.scroll = state.scroll or {
+		scroll = 0,
+		maxscroll = 1,
+	}
 	state.scroll.height = h
 	state.scroll.contentHeight = res.getStringHeight(state.value)
 	
@@ -184,12 +187,16 @@ function CUI.Textbox(state, x, y, w, h)
 			state.cursorBlink = 0
 		end
 
-		if keyPressed.RETURN and state.multiline then
+		if keyPressed.RETURN --[[and state.multiline]] then
 			CUI.OnTextInput("\n")
 		end
 
 		if keyPressed.TAB then
 			CUI.OnTextInput("\t")
+		end
+
+		if keyHold.CONTROL and keyPressed.V then
+			CUI.OnTextInput(love.system.getClipboardText())
 		end
 	end
 	
@@ -225,7 +232,8 @@ function CUI.Textbox(state, x, y, w, h)
 	--draw the text per line to avoid drawing too much text at once
 	local lines = 0
 	
-	for line in state.value:gmatch("[^\n]+") do --sucks
+	--TODO: optimize when offscreen
+	for line in state.value:gmatch("[^\r\n]+") do --sucks
 		local final_y = y + lines * fontheight
 		
 		--only draw the line if it is below the top
@@ -432,12 +440,20 @@ function CUI.OnTextInput(key)
 		local state = CUI.currentTextboxState
 		local nextval = string.insert(state.value, key, state.cursor)
 		
-		if (state.numeric and not tonumber(key) and not tonumber(nextval) and nextval ~= "-") and not (key == "\n" and state.multiline) then
+		local is_newline = key == "\n"
+		
+		if is_newline and not keyHold.SHIFT and state.on_confirm then
+			state:on_confirm()
+			
+			return
+		end
+		
+		if (state.numeric and not tonumber(key) and not tonumber(nextval) and nextval ~= "-") and not (is_newline and not state.multiline) then
 			return
 		end
 		
 		state.value = nextval
-		state.cursor = state.cursor + 1
+		state.cursor = state.cursor + utf8.len(key)
 		state.cursorBlink = 0
 	end
 end
