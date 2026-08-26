@@ -74,7 +74,9 @@ function updateDebug(dt)
 		if (direction == 1 and debugPreviousIndex < #debugPrevious) or (direction == -1 and debugPreviousIndex > 0) then
 			res.playAudio("menu_select", 1, false)
 
-			if direction == 1 and debugPreviousIndex == 0 then debugPrevious[0] = debugText end
+			if direction == 1 and debugPreviousIndex == 0 then
+				debugPrevious[0] = textbox_state.value
+			end
 			debugPreviousIndex = debugPreviousIndex + direction
 			textbox_state.value = debugPrevious[debugPreviousIndex]
 			textbox_state.cursor = textbox_state.value:len()
