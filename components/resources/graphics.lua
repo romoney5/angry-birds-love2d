@@ -591,16 +591,11 @@ local function loadSheet(sheet, usecomposprites)
 				local imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
 				lsheet.sheet = love.graphics.newImage(imagedata)
 			end
-		elseif endsWith(filename, ".webp") then
-			if not haswebp then
-				extensionlength = 5 + 4 --.webp + .png
-				filename = filename..".png"
+		--TODO: remove this check when love 12 releases
+		elseif endsWith(filename, ".webp") and not isLove12 then
+			extensionlength = 5
 
-				lsheet.sheet = love.graphics.newImage(love.image.newImageData(1, 1, nil, nil))
-			else
-				local src = love.filesystem.read(filename)
-				lsheet.sheet = love.graphics.newImage(webp.loadImage(src, src:len()))
-			end
+			lsheet.sheet = love.graphics.newImage(love.image.newImageData(1, 1, nil, nil))
 		elseif endsWith(filename, ".stream") or endsWith(filename, ".stream.7z") or endsWith(filename, ".stream.zip") then
 			--TODO: another file
 			--the json files basically handle everything for us, at least for seasons
@@ -627,7 +622,7 @@ local function loadSheet(sheet, usecomposprites)
 				sprite.sheet = love.graphics.newImage(imagedata)
 				--sprite.sheet:setWrap("repeat")
 			end
-		else
+		else --all other natively supported image formats (e.g. png, webp)
 			lsheet.sheet = love.graphics.newImage(filename)
 		end
 		

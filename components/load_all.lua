@@ -1,6 +1,6 @@
 --load components
 if not jit then
-	print("LuaJIT not found; disabling libcrypto and WebP")
+	print("LuaJIT not found; disabling libcrypto")
 end
 
 --first load filesystem functions
@@ -16,7 +16,6 @@ bit = bit or	runLuaFile(compsPath.."/libs/numberlua.lua")   --bit library since 
 loadbytecode	= runLuaFile(compsPath.."/libs/fione.lua")	--run lua 5.1 bytecode in a custom vm because normally it's not portable
 json			= runLuaFile(compsPath.."/libs/json.lua")	--json support for modern seasons versions
 AES				= runLuaFile(compsPath.."/libs/aes.lua")	--aes-256-cbc decryption powered by none other than luajit ffi
-haswebp, webp = pcall(runLuaFile,compsPath.."/libs/love-webp.lua")--read webp images
 fetch			= require("components.libs.fetch")
 _ = nil --really weird hack
 

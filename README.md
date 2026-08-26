@@ -57,8 +57,6 @@ These projects are included within the engine:
 [FiOne](https://github.com/Rerumu/FiOne) (with some edits) is used to run compiled Lua files.
 - May be replaced soon as it's licensed under the GPL (I aim to license this under the MIT license) and uses a lot of memory (the garbage collector runs very often and slows the game down).
 
-[love-webp](https://github.com/ImagicTheCat/love-webp) is used to read WebP images.
-
 [lua-bit-numberlua](https://github.com/davidm/lua-bit-numberlua) is used as a replacement for LuaJIT's bit library if it's not present.
 
 This project is maintained by romoney5 and Halo345. It is not affiliated with or endorsed by Rovio Entertainment Corporation.

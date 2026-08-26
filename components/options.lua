@@ -15,6 +15,12 @@ local deviceModelMapping = {
 }
 deviceModel = deviceModelMapping[love.system.getOS()] or "windows"
 
+--used to check for webp support
+local major, minor, revision, codename = love.getVersion()
+
+isLove12 = major >= 12
+
+
 --use autoboot.lua on mobile devices
 local mobileMapping = {
 	Android = true,
