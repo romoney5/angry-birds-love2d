@@ -63,15 +63,27 @@ function identifySrc(src)
 	return "plain" --what we want
 end
 
+function startsWith(str, start)
+	return str:sub(1, start:len()) == start
+end
+
+--windows has a suspiciously short path name length, so cut out some clutter from the dec path
+function trimDataPath(filename)
+	if filename:sub(1, 1) == "/" then filename = filename:sub(2) end --cut the starting slash
+	return (startsWith(filename, datapath) and filename:sub(datapath:len() + 1) or filename)
+end
+
 --load either plain text lua, a precompiled chunk with fione,
 --a 7-zipped file, an aes-256 encrypted file, or all of the above
 function decryptSrc(filename, src)
+	local dec_path = "/dec/"..trimDataPath(filename)
+
 	--use already-decrypted assets if available, moved here for json support
-	local decinfo = ALLOW_LUA_CACHE and love.filesystem.getInfo("/dec/"..filename)
+	local decinfo = ALLOW_LUA_CACHE and love.filesystem.getInfo(dec_path)
 	local info = decinfo and love.filesystem.getInfo(filename)
 	
 	if decinfo and decinfo.modtime and info and info.modtime and decinfo.modtime >= info.modtime then
-		src = love.filesystem.read("/dec/"..filename)
+		src = love.filesystem.read(dec_path)
 		return src
 	end
 
@@ -81,7 +93,7 @@ function decryptSrc(filename, src)
 
 	--temporary file for use in 7-zip
 	local function temp_file()
-		local dec_filename = "/dec/"..filename
+		local dec_filename = dec_path
 		love.filesystem.createDirectory(dec_filename:match(".*/") or "")
 		
 		local success, message = love.filesystem.write(dec_filename, src)
@@ -133,7 +145,8 @@ function decryptSrc(filename, src)
 			file:close()
 			
 			--did it do anything?
-			assert(src and src:len() > 0, "decryptSrc: LZMA returned nothing")
+			assert(src and src:len() > 0, "decryptSrc: LZMA could not decompress a file.\n"..
+				"Make sure you have lzma.exe; see the \"Dependencies\" section of the README for more information.")
 			
 			--reidentify it
 			kind = identifySrc(src)
@@ -417,7 +430,7 @@ function exportLua(filename)
 	end
 end
 
---decrypt all json and lua files in the data folder
+--decrypt all json and lua files in the data folder to dec
 function exportAllScripts(path)
 	local files = native.FileSystem.enumerate(path or "", nil, nil, true)
 	local files2 = {}
