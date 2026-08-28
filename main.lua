@@ -171,24 +171,18 @@ function loadGameFiles()
 	uniqueInstallationId = ""
 
 	loadLuaFileToObject(scriptPath.."/options.lua", this, nil, true)
-	--and now start the actual game
-	if gamelogicPath then
-		loadLuaFileToObject(gamelogicPath, this, nil)
-	elseif checkDirectory(datapath.."/"..commonScriptPath .. "/gamelogic.lua") then
-		loadLuaFileToObject(commonScriptPath.."/gamelogic.lua", this, nil)--, settings)
-	elseif checkDirectory(datapath.."/".."common/scripts/game" .. "/gamelogic.lua") then
-		commonScriptPath = "common/scripts/game"
-		loadLuaFileToObject(commonScriptPath.."/gamelogic.lua", this, nil)--, settings)
-	end
-
-	-- loadLuaFileToObject(scriptPath .. "/animations.lua", this)
-	loadLuaFileToObject(scriptPath.."/particles.lua", this, particleTable, true)
-	loadLuaFileToObject(scriptPath.."/starLimits.lua", this, starTable, true)
 	
 	local rootPath = datapath .. "/" .. scriptPath
-	if checkDirectory(rootPath .. "/blocks.lua") then
-		loadLuaFileToObject(scriptPath .. "/blocks.lua", this, blockTable, true)
-	else
+	local rootPathAppend = ""
+	
+	if checkDirectory(rootPath.."/definitions") then
+		rootPathAppend = rootPathAppend.."/definitions"
+		rootPath = rootPath..rootPathAppend
+	end
+	
+	local blocksExists = checkDirectory(rootPath .. "/blocks.lua")
+	
+	if not blocksExists then
 		blockTable = { blocks = { Ground = { type = "box", material = "staticGround", } } }
 		local extras = {"birds.lua", "scoreobjects.lua", "levelgoals.lua"}
 		setmetatable(extras, { __index = function(t, id) for _, k in ipairs(t) do if k == id then return k end end end })
@@ -196,7 +190,7 @@ function loadGameFiles()
 		for i, file in ipairs(love.filesystem.getDirectoryItems(rootPath)) do
 			if file:match("blocks_") or extras[file] then
 				local temp = {}
-				loadLuaFileToObject(scriptPath .. "/" .. file, this, temp, true)
+				loadLuaFileToObject(scriptPath .. rootPathAppend .. "/" .. file, this, temp, true)
 				
 				for n, key in pairs(temp) do
 					if type(key) == "table" and key[1] and key[1].definition then
@@ -208,10 +202,28 @@ function loadGameFiles()
 			end
 		end
 		
-		loadLuaFileToObject(scriptPath .. "/damagefactors.lua", blockTable, "damageFactors", true)
-		loadLuaFileToObject(scriptPath .. "/materials.lua", blockTable, "materials", true)
-		loadLuaFileToObject(scriptPath .. "/themes.lua", blockTable, "themes", true)
+		loadLuaFileToObject(scriptPath .. rootPathAppend .. "/damagefactors.lua", blockTable, "damageFactors", true)
+		loadLuaFileToObject(scriptPath .. rootPathAppend .. "/materials.lua", blockTable, "materials", true)
+		loadLuaFileToObject(scriptPath .. rootPathAppend .. "/themes.lua", blockTable, "themes", true)
 	end
+	
+	--and now start the actual game
+	if gamelogicPath then
+		loadLuaFileToObject(gamelogicPath, this, nil)
+	elseif checkDirectory(datapath.."/"..commonScriptPath .. "/gamelogic.lua") then
+		loadLuaFileToObject(commonScriptPath.."/gamelogic.lua", this, nil)--, settings)
+	elseif checkDirectory(datapath.."/".."common/scripts/game" .. "/gamelogic.lua") then
+		commonScriptPath = "common/scripts/game"
+		loadLuaFileToObject(commonScriptPath.."/gamelogic.lua", this, nil)--, settings)
+	end
+	
+	if blocksExists then
+		loadLuaFileToObject(scriptPath .. "/blocks.lua", this, blockTable, true)
+	end
+
+	-- loadLuaFileToObject(scriptPath .. "/animations.lua", this)
+	loadLuaFileToObject(scriptPath.."/particles.lua", this, particleTable, true)
+	loadLuaFileToObject(scriptPath.."/starLimits.lua", this, starTable, true)
 
 	loadLuaFileToObject(scriptPath.."/loadlist.lua", this, _G, true)
 
