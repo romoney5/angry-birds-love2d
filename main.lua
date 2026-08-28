@@ -106,7 +106,11 @@ function loadGameFiles()
 	blockTable.themes, blockTable.blocks = {}, {}
 
 	if not checkDirectory(datapath) or datapath == "" then
-		print("Data path \""..tostring(datapath).."\" wasn't found.\nTry the --datapath argument to specify a custom path.")
+		--notify the user that no data path is available
+		print("NOTICE: Data path \""..tostring(datapath).."\" was not found.\nTry the --datapath argument to specify a custom path,\nor use the File Manager to launch games.")
+		
+		debugOpen = true
+		
 		return
 	elseif not checkDirectory(datapath.."/"..scriptPath) then
 		--classic 1.0
