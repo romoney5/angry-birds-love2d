@@ -82,6 +82,31 @@ function print(...)
 	end
 end
 
+--find and set an icon
+local function loadIcon(datapath_base)
+	local icon_paths = {
+		--ios
+		datapath_base.."/Icon.png",
+		datapath_base.."/Icon-72.png",
+		--android
+		datapath_base.."/../res/drawable-xxxhdpi-v4/icon.png",
+		datapath_base.."/../res/drawable-hdpi/icon.png", --classic 1.3.5
+		--fallback
+		compsPath.."/icon.png",
+	}
+
+	for i, path in ipairs(icon_paths) do
+		local new_path = resolvePath(path)
+		
+		if checkDirectory(resolvePath(new_path)) then
+			love.window.setIcon(love.image.newImageData(new_path))
+			print("Using icon "..tostring(new_path))
+
+			break
+		end
+	end
+end
+
 function loadGameFiles()
 	--cache original image path
 	local og_imagePath = imagePath
@@ -123,6 +148,8 @@ function loadGameFiles()
 		--versions around classic 7.3.0 remove scripts_common again
 		commonScriptPath = scriptPath
 	end
+	
+	loadIcon(datapath_base)
 
 	local accountId = RovioAccount and RovioAccount.profile.id or "0" -- TODO : add account support
 	
@@ -190,13 +217,6 @@ function loadGameFiles()
 
 	loadLuaFileToObject(scriptPath.."/episodes.lua", this, "episodes", true)
 	loadLuaFileToObject(scriptPath.."/cutscenes.lua", this, "cutscenes", true)
-
-	--set an icon
-	if checkDirectory(datapath_base.."/Icon.png") then
-		love.window.setIcon(love.image.newImageData(datapath_base.."/Icon.png"))
-	elseif checkDirectory(compsPath.."/icon.png") then
-		love.window.setIcon(love.image.newImageData(compsPath.."/icon.png"))
-	end
 
 	--editor-specific patch
 	keyHold["CONTROL"] = false
