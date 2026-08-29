@@ -111,6 +111,10 @@ function Payment.iapIsEnabled()--?
 	return iapEnabled
 end
 
+function Payment.isPurchaseInProgress()--?
+	return false
+end
+
 function Payment.isProductAvailable(item)
 	return iapEnabled
 end

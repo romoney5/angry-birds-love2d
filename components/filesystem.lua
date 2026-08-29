@@ -430,6 +430,14 @@ function exportLua(filename)
 	end
 end
 
+function openSaves()
+	local dir = love.filesystem.getSaveDirectory()
+
+	if not love.system.openURL("file://"..dir) then
+		print("Failed to open folder "..tostring(dir))
+	end
+end
+
 --decrypt all json and lua files in the data folder to dec
 function exportAllScripts(path)
 	local files = native.FileSystem.enumerate(path or "", nil, nil, true)
