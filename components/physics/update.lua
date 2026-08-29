@@ -204,7 +204,7 @@ function updatePhysics(dt)
 	end
 
 	--ab aimbot
-	if not releaseBuild then
+	if enableDebug then
 		updatePhysicsCheats(dt)
 	end
 end
