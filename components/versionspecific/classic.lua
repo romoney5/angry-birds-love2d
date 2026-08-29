@@ -237,27 +237,35 @@ end
 --5.0.1
 native.AssetDownloader = {}
 
-function native.AssetDownloader:requestAssetPack(pack)
-	print("requestAssetPack: "..tostring(pack))
+function native.AssetDownloader.requestAssetPack(pack)
+	print("native.AssetDownloader.requestAssetPack: "..tostring(pack))
 end
 
-function native.AssetDownloader:isMetadataAvailable()
+function native.AssetDownloader.isMetadataAvailable()
+	print("native.AssetDownloader.isMetadataAvailable: returning true")
+	return true
+end
+
+function native.AssetDownloader.hasMetadataLoadingFailed()
+	print("native.AssetDownloader.hasMetadataLoadingFailed: returning false")
 	return false
 end
 
-function native.AssetDownloader:hasMetadataLoadingFailed()
-	return true
-end
-
 function native.AssetDownloader.wasMetadataHashUpToDateOnStartup(i) --i don't know, was it?
+	print("native.AssetDownloader.wasMetadataHashUpToDateOnStartup: returning true")
 	return true
 end
 
-function native.AssetDownloader.requestAssetPackItem(a, itemId)
-	return
+function native.AssetDownloader.requestAssetPackItem(packId, itemId)
+	print("native.AssetDownloader.requestAssetPackItem: "..packId..", "..itemId)
+
+	if native.AssetDownloader.onAssetPackItemAvailable then
+		native.AssetDownloader.onAssetPackItemAvailable(packId, itemId)
+	end
 end
 
 function native.AssetDownloader.getCloudAssetLoadStatusString(a)
+	print("native.AssetDownloader.getCloudAssetLoadStatusString: "..a)
 	return
 end
 
@@ -273,8 +281,32 @@ function native.AssetDownloader.releaseAllAssetPackImages(a)
 	return
 end
 
+local assets = {
+	["force_update.zip"] = {
+		["versionInfo.lua"] = {enabled = true}
+	}
+}
+
 function native.AssetDownloader.loadAssetPackLuaFile(a, b, c)
-	return
+	print("native.AssetDownloader.loadAssetPackLuaFile: "..tostring(a)..", "..tostring(b)..", "..tostring(c))
+
+	local result = assets[a] and assets[a][b] or "--dummy file from native.AssetDownloader.loadAssetPackLuaFile"
+
+	return result
+end
+
+--AssetDownloadSystem.lua injects the following callback functions into native.AssetDownloader:
+--(the arguments are passed in as varargs)
+--onAssetPackItemAvailable(a, b), onAssetPackItemNotAvailable(a, b), onAssetPackAvailable(a),
+--onCloudAssetLoadStart(a), onCloudAssetLoadSuccess(a), onCloudAssetLoadError(a),
+--onCloudMetadataLoadSuccess(), onCloudMetadataLoadError()
+
+--i'm pretty sure 5.0.1's menu_flow.lua doesn't break on fusion due to tostring actually working properly
+--vararg functions, etc.
+local _tostring = tostring
+
+function tostring(a)
+	return _tostring(a)
 end
 
 
