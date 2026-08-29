@@ -167,14 +167,13 @@ function love.update(dt)
 		if debugOpen then
 			updateDebug(dt)
 		end
-
-		cursor.wheelTriggered = nil
-		
-		cursor.wheel = 0
-		prevCursor.x, prevCursor.y = cursor.x, cursor.y
 		
 		setRenderState(0, 0, 1, 1)
 		updatePopup()
+
+		cursor.wheelTriggered = nil
+		cursor.wheel = 0
+		prevCursor.x, prevCursor.y = cursor.x, cursor.y
 		
 		if debugOpen then
 			love.keyboard.setKeyRepeat(true)

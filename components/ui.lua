@@ -131,6 +131,7 @@ function CUI.Textbox(state, x, y, w, h)
 	
 	if keyReleased.LBUTTON and hovering and not disable then
 		CUI.currentTextboxState = state
+		love.keyboard.setTextInput(true)
 		state.cursorBlink = 0
 		
 		local cx, cy = cursor.x - textx, cursor.y - y - (state.scroll and state.scroll.scroll or 0)
