@@ -11,9 +11,6 @@ function love.errorhandler(msg)
 	end
 	
 	pcall(function()
-		--reset identity
-		setDataPathFromFile("")
-		
 		--clear autoboot if it exists
 		if mobileDevice and love.filesystem.remove(autoboot_path) then
 			print("Removed "..autoboot_path)
