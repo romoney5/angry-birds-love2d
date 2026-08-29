@@ -834,9 +834,9 @@ function PortalObjectTeleporter:recalculateLinearVelocity()
 	
 	local transformedVelocity = {x = 0, y = 0}
 	
-	local angleDelta = self.sourceAngle - self.destAngle
+	local angleDelta = self.sourceAngle + self.destAngle
 	
-	if isLargerAngle then
+	--[[if isLargerAngle then
 		local velAngle = math.atan2(vy, vx)
 		local newAngle = velAngle + deltaTime - angleDelta
 
@@ -871,7 +871,13 @@ function PortalObjectTeleporter:recalculateLinearVelocity()
 		local scale = self.minSpeed / speed
 		transformedVelocity.x = transformedVelocity.x * scale
 		transformedVelocity.y = transformedVelocity.y * scale
-	end
+	end]]
+	
+	--romoney5: test
+	local angle = (math.atan2(vy, vx) - self.sourceAngle) + self.destAngle - math.pi
+	
+	transformedVelocity.x = math.cos(angle) * speed
+	transformedVelocity.y = math.sin(angle) * speed
 	
 	self.velocityX = transformedVelocity.x
 	self.velocityY = transformedVelocity.y
