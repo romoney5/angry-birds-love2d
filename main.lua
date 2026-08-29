@@ -37,7 +37,11 @@ end
 
 
 --override print to work with the debug console
+--this needs to be here because other stuff is loaded before console.lua
 local orig_print = print
+
+debugPrints = {}
+debugPrintsLimit = 200
 
 function print(...)
 	orig_print(...)
@@ -48,12 +52,10 @@ function print(...)
 		prints = prints..tostring(select(i, ...)).."\t"
 	end
 
-	if debugPrints then
-		table.insert(debugPrints, 1, prints)
-		if #debugPrints > debugPrintsLimit then
-			for i = #debugPrints, debugPrintsLimit + 1, -1 do
-				table.remove(debugPrints, i)
-			end
+	table.insert(debugPrints, 1, prints)
+	if #debugPrints > debugPrintsLimit then
+		for i = #debugPrints, debugPrintsLimit + 1, -1 do
+			table.remove(debugPrints, i)
 		end
 	end
 end

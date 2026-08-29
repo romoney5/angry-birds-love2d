@@ -3,7 +3,7 @@
 debugOpen = false
 
 local debugPrevious = {}
-local debugPreviousIndex = 1
+local debugPreviousIndex = 0
 
 local output_scroll = {}
 
@@ -25,9 +25,6 @@ local textbox_state = {
 		output_scroll.overscrollDest = 0
 	end,
 }
-
-debugPrints = {}
-debugPrintsLimit = 200
 
 local debugPadding = 50
 
@@ -53,19 +50,18 @@ function debugExecute(text)
 	else
 		local su,re = pcall(loadstring(text))
 		if not su then
-			print("Error while running command: "..tostring(re))
+			print("Command error: "..tostring(re))
 		else
 			if re then
-				print(re)--"Ran command successfully with result: "..re)
-			else
-				-- print()--"Ran command successfully")
+				print(re)
 			end
 		end
 	end
 end
 
 function updateDebug(dt)
-	setRenderState(0,0,1,1)
+	setRenderState(0, 0, 1, 1)
+	res.useFont(nil)
 
 	--swap to the next/previous entry
 	--TODO: only do this if the cursor is at the last/first line
@@ -84,9 +80,7 @@ function updateDebug(dt)
 	end
 
 	--scrolling
-	res.useFont(nil)
 
-	--local logText = table.concat(debugPrints, "\n")
 	local round_padding = debugPadding / 4
 	local input_h = debugPadding * 2 + 50 - round_padding * 2 + math.max(res.getStringHeight(textbox_state.value) - 50, 0)
 	
@@ -127,21 +121,23 @@ function updateDebug(dt)
 		output_scroll.contentHeight) --content height
 
 	--files link
-	local tlw, tlh = 35, 36--tl.width, tl.height
+	local tlw, tlh = 35, 36
 	local x, y = screenWidth - debugPadding - round_padding * 3 - tlw, debugPadding + round_padding * 2
 	x, y = math.floor(x), math.floor(y)
-	local w, h = 60 + tlw*2, 20 + tlh*2
+	local w, h = 60 + tlw * 2, 20 + tlh * 2
 	local s = 1
+	
 	drawDebugButton(nil, x, y, w, h, s, function()
 		debugOpen = false
 		sgm()
 		return
 	end, true, "menu_confirm")
+	
 	love.graphics.translate(x, y)
 	love.graphics.scale(s)
 	res.drawString("", "Files", 0, 0, "HCENTER", "VCENTER")
 
-	setRenderState(0,0,1,1)
+	setRenderState(0, 0, 1, 1)
 end
 
 function love.textinput(key)
