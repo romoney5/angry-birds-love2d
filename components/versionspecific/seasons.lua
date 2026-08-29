@@ -204,6 +204,10 @@ function createDynamicHandler(name)
 		return
 	end
 	
+	function handler.queueload()--?
+		return
+	end
+	
 	
 	--classic 6.3.0
 	function handler.loadAvatarSheets()--?
@@ -345,6 +349,9 @@ function drawFlashAnimation(tag)
 	local data = anim.data
 	
 	local action = data.comps[1].data.actions[anim.playAction]
+	
+	if not action then return end
+	
 	local clip = action.clips[anim.name:lower().."_"..anim.playAction] --does it really lower?
 	
 	--keyframe types: translation, scale, rotation, alpha, sprite
@@ -483,7 +490,7 @@ function NativeCloudPayment.getLocalizedPrices()
 
 	setmetatable(prices, {
 		__index = function(self, k)
-			return "idk"
+			return "$0.00"
 		end
 	})
 
@@ -713,6 +720,10 @@ function NativeCloudAssets.getAssetStatus(asset)
 	if status == "QUEUED" then status = "DOWNLOADING" end
 	if status == "NO CONNECTION" then status = "FAILURE" end
 	return status
+end
+
+function NativeCloudAssets.deleteAllCloudData() --5.0.0
+	return
 end
 
 cloudDomain = "http://raw.githubusercontent.com/HaloGuy345/cloud_assets/main"
