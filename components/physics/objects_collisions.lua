@@ -444,7 +444,6 @@ function setVisible(object, visible)
 	end
 end
 
---does the callback run immediately?
 function getRayCastedObjects(info)
 	local x1, y1 = info.x1, info.y1
 	local x2, y2 = info.x2, info.y2
@@ -455,7 +454,6 @@ function getRayCastedObjects(info)
 
 		physicsWorld:rayCast(x1, y1, x2, y2, function(fixture, x, y, xn, yn, fraction)
 			if not obj or fixture ~= obj.fixture then
-				--local body = fixture:getBody()
 				local userdata = fixture and fixture:getUserData()
 				local name = userdata and userdata.name
 				if not name then return 1 end
@@ -537,6 +535,11 @@ local ENUM_PARAMS = {
 	
 	[16] = function(object, value, bool)
 		object.fixture:setMask(CATEGORY_BIRD)
+	end,
+	
+	--temporary fix for space
+	[19] = function(object, value, bool)
+		object.body:setActive(not bool)
 	end,
 }
 

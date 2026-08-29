@@ -153,7 +153,7 @@ function updatePhysics(dt)
 				end
 			end
 			
-			if selectObjectAnimation then
+			if selectObjectAnimation and obj.body:isActive() then
 				selectObjectAnimation(obj.name, math.sqrt(velMagnitude), obj.angle, dt)
 			end
 			

@@ -226,6 +226,13 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 end
 
 function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
+	if w == 0 and h == 0 then
+		print(("WARNING: object \"%s\" with sprite \"%s\" has a width and height of 0."):format(tostring(name), tostring(sprite)))
+
+		--set them to 1
+		w, h = 1, 1
+	end
+
 	objects.world[name] = {name = name, sprite = sprite, y = ypos, x = xpos, width = w, height = h or w, density = density,
 		friction = friction, restitution = restitution, controllable = controllable or false, z_order = z_order, mass = 1, xVel = 0, yVel = 0, angle = 0}
 	local obj = objects.world[name]
@@ -265,8 +272,6 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 	objects.world[name] = {name = name, sprite = sprite, y = ypos, x = xpos, radius = w, height = w, density = density,
 		friction = friction, restitution = restitution, controllable = controllable, z_order = z_order, mass = 1, xVel = 0, yVel = 0, angle = 0}
 	local obj = objects.world[name]
-
-	-- if controllable then obj.density = obj.density * 100 end
 
 	obj.body = love.physics.newBody(physicsWorld, xpos, ypos, obj.density <= 0 and "static" or "dynamic")
 	obj.shape = love.physics.newCircleShape(w or 1)
