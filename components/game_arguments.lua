@@ -83,70 +83,103 @@ arguments = {
 	end},
 }
 
+--look recursively for a data folder
+--as it varies between different platforms
+local look
+function look(dir, target)
+	--first loop through all the items
+	for i, file in ipairs(love.filesystem.getDirectoryItems(dir)) do
+		if file:lower():match(target:lower()) then
+			--found it already?
+			return dir.."/"..file
+		else
+			--check if it's a folder, and if so, look through that and see if it got anything
+			local info = love.filesystem.getInfo(dir.."/"..file)
+
+			if info and info.type == "directory" then
+				local found = look(dir.."/"..file, target)
+
+				if found then
+					return found
+				end
+			end
+		end
+	end
+end
+
+--guess the deviceModel from a data path
+local function guessModel(dir)
+	if endsWith(dir, ".ipa") then
+		return "iphone"
+	elseif endsWith(dir, ".apk") then
+		return "android"
+	end
+
+	--TODO: look through any binary for a match
+	--since ipad/iphone can differ
+end
+
+function findDataPathFromFile(file)
+	local info = love.filesystem.getInfo(file)
+
+	if not info then
+		return false, "No such file or directory."
+	end
+
+	if info.type == "file" then
+		--let's assume it's a zip/ipa/apk file, or something openable by mount
+		local src = love.filesystem.newFileData(file)
+		local success = love.filesystem.mount(src, file)
+		
+		if success then
+			local found = look(file, "^data")
+			love.filesystem.unmount(file)
+			
+			if not found then
+				return false, ("Could not find a valid data path in \"%s\".\nIs there a folder called \"data?\""):format(file)
+			end
+
+			return true, found
+		else
+			return false, ("Could not mount \"%s\" as a directory.\nIs the file a valid ZIP?"):format(file)
+		end
+	elseif info.type == "directory" or info.type == "symlink" then
+		--assume it's right
+		return true, file
+	end
+end
+
 function setDataPathFromFile(file)
 	--TODO: move zip handling to another file
 	love.filesystem.setIdentity(identity)
+	local success, path = findDataPathFromFile(file)
 	local info = love.filesystem.getInfo(file)
-	if info and info.type == "file" then
-		print("Opening \""..file.."\" as a ZIP file...")
+
+	if success then
+		print(("Using data path \"%s\"..."):format(file))
 		
-		--let's assume it's a zip/ipa/apk file
-		local src = love.filesystem.newFileData(file)
-		local success = love.filesystem.mount(src, file)
+		local src, success
 
-		datapath = file
-		if success then
-			--look recursively for a data folder,
-			--it varies between pc installations, ipas, and apks
-			local function look(dir, target)
-				--first loop through all the items
-				for i, file in ipairs(love.filesystem.getDirectoryItems(dir)) do
-					if file:lower():match(target:lower()) then
-						--found it already?
-						return dir.."/"..file
-					else
-						--check if it's a folder, and if so, look through that and see if it got anything
-						local info = love.filesystem.getInfo(dir.."/"..file)
+		if info and info.type == "file" then
+			src = love.filesystem.newFileData(file)
+			success = love.filesystem.mount(src, file)
+		end
 
-						if info and info.type == "directory" then
-							local found = look(dir.."/"..file, target)
-
-							if found then
-								return found
-							end
-						end
-					end
-				end
-			end
-			
-			--make a guess
-			--TODO: make a better guess by looking at the binary
-			if endsWith(datapath, ".ipa") then
-				deviceModel = "iphone"
-			elseif endsWith(datapath, ".apk") then
-				deviceModel = "android"
-			end
-			
-			local found = look(datapath, "^data")
-			
-			if not found then
-				love.filesystem.unmount(file)
-				return false
-			end
-			
-			datapath = found
-
-			openedDatapath = true
-		else
+		if success == false then --???
 			return false
 		end
-	elseif info and (info.type == "directory" or info.type == "symlink") then
-		print("Opening \""..file.."\" as a folder...")
-		if file ~= "" then
-			openedDatapath = true
+
+		datapath = path
+			
+		openedDatapath = true
+
+		--make a guess
+		--TODO: make a better guess by looking at the binary
+		local model = guessModel(file)
+
+		if model then
+			deviceModel = model
 		end
-		
-		datapath = file
 	else
 		datapath = file
 		

@@ -5,7 +5,6 @@ function sgm()
 end
 
 local function close()
-	res.stopAudio("somethingTheme")
 	something.on = false
 end
 
@@ -37,7 +36,7 @@ something = {
 		anim = 0,
 
 		items = {
-			{text = "Open with..", callback = function(f)
+			{text = "Open with...", callback = function(f)
 				openPopup(
 					"Open With",
 					"Open \""..f.name.."\" with...",
@@ -64,12 +63,19 @@ something = {
 			end},
 			{text = "Run File", callback = function(f)
 				local path = f.path
+				local success, reason = findDataPathFromFile(path)
+
+				if not success then
+					openPopup(f.name, reason, nil)
+					return
+				end
+
 				local ogDatapath = datapath
 				local openedDatapath = openedDatapath
 				local success = setDataPathFromFile(path)
 
 				if not success then
-					openPopup(f.name, "Could not find a valid data path in \""..f.name.."\".", nil)
+					openPopup(f.name, "Could not open \""..f.name.."\".", nil)
 					datapath = ogDatapath
 					return
 				end
@@ -85,6 +91,14 @@ something = {
 				loadGameFiles()
 			end},
 			{text = "Run File Params", callback = function(f)
+				local path = f.path
+				local success, reason = findDataPathFromFile(path)
+
+				if not success then
+					openPopup(f.name, reason, nil)
+					return
+				end
+
 				local states = {}
 				openPopup(
 					"Run File with Params",
@@ -94,7 +108,6 @@ something = {
 							return true
 						end},
 						{sprite = "TUTORIAL_OK", callback = function()
-							local path = f.path
 							local ogDatapath = datapath
 							local openedDatapath = openedDatapath
 							local success = setDataPathFromFile(path)
@@ -199,6 +212,7 @@ something = {
 								if love.filesystem.getInfo(path, "directory") then
 									for i, file in ipairs(love.filesystem.getDirectoryItems(path)) do
 										del(path.."/"..file)
+
 										love.filesystem.remove(path.."/"..file)
 									end
 								end
@@ -245,7 +259,7 @@ something = {
 							end
 							
 							--auto-scroll to the file you just made
-							something.files = reloadSomething(something, something.path)
+							something.files = something:reload(something.path)
 							
 							local yoffset = 0
 							for i, file in ipairs(something.files) do --distinguish files/folders?
@@ -263,9 +277,64 @@ something = {
 						end},
 					}, false,
 					function(x,y,w,h,p)
-						--love.graphics.rectangle("fill", x, y, w, h) --text field?
 						CUI.Textbox(textboxState, x, y, w, 30)
 						CUI.Checkbox(state2, x, y + 40, 50, 50, "Folder")
+					end, 20
+				)
+			end},
+			{text = "Mount...", callback = function(f)
+				if not love.filesystem.mountFullPath then
+					openPopup("Mount", "love.filesystem.mountFullPath does not exist.\nPlease make sure you are using at least LÖVE 12.0.", nil)
+					return
+				end
+
+				local textboxState = {}
+				textboxState.placeholder = "Target"
+				local textboxState2 = {}
+				textboxState2.placeholder = "Destination"
+				--local checkboxState = {}
+				--checkboxState.value = true --i might have deleted some of my c drive using this
+				
+				openPopup(
+					"Mount",
+					"Mount a path as a temporary folder...",
+					{
+						{sprite = "MENU_NO", callback = function()
+							return true
+						end},
+						{sprite = "TUTORIAL_OK", callback = function()
+							local name = textboxState.value
+							local dest = textboxState2.value
+							
+							local success = love.filesystem.mountFullPath(name, dest, --[[checkboxState.value and "readwrite" or]] "read")
+							
+							if not success then
+								openPopup("Mount", "Could not mount file \""..name.."\".\nChoose a different name.")
+								return
+							end
+							
+							--auto-scroll to the file you just made
+							something.files = reloadSomething(something, something.path)
+							
+							local yoffset = 0
+							for i, file in ipairs(something.files) do --distinguish files/folders?
+								local fx, fy = 200, -yoffset
+								
+								if file.name == dest then
+									something.scrollto = fy
+									break
+								end
+								
+								yoffset = yoffset + 36
+							end
+							
+							return true
+						end},
+					}, false,
+					function(x,y,w,h,p)
+						CUI.Textbox(textboxState, x, y, w, 30)
+						CUI.Textbox(textboxState2, x, y + 40, w, 30)
+						--CUI.Checkbox(checkboxState, x, y + 80, 50, 50, "Writeable")
 					end, 20
 				)
 			end},
@@ -276,8 +345,6 @@ something = {
 	--scroll = 0,
 	scroll = {},
 }
-
-local dance = 0
 
 local function updateCode()
 	local so = something
@@ -313,6 +380,42 @@ local function updateCode()
 				end},
 			})
 	end, true, "menu_back")
+	
+	if keyReleased.F5 then
+		openPopup("Code", "Run file?",
+			{
+				{sprite = "MENU_NO", callback = function()
+					return true
+				end},
+				{sprite = "TUTORIAL_OK", callback = function()
+					local success, ret = pcall(loadstring(code.textboxState.value))
+					
+					if not success then
+						openPopup("Code", "Error running file:\n"..tostring(ret))
+					end
+					
+					return true
+				end},
+			})
+	end
+end
+
+--draw basic file/folder icons
+local function drawFolder(x, y)
+	local w, h = 30, 20
+	love.graphics.rectangle("fill", x - w/2, y - h/2 + 10, w, h, 5)
+	love.graphics.rectangle("fill", x - w/2, y - h/2 + 6, w * .4, h * .6, 5, 2)
+end
+
+local function drawFile(x, y)
+	local w, h = 20, 30
+	love.graphics.rectangle("fill", x - w/2, y - h/2 + 5, w, h, 3)
+	love.graphics.setColor(24 / 255, 50 / 255, 75 / 255, 1)
+	-- love.graphics.polygon("fill", x+3,y-6,x+3,y+h/3,x+w*.4,y+h/3)
+	love.graphics.rectangle("fill", x, y - 10, 15, 10)
+	love.graphics.setColor(1, 1, 1, 1)
+	love.graphics.setLineWidth(1)
+	love.graphics.line(x, y - 9, x + 9, y + 1)
 end
 
 function something:update(dt)
@@ -321,10 +424,6 @@ function something:update(dt)
 	--on first load
 	if not self.loaded then
 		self.loaded = true
-		currentTheme = currentTheme or "theme1"
-		screen = screen or {top = 0, left = 0}
-
-		res.createAudio("KAKAO_MAP_THEME_HQ.ogg", "somethingTheme")
 
 		if android and love.filesystem.mountFullPath then
 			--TODO: should this be writeable?
@@ -338,22 +437,10 @@ function something:update(dt)
 		self.files = self:reload(self.path)
 	end
 
-	--on load
-	if not res.isAudioPlaying("somethingTheme") then
-		res.stopAllAudio()
-		res.playAudio("somethingTheme", 0.5, true)
-		self.time = 0
-	end
-
 	time = time or love.timer.getTime()
 	cameraShakeX, cameraShakeY = 0, 0
 
-	-- res.drawString("", "DT "..tostring(dt), 50, 50)
-	local dance = math.abs(math.cos(self.time * (123 / 20))) * 100
-
-	screen.top = -400
-	screen.left = screen.left + dt * 120
-	setWorldScale((0.5 * screenHeight / 400) / (0.66))
+	renderLeft = renderLeft + dt * 120
 
 	drawBackgroundNative()
 	drawForegroundNative()
@@ -407,7 +494,7 @@ function something:update(dt)
 						res.playAudio("menu_confirm",1)
 						if v.info.type == "directory" or v.info.type == "up" then
 							self.path = (resolvePath(self.path..v.name).."/"):sub(2)
-							self.files = reloadSomething(self, self.path)
+							self.files = self:reload(self.path)
 							
 							self.scroll.overscroll = .5 / 2
 							self.scroll.scroll = 60 * 4
@@ -437,7 +524,7 @@ function something:update(dt)
 				end
 			end
 
-			drawDebugText(v.name, fx + 30, fy, "LEFT", "FONT_BASIC")
+			drawDebugText(v.name, fx + 30, fy, "LEFT", nil)
 		end
 		
 		yoffset = yoffset + 36
@@ -525,28 +612,13 @@ function something:update(dt)
 		love.graphics.pop()
 	end
 
-	drawDebugText(self.path or "Files", screenWidth * .5, math.min(padding / 2, 100), "HCENTER", "FONT_MENU", w)
-	if currentGameMode and currentGameMode == updateSomething then
-		drawDebugButton("BUTTON_ARROW_LEFT", padding / 3, padding / 3, nil, nil, 1, function()
-			res.stopAudio("somethingTheme")
-			currentGameMode = self.pgm
-		end, true, "menu_back")
-	else
-		drawDebugButton("BUTTON_RESTART", padding / 3, padding / 3, nil, nil, .9, function()
-			openPopup("Restart", "The game has not been properly loaded.\nRestart the game?",
-				{
-					{sprite = "BUTTON_RESTART", callback = function()
-						love.event.quit()
-					end},
-					{sprite = "MENU_NO", callback = function()
-						return true
-					end},
-					{sprite = "TUTORIAL_OK", callback = function()
-						love.event.quit("restart")
-					end},
-				})
-		end, true, "menu_back")
-	end
+	drawDebugText(self.path or "Files", screenWidth * .5, math.min(padding / 2, 100), "HCENTER", nil, w)
+	
+	drawDebugButton("BUTTON_ARROW_LEFT", padding / 3, padding / 3, nil, nil, 1, function()
+		self.on = false
+	end, true, "menu_back")
+
+	local dance = math.abs(math.cos(self.time * (123 / 20))) * 100
 	
 	res.drawSprite("SOUNDBOARD_2_BIRD", screenWidth - 100, dance + screenHeight - 200)
 	res.drawSprite(g_currentCursorName, cursor.x, cursor.y)
@@ -567,7 +639,9 @@ function something:reload(path)
 		local outpath = path
 		if outpath:sub(1, 1) == "/" then outpath = outpath:sub(2) end
 		
-		table.insert(files, {name = v, info = info, path = outpath..v, folder = outpath})
+		if info then
+			table.insert(files, {name = v, info = info, path = outpath..v, folder = outpath})
+		end
 	end
 
 	table.sort(files, function(a,b) --TODO: sorting table
@@ -586,23 +660,6 @@ function something:reload(path)
 	end)
 
 	return files
-end
-
-function drawFolder(x,y)
-	local w, h = 30, 20
-	love.graphics.rectangle("fill", x - w/2, y - h/2 + 10, w, h, 5)
-	love.graphics.rectangle("fill", x - w/2, y - h/2 + 6, w * .4, h * .6, 5, 2)
-end
-
-function drawFile(x,y)
-	local w, h = 20, 30
-	love.graphics.rectangle("fill", x - w/2, y - h/2 + 5, w, h, 3)
-	love.graphics.setColor(24 / 255, 50 / 255, 75 / 255, 1)
-	-- love.graphics.polygon("fill", x+3,y-6,x+3,y+h/3,x+w*.4,y+h/3)
-	love.graphics.rectangle("fill", x, y - 10, 15, 10)
-	love.graphics.setColor(1, 1, 1, 1)
-	love.graphics.setLineWidth(1)
-	love.graphics.line(x, y - 9, x + 9, y + 1)
 end
 
 function checkBounds(left, top, w, h, cursorX, cursorY)
