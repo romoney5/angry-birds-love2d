@@ -44,6 +44,9 @@ end
 
 local error_blame = {}
 local error_blame_state
+
+fione_errorblame_length = 0
+
 local og_assert = assert
 local assert = og_assert
 

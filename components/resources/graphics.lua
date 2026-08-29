@@ -12,6 +12,7 @@ cachedimgs = {} --individual sprites
 function getBGColor() --not used, but i found it in ghidra
 	return love.graphics.getBackgroundColor()
 end
+
 function setBGColor(r, g, b) --set the background color
 	love.graphics.setBackgroundColor(r / 255, g / 255, b / 255)
 end
@@ -683,4 +684,19 @@ end
 
 function getRokuImagePath(dat)
 	return ""
+end
+
+--fullscreen stuff
+function isInFullScreenMode()
+	local fs, fst = love.window.getFullscreen()
+	return fs
+end
+
+function setFullScreenMode(mode)
+	love.window.setFullscreen(mode)
+end
+
+function setResolution(w, h)
+	love.window.updateMode(w * displayScale * love.graphics.getDPIScale(), h * displayScale * love.graphics.getDPIScale())
+	updateDisplayScale()
 end

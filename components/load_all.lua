@@ -66,5 +66,6 @@ runLuaFile(compsPath.."/versionspecific/classic.lua")		--functions for 3.0.1 and
 runLuaFile(compsPath.."/versionspecific/seasons.lua")		--functions for modern seasons
 runLuaFile(compsPath.."/versionspecific/rio.lua")			--functions for rio 1.4.0
 runLuaFile(compsPath.."/versionspecific/friends.lua")		--functions for friends mobile
+runLuaFile(compsPath.."/versionspecific/stella.lua")		--functions for ab stella
 
 runLuaFile(compsPath.."/debugging/error.lua")				--run the error handler after everything is loaded

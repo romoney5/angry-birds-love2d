@@ -79,6 +79,10 @@ function hasLocationCapability()
 	return false
 end
 
+function wasKeyReleased(key)
+	return keyReleased[key]
+end
+
 --1.7.0
 
 function initGameCenter()

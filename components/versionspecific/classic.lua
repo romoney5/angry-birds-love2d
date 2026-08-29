@@ -13,6 +13,14 @@ function getModel()
 	return deviceModel
 end
 
+function getDeviceID()
+	return "00-00-00-00-00-00;00-00-00-00-00-00"
+end
+
+function areDeviceIDsEqual(id1, id2)
+	return id1 == id2
+end
+
 function getDeviceIDHash()
 	return "0"
 end
@@ -37,12 +45,44 @@ function deactivateDebugConsole()
 	return
 end
 
+
 function getCurrentTime()
-	local currentTime = os.date("*t")
-	local t = {year = currentTime.year, month = currentTime.month, day = currentTime.day, hour = currentTime.hour}
-	t.minutes = currentTime.min
-	t.seconds = currentTime.sec
-	return t
+	local t = os.date("*t")
+	return {year = t.year, month = t.month, day = t.day, hour = t.hour, minutes = t.min, seconds = t.sec}
+end
+
+function getStampTime(stamp)
+	--months technically not accurate
+	return {years = stamp / 60 / 60 / 24 / 365, months = stamp / 60 / 60 / 24 / 30, days = stamp / 60 / 60 / 24,
+		hours = stamp / 60 / 60, minutes = stamp / 60, seconds = stamp}
+end
+
+function timeToStamp(t)
+	return os.time{year = t.year, month = t.month, day = t.day, hour = t.hour, min = t.minutes, sec = t.seconds}
+end
+
+function getTimeDifferenceInSeconds(time1, time2)
+	time1, time2 = timeToStamp(time1), timeToStamp(time2)
+	
+	return math.abs(time2 - time1)
+end
+
+function getTimeDifference(time1, time2)
+	time1, time2 = timeToStamp(time1) or 0, timeToStamp(time2) or 0
+	
+	return getStampTime(math.abs(time2 - time1))
+end
+
+function setWorldGravity(x, y)
+	gravity.x, gravity.y = x, y
+end
+
+--i forgot which version this was found in
+
+flurry = {}
+
+function flurry.logEvent(self, text, text2)
+	logFlurryEventWithParams(text, text2)
 end
 
 --3.2.0 hd ipad
@@ -569,20 +609,6 @@ function native.FileSystem.enumerate(path, a, type, recursive)
 	end
 	
 	return output
-end
-
-
---stella
-function createUniqueShaders(shader, a)
-	return {}
-end
-
-function onNotificationReceived()
-	return
-end
-
-function setNotificationCallback(callback)
-	return
 end
 
 --6.0.1

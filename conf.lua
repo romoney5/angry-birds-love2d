@@ -18,11 +18,11 @@ function love.conf(t)
 	-- love.window.fullscreen = true
 	t.window.msaa = 8
 
-	--love2d with vulkan on most platforms doesn't support many image formats like etc1
+	--love2d with vulkan on most platforms doesn't support many image formats such as etc1
 	if t.graphics then
 		t.graphics.excluderenderers = {"vulkan"}
 		-- t.graphics.lowpower = true
 	end
-    
---     t.version = "11.5" --11.5 and 12.0 are supported
+	
+	--t.version = "11.5" --11.5 and 12.0 are supported --TODO: remove this when love 12 releases
 end

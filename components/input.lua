@@ -3,6 +3,24 @@
 --hack, is the pressed cursor a touchscreen?
 local isTouching = false
 
+touches = {}
+touchcount = 0
+
+cursor = {x = 0, y = 0, wheel = 0, wheelTriggered = false, dx = 0, dy = 0}
+multitouchZoom = {zoomCoolingTime = 0}
+multitouchSweep = {isSweepping = false}
+maxWorldScale = 0
+
+keyPressed = {}
+keyReleased = {}
+keyHold = {}
+
+--editor-specific patch
+--TODO: give these a metatable where nil accesses default to false
+keyHold["CONTROL"] = false
+keyHold["SHIFT"] = false
+
+
 function love.keypressed(key)
 	if key == "lshift" then key = "shift" end
 	if key == "lctrl" then key = "control" end

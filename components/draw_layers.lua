@@ -5,6 +5,8 @@ local trajectory
 
 local currentTheme
 
+renderLeft, renderTop, renderScale = 0, 0, 1
+
 
 themeSpriteObjects = {}
 --[[
@@ -61,9 +63,22 @@ function setTheme(theme)
 	restoreParticles()
 end
 
+function setTopLeft(left, top)
+	renderLeft = left
+	renderTop = top
+end
+
+function setWorldScale(num)
+	renderScale = num
+end
+
+function setMaxWorldScale(s)
+	maxWorldScale = s
+end
+
 local function getScreenTopLeft()
-	local screenLeft = renderLeft or screen.left - (cameraShakeX or 0)
-	local screenTop = renderTop or screen.top - (cameraShakeY or 0)
+	local screenLeft = renderLeft
+	local screenTop = renderTop
 	return screenLeft, screenTop
 end
 

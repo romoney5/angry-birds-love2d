@@ -1,5 +1,6 @@
 --convert a pvr image into ImageData
 
+--TODO: switch to getTextureFormats() when love 12 releases
 local support = love.graphics.getImageFormats()
 local headerSize = 52
 

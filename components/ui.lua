@@ -577,6 +577,33 @@ function drawDebugText(text, x, y, align, font, w)
 	end
 end
 
+--popups
+openPopups = {}
+
+--showPopup is currently not available because of ab talkweb
+function openPopup(title, text, buttons, pause, extra, height)
+	keyReleased.LBUTTON = false
+
+	if audiochannels then
+		res.playAudio("noteG", .7)
+	end
+
+	--default button set
+	buttons = buttons or {
+		{sprite = "TUTORIAL_OK", callback = function()
+			return true
+		end},
+	}
+
+	--add a popup at the start of the queue
+	table.insert(openPopups, 1, {title = title, text = text, buttons = buttons, extra = extra, h = height, pause = pause})
+
+	--if it's important then run it immediately
+	if pause and #openPopups == 1 then
+		updatePopup()
+	end
+end
+
 function updatePopup()
 	local popup = openPopups[1]
 	local dt = love.timer.getDelta()

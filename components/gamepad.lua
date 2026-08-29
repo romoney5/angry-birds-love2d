@@ -3,6 +3,8 @@
 local gpcx, gpcy, gpc = 0, 0, 0 --gamepad cursor x/y, gamepad cooldown
 joystick = nil
 
+gpcx, gpcy = love.mouse.getPosition()
+
 function registerGamepadKey(joystick, key, button) --check if a controller button is pressed and press a keyboard/mouse button accordingly
 	local hold = keyHold[key]
 	if button == false then
@@ -23,7 +25,7 @@ function updateGamepad(dt)
 		x, y = 0, 0
 	end
 
-	if physicsEnabled then
+	if isPhysicsEnabled() then
 		if not levelCompleted and (x ~= 0 or y ~= 0) and not cameraTargetObject then
 			if currentBirdName ~= nil then
 				local obj = objects.world[currentBirdName]

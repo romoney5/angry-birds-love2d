@@ -457,3 +457,83 @@ end
 function createDirectory(directory)
 	love.filesystem.createDirectory(directory)
 end
+
+--serializes a lua table into a loadable string
+local serializeTable
+
+function serializeTable(t, indent)
+	local out = ""
+	indent = indent or "\t"
+
+	for i, v in pairs(t) do
+		local key = tostring(i).." = "
+		
+		--always use brackets for keys
+		if type(i) == "number" then
+			key = "["..i.."] = "
+		else
+			key = "[\""..tostring(i).."\"] = "
+		end
+
+		if type(v) == "table" then
+			out = out..indent..key.."{\n"..serializeTable(v, indent.."\t", noIndexes)..indent.."}"..(indent == "" and "" or ",").."\n"
+		else
+			local final_value = tostring(v)
+			
+			if type(v) == "string" then
+				final_value = "\""..final_value.."\""
+			end
+
+			if type(v) ~= "userdata" then
+				out = out..indent..(tonumber(i) and "" or key)..final_value..""..(indent == "" and "" or ",").."\n"
+			end
+		end
+	end
+
+	return out
+end
+
+function saveLuaFile(fileName, tableName, appData)
+	if disableSaving then
+		print("saveLuaFile(): Tried saving \""..tableName.."\" but saving is disabled")
+		return
+	end
+
+	local tableToSave = _G[tableName]
+	
+	if not (tableToSave and type(tableToSave) == "table") then
+		print("saveLuaFile(): Table "..tableName.." does not exist.")
+		
+		return
+	end
+	
+	local serializedData = tableName.." = {\n"..serializeTable(tableToSave).."}"
+
+	local s1, m1 = love.filesystem.createDirectory(fileName:match(".*/") or "")
+	
+	if not s1 then
+		print("\""..tableName.."\" failed to save to "..fileName.." ("..(m1 or "Unknown error")..")")
+		
+		return
+	end
+	
+	local s, m = love.filesystem.write(fileName, serializedData)
+	
+	if s then
+		print("\""..tableName.."\" was saved to "..fileName)
+	else
+		print("\""..tableName.."\" failed to save to "..fileName.." ("..(m or "Unknown error")..")")
+	end
+end
+
+function savePersistentLuaFile(fileName, tableName)
+	saveLuaFile(fileName, tableName)
+end
+
+function storePersistentData()
+	return
+end
+
+function checkForLuaFile(filename)
+	return love.filesystem.exists(datapath.."/"..filename)
+end

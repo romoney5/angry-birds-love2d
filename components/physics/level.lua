@@ -1,5 +1,8 @@
 --level saving and loading and other things
 
+local physicsEnabled = false
+physicsWorld = nil
+
 physicsSimulationScale = 0
 
 function loadLevel(filename)
