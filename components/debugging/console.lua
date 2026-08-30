@@ -16,6 +16,7 @@ local textbox_state = {
 		end
 		
 		debugExecute(self.value)
+		debugPreviousIndex = 0
 		self.value = ""--debugText:sub(1,-2)
 		self.cursor = 0
 		self.cursorBlink = 0

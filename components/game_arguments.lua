@@ -1,6 +1,6 @@
 --handles arguments passed to love at the start of the game, as well as other post-start arguments
 
-local identity = love.filesystem.getIdentity()
+original_identity = love.filesystem.getIdentity()
 
 autoboot_path = "autoboot.lua"
 
@@ -151,7 +151,7 @@ end
 
 function setDataPathFromFile(file)
 	--TODO: move zip handling to another file
-	love.filesystem.setIdentity(identity)
+	love.filesystem.setIdentity(original_identity)
 	local success, path = findDataPathFromFile(file)
 	local info = love.filesystem.getInfo(file)
 
@@ -195,7 +195,7 @@ setDataPathFromFile("%s")]]):format(file))
 	end
 	
 	if file ~= "data" and file ~= "" then
-		love.filesystem.setIdentity(identity.."/DATA_"..file)
+		love.filesystem.setIdentity(original_identity.."/DATA_"..file)
 	end
 
 	return true

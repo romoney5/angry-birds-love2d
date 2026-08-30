@@ -49,6 +49,8 @@ objects = gamelua.objects
 
 enableDebug = false
 
+showCursor = nil --filled in from config.lua
+
 
 function gamelua.requestExit()
 	print("Quitting...")
@@ -126,12 +128,13 @@ function loadGameFiles()
 		loadLuaFileToObject(datapath.."/config.lua", config, nil, true)
 	end
 	
-	imagePath = config.imagePath or gamelua.imagePath
-	fontPath = config.fontPath or gamelua.fontPath
-	audioPath = config.audioPath or gamelua.audioPath
-	localizationPath = config.localizationPath or gamelua.localizationPath
-	levelPath = config.levelPath or gamelua.levelPath
-	scriptPath = config.scriptPath or gamelua.scriptPath
+	gamelua.imagePath = config.imagePath or gamelua.imagePath
+	gamelua.fontPath = config.fontPath or gamelua.fontPath
+	gamelua.audioPath = config.audioPath or gamelua.audioPath
+	gamelua.localizationPath = config.localizationPath or gamelua.localizationPath
+	gamelua.levelPath = config.levelPath or gamelua.levelPath
+	gamelua.scriptPath = config.scriptPath or gamelua.scriptPath
+	gamelua.showCursor = config.showCursor
 	--deviceModel = config.deviceModel or deviceModel
 
 	--start by setting the background to white and using premultiplied alpha

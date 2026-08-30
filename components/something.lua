@@ -314,7 +314,7 @@ something = {
 							end
 							
 							--auto-scroll to the file you just made
-							something.files = reloadSomething(something, something.path)
+							something.files = something:reload(something.path)
 							
 							local yoffset = 0
 							for i, file in ipairs(something.files) do --distinguish files/folders?

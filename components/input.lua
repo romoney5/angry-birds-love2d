@@ -142,7 +142,8 @@ function updateMouse(dt)
 		updateGamepad(dt)
 	end
 
-	love.mouse.setVisible(gamelua.deviceModel ~= "windows"
+	love.mouse.setVisible((gamelua.deviceModel ~= "windows"
+		and gamelua.showCursor ~= false)
 		or debugOpen or openPopups[1] ~= nil or something.on)
 end
 
