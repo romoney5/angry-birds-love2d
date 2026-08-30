@@ -1,27 +1,27 @@
 --classic 3.0.1 and later
 --functions with --? need to have their parameters/return values confirmed
 
-function getOSName()
+function gamelua.getOSName()
 	return love.system.getOS()
 end
 
-function getOSVersion()
+function gamelua.getOSVersion()
 	return "1.0"
 end
 
-function getModel()
-	return deviceModel
+function gamelua.getModel()
+	return gamelua.deviceModel
 end
 
-function getDeviceID()
+function gamelua.getDeviceID()
 	return "00-00-00-00-00-00;00-00-00-00-00-00"
 end
 
-function areDeviceIDsEqual(id1, id2)
+function gamelua.areDeviceIDsEqual(id1, id2)
 	return id1 == id2
 end
 
-function getDeviceIDHash()
+function gamelua.getDeviceIDHash()
 	return "0"
 end
 
@@ -29,51 +29,47 @@ function postDownloadTracking()--?
 	return
 end
 
-function checkInstalledAppsOnline(url)
+function gamelua.checkInstalledAppsOnline(url)
 	return
 end
 
-function setChannelCountLimit(channel, limit)
+function gamelua.activateDebugConsole()
 	return
 end
 
-function activateDebugConsole()
-	return
-end
-
-function deactivateDebugConsole()
+function gamelua.deactivateDebugConsole()
 	return
 end
 
 
-function getCurrentTime()
+function gamelua.getCurrentTime()
 	local t = os.date("*t")
 	return {year = t.year, month = t.month, day = t.day, hour = t.hour, minutes = t.min, seconds = t.sec}
 end
 
-function getStampTime(stamp)
+function gamelua.getStampTime(stamp)
 	--months technically not accurate
 	return {years = stamp / 60 / 60 / 24 / 365, months = stamp / 60 / 60 / 24 / 30, days = stamp / 60 / 60 / 24,
 		hours = stamp / 60 / 60, minutes = stamp / 60, seconds = stamp}
 end
 
-function timeToStamp(t)
+function gamelua.timeToStamp(t)
 	return os.time{year = t.year, month = t.month, day = t.day, hour = t.hour, min = t.minutes, sec = t.seconds}
 end
 
-function getTimeDifferenceInSeconds(time1, time2)
-	time1, time2 = timeToStamp(time1), timeToStamp(time2)
+function gamelua.getTimeDifferenceInSeconds(time1, time2)
+	time1, time2 = gamelua.timeToStamp(time1), gamelua.timeToStamp(time2)
 	
 	return math.abs(time2 - time1)
 end
 
-function getTimeDifference(time1, time2)
-	time1, time2 = timeToStamp(time1) or 0, timeToStamp(time2) or 0
+function gamelua.getTimeDifference(time1, time2)
+	time1, time2 = gamelua.timeToStamp(time1) or 0, gamelua.timeToStamp(time2) or 0
 	
-	return getStampTime(math.abs(time2 - time1))
+	return gamelua.getStampTime(math.abs(time2 - time1))
 end
 
-function setWorldGravity(x, y)
+function gamelua.setWorldGravity(x, y)
 	gravity.x, gravity.y = x, y
 end
 
@@ -950,7 +946,7 @@ end
 
 --8.0.3
 function native.FileSystem.exists(path)--?
-	return checkDirectory(datapath.."/"..path)
+	return gamelua.checkDirectory(datapath.."/"..path)
 end
 
 

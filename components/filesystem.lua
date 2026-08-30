@@ -7,7 +7,7 @@ local ALLOW_LUA_CACHE = true
 function findCaseInsensitive(dir)
 	local dir, paths = resolvePath(dir)
 
-	if checkDirectory(dir) then
+	if love.filesystem.exists(dir) then
 		--it's there already
 		return dir, paths
 	elseif dir and dir ~= "" then
@@ -217,11 +217,11 @@ function makeChunk(filename, env)
 end
 
 --very important in later codebases
-function loadLuaFileToObject(filename, ctx, key, lenient)
+function gamelua.loadLuaFileToObject(filename, ctx, key, lenient)
 	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
 	filename = newname or filename
 
-	ctx = ctx or _G
+	ctx = ctx or gamelua
 
 	local env
 	if type(key) == "table" then
@@ -249,13 +249,15 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 		if not getmetatable(env) then
 			setmetatable(env, {
 				__index = function(self, k)
-					if k == "_G" or k == "gamelua" then
+					if k == "_G" then
 						return _G
 					elseif k == "this" then
 						return self
+					elseif k == "gamelua" then
+						return gamelua
 					--hack for libao
-					elseif k == "loadAssets" then
-						return loadAssets
+					--elseif k == "loadAssets" then
+						--return loadAssets
 					end
 				end,
 				__newindex = function(self, k, v)
@@ -273,7 +275,7 @@ function loadLuaFileToObject(filename, ctx, key, lenient)
 			releaseBuild = false
 		end
 	elseif not lenient then
-		if checkDirectory(filename) then
+		if love.filesystem.exists(filename) then
 			--error("Could not load Lua file: "..filename.."\n"..tostring(err))
 			print("Could not load Lua file: "..filename.."\n"..tostring(lua))
 		else
@@ -296,12 +298,12 @@ end
 
 --also used in some versions
 --absw: blocks makes the file load into .blocks, unpack unpacks all tables inside
-function loadLuaFile(filename, envKey, blocks, unpack, lenient)
+function gamelua.loadLuaFile(filename, envKey, blocks, unpack, lenient)
 	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
 	filename = newname or filename
 
 	local compiled, lua, err = makeChunk(filename, env)
-	local env = _G[envKey] or _G
+	local env = gamelua[envKey] or gamelua
 	local og_env = env
 
 	if lua and not err then
@@ -349,7 +351,7 @@ function loadLuaFile(filename, envKey, blocks, unpack, lenient)
 		return lua()
 	elseif not lenient then
 		-- error("Could not load Lua file: "..filename)
-		if not checkDirectory(filename) then
+		if not love.filesystem.exists(filename) then
 			err = "File does not exist."
 		end
 		print("Could not load Lua file: "..filename.."\n"..tostring(err))
@@ -358,7 +360,7 @@ function loadLuaFile(filename, envKey, blocks, unpack, lenient)
 	return false
 end
 
-function runLuaFile(filename, lenient)
+function gamelua.runLuaFile(filename, lenient)
 	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
 	filename = newname or filename
 
@@ -368,7 +370,7 @@ function runLuaFile(filename, lenient)
 		return lua()
 	elseif not lenient then
 		-- error("Could not load Lua file: "..filename)
-		if not checkDirectory(filename) then
+		if not love.filesystem.exists(filename) then
 			err = "File does not exist."
 		end
 		error("Could not load Lua file: "..filename.."\n"..tostring(err))
@@ -377,16 +379,20 @@ end
 
 --also used in some versions
 local alreadyloaded = {}
-function requireFile(filename)
+function gamelua.requireFile(filename)
 	if alreadyloaded[filename] then return end
+	
+	local env = _G --getfenv(2)
 
-	if loadLuaFile(scriptPath.."/"..filename, nil, nil, nil, true) == false and loadLuaFile(commonScriptPath.."/"..filename) == false then
+	if gamelua.loadLuaFileToObject(scriptPath.."/"..filename, env, nil, true) == false and gamelua.loadLuaFileToObject(commonScriptPath.."/"..filename, env) == false then
 		print("Could not load Lua file: "..filename)
 		return
 	end
 
 	alreadyloaded[filename] = true
 end
+
+requireFile = gamelua.requireFile
 
 --strips .. and separates directories into a table
 function resolvePath(path)
@@ -458,11 +464,11 @@ function exportAllScripts(path)
 	print("Exported all encrypted files (look for the dec folder in the save directory)")
 end
 
-function checkDirectory(directory)
+function gamelua.checkDirectory(directory)
 	return love.filesystem.exists(directory)
 end
 
-function createDirectory(directory)
+function gamelua.createDirectory(directory)
 	love.filesystem.createDirectory(directory)
 end
 
@@ -501,7 +507,7 @@ function serializeTable(t, indent)
 	return out
 end
 
-function saveLuaFile(fileName, tableName, appData)
+function gamelua.saveLuaFile(fileName, tableName, appData)
 	if disableSaving then
 		print("saveLuaFile(): Tried saving \""..tableName.."\" but saving is disabled")
 		return
@@ -534,14 +540,14 @@ function saveLuaFile(fileName, tableName, appData)
 	end
 end
 
-function savePersistentLuaFile(fileName, tableName)
+function gamelua.savePersistentLuaFile(fileName, tableName)
 	saveLuaFile(fileName, tableName)
 end
 
-function storePersistentData()
+function gamelua.storePersistentData()
 	return
 end
 
-function checkForLuaFile(filename)
+function gamelua.checkForLuaFile(filename)
 	return love.filesystem.exists(datapath.."/"..filename)
 end

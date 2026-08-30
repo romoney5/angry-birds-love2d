@@ -55,24 +55,22 @@ function setThemeRectColour(layer, r, g, b, a)
 	layercolors[layer] = {r * a, g * a, b * a, a}
 end
 
-function setTheme(theme)
+function gamelua.setTheme(theme)
 	currentTheme = theme
 	yoffsets = {}
 	layercolors = {}
-
-	restoreParticles()
 end
 
-function setTopLeft(left, top)
+function gamelua.setTopLeft(left, top)
 	renderLeft = left
 	renderTop = top
 end
 
-function setWorldScale(num)
+function gamelua.setWorldScale(num)
 	renderScale = num
 end
 
-function setMaxWorldScale(s)
+function gamelua.setMaxWorldScale(s)
 	maxWorldScale = s
 end
 
@@ -100,7 +98,7 @@ function drawLayer(layer, yoffset)
 	local px, py = res.getSpritePivot(sprite)
 	local w, h = res.getSpriteBounds(sprite)
 	local wScale = tempWorldScale or renderScale or worldScale or 1
-	local autoScroll = -scrollFrequency * time / 16 --TODO: inaccurate with water
+	local autoScroll = -scrollFrequency * love.timer.getTime() / 16 --TODO: inaccurate with water
 	local shakeX, shakeY = cameraShakeX or 0, cameraShakeY or 0
 
 	if layer.water then
@@ -110,11 +108,11 @@ function drawLayer(layer, yoffset)
 	local xScale = layer.scaleWobbleX and math.sin(time) * layer.scaleWobbleX / wScale or 0
 	local yScale = layer.scaleWobbleY and math.sin(time) * layer.scaleWobbleY / wScale or 0
 	
-	local screenLeft = renderLeft - shakeX or screen.left -- really weird hack, change this asap
-	local screenTop = renderTop - shakeY or screen.top
+	local screenLeft = renderLeft - shakeX
+	local screenTop = renderTop - shakeY
 	
 	if w > 0 and wScale > .02 then --don't draw so many if the scale is too low
-		for x = -1, math.floor(screenWidth / (w - px) / wScale) do
+		for x = -1, math.floor(gamelua.screenWidth / (w - px) / wScale) do
 			local pivotX = w * x + startX
 			local left = -screenLeft * relativeSpeed / relativeScale
 			local top = -(screenTop - startY) / relativeScale + (yoffset or 0)
@@ -125,7 +123,7 @@ function drawLayer(layer, yoffset)
 				left = (left + autoScroll) % w
 			end
 			
-			setRenderState(pivotX + left - shakeX / (relativeScale + xScale), top - shakeY / (relativeScale + yScale), wScale * (relativeScale + xScale), wScale * (relativeScale + yScale), 0, px, py)
+			gamelua.setRenderState(pivotX + left - shakeX / (relativeScale + xScale), top - shakeY / (relativeScale + yScale), wScale * (relativeScale + xScale), wScale * (relativeScale + yScale), 0, px, py)
 			
 			if not (x ~= 0 and isLooping == false) then
 				res.drawSprite(sprite, 0, 0)
@@ -165,12 +163,14 @@ function drawThemeSprite(v, layer)
 	end
 end
 
-function drawBackgroundNative(highGFX)
+function gamelua.drawBackgroundNative(highGFX)
 	--seasons 5.1.0 made the theme variable into a table
-	local theme = blockTable.themes[currentTheme] or currentTheme
+	local theme = gamelua.blockTable.themes[currentTheme] or currentTheme
 	if not (theme and type(theme) == "table" and theme.bgLayers) then return end
 
-	if theme.color then setBGColor(theme.color.r, theme.color.g, theme.color.b) end
+	if theme.color then
+		gamelua.setBGColor(theme.color.r, theme.color.g, theme.color.b)
+	end
 
 	if highGFX ~= false then
 		for layernum, layer in ipairs(theme.bgLayers) do
@@ -181,7 +181,7 @@ function drawBackgroundNative(highGFX)
 				love.graphics.setColor(colors)
 				if layer.rect then
 					local a = colors[4] or layer.rect.a
-					drawRect(layer.rect.r * a, layer.rect.g * a, layer.rect.b * a, a, 0, 0, screenWidth, screenHeight)
+					gamelua.drawRect(layer.rect.r * a, layer.rect.g * a, layer.rect.b * a, a, 0, 0, screenWidth, screenHeight)
 				end
 			end
 
@@ -200,15 +200,15 @@ function drawBackgroundNative(highGFX)
 	end
 end
 
-function drawForegroundNative()
-	local theme = blockTable.themes[currentTheme]
+function gamelua.drawForegroundNative()
+	local theme = gamelua.blockTable.themes[currentTheme]
 	if not (theme and theme.fgLayers) then return end
 	
 	local screenLeft = renderLeft or screen.left
 	local screenTop = renderTop or screen.top
 
 	local s = renderScale or worldScale or 1
-	setRenderState(0, 0, 1, 1)
+	gamelua.setRenderState(0, 0, 1, 1)
 
 	--draw ground color
 	local fgLayers = theme.fgLayers
@@ -236,7 +236,7 @@ function drawForegroundNative()
 			local rect_y = (-screenTop + startY - (cameraShakeY or 0) + (ground_h - ground_py) * scale) * s
 			rect_y = rect_y + (yoffsets[#fgLayers - 1] or 0) * s
 
-			drawRect(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, rect_x, rect_y, screenWidth, screenHeight + screenTop * s + rect_y)
+			gamelua.drawRect(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, rect_x, rect_y, gamelua.screenWidth, gamelua.screenHeight + screenTop * s + rect_y)
 		end
 
 		drawLayer(layer, yoffsets[layernum - 1])
@@ -262,11 +262,11 @@ local textureShader = love.graphics.newShader([[
 	}]]
 )
 
-function drawGameNative()
+function gamelua.drawGameNative()
 	local screenLeft, screenTop = getScreenTopLeft()
 	local scale = renderScale or worldScale
 	
-	setRenderState(-screenLeft, -screenTop, scale, scale, 0, 0, 1)
+	gamelua.setRenderState(-screenLeft, -screenTop, scale, scale, 0, 0, 1)
 
 	--trajectories (thanks again halo)
 	local trSprites = {}
@@ -365,7 +365,7 @@ function drawSprites()
 	for i = 1, #layers do
 		for k, v in ipairs(layers[i]) do
 			local obj = objects.world[v.name]
-			local texture = checkSprite(obj.texture) --or blockTable.themes[currentTheme].texture
+			local texture = checkSprite(obj.texture) --or gamelua.blockTable.themes[currentTheme].texture
 			if not texture then --try to find based on a png name
 				texture = findSpriteByPNG(obj.texture)
 			end
@@ -439,21 +439,21 @@ function drawObject(v)
 	drawangle = 0
 end
 --massive thanks halo
-function addToTrajectory(index, x, y)
+function gamelua.addToTrajectory(index, x, y)
 	table.insert(trajectory[#trajectory][index], {x = x, y = y})
 end
 
-function addPuffToTrajectory(index, x, y)
+function gamelua.addPuffToTrajectory(index, x, y)
 	table.insert(trajectory[#trajectory][index], {x = x, y = y, s = "BIRD_SPECIAL"})
 end
 
-function startNewTrajectory()
+function gamelua.startNewTrajectory()
 	table.insert(trajectory, {{}, {}, {}})
 	if #trajectory > 2 then
 		table.remove(trajectory, 1)
 	end
 end
 
-function resetTrajectory()
+function gamelua.resetTrajectory()
 	trajectory = {{{}, {}, {}}}
 end

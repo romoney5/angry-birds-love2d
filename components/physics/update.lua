@@ -32,7 +32,7 @@ local function getObjectCount()
 end
 
 function updatePhysics(dt)
-	if isPhysicsEnabled() ~= true then                 
+	if physicsEnabled ~= true then                 
 		return
 	end
 	
@@ -50,7 +50,7 @@ function updatePhysics(dt)
 	if waterUpdate then waterUpdate() end
 
 	updateGameParticlesNative(dt2)
-	setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0)
+	gamelua.setRenderState(-renderLeft - (cameraShakeX or 0), -renderTop - (cameraShakeY or 0), worldScale, worldScale, 0)
 	
 	for _, v in pairs(objects.world) do
 		local PHYSICS_TIMESTEP = 1/30
@@ -80,22 +80,21 @@ function updatePhysics(dt)
 
 	if clearLuaForceFunctions then clearLuaForceFunctions() end
 	
-	if removeBlocks then
-		removeBlocks()
+	if gamelua.removeBlocks then
+		gamelua.removeBlocks()
 	end
 	
-	hasAwakeObjects = false
-	hasMovingObjects = false
-	hasMovingObjectsAboveTolerance = false
+	gamelua.hasAwakeObjects = false
+	gamelua.hasMovingObjects = false
+	gamelua.hasMovingObjectsAboveTolerance = false
 	
 	local objIndex = 0
 	local rollingVolumes = {}
-	local cx, cy = cursorPhysics.x, cursorPhysics.y
+
 	for _, obj in pairs(objects.world) do
 		if obj.body and not obj.body:isDestroyed() then
 			obj.x, obj.y = obj.body:getPosition()
 			
-			local bDef = getObjectDefinition(obj.name)
 			local xVel, yVel = obj.body:getLinearVelocity()
 			local velMagnitude = xVel^2 + yVel^2
 			local angularVelocity = obj.body:getAngularVelocity()
@@ -107,20 +106,20 @@ function updatePhysics(dt)
 			
 			if obj.ignoreMotionCheck ~= true then
 				if velMagnitude >= 0.0005 then
-					hasMovingObjectsAboveTolerance = true
+					gamelua.hasMovingObjectsAboveTolerance = true
 				end
 				
 				if velMagnitude >= 9.0 or angularVelocity >= 1.0 then
-					hasMovingObjects = true
+					gamelua.hasMovingObjects = true
 				end
 			end
 			
 			obj.angle = (obj.body:getAngle() + math.pi) % (math.pi * 2) - math.pi
 			obj.xVel = xVel
 			obj.yVel = yVel
-			hasAwakeObjects = true
+			gamelua.hasAwakeObjects = true
 			
-			local mat = blockTable.materials[getMaterial(obj.name)]
+			local mat = gamelua.blockTable.materials[getMaterial(obj.name)]
 			if obj.controllable ~= true and mat and obj.radius then
 				local sound = mat.rollingSound
 				if sound then
@@ -253,7 +252,7 @@ function WorldSolve(step)
 	end
 end
 
-function setMaxTranslation(translation)
+function gamelua.setMaxTranslation(translation)
 	b2_maxTranslation = translation * 0.5 -- TODO : tune this to be game accurate
 	b2_maxTranslationSquared = b2_maxTranslation * b2_maxTranslation
 end

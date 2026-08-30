@@ -86,7 +86,7 @@ function res.playAudio(audio, volume, loop, track)
 	
 	--actually load audios when it's time to play them
 	if not cachedaudios[audio] then
-		if type(audios[audio]) == "string" and not checkDirectory(audios[audio]) then
+		if type(audios[audio]) == "string" and not love.filesystem.exists(audios[audio]) then
 			cachedaudios[audio] = 0
 			print("Audio file \""..audios[audio].."\" not found.")
 			return
@@ -196,5 +196,9 @@ function res.stopAudioOutput()
 end
 
 function res.startAudioOutput()
+	return
+end
+
+function gamelua.setChannelCountLimit(channel, limit)
 	return
 end

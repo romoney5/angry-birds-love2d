@@ -65,7 +65,7 @@ function avoidCrystalBackgroundActivity(avoid)
 end
 
 
-function setEditing(enabled)
+function gamelua.setEditing(enabled)
 	return
 end
 

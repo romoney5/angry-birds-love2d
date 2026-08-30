@@ -51,7 +51,7 @@ function createDynamicHandler(name)
 						loadLuaFile(imagePath.."/"..profile.."/"..list..".lua")
 
 						--json loadlists
-						if checkDirectory(imagePath.."/"..profile.."/"..list..".json") then
+						if love.filesystem.exists(imagePath.."/"..profile.."/"..list..".json") then
 							assetLoadList = assetLoadList or {}
 							for profileName, profileValue in pairs(readJSONToLuaTable(imagePath.."/"..profile.."/"..list..".json")) do
 								for groupName, groupValue in pairs(profileValue) do
@@ -603,7 +603,7 @@ function NativeCloudAssets.loadAsset(pack)-- there seems to be evidence that thi
 		downloadStatus[pack] = "SUCCESS"
 	end
 	
-	if checkDirectory(save) then
+	if love.filesystem.exists(save) then
 		success(love.filesystem.read(save))
 		
 		return

@@ -35,6 +35,6 @@ end
 
 function speedUpPost()
 	if isSpeedingUp() or debugPaused then
-		drawRect2(.2, .2, .2, .5, 0, 0, screenWidth, screenHeight)
+		drawRect2(.2, .2, .2, .5, 0, 0, gamelua.screenWidth, gamelua.screenHeight)
 	end
 end

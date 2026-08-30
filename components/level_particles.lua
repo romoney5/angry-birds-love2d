@@ -22,8 +22,8 @@ function LevelParticlesManager.firstFrame()
 	weatherParticles.looping = particle.looping
 	weatherParticles.isCloudEmitter = particle.isCloudEmitter
 	
-	local bcd = objects.birdCameraData[deviceModel]
-	local ccd = objects.castleCameraData[deviceModel]
+	local bcd = objects.birdCameraData[gamelua.deviceModel]
+	local ccd = objects.castleCameraData[gamelua.deviceModel]
 	
 	if weatherParticles.looping then
 		weatherParticles.x = screenWidth * 0.5 + screen.left

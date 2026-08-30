@@ -4,33 +4,53 @@
 --this was used for sublime text
 --io.stdout:setvbuf('no')
 
+--fusion uses both _G and a special environment used by loaded scripts
+--hence why they use _G to access a lot of things
+--(_G only has the base lua libraries and res)
+gamelua = {}
+gamelua.gamelua = gamelua --soj
+
 datapath = "data"
-scriptPath = "scripts"
-commonScriptPath = "scripts_common"
-audioPath = "audio"
-levelPath = "levels"
-imagePath = "images"
-localizationPath = "localization"
-fontPath = "fonts"
+
+gamelua.scriptPath = "scripts"
+gamelua.commonScriptPath = "scripts_common"
+gamelua.audioPath = "audio"
+gamelua.levelPath = "levels"
+gamelua.imagePath = "images"
+gamelua.localizationPath = "localization"
+gamelua.fontPath = "fonts"
 
 compsPath = "components"
 
-settings = {}
-highscores = {}
-screenWidth = love.graphics.getWidth()
-screenHeight = love.graphics.getHeight()
+gamelua.settings = {}
+gamelua.highscores = {}
+gamelua.screenWidth = love.graphics.getWidth()
+gamelua.screenHeight = love.graphics.getHeight()
 
-nuked = {} --nuked
+gamelua.nuked = {} --nuked
 
-objects = {}
-blockTable = {}
-starTable = {}
-particleTable = {particles = {}}
+gamelua.objects = {}
+gamelua.blockTable = {
+	themes = {},
+	blocks = {},
+}
+gamelua.starTable = {}
+gamelua.particleTable = {particles = {}}
+
+gamelua._G = _G
+
+--convenience
+gamelua.love = love
+gamelua.table = table
+gamelua.pairs = pairs
+gamelua.ipairs = ipairs
+gamelua.print = print
+objects = gamelua.objects
 
 enableDebug = false
 
 
-function requestExit()
+function gamelua.requestExit()
 	print("Quitting...")
 	love.event.quit()
 end
@@ -76,7 +96,7 @@ local function loadIcon(datapath_base)
 	for i, path in ipairs(icon_paths) do
 		local new_path = resolvePath(path)
 		
-		if checkDirectory(resolvePath(new_path)) then
+		if gamelua.checkDirectory(resolvePath(new_path)) then
 			love.window.setIcon(love.image.newImageData(new_path))
 			print("Using icon "..tostring(new_path))
 
@@ -88,8 +108,8 @@ end
 --load everything!
 function loadGameFiles()
 	--cache original image path
-	local og_imagePath = imagePath
-	local og_fontPath = fontPath
+	local og_imagePath = gamelua.imagePath
+	local og_fontPath = gamelua.fontPath
 	
 	--load only certain properties from config.lua
 	local config = {}
@@ -97,23 +117,26 @@ function loadGameFiles()
 
 	--needed for some later versions
 	BEACON = true
+	
+	local loadLuaFileToObject = gamelua.loadLuaFileToObject
+	local checkDirectory = gamelua.checkDirectory
+	local runLuaFile = gamelua.runLuaFile
 
 	if not loadLuaFileToObject(datapath_base.."/config.lua", config, nil, true) then
 		loadLuaFileToObject(datapath.."/config.lua", config, nil, true)
 	end
 	
-	imagePath = config.imagePath or imagePath
-	fontPath = config.fontPath or fontPath
-	audioPath = config.audioPath or audioPath
-	localizationPath = config.localizationPath or localizationPath
-	levelPath = config.levelPath or levelPath
-	scriptPath = config.scriptPath or scriptPath
+	imagePath = config.imagePath or gamelua.imagePath
+	fontPath = config.fontPath or gamelua.fontPath
+	audioPath = config.audioPath or gamelua.audioPath
+	localizationPath = config.localizationPath or gamelua.localizationPath
+	levelPath = config.levelPath or gamelua.levelPath
+	scriptPath = config.scriptPath or gamelua.scriptPath
 	--deviceModel = config.deviceModel or deviceModel
 
 	--start by setting the background to white and using premultiplied alpha
-	setBGColor(255, 255, 255)
+	gamelua.setBGColor(255, 255, 255)
 	love.graphics.setBlendMode("alpha", "premultiplied")
-	blockTable.themes, blockTable.blocks = {}, {}
 
 	if not checkDirectory(datapath) or datapath == "" then
 		--notify the user that no data path is available
@@ -122,16 +145,16 @@ function loadGameFiles()
 		debugOpen = true
 		
 		return
-	elseif not checkDirectory(datapath.."/"..scriptPath) then
+	elseif not checkDirectory(datapath.."/"..gamelua.scriptPath) then
 		--classic 1.0
-		commonScriptPath = ""
-		scriptPath = ""
-		audioPath = ""
-		imagePath = ""
-		levelPath = ""
-	elseif not checkDirectory(datapath.."/"..commonScriptPath) then
+		gamelua.commonScriptPath = ""
+		gamelua.scriptPath = ""
+		gamelua.audioPath = ""
+		gamelua.imagePath = ""
+		gamelua.levelPath = ""
+	elseif not checkDirectory(datapath.."/"..gamelua.commonScriptPath) then
 		--versions around classic 7.3.0 remove scripts_common again
-		commonScriptPath = scriptPath
+		gamelua.commonScriptPath = gamelua.scriptPath
 	end
 	
 	loadIcon(datapath_base)
@@ -152,19 +175,23 @@ function loadGameFiles()
 		end
 	end
 	
-	uniqueDeviceId = getDeviceID()
-	uniqueInstallationId = ""
+	--for 3.0.1
+	gamelua.uniqueDeviceId = gamelua.getDeviceID()
+	
+	gamelua.uniqueInstallationId = ""
 
-	loadLuaFileToObject(scriptPath.."/options.lua", nil, nil, true)
+	loadLuaFileToObject(gamelua.scriptPath.."/options.lua", nil, nil, true)
 	
 	--look around for block files to load in rio, etc.
-	local rootPath = datapath .. "/" .. scriptPath
+	local rootPath = datapath .. "/" .. gamelua.scriptPath
 	local rootPathAppend = ""
 	
 	if checkDirectory(rootPath.."/definitions") then
 		rootPathAppend = rootPathAppend.."/definitions"
 		rootPath = rootPath..rootPathAppend
 	end
+	
+	local blockTable = gamelua.blockTable
 	
 	local blocksExists = checkDirectory(rootPath .. "/blocks.lua")
 	
@@ -176,7 +203,7 @@ function loadGameFiles()
 		for i, file in ipairs(love.filesystem.getDirectoryItems(rootPath)) do
 			if file:match("blocks_") or extras[file] then
 				local temp = {}
-				loadLuaFileToObject(scriptPath .. rootPathAppend .. "/" .. file, this, temp, true)
+				loadLuaFileToObject(gamelua.scriptPath .. rootPathAppend .. "/" .. file, this, temp, true)
 				
 				for n, key in pairs(temp) do
 					if type(key) == "table" and key[1] and key[1].definition then
@@ -188,32 +215,32 @@ function loadGameFiles()
 			end
 		end
 		
-		loadLuaFileToObject(scriptPath .. rootPathAppend .. "/damagefactors.lua", blockTable, "damageFactors", true)
-		loadLuaFileToObject(scriptPath .. rootPathAppend .. "/materials.lua", blockTable, "materials", true)
-		loadLuaFileToObject(scriptPath .. rootPathAppend .. "/themes.lua", blockTable, "themes", true)
+		loadLuaFileToObject(gamelua.scriptPath .. rootPathAppend .. "/damagefactors.lua", blockTable, "damageFactors", true)
+		loadLuaFileToObject(gamelua.scriptPath .. rootPathAppend .. "/materials.lua", blockTable, "materials", true)
+		loadLuaFileToObject(gamelua.scriptPath .. rootPathAppend .. "/themes.lua", blockTable, "themes", true)
 	end
 	
 	--and now start the actual game
 	if gamelogicPath then
 		loadLuaFileToObject(gamelogicPath, nil, nil)
-	elseif checkDirectory(datapath.."/"..commonScriptPath .. "/gamelogic.lua") then
-		loadLuaFileToObject(commonScriptPath.."/gamelogic.lua", nil, nil)
+	elseif checkDirectory(datapath.."/"..gamelua.commonScriptPath .. "/gamelogic.lua") then
+		loadLuaFileToObject(gamelua.commonScriptPath.."/gamelogic.lua", nil, nil)
 	elseif checkDirectory(datapath.."/".."common/scripts/game" .. "/gamelogic.lua") then
 		commonScriptPath = "common/scripts/game"
-		loadLuaFileToObject(commonScriptPath.."/gamelogic.lua", nil, nil)
+		loadLuaFileToObject(gamelua.commonScriptPath.."/gamelogic.lua", nil, nil)
 	end
 	
 	if blocksExists then
-		loadLuaFileToObject(scriptPath .. "/blocks.lua", nil, blockTable, true)
+		loadLuaFileToObject(gamelua.scriptPath .. "/blocks.lua", nil, blockTable, true)
 	end
 
-	loadLuaFileToObject(scriptPath.."/particles.lua", nil, particleTable, true)
-	loadLuaFileToObject(scriptPath.."/starLimits.lua", nil, starTable, true)
+	loadLuaFileToObject(gamelua.scriptPath.."/particles.lua", nil, gamelua.particleTable, true)
+	loadLuaFileToObject(gamelua.scriptPath.."/starLimits.lua", nil, gamelua.starTable, true)
 
-	loadLuaFileToObject(scriptPath.."/loadlist.lua", nil, _G, true)
+	loadLuaFileToObject(gamelua.scriptPath.."/loadlist.lua", nil, _G, true)
 
-	loadLuaFileToObject(scriptPath.."/episodes.lua", nil, "episodes", true)
-	loadLuaFileToObject(scriptPath.."/cutscenes.lua", nil, "cutscenes", true)
+	loadLuaFileToObject(gamelua.scriptPath.."/episodes.lua", nil, "episodes", true)
+	loadLuaFileToObject(gamelua.scriptPath.."/cutscenes.lua", nil, "cutscenes", true)
 	
 	--mobile-specific options
 	if love._os == "Android" then
@@ -235,9 +262,9 @@ function loadGameFiles()
 		end
 	end
 
-	if createStartUpAssets then createStartUpAssets() end
-	if showSplashScreens then showSplashScreens() end --kakao
-	if updateValues then updateValues() end
+	if gamelua.createStartUpAssets then gamelua.createStartUpAssets() end
+	if gamelua.showSplashScreens then gamelua.showSplashScreens() end --kakao
+	if gamelua.updateValues then gamelua.updateValues() end
 	
 	toggleZoom_GameLua = toggleZoom2
 	
@@ -288,7 +315,7 @@ function updateLevelEffects(dt, realDt) --right parameters?
 end
 
 --enable/disable screensaver
-function setGameOn(on)
+function gamelua.setGameOn(on)
 	love.window.setDisplaySleepEnabled(not on)
 end
 

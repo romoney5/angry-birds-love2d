@@ -21,18 +21,18 @@ function res.createBitmapFont(font, silent)
 		print("Loading font file \""..font.."\"...")
 	end
 	
-	if not checkDirectory(font) then --attempt to use pc font if current doesn't exist
+	if not love.filesystem.exists(font) then --attempt to use pc font if current doesn't exist
 		font = fontPath.."/1024x768/"..font:match("([^/]+)$")
 	end
 
-	if checkDirectory(font) then
+	if love.filesystem.exists(font) then
 		if not fonts[fontname] then
 			local data = getDatInfo(love.filesystem.read(font), font, "FONT")
 			if not data then print("Failed to load font "..fontname) return end
 			local spritesheet = data.filename
 			local filepath = (font:match("(.+)/[^/]+$") or "").."/"..spritesheet
 
-			if not checkDirectory(filepath) and checkDirectory(filepath..".zip") then
+			if not love.filesystem.exists(filepath) and love.filesystem.exists(filepath..".zip") then
 				--android versions also like to zip some fonts
 				local zip = filepath..".zip"
 				local src = love.filesystem.newFileData(zip)
@@ -150,12 +150,12 @@ function res.drawString(group, text, x, y, aligny, alignx)
 end
 
 --draw 2.0.0 text
-function drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_scale)
+function gamelua.drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_scale)
 	local alpha = self.alpha or 1
 	local hs = hover_scale or 1
 	res.useFont(self.font or "FONT_BASIC")
 	love.graphics.push()
-	setRenderState(0, 0, 1, 1)
+	gamelua.setRenderState(0, 0, 1, 1)
 	
 	love.graphics.setColor(1 * alpha, 1 * alpha, 1 * alpha, alpha)
 	love.graphics.translate(textFloor(self.x * hs + x), textFloor(self.y * hs + y))
@@ -186,11 +186,13 @@ function drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_scale)
 	love.graphics.pop()
 end
 
-function clipText(group, text, size)
+function gamelua.clipText(group, text, size)
 	local font = fonts[drawfont]
 	--if not font then return end
 
-	clippedText = {lines = {}, widestLine = 0}
+	gamelua.clippedText = {lines = {}, widestLine = 0}
+	
+	local clippedText = gamelua.clippedText
 	
 	local cline = ""
 	local clinewidth = 0

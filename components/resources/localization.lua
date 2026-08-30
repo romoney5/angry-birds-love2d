@@ -16,7 +16,7 @@ function res.createTextGroupSet(texts)
 	local path = datapath.."/"..texts
 	print("Loading text group set \""..texts.."\"...")
 	
-	if not checkDirectory(path) then
+	if not love.filesystem.exists(path) then
 		print("Localization file \""..texts.."\" not found.")
 		return
 	end
@@ -42,6 +42,6 @@ function res.getLocale()
 	return locale
 end
 
-function getCurrentLocale()
+function gamelua.getCurrentLocale()
 	return locale
 end

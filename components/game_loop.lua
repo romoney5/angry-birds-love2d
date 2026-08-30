@@ -20,21 +20,13 @@ function updateDisplayScale()
 	end
 	love.graphics.scale(displayScale)
 	
-	screenWidth = math.floor(love.graphics.getWidth() / displayScale)
-	screenHeight = math.floor(love.graphics.getHeight() / displayScale)
+	gamelua.screenWidth = math.floor(love.graphics.getWidth() / displayScale)
+	gamelua.screenHeight = math.floor(love.graphics.getHeight() / displayScale)
 
-	g_updatedScreenWidth, g_updatedScreenHeight = screenWidth, screenHeight --4.0.0
+	gamelua.g_updatedScreenWidth, gamelua.g_updatedScreenHeight = gamelua.screenWidth, gamelua.screenHeight --4.0.0
 	
 	--update window title
-	love.window.setTitle("Angry Birds ("..screenWidth.."x"..screenHeight..")")
-end
-
---restore particle functions
-function restoreParticles()
-	particles = particles or {}
-	if particles and not getmetatable(particles) then
-		setmetatable(particles, getParticles)
-	end
+	love.window.setTitle("Angry Birds ("..gamelua.screenWidth.."x"..gamelua.screenHeight..")")
 end
 
 lgClear = love.graphics.clear
@@ -58,8 +50,8 @@ function love.update(dt)
 			love.audio.play(pausedaudios)
 			table.clear(pausedaudios)
 
-			if gameResumed and not enableDebug then
-				gameResumed()
+			if gamelua.gameResumed and not enableDebug then
+				gamelua.gameResumed()
 			end
 		end
 
@@ -85,8 +77,6 @@ function love.update(dt)
 		
 		--update stuff related to screen scale/size
 		updateDisplayScale()
-
-		restoreParticles()
 		
 		fetch.update()
 
@@ -99,7 +89,7 @@ function love.update(dt)
 
 		--toggle fullscreen with alt+enter
 		if keyHold["LALT"] and keyPressed["RETURN"] then
-			setFullScreenMode(not isInFullScreenMode())
+			gamelua.setFullScreenMode(not gamelua.isInFullScreenMode())
 		end
 
 		love.graphics.setScissor()
@@ -114,23 +104,23 @@ function love.update(dt)
 
 		if something.on then
 			something:update(dt2)
-		elseif update then
+		elseif gamelua.update then
 			--pause the game if there's an important popup
 			local t1 = love.timer.getTime()
 			local m1 = collectgarbage("count")
 			
 			--update the game
 			if not keyHold.I then
-				update(dt2, dt2)
+				gamelua.update(dt2, dt2)
 			end
 
-			if draw then
-				draw()
+			if gamelua.draw then
+				gamelua.draw()
 			end
 
 			if enableDebug then
 				local t2 = love.timer.getTime()
-				setRenderState(0, 0, 1, 1)
+				gamelua.setRenderState(0, 0, 1, 1)
 				res.useFont(nil)
 				res.drawString("", "Update time: "..(math.floor((t2 - t1) * 1000 * 10) / 10).." ms", 10, 10)
 				res.drawString("", "Memory diff: "..(math.floor((collectgarbage("count") - m1) * 100) / 100).." kb", 10, 50)
@@ -162,7 +152,7 @@ function love.update(dt)
 			updateDebug(dt)
 		end
 		
-		setRenderState(0, 0, 1, 1)
+		gamelua.setRenderState(0, 0, 1, 1)
 		updatePopup()
 
 		cursor.wheelTriggered = nil
@@ -188,8 +178,8 @@ function love.update(dt)
 		pausedaudios = love.audio.pause()
 
 		--don't keep saving settings.lua every time you defocus
-		if gamePaused and not enableDebug then
-			gamePaused()
+		if gamelua.gamePaused and not enableDebug then
+			gamelua.gamePaused()
 		end
 
 		if not debugPaused then

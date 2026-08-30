@@ -9,16 +9,16 @@ pivotDebug = false
 cachedcs = {} --individual composprites
 cachedimgs = {} --individual sprites
 
-function getBGColor() --not used, but i found it in ghidra
+function gamelua.getBGColor() --not used, but i found it in ghidra
 	return love.graphics.getBackgroundColor()
 end
 
-function setBGColor(r, g, b) --set the background color
+function gamelua.setBGColor(r, g, b) --set the background color
 	love.graphics.setBackgroundColor(r / 255, g / 255, b / 255)
 end
 
 --quite literally used everywhere
-function setRenderState(x, y, xs, ys, angle, xp, yp, alpha)
+function gamelua.setRenderState(x, y, xs, ys, angle, xp, yp, alpha)
 	love.graphics.origin()
 	if pivotDebug then love.graphics.translate(screenWidth - screenWidth * .75, screenHeight - screenHeight * .75) end
 	love.graphics.scale(xs, ys)
@@ -240,7 +240,7 @@ function checkSprite(sprite)
 	return cachedcs[sprite] or cachedimgs[sprite]
 end
 
-function drawRect(r, g, b, a, x, y, w, h, inWorld)
+function gamelua.drawRect(r, g, b, a, x, y, w, h, inWorld)
 	love.graphics.push("all")
 	if not inWorld then --if the rect is not supposed to be drawn in world space
 		love.graphics.origin()
@@ -273,7 +273,7 @@ function drawRect2(r, g, b, a, x, y, w, h, round)
 	love.graphics.pop()
 end
 
-function drawLine2D(x0, y0, x1, y1, w, r, g, b, a)
+function gamelua.drawLine2D(x0, y0, x1, y1, w, r, g, b, a)
 	local r2, y2, b2, a2 = love.graphics.getColor()
 	love.graphics.push("all")
 	love.graphics.setBlendMode("alpha", "alphamultiply")
@@ -293,7 +293,7 @@ function drawLine2D(x0, y0, x1, y1, w, r, g, b, a)
 end
 
 --3.0.1
-function drawRubberband(x1, y1, x2, y2, width, sprite)
+function gamelua.drawRubberband(x1, y1, x2, y2, width, sprite)
 	sprite = checkSprite(sprite)
 	if not sprite then return end
 
@@ -312,7 +312,7 @@ function drawRubberband(x1, y1, x2, y2, width, sprite)
 	love.graphics.pop()
 end
 
-function drawSlingScopeNative(s_vx, s_vy, vertical_force)
+function gamelua.drawSlingScopeNative(s_vx, s_vy, vertical_force)
 	love.graphics.push()
 	-- setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, 1)
 	local lsx, lsy = physicsToWorldTransform(selectedBird.x, selectedBird.y)
@@ -358,7 +358,7 @@ function drawSlingScopeNative(s_vx, s_vy, vertical_force)
 end
 
 --4.0.0
-function drawFullscreenRect(r, g, b, a)
+function gamelua.drawFullscreenRect(r, g, b, a)
 	love.graphics.push("all")
 	love.graphics.origin()
 	love.graphics.setBlendMode("alpha", "alphamultiply")
@@ -534,8 +534,8 @@ local function loadSheet(sheet, usecomposprites)
 
 		local lsheet = loadedSheets[sheet]
 
-		local zipped = not checkDirectory(filename) and ((checkDirectory(filename..".zip") and ".zip")
-			or (checkDirectory(filename..".kazip") and ".kazip"))
+		local zipped = not love.filesystem.exists(filename) and ((love.filesystem.exists(filename..".zip") and ".zip")
+			or (love.filesystem.exists(filename..".kazip") and ".kazip"))
 
 		if zipped then
 			--android versions like to zip some images
@@ -567,7 +567,7 @@ local function loadSheet(sheet, usecomposprites)
 		end
 
 		--TODO: make this suck less?
-		local zipped7 = not checkDirectory(filename) and checkDirectory(filename..".7z")
+		local zipped7 = not love.filesystem.exists(filename) and love.filesystem.exists(filename..".7z")
 		
 		if zipped7 then
 			local src = decryptSrc(filename..".7z")
@@ -687,16 +687,16 @@ function getRokuImagePath(dat)
 end
 
 --fullscreen stuff
-function isInFullScreenMode()
+function gamelua.isInFullScreenMode()
 	local fs, fst = love.window.getFullscreen()
 	return fs
 end
 
-function setFullScreenMode(mode)
+function gamelua.setFullScreenMode(mode)
 	love.window.setFullscreen(mode)
 end
 
-function setResolution(w, h)
+function gamelua.setResolution(w, h)
 	love.window.updateMode(w * displayScale * love.graphics.getDPIScale(), h * displayScale * love.graphics.getDPIScale())
 	updateDisplayScale()
 end

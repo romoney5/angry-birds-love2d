@@ -25,7 +25,7 @@ function updateGamepad(dt)
 		x, y = 0, 0
 	end
 
-	if isPhysicsEnabled() then
+	if physicsEnabled then
 		if not levelCompleted and (x ~= 0 or y ~= 0) and not cameraTargetObject then
 			if currentBirdName ~= nil then
 				local obj = objects.world[currentBirdName]

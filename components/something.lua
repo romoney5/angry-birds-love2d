@@ -436,15 +436,17 @@ function something:update(dt)
 
 		self.files = self:reload(self.path)
 	end
+	
+	local screenWidth, screenHeight = gamelua.screenWidth, gamelua.screenHeight
 
 	time = time or love.timer.getTime()
 	cameraShakeX, cameraShakeY = 0, 0
 
 	renderLeft = renderLeft + dt * 120
 
-	drawBackgroundNative()
-	drawForegroundNative()
-	setRenderState(0, 0, 1, 1)
+	gamelua.drawBackgroundNative()
+	gamelua.drawForegroundNative()
+	gamelua.setRenderState(0, 0, 1, 1)
 
 	drawRect2(0, 0, 0, .6, 0, 0, screenWidth, screenHeight)
 	

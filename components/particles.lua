@@ -1,39 +1,44 @@
 --particles
 local SCREEN = {}
 local WORLD = {}
+
+--particles = {}
+
+gamelua.softLimitSimultaneousParticles = 0
+gamelua.hardLimitSimultaneousParticles = 0
+
 --menu is not used ingame
 function drawParticlesNative(menu)
-	if not particles then return end
+	--if not particles then return end
 	
 	local screenLeft = renderLeft
 	local screenTop = renderTop
-	local scale = renderScale or worldScale or 1
+	local scale = renderScale
 	
 	local activeParticles = menu and SCREEN or WORLD
 	
 	for _, p in _G.pairs(activeParticles) do
 		if menu then
-			setRenderState(0, 0, p.scale, p.scale, p.angle, p.spritePivotX, p.spritePivotY)
+			gamelua.setRenderState(0, 0, p.scale, p.scale, p.angle, p.spritePivotX, p.spritePivotY)
 			_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
 		else
-			setRenderState(-screenLeft / p.scale, -screenTop / p.scale, scale * p.scale, scale * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
+			gamelua.setRenderState(-screenLeft / p.scale, -screenTop / p.scale, scale * p.scale, scale * p.scale, p.angle, p.spritePivotX, p.spritePivotY)
 			_G.res.drawSprite(p.sprite, p.x / p.scale, p.y / p.scale)
 		end
 	end
 end
 
-function loadParticleFile(name) -- check if this is correct?
+function gamelua.loadParticleFile(name) -- check if this is correct?
 	return-- loadLuaFile(scriptPath .. "/particles/" .. name, "", false)
 end
 
-function clearParticles()
+function gamelua.clearParticles()
 	WORLD = {}
 	SCREEN = {}
 	particleAmount = 0
-	restoreParticles()
 end
 
-function drawMenuParticlesInAdvance() --what is it with particles
+function gamelua.drawMenuParticlesInAdvance() --what is it with particles
 	return
 end
 
@@ -64,7 +69,7 @@ local updateParticles = function(dt, activeParticles)
 			table.remove(activeParticles, i)
 			particleAmount = particleAmount - 1
 		else
-			pt = particles[p.type]
+			pt = gamelua.particleTable.particles[p.type]
 			
 			p.xVel = p.xVel + pt.gravityX * dt
 			p.yVel = p.yVel + pt.gravityY * dt
@@ -112,17 +117,17 @@ end
 -- ignoreParticleLimits = true
 
 local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
-	local pt = particles[type]
+	local pt = gamelua.particleTable.particles[type]
 	if not pt then return end
 	
 	ignoreLimits = pt.ignoreLimits or ignoreLimits -- rio
 	
-	if softLimitSimultaneousParticles < particleAmount + amount and not ignoreLimits then
+	if gamelua.softLimitSimultaneousParticles < particleAmount + amount and not ignoreLimits then
 		amount = amount * 0.5
 	end
 
 	for i = 1, amount, 1 do
-		if particleAmount < hardLimitSimultaneousParticles or ignoreLimits then
+		if particleAmount < gamelua.hardLimitSimultaneousParticles or ignoreLimits then
 			particleAmount = particleAmount + 1
 			local p = { }
 			p.x = x + (_G.math.random(0, w) - 0.5*w ) -- * cos(angle)
@@ -206,11 +211,11 @@ local function addParticles2(type, amount, x, y, w, h, angle, ignoreLimits, menu
 end
 
 local function setHardLimit(limit)
-	hardLimitSimultaneousParticles = limit
+	gamelua.hardLimitSimultaneousParticles = limit
 end
 
 local function setSoftLimit(limit, multiplier)
-	softLimitSimultaneousParticles = _G.math.random(limit, multiplier)
+	gamelua.softLimitSimultaneousParticles = _G.math.random(limit, multiplier)
 end
 
 local function clear(kind)
@@ -244,7 +249,7 @@ local function native_addParticlesWithMode(particle)
 end
 
 -- __index can be a table
-local lookup = {
+particles = {
     addParticles = addParticles,
     setHardLimit = setHardLimit,
     setSoftLimit = setSoftLimit,
@@ -259,10 +264,4 @@ local lookup = {
     add = addParticles2,
     addParticlesWithProperties = function() return end, --11022
 	updateMenuParticlesNative = function() end
-}
-
-getParticles = {
-    __index = function(self, i)
-        return lookup[i] or particleTable.particles[i]
-    end
 }

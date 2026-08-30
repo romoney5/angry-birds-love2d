@@ -100,15 +100,15 @@ function love.errorhandler(msg)
 		-- love.graphics.printf(p, pos, pos, love.graphics.getWidth() - pos)
 		updateDisplayScale()
 		local scale = displayScale
-		setRenderState(0, 0, 1, 1)--scale, scale)
+		gamelua.setRenderState(0, 0, 1, 1)--scale, scale)
 
 		if res then
 			res.useFont(fontBasic or "FONT_BASIC")
 			-- res.useFont("FONT_MENU") --most newer games don't have letters in FONT_MENU
 			love.graphics.setColor(0, 0, 0, .2)
-			clipText("", p, (screenWidth - pos * 2))
+			gamelua.clipText("", p, (screenWidth - pos * 2))
 			
-			local text = clippedText and table.concat(clippedText.lines, "\n") or p
+			local text = gamelua.clippedText and table.concat(gamelua.clippedText.lines, "\n") or p
 			
 			res.drawString("", text, pos + 8, pos + 8)
 			love.graphics.setColor(1, 1, 1, 1)
@@ -161,7 +161,7 @@ function love.errorhandler(msg)
 		end
 
 		draw(dt)
-		setRenderState(0, 0, 1, 1)
+		gamelua.setRenderState(0, 0, 1, 1)
 		updatePopup()
 		
 		prevCursor.x, prevCursor.y = cx, cy
@@ -171,7 +171,7 @@ function love.errorhandler(msg)
 		end
 
 		cursor.wheelTriggered = nil
-		setRenderState(0, 0, 1, 1)
+		gamelua.setRenderState(0, 0, 1, 1)
 		updatePopup()
 		
 		if debugOpen then

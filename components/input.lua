@@ -3,17 +3,23 @@
 --hack, is the pressed cursor a touchscreen?
 local isTouching = false
 
-touches = {}
-touchcount = 0
+gamelua.touches = {}
+gamelua.touchcount = 0
 
-cursor = {x = 0, y = 0, wheel = 0, wheelTriggered = false, dx = 0, dy = 0}
+gamelua.cursor = {x = 0, y = 0, wheel = 0, wheelTriggered = false, dx = 0, dy = 0}
 multitouchZoom = {zoomCoolingTime = 0}
 multitouchSweep = {isSweepping = false}
 maxWorldScale = 0
 
-keyPressed = {}
-keyReleased = {}
-keyHold = {}
+gamelua.keyPressed = {}
+gamelua.keyReleased = {}
+gamelua.keyHold = {}
+
+--convenience
+cursor = gamelua.cursor
+keyPressed = gamelua.keyPressed
+keyReleased = gamelua.keyReleased
+keyHold = gamelua.keyHold
 
 --editor-specific patch
 --TODO: give these a metatable where nil accesses default to false
@@ -136,7 +142,7 @@ function updateMouse(dt)
 		updateGamepad(dt)
 	end
 
-	love.mouse.setVisible(deviceModel ~= "windows"
+	love.mouse.setVisible(gamelua.deviceModel ~= "windows"
 		or debugOpen or openPopups[1] ~= nil or something.on)
 end
 
@@ -144,7 +150,7 @@ local prevTouches
 
 function updateTouch()
 	local mttouches = love.touch.getTouches()
-	table.clear(touches)
+	table.clear(gamelua.touches)
 	
 	isTouching = false
 	
@@ -152,15 +158,15 @@ function updateTouch()
 		for i, v in ipairs(mttouches) do
 			local x, y = love.touch.getPosition(v)
 			--pressure sensitivity for the two touchscreens that support it
-			touches[i] = {x = x / displayScale, y = y / displayScale, p = love.touch.getPressure(v)}
+			gamelua.touches[i] = {x = x / displayScale, y = y / displayScale, p = love.touch.getPressure(v)}
 			
 			isTouching = true
 		end
 	elseif keyHold["LBUTTON"] then
-		touches[1] = {x = cursor.x, y = cursor.y}
+		gamelua.touches[1] = {x = cursor.x, y = cursor.y}
 	end
 	
-	touchcount = #touches
+	gamelua.touchcount = #gamelua.touches
 	
 	--update pinch to zoom
 	if touches and prevTouches and #touches == 2 and #prevTouches == 2 then
@@ -170,6 +176,7 @@ function updateTouch()
 		wantedZoomLevel = zoomLevel
 	end
 	
+	--TODO: it do'nesn't work
 	prevTouches = touches
 end
 

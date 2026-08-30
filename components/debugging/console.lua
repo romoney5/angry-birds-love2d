@@ -29,7 +29,7 @@ local textbox_state = {
 local debugPadding = 50
 
 function checkDebugOpen()
-	if (keyHold["SHIFT"] and keyPressed["D"]) or (keyPressed["LBUTTON"] and cursor.x >= screenWidth - 20 and cursor.y >= screenHeight - 20) or (debugOpen and keyPressed["ESCAPE"]) then
+	if (keyHold["SHIFT"] and keyPressed["D"]) or (keyPressed["LBUTTON"] and cursor.x >= gamelua.screenWidth - 20 and cursor.y >= gamelua.screenHeight - 20) or (debugOpen and keyPressed["ESCAPE"]) then
 		keyPressed["ESCAPE"] = nil
 		debugOpen = not debugOpen
 		debugPreviousIndex = 0
@@ -60,7 +60,7 @@ function debugExecute(text)
 end
 
 function updateDebug(dt)
-	setRenderState(0, 0, 1, 1)
+	gamelua.setRenderState(0, 0, 1, 1)
 	res.useFont(nil)
 
 	--swap to the next/previous entry
@@ -85,18 +85,18 @@ function updateDebug(dt)
 	local input_h = debugPadding * 2 + 50 - round_padding * 2 + math.max(res.getStringHeight(textbox_state.value) - 50, 0)
 	
 	love.graphics.setColor(0, 0, 0, .5)
-	love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
+	love.graphics.rectangle("fill", 0, 0, gamelua.screenWidth, gamelua.screenHeight)
 	love.graphics.setColor(1, 1, 1, 1)
 	
 	--update the text box
-	CUI.Textbox(textbox_state, round_padding, round_padding, screenWidth - round_padding * 2, input_h)
+	CUI.Textbox(textbox_state, round_padding, round_padding, gamelua.screenWidth - round_padding * 2, input_h)
 
 	--draw the logs
 	--TODO: kill out of bounds lines
 	local log_y = 0
 	local clip_y1 = input_h + 20
-	local clip_y2 = screenHeight
-	love.graphics.setScissor(0, clip_y1 * displayScale, screenWidth * displayScale, clip_y2 * displayScale)
+	local clip_y2 = gamelua.screenHeight
+	love.graphics.setScissor(0, clip_y1 * displayScale, gamelua.screenWidth * displayScale, clip_y2 * displayScale)
 	for i, line in ipairs(debugPrints) do
 		local total_y = input_h + round_padding + log_y + 40 + (output_scroll.scroll or 0)
 		local height = res.getStringHeight(line, nil, true)
@@ -109,20 +109,20 @@ function updateDebug(dt)
 	love.graphics.setScissor()
 
 	--update scrolling logic
-	output_scroll.height = screenHeight
+	output_scroll.height = gamelua.screenHeight
 	output_scroll.contentHeight = log_y
 	CUI.HandleScroll(output_scroll, dt)
 	
 	--draw the scroll bar
 	CUI.ScrollbarFromScrollState(output_scroll, --scroll state
-		screenWidth - round_padding / 2, --x
+		gamelua.screenWidth - round_padding / 2, --x
 		(input_h + round_padding) + round_padding / 2, --y
-		screenHeight - round_padding / 2 * 2 - (input_h + round_padding), --height
+		gamelua.screenHeight - round_padding / 2 * 2 - (input_h + round_padding), --height
 		output_scroll.contentHeight) --content height
 
 	--files link
 	local tlw, tlh = 35, 36
-	local x, y = screenWidth - debugPadding - round_padding * 3 - tlw, debugPadding + round_padding * 2
+	local x, y = gamelua.screenWidth - debugPadding - round_padding * 3 - tlw, debugPadding + round_padding * 2
 	x, y = math.floor(x), math.floor(y)
 	local w, h = 60 + tlw * 2, 20 + tlh * 2
 	local s = 1
@@ -137,7 +137,7 @@ function updateDebug(dt)
 	love.graphics.scale(s)
 	res.drawString("", "Files", 0, 0, "HCENTER", "VCENTER")
 
-	setRenderState(0, 0, 1, 1)
+	gamelua.setRenderState(0, 0, 1, 1)
 end
 
 function love.textinput(key)

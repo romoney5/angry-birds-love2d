@@ -1,15 +1,15 @@
 --level saving and loading and other things
 
-local physicsEnabled = false
+physicsEnabled = false
 physicsWorld = nil
 
-physicsSimulationScale = 0
+local physicsSimulationScale = 0
 
-function loadLevel(filename)
+function gamelua.loadLevel(filename)
 	print("Loading level \""..filename..".lua\"...")
 
 	birdTrajectory = {{}, {}, {}}
-	resetTrajectory()
+	gamelua.resetTrajectory()
 
 	if physicsWorld then physicsWorld:destroy() end --clear all the objects before continuing
 
@@ -17,36 +17,39 @@ function loadLevel(filename)
 	--physicsWorld:setCallbacks(nil,nil,physicsPreSolve,physicsPostSolve)
 	physicsWorld:setCallbacks(physicsBeginContact, physicsEndContact, nil, nil)
 	collisionsList = {}
-	loadedObjects = {}
+	gamelua.loadedObjects = {}
 	zOrderedObjects = {}
 	activeTeleporters = {}
-	loadLuaFileToObject(filename..".lua", this, loadedObjects)
-	setMaxTranslation(2)
+	
+	gamelua.loadLuaFileToObject(filename..".lua", this, gamelua.loadedObjects)
+	
+	gamelua.setMaxTranslation(2)
 	setupColliders()
-	clearParticles()
+	gamelua.clearParticles()
 	clearLuaAssetRender()
 	LevelParticlesManager.initialized = false
 end
 
-function saveLevel(filename)
+function gamelua.saveLevel(filename)
 	print("Saving level \""..filename..".lua\"...")
-	saveLuaFile(filename..".lua","objects", nil, nil, true)
+	gamelua.saveLuaFile(filename..".lua","objects", nil, nil, true)
 end
 
-function setPhysicsSimulationScale(scale)
+function gamelua.setPhysicsSimulationScale(scale)
 	physicsSimulationScale = scale
+	physicsToWorld = scale
 	love.physics.setMeter(physicsSimulationScale * 0.5)
 end
 
-function setLevelLimits(minx, miny, maxx, maxy)
+function gamelua.setLevelLimits(minx, miny, maxx, maxy)
 	objects.limits = {mix = minx, miy = miny, max = maxx, may = maxy}
 end
 
-function isPhysicsEnabled()
+function gamelua.isPhysicsEnabled()
 	return physicsEnabled
 end
 
-function setPhysicsEnabled(enabled)
+function gamelua.setPhysicsEnabled(enabled)
 	physicsEnabled = enabled
 end
 

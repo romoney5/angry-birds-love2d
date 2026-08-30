@@ -1,15 +1,15 @@
 --functions related to objects and collisions
-function removeObject(name)
+function gamelua.removeObject(name)
 	local obj = objects.world[name]
 
 	if obj and obj.body then
 		obj.body:destroy()
 	end
 	
-	removeJoints()
+	gamelua.removeJoints()
 end
 
-function destroyJoint(name)
+function gamelua.destroyJoint(name)
 	local obj = objects.joints[name]
 
 	if obj and obj.joint and not obj.joint:isDestroyed() then
@@ -19,7 +19,7 @@ function destroyJoint(name)
 	objects.joints[name] = nil
 end
 
-function removeJoints()
+function gamelua.removeJoints()
 	if g_jointsToDestroy then
 		for jointName, joint in pairs(objects.joints) do
 			local end1, end2 = objects.world[joint.end1], objects.world[joint.end2]
@@ -34,13 +34,13 @@ function removeJoints()
 	end
 end
 
-function destroyAllJoints()
+function gamelua.destroyAllJoints()
 	for jointName in pairs(objects.joints) do
 		destroyJoint(jointName)
 	end
 end
 
-function setSleeping(object, dozing)
+function gamelua.setSleeping(object, dozing)
 	if objects.world[object].body then
 		objects.world[object].body:setAwake(not dozing)
 	end
@@ -54,7 +54,7 @@ function hasBody(object)
 	return false
 end
 
-function setRotation(object, rotation)
+function gamelua.setRotation(object, rotation)
 	objects.world[object].angle = rotation % (math.pi * 2)
 	if objects.world[object].body then
 		objects.world[object].body:setAngle(rotation)
@@ -62,26 +62,26 @@ function setRotation(object, rotation)
 	end
 end
 
-function getAngle(object)
+function gamelua.getAngle(object)
 	return objects.world[object].angle
 end
 
-function setPosition(object, x, y)
+function gamelua.setPosition(object, x, y)
 	if not objects.world[object] then return end
 	objects.world[object].x = x
 	objects.world[object].y = y
 	if objects.world[object].body then
 		objects.world[object].body:setPosition(x, y)
-		setVelocity(object, 0, 0)
+		gamelua.setVelocity(object, 0, 0)
 	end
 end
 
-function getVelocity(object)
+function gamelua.getVelocity(object)
 	if not objects.world[object] then return end
 	return objects.world[object].xVel, objects.world[object].yVel
 end
 
-function setVelocity(object, x, y)
+function gamelua.setVelocity(object, x, y)
 	if not objects.world[object] then return end
 	objects.world[object].xVel = x
 	objects.world[object].yVel = y
@@ -90,14 +90,14 @@ function setVelocity(object, x, y)
 	end
 end
 
-function applyImpulse(object, x, y, xp, yp)
+function gamelua.applyImpulse(object, x, y, xp, yp)
 	local obj = objects.world[object]
 	if obj.body then
 		obj.body:applyLinearImpulse(x / 100, y / 100, xp or obj.x, yp or obj.y) --TODO: no division?
 	end
 end
 
-function applyForce(object, x, y, xp, yp)
+function gamelua.applyForce(object, x, y, xp, yp)
 	local obj = objects.world[object]
 	if obj.body then
 		local mass = obj.mass
@@ -105,30 +105,30 @@ function applyForce(object, x, y, xp, yp)
 	end
 end
 
-applyForceNative = applyForce
+gamelua.applyForceNative = gamelua.applyForce
 
-function setAngularVelocity(object, a)
+function gamelua.setAngularVelocity(object, a)
 	local obj = objects.world[object]
 	if obj and obj.body then
 		obj.body:setAngularVelocity(a)
 	end
 end
 
-function setFriction(object, friction)
+function gamelua.setFriction(object, friction)
 	local obj = objects.world[object]
 	if obj and obj.fixture then
 		obj.fixture:setFriction(friction)
 	end
 end
 
-function setRestitution(object, restitution)
+function gamelua.setRestitution(object, restitution)
 	local obj = objects.world[object]
 	if obj and obj.fixture then
 		obj.fixture:setRestitution(restitution)
 	end
 end
 
-function setDensity(object, density)
+function gamelua.setDensity(object, density)
 	local obj = objects.world[object]
 	if obj and obj.fixture then
 		obj.fixture:setDensity(density)
@@ -352,24 +352,20 @@ function updateFriction(object, dt)
 	end
 end
 
-function setTexture(object, texture)
+function gamelua.setTexture(object, texture)
 	objects.world[object].texture = texture
 end
 
 -- changed due to blu's animation breaking when checking for the variable type
-function setSprite(object, sprite)
+function gamelua.setSprite(object, sprite)
 	objects.world[object].objectSprite = sprite
 end
 
-function getSprite(object)
-	return objects.world[object].objectSprite
-end
-
-function setRollingSound(object, rollingSound) --3.0.1 only
+function gamelua.setRollingSound(object, rollingSound) --3.0.1
 	objects.world[object].rollingSound = rollingSound
 end
 
-function setColliderType(object, collider) --3.0.1 only
+function gamelua.setColliderType(object, collider) --3.0.1
 	local obj = objects.world[object]
 	obj.collider = collider
 	
@@ -543,7 +539,7 @@ local ENUM_PARAMS = {
 	end,
 }
 
-function setObjectParameter(object, parameter, value)
+function gamelua.setObjectParameter(object, parameter, value)
 	local obj = objects.world[object]
 	
 	local paramAction = ENUM_PARAMS[parameter]
@@ -1004,7 +1000,7 @@ function basicBeginContact(obj1, obj2, contact)
 		
 		local params = results.newCollisionPathParameters
 		if params then
-			setVelocity(params.birdName, params.afterCollisionVelocityX, params.afterCollisionVelocityY)
+			gamelua.setVelocity(params.birdName, params.afterCollisionVelocityX, params.afterCollisionVelocityY)
 		end
 		
 		return
@@ -1023,7 +1019,7 @@ function basicBeginContact(obj1, obj2, contact)
 		
 		local linearForce = _G.math.sqrt(diffx * diffx + diffy * diffy) * 0.1
 		
-		local currentScore = scoreTable.blocks.score
+		local currentScore = gamelua.scoreTable.blocks.score
 		
 		local function isStatic(object)
 			return object.name == "ground" or object.collider == colliders.static or getMaterial(object.name) == "immovable"
@@ -1081,9 +1077,9 @@ function basicBeginContact(obj1, obj2, contact)
 
 		local old_score = currentScore
 		
-		if blockCollision then blockCollision(o1.name, o2.name, linearForce, linearForce or damageDone, 0, -contactNormalX) end
-		if onCollision then
-			onCollision(o1.name, o2.name, contactNormalX, contactNormalY, 1, 1, {})
+		if gamelua.blockCollision then gamelua.blockCollision(o1.name, o2.name, linearForce, linearForce or damageDone, 0, -contactNormalX) end
+		if gamelua.onCollision then
+			gamelua.onCollision(o1.name, o2.name, contactNormalX, contactNormalY, 1, 1, {})
 		end
 
 		if joystick and linearForce >= 6 then
@@ -1092,7 +1088,7 @@ function basicBeginContact(obj1, obj2, contact)
 		
 		if currentScore == old_score and damage > 0 then
 			local score = math.floor(linearForce) * 10.0
-			scoreTable.blocks.score = currentScore + score
+			gamelua.scoreTable.blocks.score = currentScore + score
 		end
 		
 	elseif o1.controllable ~= o2.controllable then -- bird to object collision
@@ -1113,7 +1109,7 @@ function basicBeginContact(obj1, obj2, contact)
 		local velocityMultiplier = 1.0
 		
 		--3.0.1 uses materialName instead of material
-		local damageFactor = blockTable.damageFactors[bird.damageFactors]
+		local damageFactor = gamelua.blockTable.damageFactors[bird.damageFactors]
 		local blockTable_damage = damageFactor.damageMultiplier[getMaterial(block.name)]
 		local blockTable_velocity = damageFactor.velocityMultiplier[getMaterial(block.name)]
 		
@@ -1164,7 +1160,7 @@ function basicBeginContact(obj1, obj2, contact)
 						
 						local birdVelocityX = vx * overkillDamage
 						local birdVelocityY = vy * overkillDamage
-						setVelocity(bird.name, birdVelocityX, birdVelocityY)
+						gamelua.setVelocity(bird.name, birdVelocityX, birdVelocityY)
 						
 						damage = strength--math.min(damageDealt, strength)
 					else
@@ -1181,10 +1177,10 @@ function basicBeginContact(obj1, obj2, contact)
 				m2 = math.floor((o2.strength + damage or -1) * 10) / 10})
 		end
 		
-		if birdCollision then birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage), 0, contactNormalX) end
-		if onCollision then
+		if gamelua.birdCollision then gamelua.birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage), 0, contactNormalX) end
+		if gamelua.onCollision then
 			--onCollision(o1.name, o2.name, effectiveDamage, math.floor(damage), contactNormalX, contactNormalY, nil, 1, {})
-			onCollision(o1.name, o2.name, contactNormalX, contactNormalY, 1, 1, {})
+			gamelua.onCollision(o1.name, o2.name, contactNormalX, contactNormalY, 1, 1, {})
 		end
 		if joystick and effectiveDamage >= 6 then
 			joystick:setVibration(math.min(effectiveDamage / 15, 1), math.min(effectiveDamage / 15, 1), .1)
@@ -1208,12 +1204,12 @@ function basicBeginContact(obj1, obj2, contact)
 		
 		local force = (collisionVelocity * mass) / 10.0
 		
-		if birdCollision then birdCollision(o1.name, o2.name, force, 0, 0, contactNormalX) end
+		if gamelua.birdCollision then gamelua.birdCollision(o1.name, o2.name, force, 0, 0, contactNormalX) end
 	end
 	
 	--use deadBlocks table in non-pc versions
-	if deadBlocks then
-		if o1.strength and o1.strength <= 0 then deadBlocks[o1.name] = o1 end
-		if o2.strength and o2.strength <= 0 then deadBlocks[o2.name] = o2 end
+	if gamelua.deadBlocks then
+		if o1.strength and o1.strength <= 0 then gamelua.deadBlocks[o1.name] = o1 end
+		if o2.strength and o2.strength <= 0 then gamelua.deadBlocks[o2.name] = o2 end
 	end
 end

@@ -121,12 +121,12 @@ end
 
 local polyverts = {}
 
-function addVertex(x, y)
+function gamelua.addVertex(x, y)
 	table.insert(polyverts, x)
 	table.insert(polyverts, y)
 end
 
-function clearVertices()
+function gamelua.clearVertices()
 	table.clear(polyverts)
 end
 
@@ -143,8 +143,8 @@ end
 function setupColliders()
 	local meta = {
 		__index = function(t, collider)
-			if blockTable.collider_types and blockTable.collider_types[collider] then
-				return blockTable.collider_types[collider]
+			if gamelua.blockTable.collider_types and gamelua.blockTable.collider_types[collider] then
+				return gamelua.blockTable.collider_types[collider]
 			end
 			
 			return nil
@@ -187,10 +187,10 @@ local function setupObject(obj)
 	obj.animTimer = 0
 	
 	obj.bounce = {time = 0, maxAmplitude = 0}
-	setSprite(obj.name, obj.sprite)
+	gamelua.setSprite(obj.name, obj.sprite)
 end
 
-function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
+function gamelua.createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
 	local verts = polyverts
 	if z_order then --1.6.3.1 and below
 		objects.world[name] = {name = name, sprite = sprite, y = ypos, x = xpos, width = w, height = h or w, density = density,
@@ -225,7 +225,7 @@ function createPolygon(name, sprite, xpos, ypos, w, h, density, friction, restit
 	setupObject(obj)
 end
 
-function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
+function gamelua.createBox(name, sprite, xpos, ypos, w, h, density, friction, restitution, collision, controllable, z_order)
 	if w == 0 and h == 0 then
 		print(("WARNING: object \"%s\" with sprite \"%s\" has a width and height of 0."):format(tostring(name), tostring(sprite)))
 
@@ -268,7 +268,7 @@ function createBox(name, sprite, xpos, ypos, w, h, density, friction, restitutio
 	setupObject(obj)
 end
 
-function createCircle(name, sprite, xpos, ypos, w, density, friction, restitution, controllable, z_order)
+function gamelua.createCircle(name, sprite, xpos, ypos, w, density, friction, restitution, controllable, z_order)
 	objects.world[name] = {name = name, sprite = sprite, y = ypos, x = xpos, radius = w, height = w, density = density,
 		friction = friction, restitution = restitution, controllable = controllable, z_order = z_order, mass = 1, xVel = 0, yVel = 0, angle = 0}
 	local obj = objects.world[name]
@@ -294,7 +294,7 @@ function createCircle(name, sprite, xpos, ypos, w, density, friction, restitutio
 end
 
 -- used for crates in rio (WIP)
-function createBlock(data)
+function gamelua.createBlock(data)
 	local def = data.block
 	objects.world[data.name] = {name = data.name, sprite = data.sprite, y = data.y, x = data.x, width = data.w, height = data.h, density = def.density,
 	friction = def.friction, restitution = def.restitution, controllable = data.controllable, z_order = data.z_order, mass = 1, xVel = 0, yVel = 0, angle = 0}
@@ -386,7 +386,7 @@ function addObjectToRenderQueue(name)
 end
 
 --absw
-function createJoints(joints)
+function gamelua.createJoints(joints)
 	for k, v in pairs(joints) do
 		createJoint(v)
 	end

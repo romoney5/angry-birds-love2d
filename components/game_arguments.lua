@@ -19,12 +19,12 @@ arguments = {
 					local success2 = love.filesystem.remove("highscores.lua")
 					if success1 or success2 then
 						openPopup("Data", "Successfully deleted save data.", nil, true)
-					elseif not checkDirectory("settings.lua") and not checkDirectory("highscores.lua") then
+					elseif not love.filesystem.exists("settings.lua") and not love.filesystem.exists("highscores.lua") then
 						openPopup("Data", "There is no existing save data.", nil, true)
 					else
 						openPopup("Data", "Could not properly delete save data.", nil, true)
 					end
-					settings, highscores = {}, {}
+					gamelua.settings, gamelua.highscores = {}, {}
 
 					return true
 				end},
@@ -57,7 +57,7 @@ arguments = {
 	end},
 	
 	{display = "Device Model", names = {"--model", "-m"}, args = 1, type = "string", call = function(arg1)
-		deviceModel = arg1 or deviceModel
+		gamelua.deviceModel = arg1 or gamelua.deviceModel
 	end},
 	
 	{display = "Data Path", names = {"--datapath", "-dp"}, args = 1, type = "string", call = function(arg1)
@@ -263,7 +263,7 @@ function handleStartArgs()
 	end
 	
 	--automatically boot to the last datapath on mobile systems that don't have an accessible file manager
-	if mobileDevice and checkDirectory(autoboot_path) and not openedDatapath then
+	if mobileDevice and love.filesystem.exists(autoboot_path) and not openedDatapath then
 		ranAutoboot = true
 		loadLuaFile(autoboot_path)
 	end

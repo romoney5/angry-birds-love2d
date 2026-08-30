@@ -13,7 +13,7 @@ local deviceModelMapping = {
 	Horizon = "windows", --switch/3ds (lovepotion)
 	Cafe = "windows", --wiiu (lovepotion)
 }
-deviceModel = deviceModelMapping[love.system.getOS()] or "windows"
+gamelua.deviceModel = deviceModelMapping[love.system.getOS()] or "windows"
 
 --used to check for webp support
 local major, minor, revision, codename = love.getVersion()

@@ -4,7 +4,9 @@ if not jit then
 end
 
 --first load filesystem functions
-love.filesystem.load(compsPath.."/filesystem.lua")()		--filesystem functions
+local chunk = love.filesystem.load(compsPath.."/filesystem.lua")		--filesystem functions
+--setfenv(chunk, gamelua)
+chunk()
 
 --extra libraries
 pcall(require, "table.clear")                               --clear key* tables instead of remaking them
@@ -12,11 +14,15 @@ pcall(require, "table.new")                                 --allocate a table
 _, ffi = pcall(require, "ffi")                              --luajit ffi
 _, utf8 = pcall(require, "utf8")							--utf8 library, now required for utf8 text
 
+--local compsPath = compsPath
+--setfenv(1, gamelua)
+local runLuaFile = gamelua.runLuaFile
+
 bit = bit or	runLuaFile(compsPath.."/libs/numberlua.lua")   --bit library since https://github.com/davidm/lua-bit-numberlua/blob/master/lmod/bit/numberlua.lua
 loadbytecode	= runLuaFile(compsPath.."/libs/fione.lua")	--run lua 5.1 bytecode in a custom vm because normally it's not portable
 json			= runLuaFile(compsPath.."/libs/json.lua")	--json support for modern seasons versions
 AES				= runLuaFile(compsPath.."/libs/aes.lua")	--aes-256-cbc decryption powered by none other than luajit ffi
-fetch			= require("components.libs.fetch")
+fetch			= _G.require("components.libs.fetch")
 _ = nil --really weird hack
 
 --debug

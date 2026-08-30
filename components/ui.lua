@@ -562,8 +562,8 @@ end
 function drawDebugText(text, x, y, align, font, w)
 	text = tostring(text)
 	if w then
-		clipText(group, text, w)
-		text = clippedText and table.concat(clippedText.lines, "\n") or text
+		gamelua.clipText(group, text, w)
+		text = gamelua.clippedText and table.concat(gamelua.clippedText.lines, "\n") or text
 	end
 	
 	align = align or "LEFT"
@@ -574,7 +574,7 @@ function drawDebugText(text, x, y, align, font, w)
 	res.drawString("", text, x, y, align, "VCENTER")
 	
 	if w then
-		return clippedText and clippedText.widestLine, res.getStringHeight(text)
+		return gamelua.clippedText and gamelua.clippedText.widestLine, res.getStringHeight(text)
 	end
 end
 
@@ -611,9 +611,11 @@ function updatePopup()
 
 	if popup then
 		local function update()
-			setRenderState(0, 0, 1, 1, 0, 0, 0, 1)
+			gamelua.setRenderState(0, 0, 1, 1, 0, 0, 0, 1)
 			popup.anim = popup.anim or 0
 			popup.anim = math.max(math.min(popup.anim + (popup.closing and -dt * 2 or dt), .25), 0)
+			
+			local screenWidth, screenHeight = gamelua.screenWidth, gamelua.screenHeight
 			
 			popup.scroll = popup.scroll or {}
 

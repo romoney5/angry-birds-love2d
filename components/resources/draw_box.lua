@@ -1,6 +1,6 @@
 --drawboxnative is huge so i put it here
 
-function drawBoxNative(boxSprites, x1, y1, width, height, hAnchor, vAnchor, color)
+function gamelua.drawBoxNative(boxSprites, x1, y1, width, height, hAnchor, vAnchor, color)
 	local r, g, b, a = 1.0, 1.0, 1.0, 1.0
 	if color then
 		r = color.red or r
@@ -150,7 +150,7 @@ function drawBoxNative(boxSprites, x1, y1, width, height, hAnchor, vAnchor, colo
 	
 	-- if color isn't defined then fill with center sprite
 	if color ~= nil then
-		drawRect(r, g, b, a, _G.math.floor(x1 + xPivot), _G.math.floor(y1 + yPivot), _G.math.floor(x2 + xPivot), _G.math.floor(y2 + yPivot), false)
+		gamelua.drawRect(r, g, b, a, _G.math.floor(x1 + xPivot), _G.math.floor(y1 + yPivot), _G.math.floor(x2 + xPivot), _G.math.floor(y2 + yPivot), false)
 	else
 		_G.res.drawSprite(boxSprites.center, _G.math.floor(x1 + xPivot), _G.math.floor(y1 + yPivot), "TOP", "LEFT", _G.math.floor(width), _G.math.floor(height))
 	end
