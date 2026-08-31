@@ -74,10 +74,6 @@ function iapRestoreItems(callback)
 	return
 end
 
-function setOffsetedViewport(x,y)
-	return
-end
-
 
 Payment = {}
 

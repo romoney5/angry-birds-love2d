@@ -477,6 +477,12 @@ function native.loadLuaScript(filename)
 end
 
 
+--presumably used for rmf but i'm not sure because i had this in iap.lua for WHATEVER reason
+function gamelua.setOffsetedViewport(x, y)
+	return
+end
+
+
 AnimationWrapperNative = {}
 
 function AnimationWrapperNative.update(dt)
