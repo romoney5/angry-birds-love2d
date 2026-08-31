@@ -20,7 +20,9 @@ function createThemeSprite(name, sprite, x, y, scaleX, scaleY, angle, layerNumbe
 		themeSpriteObjects[name] = {sprite = sprite, x = x, y = y, scaleX = scaleX, scaleY = scaleY, angle = angle, 
 		layerNumber = layerNumber, angleVel = angleVel, horFlip = horFlip}
 	else
-		themeSpriteObjects[name] = {sprite = sprite, x = x, y = y, speedX = scaleX, scaleX = scaleY, scaleY = angle, angle = layerNumber, layerNumber = angleVel}
+		--themeSpriteObjects[name] = {sprite = sprite, x = x, y = y, speedX = scaleX, scaleX = scaleY, scaleY = angle, angle = layerNumber, layerNumber = angleVel}
+		themeSpriteObjects[name] = {sprite = sprite, x = x, y = y, scaleX = scaleX, scaleY = scaleY, angle = angle, speedX = layerNumber, layerNumber = angleVel,
+			horFlip = false}
 	end
 end
 
@@ -190,10 +192,10 @@ function gamelua.drawBackgroundNative(highGFX)
 			love.graphics.pop()
 
 			for k, object in pairs(themeSpriteObjects) do
-				if object.layerNumber == layernum then
+				if object.layerNumber == layernum - 1 then
 					-- setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, v.angle)
 					-- res.drawSprite(v.sprite, v.x, 0)
-					drawThemeSprite(object, theme.bgLayers[layernum + 1] or layer)
+					drawThemeSprite(object, theme.bgLayers[layernum] or layer)
 				end
 			end
 		end
