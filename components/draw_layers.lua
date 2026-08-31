@@ -243,6 +243,9 @@ function gamelua.drawForegroundNative()
 
 		drawLayer(layer, yoffsets[layernum - 1])
 	end
+	
+	--draw particles (moved here so that they can be drawn in title menus)
+	drawParticlesNative()
 end
 
 local textureShader = love.graphics.newShader([[
@@ -284,9 +287,6 @@ function gamelua.drawGameNative()
 	end
 	
 	drawSprites()
-	
-	--draw particles
-	drawParticlesNative()
 end
 
 --TODO : unwind everything and make this look cleaner
