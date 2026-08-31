@@ -178,7 +178,7 @@ function setDataPathFromFile(file)
 		local model = guessModel(file)
 
 		if model then
-			deviceModel = model
+			gamelua.deviceModel = model
 		end
 	else
 		datapath = file

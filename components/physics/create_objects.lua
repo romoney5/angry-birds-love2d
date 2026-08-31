@@ -1,6 +1,6 @@
 --create box, circle, etc
 
-function createJoint(joint)
+function gamelua.createJoint(joint)
 	local name, end1, end2, type, coordType, x1, y1, x2, y2, collideConnected, limit, motor, maxTorque, lowerLimit, upperLimit, motorSpeed, destroyTimer =
 		joint.name,joint.end1,joint.end2,joint.type,joint.coordType,joint.x1,joint.y1,joint.x2,joint.y2,joint.collideConnected,
 		joint.limit,joint.motor,joint.maxTorque,joint.lowerLimit,joint.upperLimit,joint.motorSpeed,joint.destroyTimer
@@ -388,6 +388,6 @@ end
 --absw
 function gamelua.createJoints(joints)
 	for k, v in pairs(joints) do
-		createJoint(v)
+		gamelua.createJoint(v)
 	end
 end

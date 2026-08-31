@@ -184,7 +184,7 @@ function updatePhysics(dt)
 			if joint.destroyTimer then
 				joint.destroyTimer = joint.destroyTimer - dt
 				if joint.destroyTimer <= 0 then
-					destroyJoint(joint.name)
+					gamelua.destroyJoint(joint.name)
 				end
 			end
 		end

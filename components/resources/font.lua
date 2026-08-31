@@ -17,13 +17,8 @@ end
 function res.createBitmapFont(font, silent)
 	font = datapath.."/"..font
 	local fontname = font:match("([^/]+)$"):sub(1, -5)
-	if not silent then
-		print("Loading font file \""..font.."\"...")
-	end
 	
-	if not love.filesystem.exists(font) then --attempt to use pc font if current doesn't exist
-		font = fontPath.."/1024x768/"..font:match("([^/]+)$")
-	end
+	print("Loading font file \""..font.."\"...")
 
 	if love.filesystem.exists(font) then
 		if not fonts[fontname] then
@@ -73,10 +68,10 @@ function res.createBitmapFont(font, silent)
 				fonts[fontname].chars[_] = {quad = love.graphics.newQuad(char.x, char.y, char.width, char.height, spritesheet:getWidth(), spritesheet:getHeight()),
 					width = char.width, height = char.height, pivoty = char.pivotY}
 			end
-		elseif not silent then
-			print("Font "..fontname.." is already loaded.")
+		else
+			print("Font "..fontname.." is already loaded")
 		end
-	elseif not silent then
+	else
 		print("Could not find font "..fontname)
 	end
 end

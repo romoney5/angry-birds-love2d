@@ -139,7 +139,7 @@ function getMaterial(object)
 	return objects.world[object].material or objects.world[object].materialName
 end
 
-function setMaterial(object, material)
+function gamelua.setMaterial(object, material)
 	if objects.world[object].materialName then
 		objects.world[object].materialName = material
 	else

@@ -216,6 +216,26 @@ function makeChunk(filename, env)
 	end
 end
 
+--fione hacks start
+--me when i _G.setfenv(1, gamelua)
+local _setfenv = setfenv
+
+function setfenv(a, b)
+	if a == 1 and b == gamelua then return end
+	
+	return _setfenv(a, b)
+end
+
+--me when i _G.getfenv(1)
+local _getfenv = getfenv
+
+function getfenv(a)
+	if a == 1 then return gamelua end
+	
+	return _getfenv(a) --?
+end
+--fione hacks end
+
 --very important in later codebases
 function gamelua.loadLuaFileToObject(filename, ctx, key, lenient)
 	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
@@ -243,7 +263,6 @@ function gamelua.loadLuaFileToObject(filename, ctx, key, lenient)
 		if not compiled then
 			setfenv(lua, env)
 		end
-
 		
 		--emulate scope behavior
 		if not getmetatable(env) then
@@ -270,7 +289,7 @@ function gamelua.loadLuaFileToObject(filename, ctx, key, lenient)
 
 		lua()
 		
-		if filename == "/"..datapath.."/"..scriptPath.."/options.lua" and queueCheatsEnabled then
+		if queueCheatsEnabled and filename == "/"..datapath.."/"..gamelua.scriptPath.."/options.lua" then
 			cheatsEnabled = true
 			releaseBuild = false
 		end
@@ -302,9 +321,9 @@ function gamelua.loadLuaFile(filename, envKey, blocks, unpack, lenient)
 	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
 	filename = newname or filename
 
-	local compiled, lua, err = makeChunk(filename, env)
 	local env = gamelua[envKey] or gamelua
 	local og_env = env
+	local compiled, lua, err = makeChunk(filename, env)
 
 	if lua and not err then
 		if not compiled and not blocks then
@@ -384,7 +403,7 @@ function gamelua.requireFile(filename)
 	
 	local env = _G --getfenv(2)
 
-	if gamelua.loadLuaFileToObject(scriptPath.."/"..filename, env, nil, true) == false and gamelua.loadLuaFileToObject(commonScriptPath.."/"..filename, env) == false then
+	if gamelua.loadLuaFileToObject(gamelua.scriptPath.."/"..filename, env, nil, true) == false and gamelua.loadLuaFileToObject(commonScriptPath.."/"..filename, env) == false then
 		print("Could not load Lua file: "..filename)
 		return
 	end

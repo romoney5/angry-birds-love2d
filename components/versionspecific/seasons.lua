@@ -13,10 +13,10 @@ function NativePlatformScore.getMemoryScore()
 end
 
 --dynamic assets handler, this was also used for classic but seasons did it way earlier so it's here
-function createDynamicHandler(name)
+function gamelua.createDynamicHandler(name)
 	local handler = {}
 	local requirements = {}
-	local selectAssetProfile = selectAssetProfile or (platform and platform.Profiles and platform.Profiles.selectAssetProfile)
+	local selectAssetProfile = gamelua.selectAssetProfile or (gamelua.platform and gamelua.platform.Profiles and gamelua.platform.Profiles.selectAssetProfile)
 
 	local loadlists = {loadlist = {}, neatLoadlist = {}}
 	local loadlistNames = {"loadlist", "neatLoadlist"}
@@ -30,9 +30,9 @@ function createDynamicHandler(name)
 	local function loadFromLoadlist(list, profile, group)
 		for _, asset in ipairs(list[group]) do
 			if asset[2] ~= 1 then
-				res.createSpriteSheet(imagePath.."/"..profile.."/"..asset[1])
+				res.createSpriteSheet(gamelua.imagePath.."/"..profile.."/"..asset[1])
 			else
-				res.createCompoSpriteSet(imagePath.."/"..profile.."/"..asset[1])
+				res.createCompoSpriteSet(gamelua.imagePath.."/"..profile.."/"..asset[1])
 			end
 		end
 	end
@@ -48,24 +48,24 @@ function createDynamicHandler(name)
 				
 				for i, list in ipairs(loadlistNames) do
 					if not loadlists[list][profile] then
-						loadLuaFile(imagePath.."/"..profile.."/"..list..".lua")
+						gamelua.loadLuaFile(gamelua.imagePath.."/"..profile.."/"..list..".lua")
 
 						--json loadlists
-						if love.filesystem.exists(imagePath.."/"..profile.."/"..list..".json") then
-							assetLoadList = assetLoadList or {}
-							for profileName, profileValue in pairs(readJSONToLuaTable(imagePath.."/"..profile.."/"..list..".json")) do
+						if love.filesystem.exists(gamelua.imagePath.."/"..profile.."/"..list..".json") then
+							gamelua.assetLoadList = gamelua.assetLoadList or {}
+							for profileName, profileValue in pairs(readJSONToLuaTable(gamelua.imagePath.."/"..profile.."/"..list..".json")) do
 								for groupName, groupValue in pairs(profileValue) do
-									assetLoadList[profile][groupName] = assetLoadList[profile][groupName] or {}
+									assetLoadList[profile][groupName] = gamelua.assetLoadList[profile][groupName] or {}
 									for i, v in pairs(groupValue) do
-										table.insert(assetLoadList[profile][groupName], {v.filename, v.type})
+										table.insert(gamelua.assetLoadList[profile][groupName], {v.filename, v.type})
 									end
 								end
 							end
 						end
 
-						if not assetLoadList then break end
+						if not gamelua.assetLoadList then break end
 
-						loadlists[list][profile] = assetLoadList[profile]
+						loadlists[list][profile] = gamelua.assetLoadList[profile]
 					end
 
 					local dat = loadlists[list] and loadlists[list][profile]
@@ -239,7 +239,7 @@ function createDynamicHandler(name)
 		return
 	end
 
-	_G[name] = handler
+	gamelua[name] = handler
 	--print("platform is", tostring(platform))
 	
 	return handler
@@ -755,11 +755,11 @@ function createProfileTable()
 	return {}
 end
 
-function initLocales()
+function gamelua.initLocales()
 	return
 end
 
-function getHardwareModel()
+function gamelua.getHardwareModel()
 	return "" --2.4.0 checks for iPhone1,2 iPhone2,1 iPod2,1
 end
 
@@ -772,22 +772,18 @@ function showInterstitial()
 	return
 end
 
---does not show up at all in luadec
-function updateThemeSprite(dt)
-	return
-end
-
 function loadLevelEditor(name)
 	return
 end
 
-MedioEvents = {}
+--this library is unique in being placed in gamelua
+gamelua.MedioEvents = {}
 
-function MedioEvents.logEvent(text, params)
+function gamelua.MedioEvents.logEvent(text, params)
 	print("Logging MedioEvent: "..text)
 end
 
-function MedioEvents.getMedioAnonymousId()
+function gamelua.MedioEvents.getMedioAnonymousId()
 	return "0"
 end
 

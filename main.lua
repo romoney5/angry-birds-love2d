@@ -1,12 +1,13 @@
 --main.lua: contains basic functions to load and set up the game
 --as well as some other functions just left here
 
---this was used for sublime text
+--this was used for sublime text to display console logs instantly instead of at the end of the program,
+--i don't use sublime at the moment so this isn't necessary
 --io.stdout:setvbuf('no')
 
---fusion uses both _G and a special environment used by loaded scripts
---hence why they use _G to access a lot of things
---(_G only has the base lua libraries and res)
+--fusion uses both _G and a special environment used in loaded scripts by default (gamelua)
+--hence why they use _G to access a lot of things (_G.res, _G.math, etc.)
+--(excluding newer versions, _G only has the base lua libraries and res)
 gamelua = {}
 gamelua.gamelua = gamelua --soj
 
@@ -27,7 +28,7 @@ gamelua.highscores = {}
 gamelua.screenWidth = love.graphics.getWidth()
 gamelua.screenHeight = love.graphics.getHeight()
 
-gamelua.nuked = {} --nuked
+gamelua.nuked = {} --i believe this refers to discarded/invalid save files, niche debug feature
 
 gamelua.objects = {}
 gamelua.blockTable = {
@@ -38,13 +39,9 @@ gamelua.starTable = {}
 gamelua.particleTable = {particles = {}}
 
 gamelua._G = _G
+gamelua.print = print
 
 --convenience
-gamelua.love = love
-gamelua.table = table
-gamelua.pairs = pairs
-gamelua.ipairs = ipairs
-gamelua.print = print
 objects = gamelua.objects
 
 enableDebug = false
@@ -59,7 +56,7 @@ end
 
 
 --override print to work with the debug console
---this needs to be here because other stuff is loaded before console.lua
+--this needs to be here because other files are loaded before console.lua
 local orig_print = print
 
 debugPrints = {}
@@ -98,7 +95,7 @@ local function loadIcon(datapath_base)
 	for i, path in ipairs(icon_paths) do
 		local new_path = resolvePath(path)
 		
-		if gamelua.checkDirectory(resolvePath(new_path)) then
+		if love.filesystem.exists(resolvePath(new_path)) then
 			love.window.setIcon(love.image.newImageData(new_path))
 			print("Using icon "..tostring(new_path))
 
@@ -240,19 +237,19 @@ function loadGameFiles()
 	loadLuaFileToObject(gamelua.scriptPath.."/particles.lua", nil, gamelua.particleTable, true)
 	loadLuaFileToObject(gamelua.scriptPath.."/starLimits.lua", nil, gamelua.starTable, true)
 
-	loadLuaFileToObject(gamelua.scriptPath.."/loadlist.lua", nil, _G, true)
+	loadLuaFileToObject(gamelua.scriptPath.."/loadlist.lua", nil, gamelua, true)
 
 	loadLuaFileToObject(gamelua.scriptPath.."/episodes.lua", nil, "episodes", true)
 	loadLuaFileToObject(gamelua.scriptPath.."/cutscenes.lua", nil, "cutscenes", true)
 	
 	--mobile-specific options
 	if love._os == "Android" then
-		setFullScreenMode(true)
+		love.window.setFullscreen(true)
 		autoScale = 720
 	end
 
 	--4.0.0 hack
-	--TODO: consider killing this after the script env reorganization
+	--TODO: consider killing this after 4.0.0 starts working
 	if RovioAnalytics and RovioAnalytics.logEvent then
 		function RovioAnalytics.logEvent(id, params)
 			return
@@ -296,7 +293,7 @@ function love.load()
 	loadGameFiles()
 end
 
---TODO: consider killing this after the script env reorganization
+--TODO: consider killing this after kakao starts working
 function kak()
 	RovioAccount.profile.isConnectedToSocialNetwork = true
 	g_rovio_account_available = true
@@ -323,7 +320,7 @@ function gamelua.setGameOn(on)
 end
 
 local registered
-function openRegistrationDialog(message, validationURL, registrationURL, fullGame)
+function gamelua.openRegistrationDialog(message, validationURL, registrationURL, fullGame)
 	local returnedKey = ""
 
 	openPopup(
@@ -346,9 +343,9 @@ function openRegistrationDialog(message, validationURL, registrationURL, fullGam
 	return returnedKey
 end
 
-registerKey = openRegistrationDialog
+gamelua.registerKey = gamelua.openRegistrationDialog
 --returns finished, valid
-function checkRegistrationResult()
+function gamelua.checkRegistrationResult()
 	local finished = openPopups[1] == nil
 	local valid = registered
 	registered = nil
@@ -356,11 +353,11 @@ function checkRegistrationResult()
 end
 
 --space
-function performBitwiseOr(a,b)
-	return bit.bor(a,b)
+function gamelua.performBitwiseOr(a, b)
+	return bit.bor(a, b)
 end
 
 --not absw
-function setDeltaTimeMultiplier(dt)
-	physicsTimeScale = dt
+function gamelua.setDeltaTimeMultiplier(timescale)
+	physicsTimeScale = timescale
 end

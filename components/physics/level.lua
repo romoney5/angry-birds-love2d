@@ -66,16 +66,16 @@ end
 
 local status, timeToNext, today, error
 
-function loadLevelFile(levelName, dateString)
+function gamelua.loadLevelFile(levelName, dateString)
     local date = os.time()
     local now = os.date("*t", date)
 	local tomorrow = os.time({year = now.year, month = now.month, day = now.day + 1})
 	
 	local year, month, day = dateString:match("(%d+)-(%d+)-(%d+)")
     local unlockTime = os.time({
-        year  = tonumber(year),
-        month = tonumber(month),
-        day   = tonumber(day),
+        year  = tonumber(year) or 1970,
+        month = tonumber(month) or 1,
+        day   = tonumber(day) or 1,
     })
 	
 	local seconds_to_open = os.difftime(unlockTime, date)
@@ -91,7 +91,7 @@ function loadLevelFile(levelName, dateString)
 	timeToNext = math.max(os.difftime(tomorrow, date), 0)
 end
 
-function getLoadStatus()
+function gamelua.getLoadStatus()
 	return {
 		status = status,
 		timeToNext = timeToNext,

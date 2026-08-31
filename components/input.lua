@@ -196,10 +196,11 @@ function love.wheelmoved(x, y)
 	-- if zoomLevel < -1.1 then zoomLevel = -1.1 end
 end
 
-function doesMouseClickSetsTouchCount() --probably returns if on windows
+--do mouse clicks update touches
+function gamelua.doesMouseClickSetsTouchCount()
 	return true
 end
 
-function setIsMultitouchMouseWheelSimulationEnabled()
-	return true
+function gamelua.setIsMultitouchMouseWheelSimulationEnabled()
+	return true --?
 end

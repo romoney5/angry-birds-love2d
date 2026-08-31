@@ -1,18 +1,18 @@
---below 3.x misc functions, basically all of these are dummies for long-dead online features
+--below 3.x misc functions, most of these are dummies for long-dead online features
 
-function logFlurryEvent(text)
+function gamelua.logFlurryEvent(text)
 	print("Logging flurry event: "..text)
 end
 
-function logFlurryEventWithParam(text,text2,text3)
+function gamelua.logFlurryEventWithParam(text,text2,text3)
 	print("Logging flurry event with param: "..text..", "..text2..", "..text3)
 end
 
-function logFlurryEventWithParams(text, text2)
+function gamelua.logFlurryEventWithParams(text, text2)
 	print("Logging flurry event with params: "..text..", "..text2)
 end
 
-function logFlurryTimerEvent(text)
+function gamelua.logFlurryTimerEvent(text)
 	print("Logging flurry timer event: "..text)
 end
 
@@ -26,24 +26,24 @@ function captureMouse(bool)
 end
 
 
-function checkForUpdates()
+function gamelua.checkForUpdates()
 	print("checkForUpdates() called")
 end
 
 
-function requestAd()
+function gamelua.requestAd()
 	print("requestAd() called")
 end
 
-function requestVideoAd()
+function gamelua.requestVideoAd()
 	print("requestVideoAd() called")
 end
 
-function requestAndShowVideo()
+function gamelua.requestAndShowVideo()
 	print("requestAndShowVideo() called")
 end
 
-function checkMainMenuAd(url)
+function gamelua.checkMainMenuAd(url)
 	return
 end
 
@@ -93,15 +93,15 @@ function showLeaderboards()
 	return
 end
 
-function requestBannerAd()
+function gamelua.requestBannerAd()
 	print("requestBannerAd() called")
 end
 
-function requestExpandableAd()
+function gamelua.requestExpandableAd()
 	print("requestExpandableAd() called")
 end
 
-function requestInterstitialAd()
+function gamelua.requestInterstitialAd()
 	print("requestInterstitialAd() called")
 end
 

@@ -7,6 +7,8 @@ local WORLD = {}
 gamelua.softLimitSimultaneousParticles = 0
 gamelua.hardLimitSimultaneousParticles = 0
 
+gamelua.particleAmount = 0
+
 --menu is not used ingame
 function drawParticlesNative(menu)
 	--if not particles then return end
@@ -28,6 +30,11 @@ function drawParticlesNative(menu)
 	end
 end
 
+--drawForegroundNative draws particles already for compatibility
+function gamelua.drawParticlesNative(menu)
+	return
+end
+
 function gamelua.loadParticleFile(name) -- check if this is correct?
 	return-- loadLuaFile(scriptPath .. "/particles/" .. name, "", false)
 end
@@ -35,7 +42,7 @@ end
 function gamelua.clearParticles()
 	WORLD = {}
 	SCREEN = {}
-	particleAmount = 0
+	gamelua.particleAmount = 0
 end
 
 function gamelua.drawMenuParticlesInAdvance() --what is it with particles
@@ -67,7 +74,7 @@ local updateParticles = function(dt, activeParticles)
 		
 		if p.time > p.lifeTime or offScreen then
 			table.remove(activeParticles, i)
-			particleAmount = particleAmount - 1
+			gamelua.particleAmount = gamelua.particleAmount - 1
 		else
 			pt = gamelua.particleTable.particles[p.type]
 			
@@ -122,13 +129,13 @@ local function addParticles(type, amount, x, y, w, h, angle, ignoreLimits, menu)
 	
 	ignoreLimits = pt.ignoreLimits or ignoreLimits -- rio
 	
-	if gamelua.softLimitSimultaneousParticles < particleAmount + amount and not ignoreLimits then
+	if gamelua.softLimitSimultaneousParticles < gamelua.particleAmount + amount and not ignoreLimits then
 		amount = amount * 0.5
 	end
 
 	for i = 1, amount, 1 do
-		if particleAmount < gamelua.hardLimitSimultaneousParticles or ignoreLimits then
-			particleAmount = particleAmount + 1
+		if gamelua.particleAmount < gamelua.hardLimitSimultaneousParticles or ignoreLimits then
+			gamelua.particleAmount = gamelua.particleAmount + 1
 			local p = { }
 			p.x = x + (_G.math.random(0, w) - 0.5*w ) -- * cos(angle)
 			p.y = y + (_G.math.random(0, h) - 0.5*h ) -- * sin(angle)

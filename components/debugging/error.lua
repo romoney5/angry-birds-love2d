@@ -161,7 +161,7 @@ function love.errorhandler(msg)
 						return true
 					end},
 					{sprite = "TUTORIAL_OK", callback = function()
-						requestExit()
+						love.event.quit()
 					end},
 				})
 			end

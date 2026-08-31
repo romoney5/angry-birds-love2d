@@ -1,8 +1,10 @@
 --rio and related games
 function logMedioEvent()
+	return
 end
 
 function logMedioAnonymousIDtoFlurry()
+	return
 end
 
 function setRetinaResolution(retina)
@@ -112,7 +114,8 @@ function setThemeOffsetY(theme, y)
 	return
 end
 
-function clearParticlesNative()
+--also found in seasons 2.4.0
+function gamelua.clearParticlesNative()
 	return
 end
 

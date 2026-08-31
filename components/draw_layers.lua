@@ -15,7 +15,7 @@ function createThemeSprite(name, sprite, x, y, speedX, scaleX, scaleY, angle, la
 end
 ]]
 
-function createThemeSprite(name, sprite, x, y, scaleX, scaleY, angle, layerNumber, angleVel, horFlip)
+function gamelua.createThemeSprite(name, sprite, x, y, scaleX, scaleY, angle, layerNumber, angleVel, horFlip)
 	if horFlip ~= nil then
 		themeSpriteObjects[name] = {sprite = sprite, x = x, y = y, scaleX = scaleX, scaleY = scaleY, angle = angle, 
 		layerNumber = layerNumber, angleVel = angleVel, horFlip = horFlip}
@@ -26,11 +26,11 @@ function createThemeSprite(name, sprite, x, y, scaleX, scaleY, angle, layerNumbe
 	end
 end
 
-function removeThemeSprite(name, layerNumber)
+function gamelua.removeThemeSprite(name, layerNumber)
 	themeSpriteObjects[name] = nil
 end
 
-function modifyThemeSprite(name, x, y, scaleX, scaleY, angle, layerNumber)
+function gamelua.modifyThemeSprite(name, x, y, scaleX, scaleY, angle, layerNumber)
 	if not themeSpriteObjects[name] then return end
 	themeSpriteObjects[name].x = x
 	themeSpriteObjects[name].y = y
@@ -43,6 +43,10 @@ end
 function setThemeSprite(name, sprite, layer)
 	themeSpriteObjects[name].layerNumber = layer
 	themeSpriteObjects[name].sprite = sprite
+end
+
+function gamelua.updateThemeSprite(dt)
+	return
 end
 
 local yoffsets = {}
@@ -97,10 +101,12 @@ function drawLayer(layer, yoffset)
 	local startY = layer[7] or 0
 	local scrollFrequency = layer.v or 0
 	
+	local time = love.timer.getTime()
+	
 	local px, py = res.getSpritePivot(sprite)
 	local w, h = res.getSpriteBounds(sprite)
-	local wScale = tempWorldScale or renderScale or worldScale or 1
-	local autoScroll = -scrollFrequency * love.timer.getTime() / 16 --TODO: inaccurate with water
+	local wScale = renderScale
+	local autoScroll = -scrollFrequency * time / 16 --TODO: inaccurate with water
 	local shakeX, shakeY = cameraShakeX or 0, cameraShakeY or 0
 
 	if layer.water then
@@ -138,28 +144,28 @@ function drawThemeSprite(v, layer)
 	local px, py = res.getSpritePivot("", v.sprite)
 	local w, h = res.getSpriteBounds("", layer[2])
 
-	local wScale = tempWorldScale or renderScale or worldScale
+	local wScale = renderScale
 	local relativeSpeed = layer[3] or 1
 	local relativeScale = layer[4] or 1.5
 	local isLooping = layer[5]
 	local shakeX, shakeY = cameraShakeX or 0, cameraShakeY or 0
 	
-	local screenLeft = renderLeft or screen.left
-	local screenTop = renderTop or screen.top
+	local screenLeft = renderLeft
+	local screenTop = renderTop
 	
 	local xs = v.scaleX or v.scale.x
 	local ys = v.scaleY or v.scale.y
 
 	if w > 0 and wScale > .02 then --don't draw so many if the scale is too low
-		for x = -1, math.floor(screenWidth / w / wScale) do
+		for x = -1, math.floor(gamelua.screenWidth / w / wScale) do
 			local pivotX = w * x
 			local left = (-screenLeft * relativeSpeed / relativeScale) % w
 			local top = (-screenTop / ys)
 
-			setRenderState(pivotX + left - shakeX, top - shakeY, wScale * xs, wScale * ys, v.angle, px, py)
+			gamelua.setRenderState(pivotX + left - shakeX, top - shakeY, wScale * xs, wScale * ys, v.angle, px, py)
 
-			if not (x ~= 0 and isLooping == false) then
-				res.drawSprite(v.sprite, v.x * 16, v.y)
+			if x == 0 or isLooping then
+				res.drawSprite(v.sprite, v.x * 16, v.y * 16)
 			end
 		end
 	end
