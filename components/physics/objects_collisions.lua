@@ -24,19 +24,19 @@ function gamelua.removeJoints()
 		for jointName, joint in pairs(objects.joints) do
 			local end1, end2 = objects.world[joint.end1], objects.world[joint.end2]
 			if not end1 or not end2 or end1.body:isDestroyed() or end2.body:isDestroyed() then
-				destroyJointDeferred(jointName)
+				gamelua.destroyJointDeferred(jointName)
 			end
 		end
 		
 		for _, jointName in ipairs(g_jointsToDestroy) do
-			destroyJoint(jointName)
+			gamelua.destroyJoint(jointName)
 		end
 	end
 end
 
 function gamelua.destroyAllJoints()
 	for jointName in pairs(objects.joints) do
-		destroyJoint(jointName)
+		gamelua.destroyJoint(jointName)
 	end
 end
 
@@ -135,7 +135,7 @@ function gamelua.setDensity(object, density)
 	end
 end
 
-function getMaterial(object)
+function gamelua.getMaterial(object)
 	return objects.world[object].material or objects.world[object].materialName
 end
 
@@ -147,7 +147,7 @@ function gamelua.setMaterial(object, material)
 	end
 end
 
-function setFilterMask(object, m)
+function gamelua.setFilterMask(object, m)
 	local obj = objects.world[object]
 	if obj and obj.fixture then
 		local categories, _, group = obj.fixture:getFilterData()
@@ -155,7 +155,7 @@ function setFilterMask(object, m)
 	end
 end
 
-function setFilterCategory(object, c) -- TODO : find the right filter categories (egg defender has a block mask for pigs)
+function gamelua.setFilterCategory(object, c) -- TODO : find the right filter categories (egg defender has a block mask for pigs)
 	local obj = objects.world[object]
 	if obj and obj.fixture then
 		local categories, mask, group = obj.fixture:getFilterData()
@@ -223,7 +223,7 @@ function updateForceAdder(object, dt)
 			if object.forceTime <= 0 then
 				object.forceTime = object.forceTime + object.applyForceInterval
 				
-				setSprite(object.name, object.spriteWhenForceApplied)
+				gamelua.setSprite(object.name, object.spriteWhenForceApplied)
 				
 				local volume = object.soundWhenForceAppliedVolume or 1.0
 				local audio = object.soundWhenForceApplied
@@ -239,7 +239,7 @@ function updateForceAdder(object, dt)
 				local sprite = object.damageSprite
 				
 				if sprite ~= currentSprite then
-					setSprite(object.name, sprite)
+					gamelua.setSprite(object.name, sprite)
 				end
 			end
 		end
@@ -302,7 +302,7 @@ function updateForceAdder(object, dt)
 					--body:applyAngularImpulse(torque * invInertia)
 				
 				else
-					applyForce(object.name, forceX * mass, forceY * mass, centerX, centerY)
+					gamelua.applyForce(object.name, forceX * mass, forceY * mass, centerX, centerY)
 					--body:applyTorque(torque)
 				end
 			end
@@ -348,7 +348,7 @@ function updateFriction(object, dt)
                             ((fy * cosA - sinA * fx) * determinant * velY)
 							
 	if appliedFriction < 0.0 then
-		applyForce(object.name, velX * appliedFriction, velY * appliedFriction, object.x, object.y)
+		gamelua.applyForce(object.name, velX * appliedFriction, velY * appliedFriction, object.x, object.y)
 	end
 end
 
@@ -372,8 +372,8 @@ function gamelua.setColliderType(object, collider) --3.0.1
 	if collider == colliders.ghost then
 		obj.fixture:setMask(CATEGORY_BIRD)
 	elseif collider == colliders.staticNoCollision then
-		setFilterCategory(object, CATEGORY_SENSOR)
-		setFilterMask(object, 0)
+		gamelua.setFilterCategory(object, CATEGORY_SENSOR)
+		gamelua.setFilterMask(object, 0)
 	end
 end
 
@@ -399,7 +399,13 @@ function getColliderType(object)
 	return 0
 end
 
-function inheritTeleportation(object, others) --3.3.0
+function gamelua.inheritTeleportation(object, others) --3.3.0
+	local obj = objects.world[object]
+	
+	for _, otherName in ipairs(others) do
+		objects.world[otherName].isTeleporting = obj.isTeleporting
+	end
+	
 	--[[inheritTeleportation(flyingBird.name, {
       flyingBird.name .. "a",
       flyingBird.name .. "b",
@@ -408,7 +414,7 @@ function inheritTeleportation(object, others) --3.3.0
 	return
 end
 
-function setSensor(object,sensor)
+function gamelua.setSensor(object,sensor)
 	local obj = objects.world[object]
 	if obj and obj.fixture then
 		obj.sensor = sensor
@@ -417,30 +423,30 @@ function setSensor(object,sensor)
 end
 
 --absw
-setAsSensor = setSensor
+gamelua.setAsSensor = gamelua.setSensor
 
-function setLinearDamping(object, damping)
+function gamelua.setLinearDamping(object, damping)
 	local obj = objects.world[object]
 	if obj and obj.body then
 		obj.body:setLinearDamping(damping)
 	end
 end
 
-function setActive(object, active)
+function gamelua.setActive(object, active)
 	local obj = objects.world[object]
 	if obj and obj.body then
 		obj.body:setActive(active)
 	end
 end
 
-function setVisible(object, visible)
+function gamelua.setVisible(object, visible)
 	local obj = objects.world[object]
 	if obj then
 		obj.visible = visible
 	end
 end
 
-function getRayCastedObjects(info)
+function gamelua.getRayCastedObjects(info)
 	local x1, y1 = info.x1, info.y1
 	local x2, y2 = info.x2, info.y2
 	local obj = objects.world[info.source]
@@ -471,7 +477,7 @@ function getRayCastedObjects(info)
 	end
 end
 
-function getIntersectingObjects(info)
+function gamelua.getIntersectingObjects(info)
 	local x, y = info.x, info.y
 	local left, right = info.left, info.right
 	local up, down = info.up, info.down
@@ -502,7 +508,7 @@ local ENUM_PARAMS = {
 	end,
 	
 	[5] = function(object, value)
-		setScale(object.name, value)
+		gamelua.setScale(object.name, value)
 	end,
 	
 	[6] = function(object, value)
@@ -549,7 +555,7 @@ function gamelua.setObjectParameter(object, parameter, value)
 	end
 end
 
-function getWorldPoint(object, x, y)
+function gamelua.getWorldPoint(object, x, y)
 	local obj = objects.world[object]
 	if obj and obj.body then
 		return obj.body:getWorldPoint(x, y)
@@ -558,7 +564,7 @@ function getWorldPoint(object, x, y)
 	return 0, 0
 end
 
-function getLocalPoint(object, x, y)
+function gamelua.getLocalPoint(object, x, y)
 	local obj = objects.world[object]
 	if obj and obj.body then
 		return obj.body:getLocalPoint(x, y)
@@ -567,7 +573,7 @@ function getLocalPoint(object, x, y)
 	return 0, 0
 end
 
-function setJointParameters(params)
+function gamelua.setJointParameters(params)
 	local obj = params and params.name and objects.joints[params.name]
 
 	if obj then
@@ -579,7 +585,7 @@ function setJointParameters(params)
 	end
 end
 
-function resizeCircle(name, radius)
+function gamelua.resizeCircle(name, radius)
 	local obj = objects.world[name]
 
 	if obj.shape then
@@ -619,7 +625,18 @@ function getAngularVelocity(name)
 	end
 end
 
-function setScale(name, scaleX, scaleY)
+--seasons 4.3.2
+function gamelua.getSpeed(object)
+	local obj = objects.world[object]
+	
+	if obj.body then
+		local xvel, yvel = obj.body:getLinearVelocity()
+		
+		return math.sqrt(xvel ^ 2 + yvel ^ 2)
+	end
+end
+
+function gamelua.setScale(name, scaleX, scaleY)
 	local obj = objects.world[name]
 	if obj then
 		if scaleY then
@@ -633,7 +650,7 @@ function setScale(name, scaleX, scaleY)
 	end
 end
 
-function getScale(name)
+function gamelua.getScale(name)
     local obj = objects.world[name]
     if obj then
 		if type(obj.scale) == "table" then
@@ -644,7 +661,7 @@ function getScale(name)
     end
 end
 
-function setStatic(name, static)
+function gamelua.setStatic(name, static)
 	setObjectParameter(name, 2, static and 0 or 1)
 end
 
@@ -673,12 +690,12 @@ function addObjectUpdateFunction(name, f)
 end
 ]]
 
-function destroyBreakableJoints(name, force)
+function gamelua.destroyBreakableJoints(name, force)
 	for _, joint in pairs(objects.joints) do
 		if joint.end1 == name or joint.end2 == name then
 			if not joint.joint:isDestroyed() and joint.breakable then
 				if force >= joint.breakForce then
-					destroyJoint(joint.name)
+					gamelua.destroyJoint(joint.name)
 				end
 			end
 		end
@@ -1022,7 +1039,7 @@ function basicBeginContact(obj1, obj2, contact)
 		local currentScore = gamelua.scoreTable.blocks.score
 		
 		local function isStatic(object)
-			return object.name == "ground" or object.collider == colliders.static or getMaterial(object.name) == "immovable"
+			return object.name == "ground" or object.collider == colliders.static or gamelua.getMaterial(object.name) == "immovable"
 		end
 		
 		local ignoreGroundDamage = (o1.ignoreGroundDamage and isStatic(o2)) or (o2.ignoreGroundDamage and isStatic(o1))
@@ -1069,8 +1086,8 @@ function basicBeginContact(obj1, obj2, contact)
 				m2 = math.floor((o2.strength + damage or -1) * 10) / 10})
 		end
 		
-		destroyBreakableJoints(o1.name, linearForce)
-		destroyBreakableJoints(o2.name, linearForce)
+		gamelua.destroyBreakableJoints(o1.name, linearForce)
+		gamelua.destroyBreakableJoints(o2.name, linearForce)
 		
 		--assert(damage >= 0, "damage < 0 "..o1.name..", "..o2.name)
 		--damageDone = linearForce
@@ -1110,8 +1127,8 @@ function basicBeginContact(obj1, obj2, contact)
 		
 		--3.0.1 uses materialName instead of material
 		local damageFactor = gamelua.blockTable.damageFactors[bird.damageFactors]
-		local blockTable_damage = damageFactor.damageMultiplier[getMaterial(block.name)]
-		local blockTable_velocity = damageFactor.velocityMultiplier[getMaterial(block.name)]
+		local blockTable_damage = damageFactor.damageMultiplier[gamelua.getMaterial(block.name)]
+		local blockTable_velocity = damageFactor.velocityMultiplier[gamelua.getMaterial(block.name)]
 		
 		if blockTable_damage then
 			damageMultiplier = blockTable_damage
@@ -1129,7 +1146,7 @@ function basicBeginContact(obj1, obj2, contact)
 		local effectiveDamage = linearForce * damageMultiplier
 		local damage = 0
 		
-		destroyBreakableJoints(block.name, linearForce)
+		gamelua.destroyBreakableJoints(block.name, linearForce)
 		
 		if objects.world[block.name] and block.ignoreAllDamage ~= true then
 			if block.strength then

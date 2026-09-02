@@ -7,27 +7,27 @@ function logMedioAnonymousIDtoFlurry()
 	return
 end
 
-function setRetinaResolution(retina)
+function gamelua.setRetinaResolution(retina)
 	print("Retina is now set to "..tostring(retina))
 end
 
-function setGameParameters(params)
+function gamelua.setGameParameters(params)
 	return
 end
 
-function toggleNFC(nfc)
+function gamelua.toggleNFC(nfc)
 	print("NFC is now set to "..tostring(nfc))
 end
 
-function enableSmoothZooming(smoothzooming)
+function gamelua.enableSmoothZooming(smoothzooming)
 	print("Smooth zooming is now set to "..tostring(smoothzooming))
 end
 
-function updateBackgroundAndForegroundScrollingNative(dt, _bool)
+function gamelua.updateBackgroundAndForegroundScrollingNative(dt, _bool)
 	return
 end
 
-function setParticleSystemLimits(leftLimit, rightLimit)
+function gamelua.setParticleSystemLimits(leftLimit, rightLimit)
 	return
 end
 
@@ -44,11 +44,11 @@ function setCollisionEnabled(object, enabled)
 end
 
 --updateThemeSpriteAnimations
-function rotateThemeSprites(dt)
+function gamelua.rotateThemeSprites(dt)
 	return
 end
 
-function removeJointsFromObject(name)
+function gamelua.removeJointsFromObject(name)
 	for jointName, joint in pairs(objects.joints) do
 		if joint.end1 == name or joint.end2 == name then
 			destroyJoint(jointName)
@@ -57,19 +57,19 @@ function removeJointsFromObject(name)
 end
 
 --latest pc version
-function getGameTimer()
+function gamelua.getGameTimer()
 	return love.timer.getTime()
 end
 
-function getGameTimerMillis()
+function gamelua.getGameTimerMillis()
 	return love.timer.getTime() / 1000
 end
 
-function updateMenuParticlesNative()
+function gamelua.updateMenuParticlesNative()
 	return
 end
 
-function drawMenuParticlesNative()
+function gamelua.drawMenuParticlesNative()
 	return
 end
 
@@ -98,7 +98,7 @@ function resetMouseWheelScale(scale)
 	return
 end
 
-function enableInGameParticlesNative(enabled)
+function gamelua.enableInGameParticlesNative(enabled)
 	return
 end
 
@@ -128,17 +128,17 @@ function setSpriteRotation(name, angle)
 	return
 end
 
-function checkJointLimits(name)
+function gamelua.checkJointLimits(name)
 	return
 end
 
 --1.0.0
 
-function createRovioNews(x, y, width, height)
+function gamelua.createRovioNews(x, y, width, height)
 	return
 end
 
-function loadRovioNewsContent(rovioNewsURL)
+function gamelua.loadRovioNewsContent(rovioNewsURL)
 	return
 end
 

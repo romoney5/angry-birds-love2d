@@ -60,13 +60,19 @@ function native_requestInterstitialAd()
 end
 
 
-function avoidCrystalBackgroundActivity(avoid)
+function gamelua.avoidCrystalBackgroundActivity(avoid)
 	return
 end
 
 
+local editing = false
+
 function gamelua.setEditing(enabled)
-	return
+	editing = enabled
+end
+
+function gamelua.isEditing()
+	return editing
 end
 
 --hatchery, in-between 1.6.3 and 2.0.0
@@ -111,15 +117,15 @@ end
 --other hatchery functions
 
 --notifications
-function addNotificationAfter(id, time, text)
+function gamelua.addNotificationAfter(id, time, text)
 	print("addNotificationAfter(): queued notification \""..tostring(id).."\" after "..(tonumber(time) or 0) / (60).." minutes:\n"..tostring(text))
 end
 
-function removeNotification(id)
+function gamelua.removeNotification(id)
 	print("removeNotification(): removed notification \""..tostring(id).."\"")
 end
 
-function removeAllNotifications()
+function gamelua.removeAllNotifications()
 	print("removeAllNotifications() called")
 end
 

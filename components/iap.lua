@@ -70,7 +70,7 @@ function iapGetItemAt(i)
 	return { name = "might eagle", id = mightyEagleItemId, type = "iap", quantity = 1, description = "might eagle" }
 end
 
-function iapRestoreItems(callback)
+function gamelua.iapRestoreItems(callback)
 	return
 end
 

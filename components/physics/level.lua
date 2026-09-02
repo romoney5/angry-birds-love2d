@@ -3,7 +3,7 @@
 physicsEnabled = false
 physicsWorld = nil
 
-local physicsSimulationScale = 0
+physicsSimulationScale = 0
 
 function gamelua.loadLevel(filename)
 	print("Loading level \""..filename..".lua\"...")
@@ -81,7 +81,7 @@ function gamelua.loadLevelFile(levelName, dateString)
 	local seconds_to_open = os.difftime(unlockTime, date)
 	if seconds_to_open <= 0 then
 		local level = levelName:match("([^/]+)$")
-		status = highscores[level] and 2 or 3
+		status = gamelua.highscores[level] and 2 or 3
 	else
 		status = -1
 		error = NativeCloudAssets.isInternetConnected() and 1 or -1

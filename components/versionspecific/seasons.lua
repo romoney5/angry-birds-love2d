@@ -16,7 +16,7 @@ end
 function gamelua.createDynamicHandler(name)
 	local handler = {}
 	local requirements = {}
-	local selectAssetProfile = gamelua.selectAssetProfile or (gamelua.platform and gamelua.platform.Profiles and gamelua.platform.Profiles.selectAssetProfile)
+	local selectAssetProfile = gamelua.selectAssetProfile or (_G.platform and _G.platform.Profiles and _G.platform.Profiles.selectAssetProfile)
 
 	local loadlists = {loadlist = {}, neatLoadlist = {}}
 	local loadlistNames = {"loadlist", "neatLoadlist"}
@@ -248,12 +248,12 @@ end
 --called for all animations at the start of the game
 local anims = {}
 local preloaded = {}
-function flashAnimationPreLoad(name, filename, bundlename)
-	preloaded[name] = readJSONToLuaTable(filename)
+function gamelua.flashAnimationPreLoad(name, filename, bundlename)
+	preloaded[name] = gamelua.readJSONToLuaTable(filename)
 end
 
 --tag is a unique name, animName is the animation filename
-function flashAnimationLoad(tag, animName)
+function gamelua.flashAnimationLoad(tag, animName)
 	anims[tag] = {
 		name = animName,
 		playing = false,
@@ -269,12 +269,12 @@ function flashAnimationLoad(tag, animName)
 	}
 end
 
-function flashAnimationReplaceImage(tag, target, dest)
+function gamelua.flashAnimationReplaceImage(tag, target, dest)
 	local anim = anims[tag]
 	anim.replacements[target] = dest
 end
 
-function flashAnimationStart(tag, playAction, mode)
+function gamelua.flashAnimationStart(tag, playAction, mode)
 	--flashAnimation1, start, once
 	print(tag, playAction, mode)
 	assert(anims[tag])
@@ -285,11 +285,11 @@ function flashAnimationStart(tag, playAction, mode)
 	return 1 --TODO: replace this
 end
 
-function flashAnimationStop(tag, a)
+function gamelua.flashAnimationStop(tag, a)
 	return
 end
 
-function flashAnimationSetAnimationParameters(tag, x, y, rotation, sx, sy)
+function gamelua.flashAnimationSetAnimationParameters(tag, x, y, rotation, sx, sy)
 	local anim = anims[tag]
 	
 	anim.x, anim.y = x, y
@@ -299,7 +299,7 @@ end
 
 --gamelua.flashAnimationSetTranslation(r0_12.tag, x, y)
 
-function updateFlashAnimation(dt)
+function gamelua.updateFlashAnimation(dt)
 	for i, anim in pairs(anims) do
 		if anim.playing then
 			anim.time = anim.time + dt
@@ -342,10 +342,10 @@ end
 local vector2_empty = {0, 0}
 local vector2_one = {1, 1}
 
-function drawFlashAnimation(tag)
+function gamelua.drawFlashAnimation(tag)
 	love.graphics.push()
 	local anim = anims[tag]
-	setRenderState(anim.x, anim.y, anim.sx, anim.sy)
+	gamelua.setRenderState(anim.x, anim.y, anim.sx, anim.sy)
 	local data = anim.data
 	
 	local action = data.comps[1].data.actions[anim.playAction]
@@ -383,11 +383,11 @@ function drawFlashAnimation(tag)
 	alpha = 1
 end
 
-function flashAnimationClose(tag)
+function gamelua.flashAnimationClose(tag)
 	return
 end
 
-function flashAnimationPauseToLast(tag)
+function gamelua.flashAnimationPauseToLast(tag)
 	return
 end
 
@@ -400,34 +400,34 @@ function getOnlineCheckStatus(a)--?
 	return
 end
 
-function enablePigDaysVignette(enabled)--?
+function gamelua.enablePigDaysVignette(enabled)--?
 	return
 end
 
-function drawPigDaysVignette(a)--?
+function gamelua.drawPigDaysVignette(a)--?
 	return
 end
 
-function setThemeWithWater(theme)
+function gamelua.setThemeWithWater(theme)
 	setTheme(theme)
 end
 
 
-function drawAdditiveShaders()--?
+function gamelua.drawAdditiveShaders()--?
 	return
 end
 
 
-function getCameraTopLeft()--?
-	return screen.top, screen.left
+function gamelua.getCameraTopLeft()--?
+	return renderTop, renderLeft
 end
 
-function setCameraViewport(a, b, c, d)--?
-	setTopLeft(a, b)
+function gamelua.setCameraViewport(a, b, c, d)--?
+	gamelua.setTopLeft(a, b)
 end
 
 
-function refreshRovioCloudManager()
+function gamelua.refreshRovioCloudManager()
 	return
 end
 
@@ -451,7 +451,7 @@ end
 function native.GetTimeStamp.getTimeStamp()
 	--status can return BadReturnException, NotYetStartedException, or nil for no error
 	local status = nil
-	local stamp = getCurrentTime()
+	local stamp = gamelua.getCurrentTime()
 	stamp.secondsToNext = 1
 	return stamp, status
 end
@@ -588,7 +588,7 @@ function NativeCloudAssets.loadAsset(pack)-- there seems to be evidence that thi
 	--UNKNOWN, IDLE, NO CONNECTION, FAILURE, QUEUED, DOWNLOADING, DOWNLOADED, PROCESSING, READY
 	if isOffline then return end
 	
-	local url = cloudDomain .. "/" .. pack
+	local url = gamelua.cloudDomain .. "/" .. pack
 	
 	local save = "cdn/"..pack
 	
@@ -682,7 +682,7 @@ function NativeCloudAssets.deleteAllCloudData()
 	end
 end
 -- NOTE : the game cashes the data in its settings folder as a fallback
-function createAudioFromAppData(asset, clipName)
+function gamelua.createAudioFromAppData(asset, clipName)
     if downloads[asset] and downloads[asset].source then
         res.createAudio(downloads[asset].source, clipName, false, true)
         print(clipName .. " created!")
@@ -726,11 +726,11 @@ function NativeCloudAssets.deleteAllCloudData() --5.0.0
 	return
 end
 
-cloudDomain = "http://raw.githubusercontent.com/HaloGuy345/cloud_assets/main"
+gamelua.cloudDomain = "http://raw.githubusercontent.com/HaloGuy345/cloud_assets/main"
 CLOCK_URL_BASE = ""
 
 
-function readJSONToLuaTable(filename, export)
+function gamelua.readJSONToLuaTable(filename, export)
 	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
 
 	if not newname then
@@ -744,7 +744,7 @@ function readJSONToLuaTable(filename, export)
 	local dec = json.decode(decryptSrc(newname, data))
 
 	if export then
-		_G[export] = dec
+		gamelua[export] = dec
 	end
 
 	return dec --for dynamic handler
@@ -764,11 +764,11 @@ function gamelua.getHardwareModel()
 end
 
 --g_requestingInterstitial, g_interstitialReady
-function requestInterstitial()
+function gamelua.requestInterstitial()
 	return
 end
 
-function showInterstitial()
+function gamelua.showInterstitial()
 	return
 end
 
@@ -790,15 +790,15 @@ end
 
 --5.3.1
 
-setPhysicsEnabledNative = setPhysicsEnabled
+gamelua.setPhysicsEnabledNative = gamelua.setPhysicsEnabled
 
-function drawScreenParticlesWithId(particles, bool, number)
+function gamelua.drawScreenParticlesWithId(particles, bool, number)
 	return
 end
 
 g_iap_item_info = {}
 
-function getProductWithIapId(id)
+function gamelua.getProductWithIapId(id)
 	local type = "specialOffer"
 	return {price = {coins = math.random() * 100}, purchaseType = "coins", amount = 0}, type--nil
 end
@@ -1076,7 +1076,7 @@ end
 
 --5.1.0
 
-function getSystemTimeStamp()
+function gamelua.getSystemTimeStamp()
 	return 0
 end
 
@@ -1102,8 +1102,8 @@ function NativeCloudAssets.syncInstallPack()--?
 end
 
 
-function printAutomation(a)
-	return
+function gamelua.printAutomation(a)
+	print(a)
 end
 
 native.TimeStamp = {}
@@ -1142,25 +1142,25 @@ function RovioChannel.isChannelSupported()--?
 end
 
 
-function flashAnimationSetShader(tag, shader)
+function gamelua.flashAnimationSetShader(tag, shader)
 	return
 end
 
-function flashAnimationSetSpeed(tag, speed)
+function gamelua.flashAnimationSetSpeed(tag, speed)
 	return
 end
 
-function flashAnimationSeek(tag, seek)
+function gamelua.flashAnimationSeek(tag, seek)
 	return
 end
 
 
---isn't actually necessary for the loading screen to work
-function setLoadingScreenActive(active)
+--isn't actually necessary for the loading screen to work in 5.1.0
+function gamelua.setLoadingScreenActive(active)
 	return
 end
 
-function useAdditiveBlendingForObject(name)--?
+function gamelua.useAdditiveBlendingForObject(name)--?
     local obj = objects.world[name]
     if obj then
 		return

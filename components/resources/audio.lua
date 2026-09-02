@@ -24,7 +24,8 @@ function res.createAudio(path, name, streamed, cloudAsset)
 	end
 end
 
-function createAudioFromLua(path, name, streamed)--?
+--found in seasons 4.3.2
+function gamelua.createAudioFromLua(path, name, streamed)--?
 	audios[name] = datapath.."/"..path
 end
 

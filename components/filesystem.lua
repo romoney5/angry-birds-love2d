@@ -34,7 +34,6 @@ function findCaseInsensitive(dir)
 		end
 	end
 
-	-- print("findCaseInsensitive: could not find "..dir)
 	return nil, nil
 end
 
@@ -218,22 +217,22 @@ end
 
 --fione hacks start
 --me when i _G.setfenv(1, gamelua)
-local _setfenv = setfenv
+--[[local _setfenv = setfenv
 
 function setfenv(a, b)
 	if a == 1 and b == gamelua then return end
 	
 	return _setfenv(a, b)
-end
+end]]
 
 --me when i _G.getfenv(1)
-local _getfenv = getfenv
+--local _getfenv = getfenv
 
-function getfenv(a)
-	if a == 1 then return gamelua end
+--function getfenv(a)
+	--if a == 1 then return gamelua end
 	
-	return _getfenv(a) --?
-end
+	--return _getfenv(a) --?
+--end
 --fione hacks end
 
 --very important in later codebases
@@ -293,6 +292,8 @@ function gamelua.loadLuaFileToObject(filename, ctx, key, lenient)
 			cheatsEnabled = true
 			releaseBuild = false
 		end
+		
+		return true
 	elseif not lenient then
 		if love.filesystem.exists(filename) then
 			--error("Could not load Lua file: "..filename.."\n"..tostring(err))
@@ -310,6 +311,8 @@ function gamelua.loadLuaFileToObject(filename, ctx, key, lenient)
 					, true)
 			end
 		end
+		
+		return false
 	else
 		return tostring(lua)
 	end
@@ -331,8 +334,8 @@ function gamelua.loadLuaFile(filename, envKey, blocks, unpack, lenient)
 		end
 
 		if blocks and not unpack then
-			blockTable[envKey] = blockTable[envKey] or {}
-			env = blockTable[envKey]
+			gamelua.blockTable[envKey] = gamelua.blockTable[envKey] or {}
+			env = gamelua.blockTable[envKey]
 		elseif blocks and unpack then
 			env.blocks = env.blocks or {}
 			env = env.blocks
@@ -373,26 +376,31 @@ function gamelua.loadLuaFile(filename, envKey, blocks, unpack, lenient)
 		if not love.filesystem.exists(filename) then
 			err = "File does not exist."
 		end
-		print("Could not load Lua file: "..filename.."\n"..tostring(err))
+		print("Failed to load Lua file: "..filename.."\n"..tostring(err))
 	end
 
 	return false
 end
 
-function gamelua.runLuaFile(filename, lenient)
+function gamelua.runLuaFile(filename)
 	local newname, paths = findCaseInsensitive(datapath.."/"..filename)
 	filename = newname or filename
 
-	local compiled, lua, err = makeChunk(filename)
+	local env = _G
+	local compiled, lua, err = makeChunk(filename, env)
 
 	if lua and not err then
+		if not compiled then
+			setfenv(lua, env)
+		end
+		
 		return lua()
-	elseif not lenient then
+	else
 		-- error("Could not load Lua file: "..filename)
 		if not love.filesystem.exists(filename) then
 			err = "File does not exist."
 		end
-		error("Could not load Lua file: "..filename.."\n"..tostring(err))
+		error("Failed to load Lua file: "..filename.."\n"..tostring(err))
 	end
 end
 
@@ -400,15 +408,15 @@ end
 local alreadyloaded = {}
 function gamelua.requireFile(filename)
 	if alreadyloaded[filename] then return end
+
+	alreadyloaded[filename] = true
 	
 	local env = _G --getfenv(2)
 
-	if gamelua.loadLuaFileToObject(gamelua.scriptPath.."/"..filename, env, nil, true) == false and gamelua.loadLuaFileToObject(commonScriptPath.."/"..filename, env) == false then
-		print("Could not load Lua file: "..filename)
+	if not gamelua.loadLuaFileToObject(gamelua.scriptPath.."/"..filename, env) and not gamelua.loadLuaFileToObject(gamelua.commonScriptPath.."/"..filename, env) then
+		print("Failed to require Lua file: "..filename)
 		return
 	end
-
-	alreadyloaded[filename] = true
 end
 
 requireFile = gamelua.requireFile
@@ -451,7 +459,7 @@ function exportLua(filename)
 
 		print("Decrypted file \""..filename.."\" into \""..exportname.."\"")
 	else
-		print("Could not decrypt file \""..filename.."\"")
+		print("Failed to decrypt file \""..filename.."\"")
 	end
 end
 
@@ -492,14 +500,12 @@ function gamelua.createDirectory(directory)
 end
 
 --serializes a lua table into a loadable string
-local serializeTable
-
 function serializeTable(t, indent)
 	local out = ""
 	indent = indent or "\t"
 
 	for i, v in pairs(t) do
-		local key = tostring(i).." = "
+		local key
 		
 		--always use brackets for keys
 		if type(i) == "number" then
@@ -519,6 +525,8 @@ function serializeTable(t, indent)
 
 			if type(v) ~= "userdata" then
 				out = out..indent..(tonumber(i) and "" or key)..final_value..""..(indent == "" and "" or ",").."\n"
+			--else
+				--error("serializeTable(): tried serializing userdata "..tostring(i))
 			end
 		end
 	end
@@ -532,15 +540,13 @@ function gamelua.saveLuaFile(fileName, tableName, appData)
 		return
 	end
 
-	local tableToSave = _G[tableName]
+	local tableToSave = gamelua[tableName]
 	
 	if not (tableToSave and type(tableToSave) == "table") then
-		print("saveLuaFile(): Table "..tableName.." does not exist.")
+		print("saveLuaFile(): Table "..tableName.." does not exist in gamelua.")
 		
 		return
 	end
-	
-	local serializedData = tableName.." = {\n"..serializeTable(tableToSave).."}"
 
 	local s1, m1 = love.filesystem.createDirectory(fileName:match(".*/") or "")
 	
@@ -550,17 +556,17 @@ function gamelua.saveLuaFile(fileName, tableName, appData)
 		return
 	end
 	
-	local s, m = love.filesystem.write(fileName, serializedData)
+	local success, result = love.filesystem.write(fileName, ("%s = {\n%s}"):format(tableName, serializeTable(tableToSave)))
 	
-	if s then
+	if success then
 		print("\""..tableName.."\" was saved to "..fileName)
 	else
-		print("\""..tableName.."\" failed to save to "..fileName.." ("..(m or "Unknown error")..")")
+		print("\""..tableName.."\" failed to save to "..fileName.." ("..(result or "Unknown error")..")")
 	end
 end
 
 function gamelua.savePersistentLuaFile(fileName, tableName)
-	saveLuaFile(fileName, tableName)
+	gamelua.saveLuaFile(fileName, tableName)
 end
 
 function gamelua.storePersistentData()

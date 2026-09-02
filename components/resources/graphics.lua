@@ -32,7 +32,7 @@ function gamelua.setRenderState(x, y, xs, ys, angle, xp, yp, alpha)
 	drawyp = yp or 0
 
 	if alpha then
-		setAlpha(alpha)
+		gamelua.setAlpha(alpha)
 	end
 end
 
@@ -188,7 +188,7 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, width, height)
 	end
 end
 
-function drawSpriteTinted(sprite, x, y, vanchor, hanchor, r, g, b, a)
+function gamelua.drawSpriteTinted(sprite, x, y, vanchor, hanchor, r, g, b, a)
 	love.graphics.push("all")
 	love.graphics.setColor(r / 255, g / 255, b / 255, a / 255)
 	res.drawSprite(sprite, x, y, vanchor, hanchor)
@@ -196,9 +196,9 @@ function drawSpriteTinted(sprite, x, y, vanchor, hanchor, r, g, b, a)
 end
 
 --TODO: i cannot get the color blending to be accurate to 5.1.0
-function drawSpriteColoured(sprite, x, y, scaleX, scaleY, r, g, b, a, darken)
+function gamelua.drawSpriteColoured(sprite, x, y, scaleX, scaleY, r, g, b, a, darken)
 	love.graphics.push("all")
-	setRenderState(0, 0)
+	gamelua.setRenderState(0, 0)
 	love.graphics.setBlendMode("add", "premultiplied")
 	love.graphics.setColor(r * a, g * a, b * a, a)
 	-- love.graphics.setColor(r, g, b, a)
@@ -214,7 +214,7 @@ function drawSpriteColoured(sprite, x, y, scaleX, scaleY, r, g, b, a, darken)
 	love.graphics.pop()
 end
 
-function setAngleRAD(angle) --5.3.1 what is this?
+function gamelua.setAngleRAD(angle) --5.3.1 what is this?
 	--return
 	drawangle = angle * math.pi / 180
 end
@@ -232,7 +232,7 @@ function res.getCompoSpriteBounds(sheet, composprite) --not used in 1.6.3.1
 	return 0, 0, 0, 0
 end
 
-function setAlpha(a)
+function gamelua.setAlpha(a)
 	alpha = a
 end
 
@@ -314,19 +314,20 @@ end
 
 function gamelua.drawSlingScopeNative(s_vx, s_vy, vertical_force)
 	love.graphics.push()
-	-- setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, 1)
-	local lsx, lsy = physicsToWorldTransform(selectedBird.x, selectedBird.y)
+	
+	local bird = gamelua.selectedBird
+	local lsx, lsy = physicsToWorldTransform(bird.x, bird.y)
 	local spacing = 4
 	local amount = 16
 
-	local offset = g_sling_scope_animation % 1
+	local offset = gamelua.g_sling_scope_animation % 1
 	
 	vertical_force = vertical_force or 0
 
-	s_vy = s_vy - worldgravity.y / physicsToWorld * spacing / 2
-	s_vy = s_vy + worldgravity.y / physicsToWorld * spacing * (offset)
+	s_vy = s_vy - worldgravity.y / physicsSimulationScale * spacing / 2
+	s_vy = s_vy + worldgravity.y / physicsSimulationScale * spacing * (offset)
 	
-	local verticalForce = (vertical_force / selectedBird.mass) / physicsToWorld
+	local verticalForce = (vertical_force / bird.mass) / physicsSimulationScale
 	if vertical_force ~= 0 then
 		s_vy = s_vy - verticalForce * spacing / 2
 		s_vy = s_vy + verticalForce * spacing * (offset)
@@ -340,7 +341,7 @@ function gamelua.drawSlingScopeNative(s_vx, s_vy, vertical_force)
 
 		love.graphics.translate(lsx, lsy)
 		love.graphics.scale(lerp(1, 0, (i - 1 + offset) / amount))
-		s_vy = s_vy + worldgravity.y / physicsToWorld * spacing
+		s_vy = s_vy + worldgravity.y / physicsSimulationScale * spacing
 		-- apply extra impulse on the curve
 		if vertical_force ~= 0 then
 			s_vy = s_vy + verticalForce * spacing

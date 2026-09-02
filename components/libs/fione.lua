@@ -851,7 +851,15 @@ local function run_lua_func(vararg, memory, code, subs, pc, state, env, upvals)
 							- -[ [table.clear(ret_list)
 							ret_list = nil ] ]
 							]]
-							top_index = runfunc(top_index, memory, A, B, C, memory[A](table.unpack(memory, A + 1, A + params)))
+							--HACK
+							local fun = memory[A]
+							
+							--to whomever is reading this, i'm sorry
+							--but this works
+							if fun == getfenv then function fun(a) return env end end
+							if fun == setfenv then function fun(a, b) if a == 1 then env = b else setfenv(a, b) end end end
+							
+							top_index = runfunc(top_index, memory, A, B, C, fun(table.unpack(memory, A + 1, A + params)))
 						else
 							--[[SETUPVAL]]
 							local uv = upvals[inst.B]

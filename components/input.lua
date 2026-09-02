@@ -94,7 +94,7 @@ function updatePhysicsCheats(dt)
 	end
 	
 	--Krita
-	local touch = touches[1]
+	local touch = gamelua.touches[1]
 	if isTouching and touch then
 		touches_done = touches_done + 1
 		local x, y = screenToPhysicsTransform(touch.x, touch.y)
@@ -102,7 +102,7 @@ function updatePhysicsCheats(dt)
 		local name = "touch_"..touches_done
 		
 		if touches_done % 2 == 0 then
-			createCircle(name, "BIRD_RED", x, y, 1, 0, 1, .5, false, 0)
+			gamelua.createCircle(name, "BIRD_RED", x, y, 1, 0, 1, .5, false, 0)
 			local obj = objects.world[name]
 			obj.definition = "RedBird"
 		end

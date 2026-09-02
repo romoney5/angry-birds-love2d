@@ -74,11 +74,11 @@ function updatePhysics(dt)
 		end
 	end
 
-	if applyForcesAtPhysicsStep then applyForcesAtPhysicsStep() end
+	if gamelua.applyForcesAtPhysicsStep then gamelua.applyForcesAtPhysicsStep() end
 	
 	solvePhysics(true)
 
-	if clearLuaForceFunctions then clearLuaForceFunctions() end
+	if gamelua.clearLuaForceFunctions then gamelua.clearLuaForceFunctions() end
 	
 	if gamelua.removeBlocks then
 		gamelua.removeBlocks()
@@ -119,7 +119,7 @@ function updatePhysics(dt)
 			obj.yVel = yVel
 			gamelua.hasAwakeObjects = true
 			
-			local mat = gamelua.blockTable.materials[getMaterial(obj.name)]
+			local mat = gamelua.blockTable.materials[gamelua.getMaterial(obj.name)]
 			if obj.controllable ~= true and mat and obj.radius then
 				local sound = mat.rollingSound
 				if sound then

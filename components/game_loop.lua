@@ -96,9 +96,9 @@ function love.update(dt)
 
 		dt2 = speedUpPre(math.min(dt, 1/30) * (debugOpen and 0.2 or 1) * timeScale)
 
-		local kp, kr, kh, cw = keyPressed, keyReleased, keyHold, cursor.wheel
+		local kp, kr, kh, cw = gamelua.keyPressed, gamelua.keyReleased, gamelua.keyHold, cursor.wheel
 		if openPopups[1] or debugOpen or fmOpen then
-			keyPressed, keyReleased, keyHold = {}, {}, {}
+			gamelua.keyPressed, gamelua.keyReleased, gamelua.keyHold = {}, {}, {}
 			cursor.wheel = 0
 		end
 
@@ -139,7 +139,7 @@ function love.update(dt)
 		drawParticlesNative(true)
 		updateScreenParticlesNative(dt2)
 		
-		keyPressed, keyReleased, keyHold, cursor.wheel = kp, kr, kh, cw
+		gamelua.keyPressed, gamelua.keyReleased, gamelua.keyHold, cursor.wheel = kp, kr, kh, cw
 		
 		updatePhysics(dt)
 
@@ -188,8 +188,8 @@ function love.update(dt)
 	end
 
 	--clear key tables instead of remaking them
-	table.clear(keyPressed)
-	table.clear(keyReleased)
+	table.clear(gamelua.keyPressed)
+	table.clear(gamelua.keyReleased)
 end
 
 function love.resize(width, height)

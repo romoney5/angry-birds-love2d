@@ -1,6 +1,8 @@
 res = {} --game resources
 ResourceManager = {}
 
+gamelua.res = res --for stella
+
 if love.graphics.newShader then res.textureShader = love.graphics.newShader([[
 vec4 effect(vec4 colour, Image texture, vec2 texpos, vec2 scrpos)
 {

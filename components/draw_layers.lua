@@ -26,9 +26,13 @@ function gamelua.createThemeSprite(name, sprite, x, y, scaleX, scaleY, angle, la
 	end
 end
 
+createThemeSprite = gamelua.createThemeSprite --classic 6.3.0
+
 function gamelua.removeThemeSprite(name, layerNumber)
 	themeSpriteObjects[name] = nil
 end
+
+removeThemeSprite = gamelua.removeThemeSprite
 
 function gamelua.modifyThemeSprite(name, x, y, scaleX, scaleY, angle, layerNumber)
 	if not themeSpriteObjects[name] then return end
@@ -39,6 +43,8 @@ function gamelua.modifyThemeSprite(name, x, y, scaleX, scaleY, angle, layerNumbe
 	themeSpriteObjects[name].angle = angle
 	themeSpriteObjects[name].layerNumber = layerNumber
 end
+
+modifyThemeSprite = gamelua.modifyThemeSprite
 
 function setThemeSprite(name, sprite, layer)
 	themeSpriteObjects[name].layerNumber = layer

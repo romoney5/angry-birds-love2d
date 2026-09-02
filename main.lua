@@ -115,7 +115,7 @@ function loadGameFiles()
 	local datapath_base, _ = resolvePath(datapath.."/..")
 
 	--needed for some later versions
-	BEACON = true
+	gamelua.BEACON = true
 	
 	local loadLuaFileToObject = gamelua.loadLuaFileToObject
 	local checkDirectory = gamelua.checkDirectory
@@ -163,15 +163,17 @@ function loadGameFiles()
 	
 	--load save data
 	if not disableSaving then
-		local settingsAccount = "settings_" .. accountId .. ".lua"
-		local highscoresAccount = "highscores_" .. accountId .. ".lua"
+		local names = {
+			"settings",
+			"highscores",
+		}
 		
-		if checkDirectory(settingsAccount) then
-			runLuaFile(settingsAccount, true)
-			runLuaFile(highscoresAccount, true)
-		else
-			runLuaFile("settings.lua", true)
-			runLuaFile("highscores.lua", true)
+		for i, v in ipairs(names) do
+			if not loadLuaFileToObject(names[i]..".lua", gamelua, nil, true) then
+				names[i] = v.."_"..accountId
+				
+				loadLuaFileToObject(names[i]..".lua", gamelua, nil, true)
+			end
 		end
 	end
 	
@@ -196,7 +198,7 @@ function loadGameFiles()
 	local blocksExists = checkDirectory(rootPath .. "/blocks.lua")
 	
 	if not blocksExists then
-		blockTable = { blocks = { Ground = { type = "box", material = "staticGround", } } }
+		gamelua.blockTable = { blocks = { Ground = { type = "box", material = "staticGround" } } }
 		local extras = {"birds.lua", "scoreobjects.lua", "levelgoals.lua"}
 		setmetatable(extras, { __index = function(t, id) for _, k in ipairs(t) do if k == id then return k end end end })
 		
@@ -208,16 +210,16 @@ function loadGameFiles()
 				for n, key in pairs(temp) do
 					if type(key) == "table" and key[1] and key[1].definition then
 						for k, v in ipairs(key) do
-							blockTable.blocks[v.definition] = v
+							gamelua.blockTable.blocks[v.definition] = v
 						end
 					end
 				end
 			end
 		end
 		
-		loadLuaFileToObject(gamelua.scriptPath .. rootPathAppend .. "/damagefactors.lua", blockTable, "damageFactors", true)
-		loadLuaFileToObject(gamelua.scriptPath .. rootPathAppend .. "/materials.lua", blockTable, "materials", true)
-		loadLuaFileToObject(gamelua.scriptPath .. rootPathAppend .. "/themes.lua", blockTable, "themes", true)
+		loadLuaFileToObject(gamelua.scriptPath .. rootPathAppend .. "/damagefactors.lua", gamelua.blockTable, "damageFactors", true)
+		loadLuaFileToObject(gamelua.scriptPath .. rootPathAppend .. "/materials.lua", gamelua.blockTable, "materials", true)
+		loadLuaFileToObject(gamelua.scriptPath .. rootPathAppend .. "/themes.lua", gamelua.blockTable, "themes", true)
 	end
 	
 	--and now start the actual game

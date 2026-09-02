@@ -159,11 +159,11 @@ function RovioChannel.isChannelViewOpened()
 	return false
 end
 
-function printWarning(...)
+function gamelua.printWarning(...)
 	print(...)
 end
 
-function printError(...)
+function gamelua.printError(...)
 	print(...)
 end
 
@@ -225,7 +225,8 @@ function Editor:new()
 end
 
 
-function disableSpotlight()
+--found in level_effects.lua
+function gamelua.disableSpotlight()
 	return
 end
 
@@ -377,10 +378,6 @@ function CloudSync.removeSyncableSettings(settings)
 end
 
 
-function isEditing()
-	return false
-end
-
 function setNotificationsEnabled(enabled)
 	return
 end
@@ -401,48 +398,54 @@ end
 
 --lifted from 1.6.3.1
 function worldToPhysicsTransform(x, y)
-	local px = x * physicsScale
-	local py = y * physicsScale
+	local px = x / physicsSimulationScale
+	local py = y / physicsSimulationScale
 	return px, py
 end
+gamelua.worldToPhysicsTransform = worldToPhysicsTransform
 
 function worldToScreenTransform(x, y)
-	local screenLeft = renderLeft or screen.left
-	local screenTop = renderTop or screen.top
-	local worldScale = renderScale or worldScale or 1
+	local screenLeft = renderLeft
+	local screenTop = renderTop
+	local worldScale = renderScale
 	
 	local sx = (x - screenLeft) * worldScale
 	local sy = (y - screenTop) * worldScale
 	return sx, sy
 end
+gamelua.worldToScreenTransform = worldToScreenTransform
 
 function screenToWorldTransform(x, y)
-	local screenLeft = renderLeft or screen.left
-	local screenTop = renderTop or screen.top
+	local screenLeft = renderLeft
+	local screenTop = renderTop
 	
-	local worldScale = renderScale or worldScale or 1
+	local worldScale = renderScale
 	local wx = x / worldScale + screenLeft
 	local wy = y / worldScale + screenTop
 	return wx, wy
 end
+gamelua.screenToWorldTransform = screenToWorldTransform
 
 function physicsToWorldTransform(x, y)
-	local wx = x * physicsToWorld
-	local wy = y * physicsToWorld
+	local wx = x * physicsSimulationScale
+	local wy = y * physicsSimulationScale
 	return wx, wy
 end
+gamelua.physicsToWorldTransform = physicsToWorldTransform
 
 function physicsToScreenTransform(x, y)
 	local wx, wy = physicsToWorldTransform(x, y)
 	local sx, sy = worldToScreenTransform(wx, wy)
 	return sx, sy
 end
+gamelua.physicsToScreenTransform = physicsToScreenTransform
 
 function screenToPhysicsTransform(x, y)
 	local wx, wy = screenToWorldTransform(x, y)
 	local px, py = worldToPhysicsTransform(wx, wy)
 	return px, py
 end
+gamelua.screenToPhysicsTransform = screenToPhysicsTransform
 
 function checkObjectBounds(x, y, width, height, angle, cursorX, cursorY)	 
 	local cx = cursorX - x
@@ -469,11 +472,11 @@ end
 
 --5.1.0
 function native.loadLuaTable(filename, env, a)
-	return loadLuaFileToObject(filename, env, "")
+	return gamelua.loadLuaFileToObject(filename, env, "")
 end
 
 function native.loadLuaScript(filename)
-	runLuaFile(scriptPath.."/"..filename)
+	gamelua.runLuaFile(gamelua.scriptPath.."/"..filename)
 end
 
 
@@ -492,10 +495,10 @@ end
 
 ThemeSystem = {}
 
-ThemeSystem.setTheme = setTheme
+ThemeSystem.setTheme = gamelua.setTheme
 
-ThemeSystem.drawBackground = drawBackgroundNative
-ThemeSystem.drawForeground = drawForegroundNative
+ThemeSystem.drawBackground = gamelua.drawBackgroundNative
+ThemeSystem.drawForeground = gamelua.drawForegroundNative
 
 function ThemeSystem.getThemeLayerOffset()--?
 	return {x = 0, y = 0}
@@ -533,13 +536,13 @@ function CameraNative.setCameraTopLeft(left, top)
 	renderTop = top
 	--setTopLeft(left, top)
 end
-CameraNative.drawGame = drawGameNative
+CameraNative.drawGame = gamelua.drawGameNative
 
 function CameraNative.updateGFXEffects(dt)
 	return
 end
 
-function screenToWorldDistance(x, y)
+function gamelua.screenToWorldDistance(x, y)
 	local screenLeft = renderLeft or screen.left
 	local screenTop = renderTop or screen.top
 	
@@ -550,34 +553,34 @@ function screenToWorldDistance(x, y)
 end
 
 
-function createMaskRenderer(name, sprite, texture, collider)
+function gamelua.createMaskRenderer(name, sprite, texture, collider)
 	return
 end
 
-function createRendererForGameObject(name, sprite, collider)
+function gamelua.createRendererForGameObject(name, sprite, collider)
 	return
 end
 
-function createLuaAssetRenderer(a, b, c)
+function gamelua.createLuaAssetRenderer(a, b, c)
 	a.luaAssetRenderer = {}
 	return "a"
 end
 
-function disposeLuaAssetRenderer(a)
+function gamelua.disposeLuaAssetRenderer(a)
 	return
 end
 
-function setObjectAsForceAdder(a)--?
+function gamelua.setObjectAsForceAdder(a)--?
 	return
 end
 
 
-function setObjectBodyStatic(name)
-	setObjectParameter(name, 2, 0)
+function gamelua.setObjectBodyStatic(name)
+	gamelua.setObjectParameter(name, 2, 0)
 end
 
-function setObjectBodyDynamic(name)
-	setObjectParameter(name, 2, 1)
+function gamelua.setObjectBodyDynamic(name)
+	gamelua.setObjectParameter(name, 2, 1)
 end
 
 function toggleZoom(a, b)--?
@@ -592,7 +595,8 @@ function toggleZoom2(a, b)--?
 	wantedZoomLevel = a
 end
 
-function raycast(x1, y1, x2, y2)
+--used for the slingshot camera
+function gamelua.raycast(x1, y1, x2, y2)
 	local hit, hit_name, hit_x, hit_y = false, nil, nil, nil
 
     physicsWorld:rayCast(x1, y1, x2, y2, function(fixture, x, y, xn, yn, fraction)
@@ -867,9 +871,9 @@ remoteConfigTable_ml = {}
 remoteConfigTable_ml.VariousRules = {}
 
 
-IGCItemInfo = {}
+gamelua.IGCItemInfo = {}
 
-setmetatable(IGCItemInfo, {
+setmetatable(gamelua.IGCItemInfo, {
 	__index = function(a)
 		return {iconId = "BIRD_RED", analyticsType = "", analyticsName = "", type = "dummy"}
 	end
@@ -898,7 +902,7 @@ end
 
 
 --another file?
-function setFilterGroup()--?
+function gamelua.setFilterGroup()--?
 	return
 end
 
@@ -995,10 +999,6 @@ function setShaderToGameObject()--?
 	return
 end
 
-function setObjectColor()--?
-	return
-end
-
 
 newPlayerRules = {}
 
@@ -1042,7 +1042,7 @@ function setShaderToGameObject(object, shader)
 	end
 end
 
-function setObjectColor(object, r, g, b, a)
+function gamelua.setObjectColor(object, r, g, b, a)
 	local obj = objects.world[object]
 	if obj then
 		local r, g, b, a = r / 255, g / 255, b / 255, a / 255

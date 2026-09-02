@@ -49,11 +49,13 @@ function gamelua.drawMenuParticlesInAdvance() --what is it with particles
 	return
 end
 
-function drawScreenParticles()
+--found in seasons 4.1.0
+function gamelua.drawScreenParticles()
 	return
 end
 
-function drawLevelParticlesNative(layer)
+--found in rio 1.4.0
+function gamelua.drawLevelParticlesNative(layer)
 	return
 end
 
@@ -270,5 +272,6 @@ particles = {
     update = updateParticlesNative,
     add = addParticles2,
     addParticlesWithProperties = function() return end, --11022
-	updateMenuParticlesNative = function() end
+	updateMenuParticlesNative = function() end,
+    addParticlesWithId = function() return end, --found in seasons 5.2.5
 }
