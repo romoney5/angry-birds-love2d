@@ -48,6 +48,8 @@ enableDebug = false
 
 showCursor = nil --filled in from config.lua
 
+default_font, mono_font = nil, nil
+
 
 function gamelua.requestExit()
 	print("Quitting...")
@@ -290,7 +292,19 @@ function love.load()
 	
 	updateDisplayScale()
 
-	love.graphics.setNewFont(24)
+	--make fonts
+	local font_path = "components/JetBrainsMono-Regular.ttf"
+	
+	default_font = love.graphics.newFont(24)
+	mono_font = default_font
+	mono_font_small = default_font
+
+	if love.filesystem.exists(font_path) then
+		mono_font = love.graphics.newFont(font_path, 24)
+		mono_font_small = love.graphics.newFont(font_path, 18)
+	end
+	
+	love.graphics.setFont(default_font)
 	
 	loadGameFiles()
 end

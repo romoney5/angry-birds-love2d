@@ -99,6 +99,42 @@ function CUI.ScrollbarFromScrollState(scroll, x, y, h, contentHeight)
 		contentHeight)
 end
 
+--formula gathered from discord (chrome text boxes)
+function controlKeyLoop(state, direction, callback)
+	local punctuations = "!@#$^*() .:\t\n"
+	local hit_letter = false
+	
+	repeat
+		--TODO: codepoints
+		local cursor2 = state.cursor + (direction / 2 + .5)
+		local char = state.value:sub(cursor2, cursor2)
+		
+		if punctuations:find(char, 1, true) then
+			if hit_letter then
+				break
+			end
+		else
+			hit_letter = true
+		end
+		
+		callback(state)
+	until state.cursor + direction < 0 or state.cursor + direction > state.value:len()
+end
+
+--clears the text from selection_start to selection_end
+function clearSelection(state)
+	if not state.selection_start then return end
+
+	state.cursor = state.selection_start
+	
+	for i = state.selection_start, state.selection_end - 1 do
+		state.value = string.back(state.value, state.cursor + 1)
+	end
+	
+	state.selection_start = nil
+	state.selection_end = nil
+end
+
 function CUI.Textbox(state, x, y, w, h)
 	--text field
 	state.value = state.value or ""
@@ -115,6 +151,9 @@ function CUI.Textbox(state, x, y, w, h)
 	}
 	state.scroll.height = h
 	state.scroll.contentHeight = res.getStringHeight(state.value)
+	
+	state.selection_start = state.selection_start or nil
+	state.selection_end = state.selection_end or nil
 	
 	local hovering = checkBounds(x, y, w, h, cursor.x, cursor.y)
 	local textx = x
@@ -167,24 +206,94 @@ function CUI.Textbox(state, x, y, w, h)
 
 	if CUI.currentTextboxState == state then
 		--move the selection left/right
-		if keyPressed.LEFT or keyPressed.RIGHT and not (keyPressed.LEFT and keyPressed.RIGHT) then
-			local direction = (keyPressed.RIGHT and 1 or -1)
+		if keyPressed.LEFT or keyPressed.RIGHT then
+			local direction = 0
+			if keyPressed.RIGHT then direction = direction + 1 end
+			if keyPressed.LEFT then direction = direction - 1 end
+			
 			res.playAudio("menu_select", 1, false)
+			
+			local function action()
+				local og_cursor = state.cursor
+				
+				state.cursor = math.min(math.max(state.cursor + direction, 0), state.value:len())
+				
+				--shift-selection
+				if keyHold.SHIFT then
+					if (not state.selection_start and direction >= 0) or (state.selection_end and og_cursor == state.selection_end) then
+						state.selection_start = state.selection_start or og_cursor
+						state.selection_end = state.cursor
+					else
+						state.selection_end = state.selection_end or og_cursor
+						state.selection_start = state.cursor
+					end
+					
+					--clear the selection automatically
+					if state.selection_start == state.selection_end then
+						state.selection_start = nil
+						state.selection_end = nil
+					end
+				else
+					state.selection_start = nil
+					state.selection_end = nil
+				end
+			end
 
-			state.cursor = math.min(math.max(state.cursor + direction, 0), state.value:len())
+			if keyHold.CONTROL then
+				controlKeyLoop(state, direction, action)
+			elseif not keyHold.SHIFT and state.selection_start then
+				--snap to the left/right
+				if direction >= 0 then
+					state.cursor = state.selection_end
+				else
+					state.cursor = state.selection_start
+				end
+				
+				state.selection_start = nil
+				state.selection_end = nil
+			else
+				action()
+			end
+			
 			state.cursorBlink = 0
 		end
 		
 		if keyPressed.BACKSPACE then
 			res.playAudio("menu_back", 1, false)
-			state.value = string.back(state.value, state.cursor)
-			state.cursor = math.max(state.cursor - 1, 0)
+			
+			local function action()
+				state.value = string.back(state.value, state.cursor)
+				state.cursor = math.max(state.cursor - 1, 0)
+			end
+
+			--hitting backspace while selecting
+			if state.selection_start then
+				clearSelection(state)
+			elseif keyHold.CONTROL then
+				controlKeyLoop(state, -1, action)
+			else
+				action()
+			end
+			
 			state.cursorBlink = 0
 		end
 
 		if keyPressed.DELETE then
 			res.playAudio("menu_back", 1, false)
-			state.value = string.back(state.value, state.cursor + 1)
+			
+			local function action()
+				state.value = string.back(state.value, state.cursor + 1)
+			end
+
+			--hitting delete while selecting works similarly
+			if state.selection_start then
+				clearSelection(state)
+			elseif keyHold.CONTROL then
+				controlKeyLoop(state, 1, action)
+			else
+				action()
+			end
+
 			state.cursorBlink = 0
 		end
 
@@ -196,8 +305,31 @@ function CUI.Textbox(state, x, y, w, h)
 			CUI.OnTextInput("\t")
 		end
 
+		--copy
+		if keyHold.CONTROL and keyPressed.C and state.selection_start then
+			local result = state.value:sub(state.selection_start + 1, state.selection_end)
+			
+			love.system.setClipboardText(result)
+		end
+
+		--cut
+		if keyHold.CONTROL and keyPressed.X and state.selection_start then
+			local result = state.value:sub(state.selection_start + 1, state.selection_end)
+			
+			love.system.setClipboardText(result)
+			clearSelection(state)
+		end
+
+		--paste
 		if keyHold.CONTROL and keyPressed.V then
 			CUI.OnTextInput(love.system.getClipboardText())
+		end
+
+		--select all
+		if keyHold.CONTROL and keyPressed.A then
+			state.selection_start = 0
+			state.selection_end = state.value:len()
+			state.cursor = state.selection_end
 		end
 	end
 	
@@ -211,16 +343,21 @@ function CUI.Textbox(state, x, y, w, h)
 	--TODO: newlines also don't display properly
 	res.setClipRect(x, y, w, h)
 	
-	love.graphics.push()
+	love.graphics.push("all")
 	love.graphics.translate(0, scroll)
 	
-	local font = love.graphics.getFont()
-	local fontheight = font:getHeight() - .5
+	--optional monospace font
+	if state.font then
+		love.graphics.setFont(state.font)
+	end
 	
 	--draw the mutliline view if applicable
 	if state.multiline then
 		love.graphics.rectangle("fill", x, y - scroll, lineswidth, h, 10, 10)
 	end
+	
+	local font = love.graphics.getFont()
+	local fontheight = font:getHeight() - .5
 	
 	--draw the placeholder if applicable
 	if state.value == "" then
@@ -234,7 +371,7 @@ function CUI.Textbox(state, x, y, w, h)
 	local lines = 0
 	
 	--TODO: optimize when offscreen
-	for line in state.value:gmatch("[^\r\n]+") do --sucks
+	for line in (state.value.."\n"):gmatch("(.-)\n") do --sucks
 		local final_y = y + lines * fontheight
 		
 		--only draw the line if it is below the top
@@ -252,11 +389,21 @@ function CUI.Textbox(state, x, y, w, h)
 		if final_y > y - scroll + h then break end
 	end
 	
+	--draw pipe cursor
 	if CUI.currentTextboxState == state then
 		local clip = utf8.sub(state.value, 1, state.cursor)
 		res.drawString("", ((state.cursorBlink * 2) % 2 <= 1 and "|" or ""),
 			res.getStringWidth(clip:getLineAt(-1), nil, nil, nil, true) + textx + 5 - 5,
 			res.getStringHeight(clip) + y)
+	end
+	
+	--draw selection box
+	if state.selection_start then
+		local clip_start = utf8.sub(state.value, 1, state.selection_start)
+		local clip_end = utf8.sub(state.value, state.selection_start + 1, state.selection_end)
+		
+		drawRect2(1, 1, 1, .5, textx + 5 + res.getStringWidth(clip_start:getLineAt(-1), nil, nil, nil, true),
+			y + 5 + res.getStringHeight(clip_start), res.getStringWidth(clip_end:getLineAt(-1), nil, nil, nil, true), res.getStringHeight(clip_end, nil, true))
 	end
 	
 	love.graphics.pop()
@@ -439,15 +586,20 @@ end
 function CUI.OnTextInput(key)
 	if CUI.currentTextboxState then
 		local state = CUI.currentTextboxState
-		local nextval = string.insert(state.value, key, state.cursor)
 		
 		local is_newline = key == "\n"
 		
 		if is_newline and not keyHold.SHIFT and state.on_confirm then
 			state:on_confirm()
+			state.selection_start = nil
+			state.selection_end = nil
 			
 			return
 		end
+		
+		clearSelection(state)
+		
+		local nextval = string.insert(state.value, key, state.cursor)
 		
 		if (state.numeric and not tonumber(key) and not tonumber(nextval) and nextval ~= "-") and not (is_newline and not state.multiline) then
 			return

@@ -348,6 +348,8 @@ something = {
 
 local function updateCode()
 	local so = something
+	
+	local screenWidth, screenHeight = gamelua.screenWidth, gamelua.screenHeight
 
 	local padding = math.min(200, math.min(screenWidth, screenHeight) / 4)
 	local w, h = screenWidth - padding, screenHeight - padding
@@ -361,6 +363,7 @@ local function updateCode()
 	code.textboxState = code.textboxState or {}
 	code.textboxState.value = code.textboxState.value or code.data or ""
 	code.textboxState.multiline = true
+	code.textboxState.font = mono_font_small
 	
 	CUI.Textbox(code.textboxState, x + innerPadding, y + innerPadding, w - innerPadding * 2, h - innerPadding * 2)
 	
