@@ -41,7 +41,6 @@ runLuaFile(compsPath.."/data/read.lua")						--general reader for dat files
 --_G.res
 runLuaFile(compsPath.."/resources/res.lua")					--initialize res. (resources) library
 runLuaFile(compsPath.."/resources/graphics.lua")			--graphics functions
-runLuaFile(compsPath.."/resources/draw_box.lua")			--just drawboxnative
 runLuaFile(compsPath.."/resources/audio.lua")				--audio functions
 runLuaFile(compsPath.."/resources/localization.lua")		--localization/text group functions
 runLuaFile(compsPath.."/resources/font.lua")				--font/text functions
