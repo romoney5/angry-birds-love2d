@@ -48,6 +48,10 @@ function gamelua.drawBoxNative(boxSprites, x1, y1, width, height, hAnchor, vAnch
 		yPivot = 0
 	end
 	
+	--reset render state, otherwise classic 4.0.0 sliders break
+	love.graphics.push()
+	gamelua.setRenderState(0, 0, 1, 1)
+	
 	-- check if some part of the box is on screen
 	if y1 - thTopMiddle + yPivot <= gamelua.screenHeight and y1 + height + yPivot + thBottomMiddle >= 0 then
 		-- draw borders
@@ -69,4 +73,6 @@ function gamelua.drawBoxNative(boxSprites, x1, y1, width, height, hAnchor, vAnch
 			res.drawSprite(boxSprites.center, x1 + xPivot, y1 + yPivot, "TOP", "LEFT", width, height)
 		end
 	end
+	
+	love.graphics.pop()
 end
