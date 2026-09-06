@@ -164,3 +164,55 @@ end
 function gamelua.verifyDeviceID(hwid)
 	return true
 end
+
+--enable/disable screensaver
+function gamelua.setGameOn(on)
+	love.window.setDisplaySleepEnabled(not on)
+end
+
+local registered
+function gamelua.openRegistrationDialog(message, validationURL, registrationURL, fullGame)
+	local returnedKey = ""
+
+	openPopup(
+		message,
+		"The game is not registered.\nRegister now?",
+		{
+			{sprite = "MENU_NO", callback = function()
+				return true
+			end},
+			{sprite = "TUTORIAL_OK", callback = function()
+				returnedKey = true
+				registered = true
+				openPopup("Registration", "Full game registered.", nil, true)
+
+				return true
+			end},
+		},
+		true
+	)
+	return returnedKey
+end
+
+gamelua.registerKey = gamelua.openRegistrationDialog
+--returns finished, valid
+function gamelua.checkRegistrationResult()
+	local finished = openPopups[1] == nil
+	local valid = registered
+	registered = nil
+	return finished, valid
+end
+
+function gamelua.requestExit()
+	print("Quitting...")
+	love.event.quit()
+end
+
+--unknown source
+function gamelua.setLevelEffects(theme)
+	return
+end
+
+function gamelua.updateLevelEffects(dt, realDt) --right parameters?
+	return
+end

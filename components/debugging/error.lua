@@ -102,7 +102,7 @@ function love.errorhandler(msg)
 		if not love.graphics.isActive() then return end
 		
 		local pos = 40
-		lgClear(love.graphics.getBackgroundColor())
+		love.graphics.clear(love.graphics.getBackgroundColor())
 		gamelua.screenHeight = love.graphics.getHeight()
 		-- love.graphics.printf(p, pos, pos, love.graphics.getWidth() - pos)
 		updateDisplayScale()

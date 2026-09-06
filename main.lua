@@ -51,11 +51,6 @@ showCursor = nil --filled in from config.lua
 default_font, mono_font = nil, nil
 
 
-function gamelua.requestExit()
-	print("Quitting...")
-	love.event.quit()
-end
-
 
 --override print to work with the debug console
 --this needs to be here because other files are loaded before console.lua
@@ -84,6 +79,9 @@ end
 --find and set an icon from the data path
 local function loadIcon(datapath_base)
 	local icon_paths = {
+		--ipad
+		datapath_base.."/Icon-152.png",
+		datapath_base.."/Icon_HD.png",
 		--ios
 		datapath_base.."/Icon.png",
 		datapath_base.."/Icon-72.png",
@@ -121,7 +119,6 @@ function loadGameFiles()
 	
 	local loadLuaFileToObject = gamelua.loadLuaFileToObject
 	local checkDirectory = gamelua.checkDirectory
-	local runLuaFile = gamelua.runLuaFile
 
 	if not loadLuaFileToObject(datapath_base.."/config.lua", config, nil, true) then
 		loadLuaFileToObject(datapath.."/config.lua", config, nil, true)
@@ -135,10 +132,6 @@ function loadGameFiles()
 	gamelua.scriptPath = config.scriptPath or gamelua.scriptPath
 	gamelua.showCursor = config.showCursor
 	--deviceModel = config.deviceModel or deviceModel
-
-	--start by setting the background to white and using premultiplied alpha
-	gamelua.setBGColor(255, 255, 255)
-	love.graphics.setBlendMode("alpha", "premultiplied")
 
 	if not checkDirectory(datapath) or datapath == "" then
 		--notify the user that no data path is available
@@ -291,75 +284,59 @@ function love.load()
 	end
 	
 	love.graphics.setFont(default_font)
+
+	--start by setting the background to white and using premultiplied alpha
+	gamelua.setBGColor(255, 255, 255)
+	love.graphics.setBlendMode("alpha", "premultiplied")
 	
 	loadGameFiles()
 end
 
---TODO: consider killing this after kakao starts working
-function kak()
-	RovioAccount.profile.isConnectedToSocialNetwork = true
-	g_rovio_account_available = true
-	skipSocialLogin = true
-	for i = 1, 5 do initialize() end
-	startMenuFlow()
-end
+--from https://love2d.org/wiki/love.run
+--love.run must be overwritten so that we can draw in the love.update hook
+--classic and seasons lump drawing in with the update() function
+--until more documentation surfaces, this is also needed for the modal draw function in game_loop.lua
+do
+	love.run()
 
-function kak2()
-	gamelua.notificationsFrame:removeChild(gamelua.notificationsFrame:getChild("KakaoNetworkErrorDialog"))
-end
+	local dt = 0
 
-function setLevelEffects(theme)
-	return
-end
+	-- Main loop time.
+	function loveRunLoop()
+		-- Process events.
+		if love.event then
+			love.event.pump()
+			for name, a, b, c, d, e, f, g, h in love.event.poll() do
+				if name == "quit" then
+					if not love.quit or not love.quit() then
+						return a or 0, b
+					end
+				end
+				love.handlers[name](a, b, c, d, e, f, g, h)
+			end
+		end
 
-function updateLevelEffects(dt, realDt) --right parameters?
-	return
-end
+		-- Update dt, as we'll be passing it to update
+		if love.timer then dt = love.timer.step() end
 
---enable/disable screensaver
-function gamelua.setGameOn(on)
-	love.window.setDisplaySleepEnabled(not on)
-end
+		-- Call update and draw
+		if love.update then love.update(dt) end -- will pass 0 if love.timer is disabled
 
-local registered
-function gamelua.openRegistrationDialog(message, validationURL, registrationURL, fullGame)
-	local returnedKey = ""
+		--[[
+		if love.graphics and love.graphics.isActive() then
+			love.graphics.origin()
+			love.graphics.clear(love.graphics.getBackgroundColor())
 
-	openPopup(
-		message,
-		"The game is not registered.\nRegister now?",
-		{
-			{sprite = "MENU_NO", callback = function()
-				return true
-			end},
-			{sprite = "TUTORIAL_OK", callback = function()
-				returnedKey = true
-				registered = true
-				openPopup("Registration", "Full game registered.", nil, true)
+			if love.draw then love.draw() end
 
-				return true
-			end},
-		},
-		true
-	)
-	return returnedKey
-end
+			love.graphics.present()
+		end
+		]]
 
-gamelua.registerKey = gamelua.openRegistrationDialog
---returns finished, valid
-function gamelua.checkRegistrationResult()
-	local finished = openPopups[1] == nil
-	local valid = registered
-	registered = nil
-	return finished, valid
-end
+		if love.timer then love.timer.sleep(0.001) end
+	end
 
---space
-function gamelua.performBitwiseOr(a, b)
-	return bit.bor(a, b)
-end
-
---not absw
-function gamelua.setDeltaTimeMultiplier(timescale)
-	physicsTimeScale = timescale
+	function love.run()
+		return loveRunLoop
+	end
 end

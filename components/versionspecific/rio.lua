@@ -225,3 +225,12 @@ end
 function getAimingTime()
 	return 0
 end
+
+function gamelua.performBitwiseOr(a, b)
+	return bit.bor(a, b)
+end
+
+--not absw
+function gamelua.setDeltaTimeMultiplier(timescale)
+	physicsTimeScale = timescale
+end

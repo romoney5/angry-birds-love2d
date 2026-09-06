@@ -29,14 +29,6 @@ function updateDisplayScale()
 	love.window.setTitle("Angry Birds ("..gamelua.screenWidth.."x"..gamelua.screenHeight..")")
 end
 
-lgClear = love.graphics.clear
-
-function love.graphics.clear(...)
-	-- if a == true then
-	-- 	return lgClear(...)
-	-- end
-end
-
 function love.update(dt)
 	if love.window.hasFocus() then
 		--select the first gamepad
@@ -58,7 +50,7 @@ function love.update(dt)
 		hasfocus = true
 		if love.graphics and love.graphics.isActive() then
 			love.graphics.origin()
-			lgClear(love.graphics.getBackgroundColor())
+			love.graphics.clear(love.graphics.getBackgroundColor())
 		end
 		
 		--clear stopped audios
@@ -173,6 +165,12 @@ function love.update(dt)
 				CUI.currentTextboxState = nil
 			end
 		end
+
+		--only draw anything if the game is focused,
+		--otherwise it will just endlessly hog up the gpu
+		if love.graphics and love.graphics.isActive() then
+			love.graphics.present()
+		end
 	elseif hasfocus then
 		hasfocus = false
 		pausedaudios = love.audio.pause()
@@ -182,7 +180,7 @@ function love.update(dt)
 			gamelua.gamePaused()
 		end
 
-		if not debugPaused then
+		if not debugPaused and love.graphics and love.graphics.isActive() then
 			love.graphics.present()
 		end
 	end
@@ -200,5 +198,12 @@ end
 
 --set dt to 0 resizing
 if love.event.setModalDrawCallback then
-	--love.event.setModalDrawCallback(function() loveUpdate(true) if clearLuaForceFunctions then clearLuaForceFunctions() end end)
+	love.event.setModalDrawCallback(function()
+		local old_timeScale = timeScale
+		timeScale = 0
+		
+		loveRunLoop()
+		
+		timeScale = old_timeScale
+	end)
 end
