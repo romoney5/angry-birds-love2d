@@ -209,38 +209,6 @@ local function rd_int_basic(src, s, e, d)
 	return num
 end
 
--- float rd_flt_basic(byte f1..8)
--- @f1..4 - The 4 bytes composing a little endian float
-local function rd_flt_basic(f1, f2, f3, f4)
-	--use ffi to calculate if available
-	if ffi then
-		local buf = ffi.new("uint8_t[4]", {f1, f2, f3, f4})
-		return ffi.cast("float *", buf)[0]
-	end
-	
-	local sign = (-1) ^ bit.rshift(f4, 7)
-	local exp = bit.rshift(f3, 7) + bit.lshift(bit.band(f4, 0x7F), 1)
-	local frac = f1 + bit.lshift(f2, 8) + bit.lshift(bit.band(f3, 0x7F), 16)
-	local normal = 1
-
-	if exp == 0 then
-		if frac == 0 then
-			return sign * 0
-		else
-			normal = 0
-			exp = 1
-		end
-	elseif exp == 0x7F then
-		if frac == 0 then
-			return sign * (1 / 0)
-		else
-			return sign * (0 / 0)
-		end
-	end
-
-	return sign * 2 ^ (exp - 127) * (1 + normal / 2 ^ 23)
-end
-
 -- double rd_dbl_basic(byte f1..8)
 -- @f1..8 - The 8 bytes composing a little endian double
 local function rd_dbl_basic(f1, f2, f3, f4, f5, f6, f7, f8)
@@ -279,40 +247,36 @@ end
 -- @src - Source binary string
 -- @s - Start index of a little endian integer
 -- @e - End index of the integer
-local function rd_int_le(src, s, e) return rd_int_basic(src, s, e - 1, 1) end
+local function rd_int_le(src, s, e) return love.data.unpack("<i4", src, s) end
 
 -- int rd_int_be(string src, int s, int e)
 -- @src - Source binary string
 -- @s - Start index of a big endian integer
 -- @e - End index of the integer
-local function rd_int_be(src, s, e) return rd_int_basic(src, e - 1, s, -1) end
+local function rd_int_be(src, s, e) return love.data.unpack(">i4", src, s) end
 
 -- float rd_flt_le(string src, int s)
 -- @src - Source binary string
 -- @s - Start index of little endian float
-local function rd_flt_le(src, s) return rd_flt_basic(string.byte(src, s, s + 3)) end
 local function rd_flt_le(src, s) return love.data.unpack("<f", src, s) end
 
 -- float rd_flt_be(string src, int s)
 -- @src - Source binary string
 -- @s - Start index of big endian float
 local function rd_flt_be(src, s)
-	local f1, f2, f3, f4 = string.byte(src, s, s + 3)
-	return rd_flt_basic(f4, f3, f2, f1)
+	return love.data.unpack(">f", src, s)
 end
 
 -- double rd_dbl_le(string src, int s)
 -- @src - Source binary string
 -- @s - Start index of little endian double
-local function rd_dbl_le(src, s) return rd_dbl_basic(string.byte(src, s, s + 7)) end
 local function rd_dbl_le(src, s) return love.data.unpack("<d", src, s) end
 
 -- double rd_dbl_be(string src, int s)
 -- @src - Source binary string
 -- @s - Start index of big endian double
 local function rd_dbl_be(src, s)
-	local f1, f2, f3, f4, f5, f6, f7, f8 = string.byte(src, s, s + 7) -- same
-	return rd_dbl_basic(f8, f7, f6, f5, f4, f3, f2, f1)
+	return love.data.unpack(">d", src, s)
 end
 
 -- to avoid nested ifs in deserializing
@@ -1207,9 +1171,14 @@ local function run_lua_func(vararg, memory, code, subs, pc, state, env, upvals)
 				local A = inst.A
 				local base = A + 3
 
-				local vals = {memory[A](memory[A + 1], memory[A + 2])}
+				--local vals = {memory[A](memory[A + 1], memory[A + 2])}
 
-				table.move(vals, 1, inst.C, base, memory)
+				--table.move(vals, 1, inst.C, base, memory)
+				
+				local vals_a, vals_b = memory[A](memory[A + 1], memory[A + 2])
+				
+				memory[base] = vals_a
+				memory[base + 1] = vals_b
 
 				if memory[base] ~= nil then
 					memory[A + 2] = memory[base]
