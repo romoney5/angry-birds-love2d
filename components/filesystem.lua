@@ -3,6 +3,29 @@
 --cache decrypted files in the save directory to speed up loading dramatically
 local ALLOW_LUA_CACHE = true
 
+--load a dll/so library, looks in multiple paths
+--returns success, result
+function loadLibrary(paths)
+	--not even ffi is present?
+	if not jit then
+		return false, "LuaJIT FFI is not present"
+	end
+	
+	local errors = ""
+	
+	for i, v in ipairs(paths) do
+		local success, result = pcall(ffi.load, v)
+		
+		if not success then
+			errors = errors..result.."\n"
+		else
+			return success, result
+		end
+	end
+	
+	return false, errors
+end
+
 --replace a missing filename due to case sensitivity
 function findCaseInsensitive(dir)
 	local dir, paths = resolvePath(dir)

@@ -1,12 +1,13 @@
 --magic
 
---not even ffi is present?
-if not jit then return end
-
-_, libcrypto = pcall(ffi.load, "libcrypto")
+local success, libcrypto = loadLibrary{"libcrypto"}
 
 --doesn't have a dll for libcrypto
-if not libcrypto then return end
+if not success then
+	print("libcrypto not found; encrypted files will not load.")
+
+	return
+end
 
 local AES = {}
 
