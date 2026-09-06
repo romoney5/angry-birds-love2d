@@ -796,16 +796,16 @@ function gamelua.drawScreenParticlesWithId(particles, bool, number)
 	return
 end
 
-g_iap_item_info = {}
+gamelua.g_iap_item_info = {}
 
 function gamelua.getProductWithIapId(id)
 	local type = "specialOffer"
-	return {price = {coins = math.random() * 100}, purchaseType = "coins", amount = 0}, type--nil
+	return {price = {coins = math.random() * 100}, purchaseType = "coins", amount = 1}, type--nil
 end
 
-setmetatable(g_iap_item_info, {
+setmetatable(gamelua.g_iap_item_info, {
 	__index = function(self, k)
-		return getProductWithIapId(id)
+		return gamelua.getProductWithIapId(id)
 	end
 })
 
@@ -1181,7 +1181,7 @@ function NativeCloudAssets.isPackAccessible()--?
 	return false
 end
 
-setThemeWithCrossFade = setTheme
+gamelua.setThemeWithCrossFade = gamelua.setTheme
 
 
 --1.5.1

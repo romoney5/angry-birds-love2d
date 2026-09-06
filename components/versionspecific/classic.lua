@@ -378,7 +378,7 @@ function CloudSync.removeSyncableSettings(settings)
 end
 
 
-function setNotificationsEnabled(enabled)
+function gamelua.setNotificationsEnabled(enabled)
 	return
 end
 
@@ -584,15 +584,15 @@ function gamelua.setObjectBodyDynamic(name)
 end
 
 function toggleZoom(a, b)--?
-	wantedZoomLevel = a
+	gamelua.wantedZoomLevel = a
 end
 
 function toggleZoom_GameLua(a, b)--?
-	wantedZoomLevel = a
+	gamelua.wantedZoomLevel = a
 end
 
 function toggleZoom2(a, b)--?
-	wantedZoomLevel = a
+	gamelua.wantedZoomLevel = a
 end
 
 --used for the slingshot camera
@@ -1000,12 +1000,12 @@ function setShaderToGameObject()--?
 end
 
 
-newPlayerRules = {}
+gamelua.newPlayerRules = {}
 
-IGCKeyNames = {} --ipairs
+gamelua.IGCKeyNames = {} --ipairs
 
 --loaded from a file?
-remoteConfigTable = {
+gamelua.remoteConfigTable = {
 	VariousRules = {
 		unlimitedTickets = false,
 	},
@@ -1020,12 +1020,12 @@ remoteConfigTable = {
 	},
 }
 
-EmblemConfig = {}
+gamelua.EmblemConfig = {}
 
 
-ShopLayoutTable = {}
+gamelua.ShopLayoutTable = {}
 
-ShopLayoutTable.sub_layouts = {}
+gamelua.ShopLayoutTable.sub_layouts = {}
 
 
 native.SpecialOffer = {}

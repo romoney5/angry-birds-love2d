@@ -273,9 +273,6 @@ function gamelua.loadLuaFileToObject(filename, ctx, key, lenient)
 						return self
 					elseif k == "gamelua" then
 						return gamelua
-					--hack for libao
-					--elseif k == "loadAssets" then
-						--return loadAssets
 					end
 				end,
 				__newindex = function(self, k, v)

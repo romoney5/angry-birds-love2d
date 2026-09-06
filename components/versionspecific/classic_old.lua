@@ -17,11 +17,11 @@ function gamelua.logFlurryTimerEvent(text)
 end
 
 
-function isMouseCaptured()
+function gamelua.isMouseCaptured()
 	return true
 end
 
-function captureMouse(bool)
+function gamelua.captureMouse(bool)
 	return
 end
 
@@ -47,15 +47,15 @@ function gamelua.checkMainMenuAd(url)
 	return
 end
 
-function native_requestBannerAd()
+function gamelua.native_requestBannerAd()
 	return
 end
 
-function native_requestExpandableAd()
+function gamelua.native_requestExpandableAd()
 	return
 end
 
-function native_requestInterstitialAd()
+function gamelua.native_requestInterstitialAd()
 	print("native_requestInterstitialAd() called")
 end
 
@@ -77,25 +77,25 @@ end
 
 --hatchery, in-between 1.6.3 and 2.0.0
 
-function requestCurrentTimeOnServer()
+function gamelua.requestCurrentTimeOnServer()
 	return
 end
 
-function hasLocationCapability()
+function gamelua.hasLocationCapability()
 	return false
 end
 
-function wasKeyReleased(key)
+function gamelua.wasKeyReleased(key)
 	return keyReleased[key]
 end
 
 --1.7.0
 
-function initGameCenter()
+function gamelua.initGameCenter()
 	return
 end
 
-function showLeaderboards()
+function gamelua.showLeaderboards()
 	return
 end
 
@@ -130,37 +130,37 @@ function gamelua.removeAllNotifications()
 end
 
 --crystal
-function isCrystalUIShowing()
+function gamelua.isCrystalUIShowing()
 	return false
 end
 
-function activateCrystalUI()
+function gamelua.activateCrystalUI()
 	return
 end
 
-function deactivateCrystalUI()
+function gamelua.deactivateCrystalUI()
 	return
 end
 
-function showCrystalSplash()
+function gamelua.showCrystalSplash()
 	return
 end
 
-function userEnabledCrystal()
+function gamelua.userEnabledCrystal()
 	return true
 end
 
-function activateCrystalUIAtProfile()
+function gamelua.activateCrystalUIAtProfile()
 	return
 end
 
-function unlockAchievement(id, desc)
+function gamelua.unlockAchievement(id, desc)
 	return
 end
 
 
 --2.2.0 registration
 
-function verifyDeviceID(hwid)
+function gamelua.verifyDeviceID(hwid)
 	return true
 end

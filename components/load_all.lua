@@ -9,10 +9,10 @@ local chunk = love.filesystem.load(compsPath.."/filesystem.lua")		--filesystem f
 chunk()
 
 --extra libraries
-pcall(require, "table.clear")                               --clear key* tables instead of remaking them
+pcall(require, "table.clear")                               --clear key tables instead of remaking them
 pcall(require, "table.new")                                 --allocate a table
-_, ffi = pcall(require, "ffi")                              --luajit ffi
-_, utf8 = pcall(require, "utf8")							--utf8 library, now required for utf8 text
+has_ffi, ffi = pcall(require, "ffi")                        --luajit ffi
+has_utf8, utf8 = pcall(require, "utf8")						--utf8 library, now required for utf8 text
 
 local runLuaFile = gamelua.runLuaFile
 
@@ -21,14 +21,13 @@ loadbytecode	= runLuaFile(compsPath.."/libs/fione.lua")	--run lua 5.1 bytecode i
 json			= runLuaFile(compsPath.."/libs/json.lua")	--json support for modern seasons versions
 AES				= runLuaFile(compsPath.."/libs/aes.lua")	--aes-256-cbc decryption powered by none other than luajit ffi
 fetch			= _G.require("components.libs.fetch")
-_ = nil --really weird hack
 
---debug
+--debugging features
 runLuaFile(compsPath.."/debugging/console.lua")				--debug console
-runLuaFile(compsPath.."/debugging/collisions.lua")			--debug collisions
+runLuaFile(compsPath.."/debugging/collisions.lua")			--debug collision log
 runLuaFile(compsPath.."/debugging/speed_up.lua")			--debug speed-up with shift+a
 
---readers for proprietary formats
+--readers for proprietary data formats
 runLuaFile(compsPath.."/data/formats/pvr.lua")				--pvr image format
 
 runLuaFile(compsPath.."/data/formats/ka3d_sprt.lua")		--spritesheet format
@@ -38,14 +37,14 @@ runLuaFile(compsPath.."/data/formats/ka3d_text.lua")		--localization format
 runLuaFile(compsPath.."/data/data_readers.lua")				--functions for reading dat formats
 runLuaFile(compsPath.."/data/read.lua")						--general reader for dat files
 
---_G.res
+--_G.res library and related frontend (graphics, audio, etc.) functions
 runLuaFile(compsPath.."/resources/res.lua")					--initialize res. (resources) library
 runLuaFile(compsPath.."/resources/graphics.lua")			--graphics functions
 runLuaFile(compsPath.."/resources/audio.lua")				--audio functions
 runLuaFile(compsPath.."/resources/localization.lua")		--localization/text group functions
 runLuaFile(compsPath.."/resources/font.lua")				--font/text functions
 
---physics
+--everything related to physics and levels
 runLuaFile(compsPath.."/physics/create_objects.lua")		--create box, circle, polygon, etc. box2d objects
 runLuaFile(compsPath.."/physics/level.lua")					--level saving/loading, world functions, trajectory
 runLuaFile(compsPath.."/physics/objects_collisions.lua")	--object functions, damage system

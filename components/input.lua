@@ -7,13 +7,18 @@ gamelua.touches = {}
 gamelua.touchcount = 0
 
 gamelua.cursor = {x = 0, y = 0, wheel = 0, wheelTriggered = false, dx = 0, dy = 0}
-multitouchZoom = {zoomCoolingTime = 0}
-multitouchSweep = {isSweepping = false}
 maxWorldScale = 0
 
-gamelua.keyPressed = {}
-gamelua.keyReleased = {}
-gamelua.keyHold = {}
+--key table accesses default to false
+local key_meta = {
+	__index = function(self, k)
+		return false
+	end,
+}
+
+gamelua.keyPressed = setmetatable({}, key_meta)
+gamelua.keyReleased = setmetatable({}, key_meta)
+gamelua.keyHold = setmetatable({}, key_meta)
 
 --convenience
 cursor = gamelua.cursor
@@ -21,26 +26,23 @@ keyPressed = gamelua.keyPressed
 keyReleased = gamelua.keyReleased
 keyHold = gamelua.keyHold
 
---editor-specific patch
---TODO: give these a metatable where nil accesses default to false
-keyHold["CONTROL"] = false
-keyHold["SHIFT"] = false
-
+local key_mapping = {
+	lshift = "shift",
+	lctrl = "control",
+}
 
 function love.keypressed(key)
-	if key == "lshift" then key = "shift" end
-	if key == "lctrl" then key = "control" end
+	key = (key_mapping[key] or key):upper()
 
-	keyPressed[string.upper(key)] = true
-	keyHold[string.upper(key)] = true
+	keyPressed[key] = true
+	keyHold[key] = true
 end
 
 function love.keyreleased(key, scancode)
-	if key == "lshift" then key = "shift" end
-	if key == "lctrl" then key = "control" end
+	key = (key_mapping[key] or key):upper()
 
-	keyReleased[string.upper(key)] = true
-	keyHold[string.upper(key)] = false
+	keyReleased[key] = true
+	keyHold[key] = false
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
@@ -147,7 +149,7 @@ function updateMouse(dt)
 		or debugOpen or openPopups[1] ~= nil or something.on)
 end
 
-local prevTouches
+local prevTouches = {}
 
 function updateTouch()
 	local mttouches = love.touch.getTouches()
@@ -170,15 +172,20 @@ function updateTouch()
 	gamelua.touchcount = #gamelua.touches
 	
 	--update pinch to zoom
+	local touches = gamelua.touches
+	
 	if touches and prevTouches and #touches == 2 and #prevTouches == 2 then
 		local dist = math.sqrt((touches[1].x - touches[2].x) ^ 2 + (touches[1].y - touches[2].y) ^ 2)
 		local prevdist = math.sqrt((prevTouches[1].x - prevTouches[2].x) ^ 2 + (prevTouches[1].y - prevTouches[2].y) ^ 2)
-		zoomLevel = zoomLevel + (dist - prevdist) / 16 / 28
-		wantedZoomLevel = zoomLevel
+		gamelua.zoomLevel = gamelua.zoomLevel + (dist - prevdist) / 16 / 28
+		gamelua.wantedZoomLevel = gamelua.zoomLevel
 	end
 	
-	--TODO: it do'nesn't work
-	prevTouches = touches
+	table.clear(prevTouches)
+	
+	for i, v in ipairs(gamelua.touches) do
+		prevTouches[i] = v
+	end
 end
 
 function love.wheelmoved(x, y)
@@ -187,7 +194,7 @@ function love.wheelmoved(x, y)
 	cursor.wheel = y
 
 	-- zoomLevel = zoomLevel + y/16
-	wantedZoomLevel = wantedZoomLevel + y / 16
+	gamelua.wantedZoomLevel = gamelua.wantedZoomLevel + y / 16
 
 	-- if zoomLevel > 1.5 then zoomLevel = 1.5 end
 	-- if wantedZoomLevel > 1.5 then wantedZoomLevel = 1.5 end

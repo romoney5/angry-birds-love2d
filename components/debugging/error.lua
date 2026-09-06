@@ -103,7 +103,7 @@ function love.errorhandler(msg)
 		
 		local pos = 40
 		lgClear(love.graphics.getBackgroundColor())
-		screenHeight = love.graphics.getHeight()
+		gamelua.screenHeight = love.graphics.getHeight()
 		-- love.graphics.printf(p, pos, pos, love.graphics.getWidth() - pos)
 		updateDisplayScale()
 		local scale = displayScale
@@ -113,7 +113,7 @@ function love.errorhandler(msg)
 			res.useFont(fontBasic or "FONT_BASIC")
 			-- res.useFont("FONT_MENU") --most newer games don't have letters in FONT_MENU
 			love.graphics.setColor(0, 0, 0, .2)
-			gamelua.clipText("", p, (screenWidth - pos * 2))
+			gamelua.clipText("", p, (gamelua.screenWidth - pos * 2))
 			
 			local text = gamelua.clippedText and table.concat(gamelua.clippedText.lines, "\n") or p
 			
@@ -134,8 +134,8 @@ function love.errorhandler(msg)
 		
 		local cx, cy = cursor.x, cursor.y
 		pcall(function()
-			screenWidth = math.floor(love.graphics.getWidth() / displayScale)
-			screenHeight = math.floor(love.graphics.getHeight() / displayScale)
+			gamelua.screenWidth = math.floor(love.graphics.getWidth() / displayScale)
+			gamelua.screenHeight = math.floor(love.graphics.getHeight() / displayScale)
 			cursor.x, cursor.y = love.mouse.getPosition()
 			cursor.x = cursor.x / displayScale
 			cursor.y = cursor.y / displayScale

@@ -18,6 +18,9 @@ function LevelParticlesManager.firstFrame()
 		return
 	end
 	
+	local screenWidth, screenHeight = gamelua.screenWidth, gamelua.screenHeight
+	local screen = gamelua.screen --TODO: remove
+	
 	weatherParticles.particles = levelParticles.particles
 	weatherParticles.looping = particle.looping
 	weatherParticles.isCloudEmitter = particle.isCloudEmitter

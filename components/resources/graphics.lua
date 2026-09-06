@@ -20,10 +20,12 @@ end
 --quite literally used everywhere
 function gamelua.setRenderState(x, y, xs, ys, angle, xp, yp, alpha)
 	love.graphics.origin()
-	if pivotDebug then love.graphics.translate(screenWidth - screenWidth * .75, screenHeight - screenHeight * .75) end
+	if pivotDebug then
+		love.graphics.translate(gamelua.screenWidth - gamelua.screenWidth * .75, gamelua.screenHeight - gamelua.screenHeight * .75)
+		love.graphics.scale(1 / 2)
+	end
 	love.graphics.scale(xs, ys)
 	love.graphics.scale(displayScale)
-	if pivotDebug then love.graphics.scale(1 / 2) end
 	love.graphics.translate(x, y)
 
 	drawangle = angle or 0
@@ -180,7 +182,10 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, width, height)
 			image.quad,			--quad
 			0, 0)
 		
-		if pivotDebug then res.drawString("", tostring(vanchor).." "..tostring(hanchor).."\n"..tostring(image.px)..","..tostring(image.py).."\n"..tostring(drawxp)..","..tostring(drawyp).."\n"..tostring(x)..","..tostring(y), 0, 0) end
+		if pivotDebug then
+			res.useFont(nil)
+			res.drawString("", tostring(vanchor).." "..tostring(hanchor).."\n"..tostring(image.px)..","..tostring(image.py).."\n"..tostring(drawxp)..","..tostring(drawyp).."\n"..tostring(x)..","..tostring(y), 0, 0)
+		end
 		
 		love.graphics.pop()
 	elseif image and image.items then --composprite used in later versions

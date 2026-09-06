@@ -252,25 +252,11 @@ function loadGameFiles()
 		autoScale = 720
 	end
 
-	--4.0.0 hack
-	--TODO: consider killing this after 4.0.0 starts working
-	if RovioAnalytics and RovioAnalytics.logEvent then
-		function RovioAnalytics.logEvent(id, params)
-			return
-		end
-	end
-
-	if Analytics and Analytics.logEvent then
-		function Analytics.logEvent(id, params)
-			return
-		end
-	end
-
 	if gamelua.createStartUpAssets then gamelua.createStartUpAssets() end
 	if gamelua.showSplashScreens then gamelua.showSplashScreens() end --kakao
 	if gamelua.updateValues then gamelua.updateValues() end
 	
-	toggleZoom_GameLua = toggleZoom2
+	gamelua.toggleZoom_GameLua = toggleZoom2
 	
 	--windows builds don't use rovio account
 	if deviceModel == "windows" then

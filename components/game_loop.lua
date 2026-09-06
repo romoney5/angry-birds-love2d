@@ -3,8 +3,8 @@
 table.clear = table.clear or function(t) for i, v in pairs(t) do t[i] = nil end end
 
 local pausedaudios = {}
-zoomLevel = 0
-wantedZoomLevel = 0
+gamelua.zoomLevel = 0
+gamelua.wantedZoomLevel = 0
 local hasfocus = true
 
 prevCursor = {x = 0, y = 0}
@@ -110,7 +110,7 @@ function love.update(dt)
 			local m1 = collectgarbage("count")
 			
 			--update the game
-			if not keyHold.I then
+			if not gamelua.keyHold.I then
 				gamelua.update(dt2, dt2)
 			end
 
@@ -143,9 +143,9 @@ function love.update(dt)
 		
 		updatePhysics(dt)
 
-		zoomLevel = lerp(zoomLevel, wantedZoomLevel, dt * 8)
+		gamelua.zoomLevel = lerp(gamelua.zoomLevel, gamelua.wantedZoomLevel, dt * 8)
 		if currentGameMode ~= updateGame and currentGameMode ~= updateEditor then
-			wantedZoomLevel = 0
+			gamelua.wantedZoomLevel = 0
 		end
 
 		if debugOpen then
