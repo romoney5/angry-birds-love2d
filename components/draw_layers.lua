@@ -101,10 +101,10 @@ end
 function drawLayer(layer, yoffset)
 	local sprite = layer[2]
 	local relativeSpeed = layer[3] or 1
-	local relativeScale = layer[4] or 1.5
+	local relativeScale = layer[4] or 1 --.5
 	local isLooping = layer[5]
 	local startX = layer[6] or 0
-	local startY = layer[7] or 0
+	local startY = layer[7] or layer.yPos or 0
 	local scrollFrequency = layer.v or 0
 	
 	local time = love.timer.getTime()
@@ -180,14 +180,14 @@ end
 function gamelua.drawBackgroundNative(highGFX)
 	--seasons 5.1.0 made the theme variable into a table
 	local theme = gamelua.blockTable.themes[currentTheme] or currentTheme
-	if not (theme and type(theme) == "table" and theme.bgLayers) then return end
+	if not (theme and type(theme) == "table") then return end
 
 	if theme.color then
 		gamelua.setBGColor(theme.color.r, theme.color.g, theme.color.b)
 	end
 
 	if highGFX ~= false then
-		for layernum, layer in ipairs(theme.bgLayers) do
+		for layernum, layer in ipairs(theme.bgLayers or theme.layers) do
 			--theme rect colors
 			love.graphics.push("all")
 			if layercolors[layernum - 1] then
@@ -215,8 +215,8 @@ function gamelua.drawBackgroundNative(highGFX)
 end
 
 function gamelua.drawForegroundNative()
-	local theme = gamelua.blockTable.themes[currentTheme]
-	if not (theme and theme.fgLayers) then return end
+	local theme = gamelua.blockTable.themes[currentTheme] or currentTheme
+	if not (theme and type(theme) == "table") then return end
 	
 	local screenLeft = renderLeft or screen.left
 	local screenTop = renderTop or screen.top
@@ -228,24 +228,13 @@ function gamelua.drawForegroundNative()
 	local fgLayers = theme.fgLayers
 	local ground_num = 1
 
-	--hack(?) for bad piggies
-	if theme.effects then
-		for i, v in ipairs(theme.effects) do
-			if v.type == "Waves" then
-				--check that all sprites are valid?
-				ground_num = v.params.water_layer.index
-				break
-			end
-		end
-	end
-
 	for layernum, layer in ipairs(fgLayers) do
-		if layernum == ground_num then
+		if layernum == ground_num and theme.groundColor then
 			local _, ground_h = res.getSpriteBounds(fgLayers[ground_num][1], fgLayers[ground_num][2])
 			local _, ground_py = res.getSpritePivot(fgLayers[ground_num][1], fgLayers[ground_num][2])
 			local startY = fgLayers[ground_num][7] or 0
 			
-			local scale = fgLayers[ground_num][4] or 1.5
+			local scale = fgLayers[ground_num][4] or 1 --.5
 			local rect_x = 0
 			local rect_y = (-screenTop + startY - (cameraShakeY or 0) + (ground_h - ground_py) * scale) * s
 			rect_y = rect_y + (yoffsets[#fgLayers - 1] or 0) * s
@@ -417,6 +406,8 @@ end
 function drawObject(v)
 	if v.visible == false then return end
 	
+	love.graphics.push("all")
+	
 	local x, y
 	if v.position then
 		x, y = v.position.x, v.position.y
@@ -451,6 +442,8 @@ function drawObject(v)
 	end
 
 	drawangle = 0
+	
+	love.graphics.pop()
 end
 --massive thanks halo
 function gamelua.addToTrajectory(index, x, y)

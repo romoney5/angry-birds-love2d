@@ -153,7 +153,7 @@ function gamelua.drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_sca
 	gamelua.setRenderState(0, 0, 1, 1)
 	
 	love.graphics.setColor(1 * alpha, 1 * alpha, 1 * alpha, alpha)
-	love.graphics.translate(textFloor(self.x * hs + x), textFloor(self.y * hs + y))
+	love.graphics.translate(textFloor((self.x or 0) * hs + x), textFloor((self.y or 0) * hs + y))
 
 	--spans multiple lines
 	if self.clipped then

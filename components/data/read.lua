@@ -16,16 +16,19 @@ function getDatInfo(fileData, fn, fallback)
 		skip(string.len(head) + 4)
 		format = readString(fileData, pos, 4)
 		skip(4 + 2 + 4)
-	else --ancient dat format missing all of the ka3d header (seems to hopefully only be used for sprites) (it's also used by fonts in 1.0)
+	else --ancient dat format missing all of the ka3d header
 		format = fallback
 	end
 
-	if format == "SPRT" and fn:sub(1, 5) ~= "FONT_" and fn:sub(1, 6) ~= "TEXTS_" then --spritesheet
+	if format == "SPRT" then --spritesheet
 		data = readSprt(fileData)
 	elseif format == "COMP" then --composprites
 		data = readComp(fileData, head, version)
 	elseif format == "FONT" then --font
-		data = readFont(fileData)
+		--ab kakao fonts can fail to load
+		local success, result = pcall(readFont, fileData)
+		
+		data = success and result
 	elseif format == "TEXT" then --localization (by far the hardest one)
 		data = readText(fileData, head)
 	end

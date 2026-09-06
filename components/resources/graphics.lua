@@ -86,9 +86,11 @@ function res.drawCompoSprite(...)
 				love.graphics.setColor(r * alpha, g * alpha, b * alpha, a * alpha)
 				
 				love.graphics.translate(x, y)
-				love.graphics.translate(xpr, ypr)
-				love.graphics.rotate(drawangle)
 				love.graphics.translate(-xpr, -ypr)
+				--love.graphics.translate(xpr, ypr)
+				love.graphics.rotate(drawangle)
+				love.graphics.rotate(math.rad(v.a or 0))
+				love.graphics.scale(v.sx or 1, v.sy or 1)
 				-- move parts by their offset and pivot point.
 				love.graphics.translate(v.x - sprite.px, v.y - sprite.py)
 				--love.graphics.scale(wm, hm)
@@ -200,13 +202,16 @@ function gamelua.drawSpriteTinted(sprite, x, y, vanchor, hanchor, r, g, b, a)
 	love.graphics.pop()
 end
 
---TODO: i cannot get the color blending to be accurate to 5.1.0
-function gamelua.drawSpriteColoured(sprite, x, y, scaleX, scaleY, r, g, b, a, darken)
+--TODO: the color blending is still inaccurate to seasons;
+--it's supposed to make images brighter rather than increase the contrast
+function gamelua.drawSpriteColoured(sprite, x, y, scaleX, scaleY, r, g, b, a, multiplicative)
 	love.graphics.push("all")
 	gamelua.setRenderState(0, 0)
-	love.graphics.setBlendMode("add", "premultiplied")
+	love.graphics.setBlendMode(multiplicative == "multiplicative" and "multiply" or "add", "premultiplied")
+	--love.graphics.setBlendMode(multiplicative == "multiplicative" and "multiply" or "add")
+	a = a * 1.41
 	love.graphics.setColor(r * a, g * a, b * a, a)
-	-- love.graphics.setColor(r, g, b, a)
+	--love.graphics.setColor(r, g, b, a)
 	--setRenderState(rx, ry, rsx * scaleX, rsy * scaleY, drawangle, drawxp, drawyp, alpha)
 	local image = checkSprite(sprite)
 	
@@ -247,9 +252,15 @@ end
 
 function gamelua.drawRect(r, g, b, a, x, y, w, h, inWorld)
 	love.graphics.push("all")
+
 	if not inWorld then --if the rect is not supposed to be drawn in world space
-		love.graphics.origin()
-		love.graphics.scale(displayScale)
+		gamelua.setRenderState(0, 0, 1, 1)
+	end
+	
+	--ab classic shop uses an alpha value higher than 1
+	--for whatever reason
+	if r > 1 or g > 1 or b > 1 or a > 1 then
+		r, g, b, a = r / 255, g / 255, b / 255, a / 255
 	end
 
 	love.graphics.setBlendMode("alpha", "alphamultiply")
@@ -390,6 +401,7 @@ end
 local function releaseSheet(sheet, usecomposprites)
 	local cache = usecomposprites and cachedcs or cachedimgs
 	local lsheet = loadedSheets[sheet]
+	
 	if not lsheet then return end --just ignore it if it's already unloaded
 	
 	for i, sprite in ipairs(lsheet.sprites) do
@@ -478,8 +490,8 @@ local function loadSheet(sheet, usecomposprites)
 				info.compos[compo.name] = {}
 				
 				for i, sprite in ipairs(compo.sprites) do
-					local scaleX = tonumber(sprite.scale or 1) or sprite.scale[1]
-					local scaleY = tonumber(sprite.scale or 1) or sprite.scale[2]
+					local scaleX = tonumber(sprite.scale or 1) or sprite.scale[1] or 1
+					local scaleY = tonumber(sprite.scale or 1) or sprite.scale[2] or 1
 					
 					--insert at the start
 					table.insert(info.compos[compo.name], 1, {
@@ -488,7 +500,7 @@ local function loadSheet(sheet, usecomposprites)
 						y = sprite.y,
 						sx = scaleX,
 						sy = scaleY,
-						a = sprite.angle,
+						a = sprite.angle or 0,
 						flip = {x = false, y = false},
 						n = sprite.name
 					})
@@ -511,8 +523,11 @@ local function loadSheet(sheet, usecomposprites)
 			for ii, vv in ipairs(v) do
 				local sprite = cachedimgs[vv.n]
 				if sprite then
-					local sx0, sx1 = vv.x - sprite.px, vv.x + sprite.width - sprite.px
-					local sy0, sy1 = vv.y - sprite.py, vv.y + sprite.height - sprite.py
+					local sx = vv.sx or 1
+					local sy = vv.sy or 1
+					
+					local sx0, sx1 = vv.x - sprite.px * sx, vv.x + sprite.width * sx - sprite.px * sx
+					local sy0, sy1 = vv.y - sprite.py * sy, vv.y + sprite.height * sy - sprite.py * sy
 
 					--get bounds
 					x0, x1 = math.min(x0 or sx0, sx0), math.max(x1 or sx1, sx1)
@@ -535,8 +550,6 @@ local function loadSheet(sheet, usecomposprites)
 		end
 	elseif not usecomposprites and info.sprites and info.filename then
 		local filename = table.concat(paths, "/", 1, #paths - 1).."/"..info.filename
-		
-		local extensionlength = 4
 
 		local lsheet = loadedSheets[sheet]
 
@@ -581,7 +594,6 @@ local function loadSheet(sheet, usecomposprites)
 		end
 
 		if endsWith(filename, ".pvr") then
-			extensionlength = 4
 			--most angry birds pvrs are usually listed as "R4 G4 B4 A4 UNorm Linear" under pvrtextool, so 16bpp
 			--the file size also lines up, width x height x 2 (bytes per pixel) + 52 bytes of headers = filesize
 			--the headers and formats differ however
@@ -600,8 +612,6 @@ local function loadSheet(sheet, usecomposprites)
 			end
 		--TODO: remove this check when love 12 releases
 		elseif endsWith(filename, ".webp") and not isLove12 then
-			extensionlength = 5
-
 			lsheet.sheet = love.graphics.newImage(love.image.newImageData(1, 1, nil, nil))
 		elseif endsWith(filename, ".stream") or endsWith(filename, ".stream.7z") or endsWith(filename, ".stream.zip") then
 			--TODO: another file
@@ -633,7 +643,8 @@ local function loadSheet(sheet, usecomposprites)
 			lsheet.sheet = love.graphics.newImage(filename)
 		end
 		
-		pngMapping[info.filename:sub(1, -extensionlength - 1)] = sheet --filename is the index for easy finding in drawGameNative
+		--modified from https://stackoverflow.com/questions/77810553/remove-both-path-and-extension-from-string-in-lua
+		pngMapping[info.filename:match("^(.+)%.")] = sheet --filename is the index for easy finding in drawGameNative
 
 		for i, spr in pairs(info.sprites) do
 			local sheet = spr.sheet or lsheet.sheet

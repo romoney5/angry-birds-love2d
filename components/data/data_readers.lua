@@ -17,7 +17,7 @@ end
 
 --used by rvio composprites
 function readFloat(data, index)
-	return love.data.unpack("<f", data, index)
+	return love.data.unpack(">f", data, index)
 end
 
 --used by rvio composprites

@@ -16,8 +16,12 @@ end
 function gamelua.createDynamicHandler(name)
 	local handler = {}
 	local requirements = {}
+	
+	--selectAssetProfile and Profiles.selectAssetProfile are actually found in the binary
+	--right next to other dynamic handler strings in fact
 	local selectAssetProfile = gamelua.selectAssetProfile or (_G.platform and _G.platform.Profiles and _G.platform.Profiles.selectAssetProfile)
 
+	--ONLY seasons 4.2.0 uses neatLoadlist
 	local loadlists = {loadlist = {}, neatLoadlist = {}}
 	local loadlistNames = {"loadlist", "neatLoadlist"}
 
@@ -26,8 +30,10 @@ function gamelua.createDynamicHandler(name)
 	
 	local graphics_stats = {} --for love.graphics.getStats()
 	
+	--loads spritesheets from a table
 	--TODO: queue and asset freeing
 	local function loadFromLoadlist(list, profile, group)
+		print("loadFromLoadlist():", profile, group)
 		for _, asset in ipairs(list[group]) do
 			if asset[2] ~= 1 then
 				res.createSpriteSheet(gamelua.imagePath.."/"..profile.."/"..asset[1])
@@ -41,52 +47,46 @@ function gamelua.createDynamicHandler(name)
 		if requirements[group] then
 			for i, v in pairs(requirements[group]) do
 				local profile = selectAssetProfile(v)
-				-- print("pr", v, profile)
-				if endsWith(profile, "_cloud") then
-					profile = profile:sub(1, #profile - 6)
-				end
 				
-				for i, list in ipairs(loadlistNames) do
-					if not loadlists[list][profile] then
-						gamelua.loadLuaFile(gamelua.imagePath.."/"..profile.."/"..list..".lua")
+				for i, list_name in ipairs(loadlistNames) do
+					if not loadlists[list_name][profile] then
+						gamelua.loadLuaFile(gamelua.imagePath.."/"..profile.."/"..list_name..".lua")
 
-						--json loadlists
-						if love.filesystem.exists(gamelua.imagePath.."/"..profile.."/"..list..".json") then
-							gamelua.assetLoadList = gamelua.assetLoadList or {}
-							for profileName, profileValue in pairs(readJSONToLuaTable(gamelua.imagePath.."/"..profile.."/"..list..".json")) do
-								for groupName, groupValue in pairs(profileValue) do
-									assetLoadList[profile][groupName] = gamelua.assetLoadList[profile][groupName] or {}
-									for i, v in pairs(groupValue) do
-										table.insert(gamelua.assetLoadList[profile][groupName], {v.filename, v.type})
-									end
-								end
-							end
+						if gamelua.assetLoadList then
+							loadlists[list_name][profile] = gamelua.assetLoadList[profile]
 						end
-
-						if not gamelua.assetLoadList then break end
-
-						loadlists[list][profile] = gamelua.assetLoadList[profile]
 					end
 
-					local dat = loadlists[list] and loadlists[list][profile]
+					local dat = loadlists[list_name] and loadlists[list_name][profile]
+					
 					if dat and dat[v] then
-						-- print("yes", profile, v)
 						loadFromLoadlist(dat, profile, v)
 
-						if dat.INGAME then
+						if not ingameLoadlist and dat.INGAME then
 							ingameLoadlist = dat
 							ingameProfile = profile
+							--print("handler.load(): ingame is "..tostring(ingameLoadlist))
 						end
-					-- else
-					-- 	print("no", profile, v)
 					end
 				end
 			end
 		end
 	end
 	
+	--[[e.g. [1] = {
+		["theme27"] = {
+			"THEME_CHERRY",
+		},
+		["theme16"] = {
+			"THEME_HALLOWEEN",
+		},
+		["theme28"] = {
+			"THEME_MOVIE",
+		},
+	]]
 	function handler.addreq(...)
-		print("addreq:")
+		print("handler.addreq: ".."{\n"..serializeTable{...}.."}")
+		
 		for i, v in pairs{...} do
 			if type(v) == "table" then
 				for i, v in pairs(v) do
@@ -94,55 +94,59 @@ function gamelua.createDynamicHandler(name)
 				end
 			end
 		end
-		for i, v in pairs{...} do
-			if type(v) == "table" then
-				print(i..":")
-				for i, v in pairs(v) do
-					if type(v) == "table" then
-						print("", i..":")
-						for i, v in pairs(v) do
-							print("", "", i, v)
-						end
-					else
-						print("", i, v)
-					end
-				end
-			else
-				print(v)
-			end
-		end
+		
 		return
 	end
 	
 	function handler.getRequirements(...)
-		print("handler.getRequirements:", ...)
-		return {} 
+		print("handler.getRequirements: ".."{\n"..serializeTable{...}.."}")
+		return requirements
     end
 	
-	function handler:delayrelease(...) end
+	function handler.delayrelease(...)
+		print("handler.delayrelease: ".."{\n"..serializeTable{...}.."}")
+	end
 
 	function handler.load(...)
-		print("handler.load:", ...)
+		print("handler.load: ".."{\n"..serializeTable{...}.."}")
+		
 		for i, v in pairs{...} do
 			if type(v) == "table" then
-				for i, v in pairs(v) do
-					load(v)
+				for ii, vv in pairs(v) do
+					print("DYNAMIC: loading "..i.."/"..vv)
+					load(vv)
 				end
 			else
+				print("DYNAMIC: loading "..v)
 				load(v)
 			end
 		end
 	end
-	function handler.release(...) end
-	function handler.isLoaded(...) return true end
+	function handler.release(...)
+		print("handler.release:", ...)
+	end
+	function handler.isLoaded(...)
+		print("handler.isLoaded:", ...)
+		return true
+	end
 	
+	--used in editor
+	function handler.loadAllThemes()
+		print("handler.loadAllThemes")
+		return
+	end
+	
+	--this is supposed to load certain block sprites from a table
+	--but how do you do that?
 	function handler.loadInGame(sprites, theme)--?
-		-- handler.load{"ingame"}
+		print("handler.loadInGame: ".."{\n"..serializeTable{sprites, theme}.."}")
+		--handler.load{"ingame"}
 		-- error()
 		loadFromLoadlist(ingameLoadlist, ingameProfile, "INGAME")
 	end
 	
 	function handler.enterIngame(a, theme)
+		print("handler.enterIngame:", a, theme)
 		return
 	end
 
@@ -157,7 +161,7 @@ function gamelua.createDynamicHandler(name)
 
 	--4.3.2
 	function handler.cacheProfiles(...)
-		print("cacheProfiles:")
+		print("handler.cacheProfiles: ".."{\n"..serializeTable{...}.."}")
 		for i, v in pairs{...} do
 			if type(v) == "table" then
 				print(i..":")
@@ -191,20 +195,28 @@ function gamelua.createDynamicHandler(name)
 	
 	--5.1.0
 	function handler.loadAsset(asset, _)
+		print("handler.loadAsset:", asset, _)
 		return
 	end
 
 	--5.2.5
-	function handler.isLoadgroupLoaded()--?
+	function handler.isLoadgroupLoaded(...)--?
+		print("handler.isLoadgroupLoaded:", ...)
 		return true --trust
 	end
 
 	--5.3.1
-	function handler.loadAssets()--?
+	function handler.loadAssets(...)--?
+		print("handler.loadAssets:", ...)
 		return
 	end
 	
-	function handler.queueload()--?
+	function handler.queueload(...)--?
+		print("handler.queueload: ".."{\n"..serializeTable{...}.."}")
+		
+		--load the it
+		handler.load(...)
+		
 		return
 	end
 	

@@ -28,6 +28,7 @@ function readComp(fileData,head,version)
 											a = readFloat(fileData,pos+12),
 											flip = {x=readBool(fileData,pos+16),y=readBool(fileData,pos+17)},
 											n = spritename}
+				
 				skip(18)
 			end
 		end
