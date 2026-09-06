@@ -95,10 +95,13 @@ function res.playAudio(audio, volume, loop, track)
 
 		--if the audio loops it's likely that it should be streamed from disk
 		--wrap it in a pcall in case love throws a tantrum
-		if not pcall(function() cachedaudios[audio] = love.audio.newSource(audios[audio], loop and "stream" or "static") end) then
+		local success, result = pcall(love.audio.newSource, audios[audio], loop and "stream" or "static")
+		if not success then
 			cachedaudios[audio] = 0
-			print("Audio file \""..audios[audio].."\" could not be decoded.")
+			print("Audio file \""..audios[audio].."\" could not be decoded.\n"..tostring(result))
 			return
+		else
+			cachedaudios[audio] = result
 		end
 	end
 
