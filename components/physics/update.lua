@@ -1,11 +1,18 @@
 --update physics every frame
 
+local velocityIterations = 10
+local positionIterations = 10
+
+--seasons 5.4.0
+function gamelua.setPhysicsIterations(position, velocity)
+	velocityIterations = velocity
+	positionIterations = position
+end
+
 function solvePhysics(updateStep) -- WIP
 	local delta = math.floor(dt2 * 10000) / 10000
 	local timeStep = delta * (physicsTimeScale or 1)
 	timeStep = math.floor(timeStep * 10000) / 10000
-	local velocityIterations = 10
-	local positionIterations = 10
 	
 	if dt2 > 0.0 then
 		WorldSolve({

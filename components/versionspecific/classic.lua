@@ -1050,8 +1050,20 @@ function gamelua.setObjectColor(object, r, g, b, a)
 	end
 end
 
-function hasBody(object)
-	return objects.world[object] ~= nil
+function gamelua.resetObjectColor(object)
+	local obj = objects.world[object]
+	if obj then
+		local r, g, b, a = 255 / 255, 255 / 255, 255 / 255, 255 / 255
+		obj.colors = {r * a, g * a, b * a, a}
+	end
+end
+
+function gamelua.hasBody(object)
+	if objects.world[object] and objects.world[object].body then
+		return true
+	end
+
+	return false
 end
 
 native.luaRenderBuffer = {}

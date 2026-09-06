@@ -4,6 +4,7 @@ function gamelua.removeObject(name)
 
 	if obj and obj.body then
 		obj.body:destroy()
+		obj.body = nil
 	end
 	
 	gamelua.removeJoints()
@@ -44,14 +45,6 @@ function gamelua.setSleeping(object, dozing)
 	if objects.world[object].body then
 		objects.world[object].body:setAwake(not dozing)
 	end
-end
-
-function hasBody(object)
-	if objects.world[object].body then
-		return true
-	end
-
-	return false
 end
 
 function gamelua.setRotation(object, rotation)
@@ -314,6 +307,8 @@ function updateFriction(object, dt)
 
 	local body = object.body
 	
+	if not body then return end
+	
 	local friction = object.friction
 	local velX, velY = body:getLinearVelocity()
 	--[[
@@ -416,7 +411,7 @@ end
 
 function gamelua.setSensor(object,sensor)
 	local obj = objects.world[object]
-	if obj and obj.fixture then
+	if obj and obj.fixture and obj.body and obj.body:isActive() then
 		obj.sensor = sensor
 		obj.fixture:setSensor(sensor)
 	end
@@ -825,7 +820,7 @@ function bubbleBeginContact(obj1, obj2, contact)
 		removeObject(bubble.name)
 		objects.world[bubble.name] = nil
 	else --if not collider.controllable then -- does this have a condition?
-		deadBlocks[bubble.name] = bubble
+		gamelua.deadBlocks[bubble.name] = bubble
 	end
 end
 

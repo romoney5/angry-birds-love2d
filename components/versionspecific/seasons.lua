@@ -821,6 +821,21 @@ setmetatable(gamelua.g_iap_item_info, {
 	end
 })
 
+function gamelua.addFlashAnimation(definition, tag) --gameslogics
+	return
+end
+
+function gamelua.drawWorldParticlesWithId() --? --scripts_common/powerups/Powerup_Teleport.lua
+	return
+end
+
+
+--5.4.0
+
+function gamelua.hasCloudDirForPack(pack) --e.g. "specialOffer"
+	return false
+end
+
 
 --portals
 PortalObjectTeleporter = {}
@@ -1194,6 +1209,11 @@ function NativeCloudAssets.isPackAccessible()--?
 end
 
 gamelua.setThemeWithCrossFade = gamelua.setTheme
+
+--ipad, this might be in way earlier versions but ipad versions haven't really been checked until now
+function gamelua.postHighscore(leaderboardid, score, isLevelScore)
+	return
+end
 
 
 --1.5.1
