@@ -187,62 +187,6 @@ local OPCODE_M = {
 	{b = 'OpArgU', c = 'OpArgN'},
 }
 
--- int rd_int_basic(string src, int s, int e, int d)
--- @src - Source binary string
--- @s - Start index of a little endian integer
--- @e - End index of the integer
--- @d - Direction of the loop
-local function rd_int_basic(src, s, e, d)
-	local num = 0
-
-	-- if bb[l] > 127 then -- signed negative
-	-- 	num = num - 256 ^ l
-	-- 	bb[l] = bb[l] - 128
-	-- end
-
-	for i = s, e, d do
-		local mul = 256 ^ math.abs(i - s)
-
-		num = num + mul * string.byte(src, i, i)
-	end
-
-	return num
-end
-
--- double rd_dbl_basic(byte f1..8)
--- @f1..8 - The 8 bytes composing a little endian double
-local function rd_dbl_basic(f1, f2, f3, f4, f5, f6, f7, f8)
-	--use ffi to calculate if available
-	if ffi then
-		local buf = ffi.new("uint8_t[8]", {f1, f2, f3, f4, f5, f6, f7, f8})
-		return ffi.cast("double *", buf)[0]
-	end
-	
-	local sign = (-1) ^ bit.rshift(f8, 7)
-	local exp = bit.lshift(bit.band(f8, 0x7F), 4) + bit.rshift(f7, 4)
-	local frac = bit.band(f7, 0x0F) * 2 ^ 48
-	local normal = 1
-
-	frac = frac + (f6 * 2 ^ 40) + (f5 * 2 ^ 32) + (f4 * 2 ^ 24) + (f3 * 2 ^ 16) + (f2 * 2 ^ 8) + f1 -- help
-
-	if exp == 0 then
-		if frac == 0 then
-			return sign * 0
-		else
-			normal = 0
-			exp = 1
-		end
-	elseif exp == 0x7FF then
-		if frac == 0 then
-			return sign * (1 / 0)
-		else
-			return sign * (0 / 0)
-		end
-	end
-
-	return sign * 2 ^ (exp - 1023) * (normal + frac / 2 ^ 52)
-end
-
 -- int rd_int_le(string src, int s, int e)
 -- @src - Source binary string
 -- @s - Start index of a little endian integer
@@ -815,15 +759,26 @@ local function run_lua_func(vararg, memory, code, subs, pc, state, env, upvals)
 							- -[ [table.clear(ret_list)
 							ret_list = nil ] ]
 							]]
-							--HACK
-							local fun = memory[A]
+
+							-- shouldn't it be written more like this?
+							local f = memory[A]
+							local packet
+
+							if f == setfenv then
+								local a, b = table.unpack(memory, A + 1, A + params)
+
+								if a == 1 then
+									env = b
+								else 
+									setfenv(a, b)
+								end
+							elseif f == getfenv then
+								packet = env
+							else
+								packet = f(table.unpack(memory, A + 1, A + params))
+							end
 							
-							--to whomever is reading this, i'm sorry
-							--but this works
-							if fun == getfenv then function fun(a) return env end end
-							if fun == setfenv then function fun(a, b) if a == 1 then env = b else setfenv(a, b) end end end
-							
-							top_index = runfunc(top_index, memory, A, B, C, fun(table.unpack(memory, A + 1, A + params)))
+							top_index = runfunc(top_index, memory, A, B, C, packet)
 						else
 							--[[SETUPVAL]]
 							local uv = upvals[inst.B]
