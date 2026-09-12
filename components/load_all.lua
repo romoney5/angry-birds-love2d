@@ -17,7 +17,9 @@ has_utf8, utf8 = pcall(require, "utf8")						--utf8 library, now required for ut
 local runLuaFile = gamelua.runLuaFile
 
 bit = bit or	runLuaFile(compsPath.."/libs/numberlua.lua")   --bit library since https://github.com/davidm/lua-bit-numberlua/blob/master/lmod/bit/numberlua.lua
-loadbytecode	= runLuaFile(compsPath.."/libs/fione.lua")	--run lua 5.1 bytecode in a custom vm because normally it's not portable
+fione_loadbytecode	= runLuaFile(compsPath.."/libs/fione.lua")	--run lua 5.1 bytecode in a custom vm because normally it's not portable
+luna_loadbytecode    = runLuaFile(compsPath.."/libs/luna.lua")    --run lua 5.1 bytecode in a custom vm because normally it's not portable
+loadbytecode = luna_loadbytecode
 json			= runLuaFile(compsPath.."/libs/json.lua")	--json support for modern seasons versions
 AES				= runLuaFile(compsPath.."/libs/aes.lua")	--aes-256-cbc decryption powered by none other than luajit ffi
 fetch			= _G.require("components.libs.fetch")

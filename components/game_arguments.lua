@@ -68,6 +68,10 @@ arguments = {
 		fione_errorblame_length = tonumber(arg1) or fione_errorblame_length
 	end},
 	
+	{display = "Use FiOne", names = {"--fione", "-f"}, args = 1, type = "bool", call = function()
+		loadbytecode = fione_loadbytecode
+	end},
+	
 	{display = "No Save", names = {"--nosave", "-ns"}, args = 0, type = "bool", call = function()
 		disableSaving = true
 	end},
