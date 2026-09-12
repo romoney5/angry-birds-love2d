@@ -302,150 +302,147 @@ luna_cache_stacks = not true --this needs more work
 local instructions
 instructions = {
 	--MOVE; copies stack's B to stack's A
-	[0] = {name = "MOVE", action = function(info, chunk, stack, a, b, c, bx)
+	[0] = {name = "MOVE", action = function(chunk, stack, a, b)
 		stack[a] = stack[b]
 	end},
 	--LOADK; loads a constant found in Bx into stack's A
-	[1] = {name = "LOADK", action = function(info, chunk, stack, a, b, c, bx)
+	[1] = {name = "LOADK", action = function(chunk, stack, a, _, _, bx)
 		local constant = chunk.constants[bx + 1]
 		
 		stack[a] = constant
 	end, uses_constants = {bx = true}},
-	--LOADBOOL
-	[2] = {name = "LOADBOOL", action = function(info, chunk, stack, a, b, c, bx)
+	--LOADBOOL; loads a boolean into stack's A and jumps an instruction if c ~= 0
+	[2] = {name = "LOADBOOL", action = function(chunk, stack, a, b, c)
 		stack[a] = b ~= 0
 		
 		if c ~= 0 then
 			stack.program_counter = stack.program_counter + 1
 		end
 	end},
-	--LOADNIL
-	[3] = {name = "LOADNIL", action = function(info, chunk, stack, a, b, c, bx)
+	--LOADNIL; loads nil values from stack's A to stack's B
+	[3] = {name = "LOADNIL", action = function(chunk, stack, a, b)
 		for i = a, b do
 			stack[i] = nil
 		end
 	end},
-	--GETUPVAL
-	[4] = {name = "GETUPVAL", action = function(info, chunk, stack, a, b, c, bx)
-		--l_debug_print("getting upvalue "..b + 1 .." from "..tostring(stack.upvalues))
+	--GETUPVAL; retrieves an upvalue B into stack's A
+	[4] = {name = "GETUPVAL", action = function(chunk, stack, a, b)
 		local value = stack.upvalues[(b + 1)]
 		local origin = stack.upvalues[-(b + 1)]
 		stack[a] = origin[value]
-		--l_debug_print(stack[a])
 	end},
-	--GETGLOBAL; loads a constant found in Bx, gets it from the env, into stack's A
-	[5] = {name = "GETGLOBAL", action = function(info, chunk, stack, a, b, c, bx)
+	--GETGLOBAL; loads a constant found in Bx, gets it from the env, and puts it into stack's A
+	[5] = {name = "GETGLOBAL", action = function(chunk, stack, a, _, _, bx)
 		local constant = chunk.constants[bx + 1]
 		
 		stack[a] = chunk.env[constant]
 	end, uses_constants = {bx = true}},
-	--GETTABLE
-	[6] = {name = "GETTABLE", action = function(info, chunk, stack, a, b, c, bx)
+	--GETTABLE; gets an index (constant C) from a table found in stack's B, and puts it into stack's A
+	[6] = {name = "GETTABLE", action = function(chunk, stack, a, b, c)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a] = stack[b][value_2]
 	end, uses_constants = {c = true}},
-	--SETGLOBAL
-	[7] = {name = "SETGLOBAL", action = function(info, chunk, stack, a, b, c, bx)
+	--SETGLOBAL; sets an env variable (constant Bx) to stack's A
+	[7] = {name = "SETGLOBAL", action = function(chunk, stack, a, _, _, bx)
 		local constant = chunk.constants[bx + 1]
 		
 		chunk.env[constant] = stack[a]
 	end, uses_constants = {bx = true}},
-	--SETUPVAL
-	[8] = {name = "SETUPVAL", action = function(info, chunk, stack, a, b, c, bx)
-		--l_debug_print("getting upvalue "..b + 1 .." from "..tostring(stack.upvalues))
+	--SETUPVAL; sets an upvalue B's value to stack's A
+	[8] = {name = "SETUPVAL", action = function(chunk, stack, a, b)
 		local value = stack.upvalues[(b + 1)]
 		local origin = stack.upvalues[-(b + 1)]
 		origin[value] = stack[a]
-		--l_debug_print(stack[a])
 	end},
-	--SETTABLE
-	[9] = {name = "SETTABLE", action = function(info, chunk, stack, a, b, c, bx)
+	--SETTABLE; sets an index (constant B) of a table, found in stack's A, to constant C
+	[9] = {name = "SETTABLE", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a][value_1] = value_2
 	end, uses_constants = {b = true, c = true}},
-	--NEWTABLE
-	[10] = {name = "NEWTABLE", action = function(info, chunk, stack, a, b, c, bx)
+	--NEWTABLE; creates a new table with array size B and hash size C, and puts it into stack's A
+	[10] = {name = "NEWTABLE", action = function(chunk, stack, a, b, c)
 		stack[a] = table.new(b, c)
 	end},
-	--SELF
-	[11] = {name = "SELF", action = function(info, chunk, stack, a, b, c, bx)
+	--SELF; same as GETTABLE, but also sets stack's A + 1 to the table itself
+	[11] = {name = "SELF", action = function(chunk, stack, a, b, c)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		--the order matters here for some reason?
 		stack[a + 1] = stack[b]
 		stack[a] = stack[b][value_2]
 	end, uses_constants = {c = true}},
-	--ADD
-	[12] = {name = "ADD", action = function(info, chunk, stack, a, b, c, bx)
+	--ADD; performs addition on constants B and C, putting the result in stack's A
+	[12] = {name = "ADD", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a] = value_1 + value_2
 	end, uses_constants = {b = true, c = true}},
-	--SUB
-	[13] = {name = "SUB", action = function(info, chunk, stack, a, b, c, bx)
+	--SUB; performs subtraction on constants B and C, putting the result in stack's A
+	[13] = {name = "SUB", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a] = value_1 - value_2
 	end, uses_constants = {b = true, c = true}},
-	--MUL
-	[14] = {name = "MUL", action = function(info, chunk, stack, a, b, c, bx)
+	--MUL; performs multiplication on constants B and C, putting the result in stack's A
+	[14] = {name = "MUL", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a] = value_1 * value_2
 	end, uses_constants = {b = true, c = true}},
-	--DIV
-	[15] = {name = "DIV", action = function(info, chunk, stack, a, b, c, bx)
+	--DIV; performs division on constants B and C, putting the result in stack's A
+	[15] = {name = "DIV", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a] = value_1 / value_2
 	end, uses_constants = {b = true, c = true}},
-	--MOD
-	[16] = {name = "MOD", action = function(info, chunk, stack, a, b, c, bx)
+	--MOD; performs modulus on constants B and C, putting the result in stack's A
+	[16] = {name = "MOD", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a] = value_1 % value_2
 	end, uses_constants = {b = true, c = true}},
-	--POW
-	[17] = {name = "POW", action = function(info, chunk, stack, a, b, c, bx)
+	--POW; performs exponentiation on constants B and C, putting the result in stack's A
+	[17] = {name = "POW", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a] = value_1 ^ value_2
 	end, uses_constants = {b = true, c = true}},
-	--UNM
-	[18] = {name = "UNM", action = function(info, chunk, stack, a, b, c, bx)
+	--UNM; sets stack's A to the negative of stack's B
+	[18] = {name = "UNM", action = function(chunk, stack, a, b)
 		stack[a] = -stack[b]
 	end},
-	--NOT
-	[19] = {name = "NOT", action = function(info, chunk, stack, a, b, c, bx)
+	--NOT; sets stack's A to "not" stack's B
+	[19] = {name = "NOT", action = function(chunk, stack, a, b)
 		stack[a] = not stack[b]
 	end},
-	--LEN
-	[20] = {name = "LEN", action = function(info, chunk, stack, a, b, c, bx)
+	--LEN; sets stack's A to "#" (length of) stack's B
+	[20] = {name = "LEN", action = function(chunk, stack, a, b)
 		stack[a] = #stack[b]
 	end},
-	--CONCAT
-	[21] = {name = "CONCAT", action = function(info, chunk, stack, a, b, c, bx)
+	--CONCAT; concatenates values from stack's B to stack's C, putting the result in stack's A
+	[21] = {name = "CONCAT", action = function(chunk, stack, a, b, c)
 		stack[a] = stack[b]
 		
 		for i = b + 1, c do
 			stack[a] = stack[a]..stack[i]
 		end
 	end},
-	--JMP
-	[22] = {name = "JMP", action = function(info, chunk, stack, a, b, c, bx, sbx)
+	--JMP; unconditionally jumps ahead sBx instructions (can be negative or positive)
+	[22] = {name = "JMP", action = function(chunk, stack, _, _, _, _, sbx)
 		stack.program_counter = stack.program_counter + sbx
 	end},
-	--EQ
-	[23] = {name = "EQ", action = function(info, chunk, stack, a, b, c, bx)
+	--EQ; calculates if constants B and C are equal (or unequal if A is 1),
+	--skipping an instruction ahead if not
+	[23] = {name = "EQ", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
@@ -455,8 +452,9 @@ instructions = {
 			stack.program_counter = stack.program_counter + 1
 		end
 	end, uses_constants = {b = true, c = true}},
-	--LT
-	[24] = {name = "LT", action = function(info, chunk, stack, a, b, c, bx)
+	--LT; calculates if constant B is less than constant C (or greater if A is 1),
+	--skipping an instruction ahead if not
+	[24] = {name = "LT", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
@@ -466,8 +464,9 @@ instructions = {
 			stack.program_counter = stack.program_counter + 1
 		end
 	end, uses_constants = {b = true, c = true}},
-	--LE
-	[25] = {name = "LE", action = function(info, chunk, stack, a, b, c, bx)
+	--LE; calculates if constant B is less than or equal to constant C (or greater than/equal if A is 1),
+	--skipping an instruction ahead if not
+	[25] = {name = "LE", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
@@ -477,22 +476,24 @@ instructions = {
 			stack.program_counter = stack.program_counter + 1
 		end
 	end, uses_constants = {b = true, c = true}},
-	--TEST
-	[26] = {name = "TEST", action = function(info, chunk, stack, a, b, c, bx)
+	--TEST; converts stack's A into a boolean, skipping an instruction ahead if it is unequal to C's boolean
+	[26] = {name = "TEST", action = function(chunk, stack, a, _, c)
 		if (not not stack[a]) ~= (c ~= 0) then
 			stack.program_counter = stack.program_counter + 1
 		end
 	end},
-	--TESTSET
-	[27] = {name = "TESTSET", action = function(info, chunk, stack, a, b, c, bx)
+	--TESTSET; converts stack's B into a boolean, setting stack's A to stack's B if it is equal to C's boolean,
+	--otherwise skipping an instruction ahead
+	[27] = {name = "TESTSET", action = function(chunk, stack, a, b, c)
 		if (not not stack[b]) == (c ~= 0) then
 			stack[a] = stack[b]
 		else
 			stack.program_counter = stack.program_counter + 1
 		end
 	end},
-	--CALL
-	[28] = {name = "CALL", action = function(info, chunk, stack, a, b, c, bx)
+	--CALL; calls a function found in stack's A, with no. arguments B - 1 and no. return values C - 1
+	--(both of them adapt to whatever was passed in/returned if their respective register is 0)
+	[28] = {name = "CALL", action = function(chunk, stack, a, b, c)
 		local num_args = b - 1
 		local num_returns = c - 1
 		
@@ -517,8 +518,9 @@ instructions = {
 		--if c is 0, l_place_returns will default to the amount of args
 		l_place_returns(stack, a, c > 0 and num_returns, stack[a](table.unpack(stack, a + 1, a + num_args)))
 	end},
-	--TAILCALL
-	[29] = {name = "TAILCALL", action = function(info, chunk, stack, a, b, c, bx)
+	--TAILCALL; similar to CALL but performs a tail call (not very effective here
+	--as it's very hard to emulate tail calls)
+	[29] = {name = "TAILCALL", action = function(chunk, stack, a, b, c)
 		local num_args = b - 1
 		local num_returns = c - 1
 		
@@ -540,8 +542,8 @@ instructions = {
 		--TODO: free the stack here?
 		return stack[a](table.unpack(stack, a + 1, a + num_args))
 	end, returnable = true},
-	--RETURN
-	[30] = {name = "RETURN", action = function(info, chunk, stack, a, b, c, bx)
+	--RETURN; returns values from stack's A to stack's B (or the stack's top if B is 0)
+	[30] = {name = "RETURN", action = function(chunk, stack, a, b)
 		local num_returns = b - 1
 		
 		--if b is 0, the amount of returns will default to the top of the stack
@@ -555,8 +557,8 @@ instructions = {
 		
 		return table.unpack(stack, a, a - 1 + num_returns)
 	end, returnable = true},
-	--FORLOOP
-	[31] = {name = "FORLOOP", action = function(info, chunk, stack, a, b, c, bx, sbx)
+	--FORLOOP; jumps to the start of a loop and increments if the current index < the current limit
+	[31] = {name = "FORLOOP", action = function(chunk, stack, a, _, _, _, sbx)
 		local value = stack[a] --the initial value
 		local limit = stack[a + 1]
 		local step = stack[a + 2]
@@ -570,8 +572,8 @@ instructions = {
 			stack[a + 3] = stack[a]
 		end
 	end},
-	--FORPREP
-	[32] = {name = "FORPREP", action = function(info, chunk, stack, a, b, c, bx, sbx)
+	--FORPREP; skips ahead to the FORLOOP instruction and initializes stack's A
+	[32] = {name = "FORPREP", action = function(chunk, stack, a, _, _, _, sbx)
 		local value = stack[a]
 		local limit = stack[a + 1]
 		local step = stack[a + 2]
@@ -582,8 +584,8 @@ instructions = {
 		--jump to the FORLOOP
 		stack.program_counter = stack.program_counter + sbx
 	end},
-	--TFORLOOP
-	[33] = {name = "TFORLOOP", action = function(info, chunk, stack, a, b, c, bx, sbx)
+	--TFORLOOP; initializes a generic for loop by calling the iterator function
+	[33] = {name = "TFORLOOP", action = function(chunk, stack, a, _, c)
 		local value = stack[a] --the initial value
 		local limit = stack[a + 1]
 		local step = stack[a + 2]
@@ -598,8 +600,8 @@ instructions = {
 			stack.program_counter = stack.program_counter + 1
 		end
 	end},
-	--SETLIST
-	[34] = {name = "SETLIST", action = function(info, chunk, stack, a, b, c, bx)
+	--SETLIST; sets an amount of values B (or up to stack's top if 0) of a table found in stack's A, starting from C
+	[34] = {name = "SETLIST", action = function(chunk, stack, a, b, c)
 		--let's assume no one is changing this in c
 		local LFIELDS_PER_FLUSH = 50
 		
@@ -614,12 +616,12 @@ instructions = {
 			stack[a][(c - 1) * LFIELDS_PER_FLUSH + i] = stack[a + i]
 		end
 	end},
-	--CLOSE
-	[35] = {name = "CLOSE", action = function(info, chunk, stack, a, b, c, bx)
+	--CLOSE; closes all upvalues starting from A, making them local to the closure that used them
+	[35] = {name = "CLOSE", action = function(chunk, stack, a)
 		l_close_upvalues(stack, a)
 	end},
-	--CLOSURE
-	[36] = {name = "CLOSURE", action = function(info, chunk, stack, a, b, c, bx)
+	--CLOSURE; creates a closure using proto Bx + 1, initializing upvalues if necessary
+	[36] = {name = "CLOSURE", action = function(chunk, stack, a, _, _, bx)
 		local proto = chunk.protos[bx + 1]
 		
 		local upvalues
@@ -671,8 +673,8 @@ instructions = {
 			return l_run_chunk(proto, upvalues, ...)
 		end
 	end},
-	--VARARG
-	[37] = {name = "VARARG", action = function(info, chunk, stack, a, b, c, bx)
+	--VARARG; copies B (or all) amount of varargs into stack's A and beyond
+	[37] = {name = "VARARG", action = function(chunk, stack, a, b)
 		local start = a
 		local num = b - 1
 		
@@ -761,22 +763,14 @@ function l_run_chunk(chunk, upvalues, ...)
 		
 		l_assert(instructions[opcode].action ~= nil, true, "tried running unimplemented opcode "..opcode.." ("..instructions[opcode].name..")")
 		
-		l_debug_print("inst #"..(stack.program_counter - 1)..":", instructions[opcode].name, reg_a, reg_b, reg_c, reg_bx, reg_sbx)
-		
 		local is_returnable = instructions[opcode].returnable
 		
 		--call the opcode
 		if not is_returnable then
 			l_error_handler(
 				stack, chunk,
-				pcall(instructions[opcode].action, info, chunk, stack, reg_a, reg_b, reg_c, reg_bx, reg_sbx)
+				pcall(instructions[opcode].action, chunk, stack, reg_a, reg_b, reg_c, reg_bx, reg_sbx)
 			)
-			
-			--[[
-			local a = "stack: "
-			for i, v in ipairs(stack) do a = a..tostring(i).."="..tostring(v).."," end
-			l_debug_print(a)
-			]]
 		else
 			--if a return was found, return everything
 			if luna_cache_stacks then
@@ -789,7 +783,7 @@ function l_run_chunk(chunk, upvalues, ...)
 			
 			return l_finish_chunk(l_error_handler(
 				stack, chunk,
-				pcall(instructions[opcode].action, info, chunk, stack, reg_a, reg_b, reg_c, reg_bx, reg_sbx)
+				pcall(instructions[opcode].action, chunk, stack, reg_a, reg_b, reg_c, reg_bx, reg_sbx)
 			))
 		end
 	end
