@@ -46,6 +46,26 @@ local function l_read_number(src, pos, size, unpack_endian)
 	return value
 end
 
+--it's important for this to be optimized
+local function l_decode_inst(inst)
+	--parse the instruction into iABC format
+	--as well as iABx and iAsBx in case an opcode needs either
+	--opcode  reg. A   reg. C    reg. B
+	--______ ________ _________ _________
+	--000000 00000000 000000000 000000000
+	--                ^^^^^^^^^^^^^^^^^^^
+	--                    Bx (b and c)
+	local opcode = bit.band(inst, (2 ^ 6) - 1)
+	local reg_a = bit.band(bit.arshift(inst, 6), (2 ^ 8) - 1)
+	local reg_b = bit.band(bit.arshift(inst, 23), (2 ^ 9) - 1)
+	local reg_c = bit.band(bit.arshift(inst, 14), (2 ^ 9) - 1)
+	
+	local reg_bx = bit.band(bit.arshift(inst, 14), (2 ^ 18) - 1)
+	local reg_sbx = reg_bx - (bit.arshift(2 ^ 18, 1) - 1) --signed bx
+	
+	return opcode, reg_a, reg_b, reg_c, reg_bx, reg_sbx
+end
+
 --should this be called a "chunk?"
 --parse all the chunk's info into tables that luna can operate on
 local l_load_chunk
@@ -86,10 +106,21 @@ function l_load_chunk(src, info, chunk, name)
 	local num_instructions = unpack(unpack_endian.."i"..info.size_int, src, pos)
 	skip(info.size_int)
 	
-	chunk.instructions = table.new(num_instructions, 0)
+	chunk.instructions_opcodes = table.new(num_instructions, 0)
+	chunk.instructions_regs = table.new(num_instructions * 5, 0)
 	
 	for i = 1, num_instructions do
-		chunk.instructions[i] = unpack(unpack_endian.."i"..info.size_inst, src, pos)
+		local inst = unpack(unpack_endian.."i"..info.size_inst, src, pos)
+		local opcode, reg_a, reg_b, reg_c, reg_bx, reg_sbx = l_decode_inst(inst)
+		
+		chunk.instructions_opcodes[i] = opcode
+		
+		chunk.instructions_regs[i * 5 - 4] = reg_a
+		chunk.instructions_regs[i * 5 - 3] = reg_b
+		chunk.instructions_regs[i * 5 - 2] = reg_c
+		chunk.instructions_regs[i * 5 - 1] = reg_bx
+		chunk.instructions_regs[i * 5 - 0] = reg_sbx
+		
 		skip(info.size_inst)
 	end
 	
@@ -239,22 +270,14 @@ end
 
 local l_place_returns
 local l_place_varargs
-local l_decode_inst
 local l_run_chunk
 local l_error_handler
-local l_finish_chunk
 
 local function l_get_constant(chunk, stack, register)
 	if register > 255 then
 		return chunk.constants[register - 255]
 	else
 		return stack[register]
-	end
-end
-
-local function l_update_top(stack, a)
-	if a > stack.top then
-		stack.top = a
 	end
 end
 
@@ -281,17 +304,6 @@ local function l_close_upvalues(stack, start)
 	end
 end
 
---idea Copied from lbi
-local meta = {
-	__newindex = function(self, k, v)
-		if type(k) == "number" then
-			l_update_top(self, k)
-		end
-		
-		rawset(self, k, v)
-	end,
-}
-
 --stack caching (insane memory optimization)
 --this cannot be changed at runtime
 --TODO: what if the table sizes get too big?
@@ -304,13 +316,13 @@ instructions = {
 	--MOVE; copies stack's B to stack's A
 	[0] = {name = "MOVE", action = function(chunk, stack, a, b)
 		stack[a] = stack[b]
-	end},
+	end, updates_top = "a"},
 	--LOADK; loads a constant found in Bx into stack's A
 	[1] = {name = "LOADK", action = function(chunk, stack, a, _, _, bx)
 		local constant = chunk.constants[bx + 1]
 		
 		stack[a] = constant
-	end, uses_constants = {bx = true}},
+	end, updates_top = "a", uses_constants = {bx = true}},
 	--LOADBOOL; loads a boolean into stack's A and jumps an instruction if c ~= 0
 	[2] = {name = "LOADBOOL", action = function(chunk, stack, a, b, c)
 		stack[a] = b ~= 0
@@ -318,31 +330,31 @@ instructions = {
 		if c ~= 0 then
 			stack.program_counter = stack.program_counter + 1
 		end
-	end},
+	end, updates_top = "a"},
 	--LOADNIL; loads nil values from stack's A to stack's B
 	[3] = {name = "LOADNIL", action = function(chunk, stack, a, b)
 		for i = a, b do
 			stack[i] = nil
 		end
-	end},
+	end, updates_top = "b"},
 	--GETUPVAL; retrieves an upvalue B into stack's A
 	[4] = {name = "GETUPVAL", action = function(chunk, stack, a, b)
 		local value = stack.upvalues[(b + 1)]
 		local origin = stack.upvalues[-(b + 1)]
 		stack[a] = origin[value]
-	end},
+	end, updates_top = "a"},
 	--GETGLOBAL; loads a constant found in Bx, gets it from the env, and puts it into stack's A
 	[5] = {name = "GETGLOBAL", action = function(chunk, stack, a, _, _, bx)
 		local constant = chunk.constants[bx + 1]
 		
 		stack[a] = chunk.env[constant]
-	end, uses_constants = {bx = true}},
+	end, updates_top = "a", uses_constants = {bx = true}},
 	--GETTABLE; gets an index (constant C) from a table found in stack's B, and puts it into stack's A
 	[6] = {name = "GETTABLE", action = function(chunk, stack, a, b, c)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a] = stack[b][value_2]
-	end, uses_constants = {c = true}},
+	end, updates_top = "a", uses_constants = {c = true}},
 	--SETGLOBAL; sets an env variable (constant Bx) to stack's A
 	[7] = {name = "SETGLOBAL", action = function(chunk, stack, a, _, _, bx)
 		local constant = chunk.constants[bx + 1]
@@ -354,6 +366,7 @@ instructions = {
 		local value = stack.upvalues[(b + 1)]
 		local origin = stack.upvalues[-(b + 1)]
 		origin[value] = stack[a]
+		--this shouldn't update the origin's top
 	end},
 	--SETTABLE; sets an index (constant B) of a table, found in stack's A, to constant C
 	[9] = {name = "SETTABLE", action = function(chunk, stack, a, b, c)
@@ -365,7 +378,7 @@ instructions = {
 	--NEWTABLE; creates a new table with array size B and hash size C, and puts it into stack's A
 	[10] = {name = "NEWTABLE", action = function(chunk, stack, a, b, c)
 		stack[a] = table.new(b, c)
-	end},
+	end, updates_top = "a"},
 	--SELF; same as GETTABLE, but also sets stack's A + 1 to the table itself
 	[11] = {name = "SELF", action = function(chunk, stack, a, b, c)
 		local value_2 = l_get_constant(chunk, stack, c)
@@ -373,6 +386,8 @@ instructions = {
 		--the order matters here for some reason?
 		stack[a + 1] = stack[b]
 		stack[a] = stack[b][value_2]
+		
+		stack.top = a + 1
 	end, uses_constants = {c = true}},
 	--ADD; performs addition on constants B and C, putting the result in stack's A
 	[12] = {name = "ADD", action = function(chunk, stack, a, b, c)
@@ -380,54 +395,54 @@ instructions = {
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a] = value_1 + value_2
-	end, uses_constants = {b = true, c = true}},
+	end, updates_top = "a", uses_constants = {b = true, c = true}},
 	--SUB; performs subtraction on constants B and C, putting the result in stack's A
 	[13] = {name = "SUB", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a] = value_1 - value_2
-	end, uses_constants = {b = true, c = true}},
+	end, updates_top = "a", uses_constants = {b = true, c = true}},
 	--MUL; performs multiplication on constants B and C, putting the result in stack's A
 	[14] = {name = "MUL", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a] = value_1 * value_2
-	end, uses_constants = {b = true, c = true}},
+	end, updates_top = "a", uses_constants = {b = true, c = true}},
 	--DIV; performs division on constants B and C, putting the result in stack's A
 	[15] = {name = "DIV", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a] = value_1 / value_2
-	end, uses_constants = {b = true, c = true}},
+	end, updates_top = "a", uses_constants = {b = true, c = true}},
 	--MOD; performs modulus on constants B and C, putting the result in stack's A
 	[16] = {name = "MOD", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a] = value_1 % value_2
-	end, uses_constants = {b = true, c = true}},
+	end, updates_top = "a", uses_constants = {b = true, c = true}},
 	--POW; performs exponentiation on constants B and C, putting the result in stack's A
 	[17] = {name = "POW", action = function(chunk, stack, a, b, c)
 		local value_1 = l_get_constant(chunk, stack, b)
 		local value_2 = l_get_constant(chunk, stack, c)
 		
 		stack[a] = value_1 ^ value_2
-	end, uses_constants = {b = true, c = true}},
+	end, updates_top = "a", uses_constants = {b = true, c = true}},
 	--UNM; sets stack's A to the negative of stack's B
 	[18] = {name = "UNM", action = function(chunk, stack, a, b)
 		stack[a] = -stack[b]
-	end},
+	end, updates_top = "a"},
 	--NOT; sets stack's A to "not" stack's B
 	[19] = {name = "NOT", action = function(chunk, stack, a, b)
 		stack[a] = not stack[b]
-	end},
+	end, updates_top = "a"},
 	--LEN; sets stack's A to "#" (length of) stack's B
 	[20] = {name = "LEN", action = function(chunk, stack, a, b)
 		stack[a] = #stack[b]
-	end},
+	end, updates_top = "a"},
 	--CONCAT; concatenates values from stack's B to stack's C, putting the result in stack's A
 	[21] = {name = "CONCAT", action = function(chunk, stack, a, b, c)
 		stack[a] = stack[b]
@@ -435,7 +450,7 @@ instructions = {
 		for i = b + 1, c do
 			stack[a] = stack[a]..stack[i]
 		end
-	end},
+	end, updates_top = "a"},
 	--JMP; unconditionally jumps ahead sBx instructions (can be negative or positive)
 	[22] = {name = "JMP", action = function(chunk, stack, _, _, _, _, sbx)
 		stack.program_counter = stack.program_counter + sbx
@@ -487,6 +502,8 @@ instructions = {
 	[27] = {name = "TESTSET", action = function(chunk, stack, a, b, c)
 		if (not not stack[b]) == (c ~= 0) then
 			stack[a] = stack[b]
+			
+			stack.top = a
 		else
 			stack.program_counter = stack.program_counter + 1
 		end
@@ -551,9 +568,11 @@ instructions = {
 			num_returns = stack.top - a + 1
 		end
 		
+		--[[
 		if stack.open_upvalues then
-			--l_close_upvalues(stack, a)
+			l_close_upvalues(stack, a)
 		end
+		]]
 		
 		return table.unpack(stack, a, a - 1 + num_returns)
 	end, returnable = true},
@@ -571,6 +590,8 @@ instructions = {
 			stack.program_counter = stack.program_counter + sbx
 			stack[a + 3] = stack[a]
 		end
+		
+		stack.top = a + 3
 	end},
 	--FORPREP; skips ahead to the FORLOOP instruction and initializes stack's A
 	[32] = {name = "FORPREP", action = function(chunk, stack, a, _, _, _, sbx)
@@ -628,8 +649,8 @@ instructions = {
 		
 		--lua's upvalue system is hacky
 		for i = 1, proto.num_upvalues do
-			local inst = chunk.instructions[stack.program_counter]
-			local opcode, reg_a, reg_b, reg_c, reg_bx, reg_sbx = l_decode_inst(inst)
+			local opcode = chunk.instructions_opcodes[stack.program_counter]
+			local reg_b = chunk.instructions_regs[stack.program_counter * 5 - 3]
 			
 			--making tables is scary here
 			upvalues = upvalues or table.new(proto.num_upvalues, 0)
@@ -672,7 +693,7 @@ instructions = {
 		stack[a] = function(...)
 			return l_run_chunk(proto, upvalues, ...)
 		end
-	end},
+	end, updates_top = "a"},
 	--VARARG; copies B (or all) amount of varargs into stack's A and beyond
 	[37] = {name = "VARARG", action = function(chunk, stack, a, b)
 		local start = a
@@ -682,14 +703,14 @@ instructions = {
 		local evil_i = -1
 		
 		--if b is 0, the amount of copied parameters will adjust
-		stack.top = start + num
-		
 		while (b == 0 and -evil_i <= stack.vararg_num) or (b ~= 0 and i <= start + num) do
 			stack[i] = stack[evil_i]
 			
 			i = i + 1
 			evil_i = evil_i - 1
 		end
+		
+		stack.top = start - evil_i - 2
 	end},
 }
 
@@ -718,59 +739,37 @@ function l_place_varargs(stack, ...)
 	end
 end
 
-
---this function can get called millions of times a second, so
---it's important for it to be optimized
-function l_decode_inst(inst)
-	--first parse the instruction into iABC format
-	--as well as iABx and iAsBx in case an opcode needs either
-	--opcode  reg. A   reg. C    reg. B
-	--______ ________ _________ _________
-	--000000 00000000 000000000 000000000
-	--                ^^^^^^^^^^^^^^^^^^^
-	--                    Bx (b and c)
-	local opcode = bit.band(inst, (2 ^ 6) - 1)
-	local reg_a = bit.band(bit.arshift(inst, 6), (2 ^ 8) - 1)
-	local reg_b = bit.band(bit.arshift(inst, 23), (2 ^ 9) - 1)
-	local reg_c = bit.band(bit.arshift(inst, 14), (2 ^ 9) - 1)
-	
-	local reg_bx = bit.band(bit.arshift(inst, 14), (2 ^ 18) - 1)
-	local reg_sbx = reg_bx - ((2 ^ 18) / 2 - 1) --signed bx
-	
-	return opcode, reg_a, reg_b, reg_c, reg_bx, reg_sbx
-end
-
-function l_run_chunk(chunk, upvalues, ...)
-	local stack = luna_cache_stacks and free_stacks[1] or setmetatable({}, meta)
-	
-	stack.upvalues = upvalues
-	stack.top = 0
-	
-	--program_counter is the next instruction to execute
-	stack.program_counter = 1
-	
-	l_place_varargs(stack, select(chunk.num_parameters + 1, ...))
-	l_place_returns(stack, 0, chunk.num_parameters, ...)
-	
+--loops through and runs instructions in the chunk
+local function l_run_instructions(stack, chunk)
 	while true do
-		local inst = chunk.instructions[stack.program_counter]
-		
-		l_assert(inst ~= nil, true, "next instruction is nil")
+		local program_counter = stack.program_counter
+		local opcode = chunk.instructions_opcodes[program_counter]
+		local reg_a, reg_b, reg_c, reg_bx, reg_sbx =
+			chunk.instructions_regs[program_counter * 5 - 4],
+			chunk.instructions_regs[program_counter * 5 - 3],
+			chunk.instructions_regs[program_counter * 5 - 2],
+			chunk.instructions_regs[program_counter * 5 - 1],
+			chunk.instructions_regs[program_counter * 5 - 0]
 		
 		stack.program_counter = stack.program_counter + 1
-		
-		local opcode, reg_a, reg_b, reg_c, reg_bx, reg_sbx = l_decode_inst(inst)
-		
-		l_assert(instructions[opcode].action ~= nil, true, "tried running unimplemented opcode "..opcode.." ("..instructions[opcode].name..")")
 		
 		local is_returnable = instructions[opcode].returnable
 		
 		--call the opcode
 		if not is_returnable then
-			l_error_handler(
-				stack, chunk,
-				pcall(instructions[opcode].action, chunk, stack, reg_a, reg_b, reg_c, reg_bx, reg_sbx)
-			)
+			instructions[opcode].action(chunk, stack, reg_a, reg_b, reg_c, reg_bx, reg_sbx)
+			
+			local updates_top = instructions[opcode].updates_top
+			
+			if updates_top then
+				if updates_top == "a" then
+					stack.top = reg_a
+				elseif updates_top == "b" then
+					stack.top = reg_b
+				elseif updates_top == "c" then
+					stack.top = reg_c
+				end
+			end
 		else
 			--if a return was found, return everything
 			if luna_cache_stacks then
@@ -781,12 +780,25 @@ function l_run_chunk(chunk, upvalues, ...)
 				end
 			end
 			
-			return l_finish_chunk(l_error_handler(
-				stack, chunk,
-				pcall(instructions[opcode].action, chunk, stack, reg_a, reg_b, reg_c, reg_bx, reg_sbx)
-			))
+			return instructions[opcode].action(chunk, stack, reg_a, reg_b, reg_c, reg_bx, reg_sbx)
 		end
 	end
+end
+
+--general function for running a chunk
+function l_run_chunk(chunk, upvalues, ...)
+	local stack = luna_cache_stacks and free_stacks[1] or {}
+	
+	stack.upvalues = upvalues
+	stack.top = 0
+	
+	--program_counter is the next instruction to execute
+	stack.program_counter = 1
+	
+	l_place_varargs(stack, select(chunk.num_parameters + 1, ...))
+	l_place_returns(stack, 0, chunk.num_parameters, ...)
+	
+	return l_error_handler(stack, chunk, pcall(l_run_instructions, stack, chunk))
 end
 
 --debug error handler, which prints a snapshot of previous instructions in the file
@@ -797,8 +809,14 @@ function l_error_handler(stack, chunk, success, ...)
 		local out = tostring(message)..("\n[Luna] Recent instructions (%s):\n"):format(chunk.debugname)
 		
 		for i = math.max(stack.program_counter - 16 - 32, 1), stack.program_counter - 1 do
-			local inst = chunk.instructions[i]
-			local opcode, reg_a, reg_b, reg_c, reg_bx, reg_sbx = l_decode_inst(inst)
+			local program_counter = i
+			local opcode = chunk.instructions_opcodes[program_counter]
+			local reg_a, reg_b, reg_c, reg_bx, reg_sbx =
+				chunk.instructions_regs[program_counter * 5 - 4],
+				chunk.instructions_regs[program_counter * 5 - 3],
+				chunk.instructions_regs[program_counter * 5 - 2],
+				chunk.instructions_regs[program_counter * 5 - 1],
+				chunk.instructions_regs[program_counter * 5 - 0]
 			
 			if i == stack.program_counter - 1 then
 				out = out.."-> "
@@ -829,12 +847,8 @@ function l_error_handler(stack, chunk, success, ...)
 		error(out, 3)
 	end
 	
-	return ...
-end
-
---the call operation always makes a stack, so go ahead and clear it for later usage
---clears stacks and returns everything back
-function l_finish_chunk(...)
+	--the call operation always makes a stack, so go ahead and clear it for later usage
+	--clears stacks and returns everything back
 	--TODO: assumes we have table.clear
 	if #free_stacks > 50 then
 		free_stacks[#free_stacks] = nil
