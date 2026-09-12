@@ -15,10 +15,10 @@ local unpack = love.data.unpack
 
 local assert = assert
 
---uncomment later
---[[table.new = table.new or function(a, b)
+--replacement for luajit's table.new if it doesn't exist
+table.new = table.new or function(array_size, hash_size)
 	return {}
-end]]
+end
 
 local function l_assert(got, expected, message)
 	if got ~= expected then
@@ -26,13 +26,8 @@ local function l_assert(got, expected, message)
 	end
 end
 
-local function l_debug_print(...)
-	--print(...)
-end
-
 local LUAC_VERSION = 0x51
 local LUAC_FORMAT = 0
-local LUAC_HEADERSIZE = 12
 
 local function l_read_number(src, pos, size, unpack_endian)
 	local value
@@ -55,8 +50,6 @@ end
 --parse all the chunk's info into tables that luna can operate on
 local l_load_chunk
 function l_load_chunk(src, info, chunk, name)
-	l_debug_print("parsing chunk")
-	
 	local unpack_endian = info.endian == 1 and "<" or ">"
 
 	--pos 13
@@ -66,7 +59,6 @@ function l_load_chunk(src, info, chunk, name)
 	if debugname_length > 0 then
 		chunk.debugname = readString(src, pos, debugname_length - 1)
 		skip(debugname_length)
-		l_debug_print("chunk.debugname is ", chunk.debugname)
 	else
 		chunk.debugname = name
 	end
@@ -89,10 +81,6 @@ function l_load_chunk(src, info, chunk, name)
 	chunk.max_stack_size = unpack(unpack_endian.."i"..info.size_byte, src, pos)
 	skip(info.size_byte)
 	
-	l_debug_print("chunk.num_upvalues is ", chunk.num_upvalues)
-	l_debug_print("chunk.num_parameters is ", chunk.num_parameters)
-	l_debug_print("chunk.is_vararg is ", chunk.is_vararg)
-	l_debug_print("chunk.max_stack_size is ", chunk.max_stack_size)
 	
 	--load instructions
 	local num_instructions = unpack(unpack_endian.."i"..info.size_int, src, pos)
@@ -105,7 +93,6 @@ function l_load_chunk(src, info, chunk, name)
 		skip(info.size_inst)
 	end
 	
-	l_debug_print("chunk.num_instructions is ", chunk.num_instructions)
 	
 	--load constants
 	local num_constants = unpack(unpack_endian.."i"..info.size_int, src, pos)
@@ -144,11 +131,7 @@ function l_load_chunk(src, info, chunk, name)
 		else
 			l_assert(constant_type, "nil, boolean, number, or string", "invalid constant type in index "..i)
 		end
-		
-		--l_debug_print(chunk.constants[i])
 	end
-	
-	l_debug_print("chunk.num_constants is ", chunk.num_constants)
 	
 	--I am Proto! Your security is my.. motto!
 	local num_protos = unpack(unpack_endian.."i"..info.size_int, src, pos)
@@ -157,74 +140,65 @@ function l_load_chunk(src, info, chunk, name)
 	chunk.protos = table.new(num_protos, 0)
 	
 	for i = 1, num_protos do
-		l_debug_print("found a proto")
-		
 		chunk.protos[i] = {}
 		chunk.protos[i].env = chunk.env
 		l_load_chunk(src, info, chunk.protos[i], name)
 	end
 	
-	l_debug_print("chunk.num_protos is ", chunk.num_protos)
-	
-	--parse debug
+	--parse debug info (disabled as it is not used in luna)
 	local num_line_info = unpack(unpack_endian.."i"..info.size_int, src, pos)
 	skip(info.size_int)
 	
-	chunk.line_info = table.new(num_line_info, 0)
+	--chunk.line_info = table.new(num_line_info, 0)
 	
 	for i = 1, num_line_info do
-		chunk.line_info[i] = unpack(unpack_endian.."i"..info.size_int, src, pos)
+		--chunk.line_info[i] = unpack(unpack_endian.."i"..info.size_int, src, pos)
 		skip(info.size_int)
 	end
-	
-	l_debug_print("chunk.num_line_info is ", chunk.num_line_info)
 	
 	
 	local num_local_vars = unpack(unpack_endian.."i"..info.size_int, src, pos)
 	skip(info.size_int)
 	
-	chunk.local_vars = table.new(num_local_vars, 0)
+	--chunk.local_vars = table.new(num_local_vars, 0)
 	
 	for i = 1, num_local_vars do
 		local length_name = unpack(unpack_endian.."i"..info.size_size, src, pos)
 		skip(info.size_size)
 
-		local name = readString(src, pos, length_name - 1)
+		--local name = readString(src, pos, length_name - 1)
 		skip(length_name)
 		
-		local start_pc = unpack(unpack_endian.."i"..info.size_int, src, pos)
+		--local start_pc = unpack(unpack_endian.."i"..info.size_int, src, pos)
 		skip(info.size_int)
 		
-		local end_pc = unpack(unpack_endian.."i"..info.size_int, src, pos)
+		--local end_pc = unpack(unpack_endian.."i"..info.size_int, src, pos)
 		skip(info.size_int)
 		
+		--[[
 		chunk.local_vars[i] = {
 			name = name,
 			start_pc = start_pc,
 			end_pc = end_pc,
 		}
+		]]
 	end
-	
-	l_debug_print("chunk.num_local_vars is ", chunk.num_local_vars)
 	
 	
 	local num_upvalue_names = unpack(unpack_endian.."i"..info.size_int, src, pos)
 	skip(info.size_int)
 	
-	chunk.upvalue_names = table.new(num_upvalue_names, 0)
+	--chunk.upvalue_names = table.new(num_upvalue_names, 0)
 	
 	for i = 1, num_upvalue_names do
 		local length_name = unpack(unpack_endian.."i"..info.size_size, src, pos)
 		skip(info.size_size)
 
-		local name = readString(src, pos, length_name - 1)
+		--local name = readString(src, pos, length_name - 1)
 		skip(length_name)
 		
-		chunk.upvalue_names[i] = name
+		--chunk.upvalue_names[i] = name
 	end
-	
-	l_debug_print("chunk.num_upvalue_names is ", chunk.num_upvalue_names)
-	l_debug_print("finished chunk")
 end
 
 local function l_load_header(src, info)
@@ -254,22 +228,13 @@ local function l_load_header(src, info)
 	info.size_inst = read8Int(src, pos) --4 = size of instruction is 4 bytes
 	skip(1)
 
-	info.size_number = read8Int(src, pos) --8 = size of lua number is 8 (or 4 for angry birds) bytes
+	info.size_number = read8Int(src, pos) --8 = size of lua number is 8 (or 4 in angry birds) bytes
 	skip(1)
 
 	info.integral = read8Int(src, pos) --does the chunk only support integers
 	skip(1)
 	
 	info.size_byte = 1
-
-	l_debug_print("luna:")
-	l_debug_print("info.official is ", info.official)
-	l_debug_print("info.endian is ", info.endian)
-	l_debug_print("info.size_int is ", info.size_int)
-	l_debug_print("info.size_size is ", info.size_size)
-	l_debug_print("info.size_inst is ", info.size_inst)
-	l_debug_print("info.size_number is ", info.size_number)
-	l_debug_print("info.integral is ", info.integral)
 end
 
 local l_place_returns
@@ -538,8 +503,6 @@ instructions = {
 			stack.top = a + b
 		end
 		
-		l_debug_print("calling with args", table.unpack(stack, a + 1, a + num_args))
-		
 		--hack: override environment functions
 		if stack[a] == getfenv then
 			l_place_returns(stack, a, nil, chunk.env)
@@ -552,7 +515,6 @@ instructions = {
 		end
 		
 		--if c is 0, l_place_returns will default to the amount of args
-		--l_place_returns(stack, a, c > 0 and num_returns, stack[a](table.unpack(stack, a + 1, a + num_args)))
 		l_place_returns(stack, a, c > 0 and num_returns, stack[a](table.unpack(stack, a + 1, a + num_args)))
 	end},
 	--TAILCALL
@@ -564,8 +526,6 @@ instructions = {
 		if b == 0 then
 			num_args = stack.top - a
 		end
-		
-		l_debug_print("tailcalling with args", table.unpack(stack, a + 1, a + num_args))
 		
 		--[[
 		                               -
@@ -629,11 +589,7 @@ instructions = {
 		local step = stack[a + 2]
 		local external_value = stack[a + 3] --the visible value (e.g. i)
 		
-		--stack[a] = value + step
-		
 		--jump back if..
-		--l_debug_print(a + 3, a + 2 + c)
-		--l_debug_print(a + 3, (a + 2 + c) - (a + 3))
 		l_place_returns(stack, a + 3, (a + 2 + c) - (a + 3) + 1, stack[a](stack[a + 1], stack[a + 2]))
 		
 		if stack[a + 3] ~= nil then
@@ -679,7 +635,6 @@ instructions = {
 			--mark this stack as protected, since otherwise the upvalues will corrupt
 			stack.protected = true
 			upvalues.protecting = stack
-			--l_debug_print("making upvalues table", upvalues)
 			
 			if opcode == 0 then --MOVE
 				--open an upvalue
@@ -688,8 +643,6 @@ instructions = {
 				--i is the index in the upvalues table
 				local upvalue_num = reg_b
 				
-				l_debug_print("opening upvalue["..i.."] lua "..upvalue_num)
-				--print("exposing upvalue["..i.."] lua "..upvalue_num)
 				--to save on memory the values are stored consecutively
 				upvalues[i] = upvalue_num
 				upvalues[-i] = stack
@@ -700,17 +653,10 @@ instructions = {
 				local upvalue_num = stack.upvalues[upvalue_i]
 				local upvalue_origin = stack.upvalues[-upvalue_i]
 				
-				--print("exposing GETUPVAL upvalue: index", upvalue_i, "lua", upvalue_num, origin)
-				--l_assert(upvalue_num ~= nil, true, "no upvalue found")
-				
-				--local value = stack.upvalues[(upvalue_num)]
-				--local origin = upvalue_origin--stack.upvalues[-(upvalue_num)]
 				l_assert(upvalue_origin ~= nil, true, "no upvalue found")
-				--for i, v in pairs(stack.upvalues) do print(i, v, type(v) == "table" and tonumber(i) and v[stack.upvalues[tonumber(i) - 1]]) end
 				
 				upvalues[i] = upvalue_num
 				upvalues[-i] = upvalue_origin
-				l_debug_print("closure getupval mentioned")
 				
 				upvalue_origin.open_upvalues[upvalue_num] = upvalues
 			else
@@ -727,20 +673,16 @@ instructions = {
 	end},
 	--VARARG
 	[37] = {name = "VARARG", action = function(info, chunk, stack, a, b, c, bx)
-		--this implementation may not be right, but it's the best possible
-		local start = a --stack[a]
+		local start = a
 		local num = b - 1
 		
 		local i = start
 		local evil_i = -1
 		
 		--if b is 0, the amount of copied parameters will adjust
-		l_debug_print("varg", i)
 		stack.top = start + num
 		
 		while (b == 0 and -evil_i <= stack.vararg_num) or (b ~= 0 and i <= start + num) do
-			l_debug_print("retrieving "..(evil_i).." into "..i)
-			--print("retrieving "..(evil_i).." "..tostring(stack[evil_i]).." ".." into "..i)
 			stack[i] = stack[evil_i]
 			
 			i = i + 1
@@ -760,8 +702,6 @@ function l_place_returns(stack, target_index, num, ...)
 	stack.top = target_index - 1 + num
 
 	for i = 1, num do
-		--l_debug_print("placing in ", target_index + i - 1, ", ", select(i, ...))
-		--print("placing in ", target_index + i - 1, ", ", select(i, ...))
 		stack[target_index + i - 1] = select(i, ...)
 	end
 end
@@ -776,6 +716,9 @@ function l_place_varargs(stack, ...)
 	end
 end
 
+
+--this function can get called millions of times a second, so
+--it's important for it to be optimized
 function l_decode_inst(inst)
 	--first parse the instruction into iABC format
 	--as well as iABx and iAsBx in case an opcode needs either
@@ -804,15 +747,6 @@ function l_run_chunk(chunk, upvalues, ...)
 	--program_counter is the next instruction to execute
 	stack.program_counter = 1
 	
-	--put the parameters into place
-	local VARARG_ISVARARG = 2
-	
-	if bit.band(chunk.is_vararg, VARARG_ISVARARG) ~= 0 then
-		--l_debug_print("varg")
-		--l_place_varargs(stack, ...)
-	else
-		--l_debug_print("not varg")
-	end
 	l_place_varargs(stack, select(chunk.num_parameters + 1, ...))
 	l_place_returns(stack, 0, chunk.num_parameters, ...)
 	
@@ -861,6 +795,8 @@ function l_run_chunk(chunk, upvalues, ...)
 	end
 end
 
+--debug error handler, which prints a snapshot of previous instructions in the file
+--unlike our previous implementation in fione this doesn't deal with executed instructions
 function l_error_handler(stack, chunk, success, ...)
 	if not success then
 		local message = ...
@@ -905,8 +841,6 @@ end
 --the call operation always makes a stack, so go ahead and clear it for later usage
 --clears stacks and returns everything back
 function l_finish_chunk(...)
-	l_debug_print("RETURNING", ...)
-	
 	--TODO: assumes we have table.clear
 	if #free_stacks > 50 then
 		free_stacks[#free_stacks] = nil
@@ -924,11 +858,14 @@ function l_finish_chunk(...)
 	return ...
 end
 
+--load a bytecode lua file
 local function l_load(src, env, name)
+	--first, parse the file's header
 	local info = {}
 	
 	l_load_header(src, info)
 	
+	--then parse the protos
 	info.chunk = {}
 	
 	local chunk = info.chunk
@@ -937,9 +874,7 @@ local function l_load(src, env, name)
 	
 	l_load_chunk(src, info, chunk, name)
 	
-	--parse the instructions
-
-	-- return function() end
+	--return a function that runs the chunk
 	return function(...)
 		return l_run_chunk(chunk, nil, ...)
 	end
