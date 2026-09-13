@@ -84,7 +84,7 @@ function love.update(dt)
 
 		love.graphics.setScissor()
 
-		dt2 = speedUpPre(math.min(dt, 1/30) * (debugOpen and 0.2 or 1) * timeScale)
+		dt2 = speedUpPre(math.min(dt, 1/30) * (debugOpen and 0 or 1) * timeScale)
 
 		local kp, kr, kh, cw = gamelua.keyPressed, gamelua.keyReleased, gamelua.keyHold, cursor.wheel
 		if openPopups[1] or debugOpen or fmOpen then
@@ -108,6 +108,7 @@ function love.update(dt)
 				gamelua.draw()
 			end
 
+			--draw debugging statistics
 			if enableDebug then
 				local t2 = love.timer.getTime()
 				gamelua.setRenderState(0, 0, 1, 1)

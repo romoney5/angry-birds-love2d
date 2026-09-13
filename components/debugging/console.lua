@@ -29,9 +29,33 @@ local textbox_state = {
 
 local debugPadding = 50
 
+--hack to stop touch console opening from closing right after releasing
+local openedUsingTouch = false
+
 function checkDebugOpen()
-	if (keyHold["SHIFT"] and keyPressed["D"]) or (keyPressed["LBUTTON"] and cursor.x >= gamelua.screenWidth - 20 and cursor.y >= gamelua.screenHeight - 20) or (debugOpen and keyPressed["ESCAPE"]) then
-		keyPressed["ESCAPE"] = nil
+	local check = false
+	
+	local bottom_right = cursor.x >= gamelua.screenWidth * .95 and cursor.y >= gamelua.screenHeight * .95
+	
+	--try to prevent the game from picking up console open/close inputs
+	if not debugOpen then
+		check = (keyHold["SHIFT"] and keyPressed["D"]) or (keyPressed["LBUTTON"] and bottom_right)
+		openedUsingTouch = openedUsingTouch or check
+	else
+		check = (keyHold["SHIFT"] and keyReleased["D"]) or (keyReleased["LBUTTON"] and bottom_right and not openedUsingTouch)
+			or keyReleased["ESCAPE"]
+	end
+	
+	if keyReleased.LBUTTON then
+		openedUsingTouch = false
+	end
+	
+	if check then
+		--ditto
+		table.clear(keyPressed)
+		table.clear(keyHold)
+		table.clear(keyReleased)
+		
 		debugOpen = not debugOpen
 		debugPreviousIndex = 0
 		textbox_state.cursorBlink = 0
