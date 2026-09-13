@@ -30,6 +30,19 @@ end
 local LUAC_VERSION = 0x51
 local LUAC_FORMAT = 0
 
+--stack caching (insane memory optimization)
+--this option can be changed freely at runtime,
+--but it's not recommended to as it uses way more memory without any gain
+local cached_stacks = {}
+luna_cache_stacks = true
+
+--function prototypes so that they can be run recursively
+local l_load_chunk
+local l_place_returns
+local l_place_varargs
+local l_run_chunk
+local l_error_handler
+
 local function l_read_number(src, pos, size, unpack_endian)
 	local value
 
@@ -69,7 +82,6 @@ end
 
 --should this be called a "chunk?"
 --parse all the chunk's info into tables that luna can operate on
-local l_load_chunk
 function l_load_chunk(src, info, chunk, name)
 	local unpack_endian = info.endian == 1 and "<" or ">"
 
@@ -104,6 +116,8 @@ function l_load_chunk(src, info, chunk, name)
 	
 	
 	--load instructions
+	--cache them all consecutively so that instructions
+	--don't have to be decoded at runtime
 	local num_instructions = unpack(unpack_endian.."i"..info.size_int, src, pos)
 	skip(info.size_int)
 	
@@ -269,11 +283,6 @@ local function l_load_header(src, info)
 	info.size_byte = 1
 end
 
-local l_place_returns
-local l_place_varargs
-local l_run_chunk
-local l_error_handler
-
 local function l_get_constant(chunk, stack, register)
 	if register > 255 then
 		return chunk.constants[register - 255]
@@ -301,12 +310,6 @@ local function l_close_upvalues(stack, start)
 		end
 	end
 end
-
---stack caching (insane memory optimization)
---this cannot be changed at runtime
---TODO: what if the table sizes get too big?
-local free_stacks = {}
-luna_cache_stacks = not true --this needs more work
 
 --the list of opcode functions
 local instructions
@@ -553,7 +556,6 @@ instructions = {
 		]]
 		
 		--if c is 0, l_place_returns will default to the amount of args
-		--TODO: free the stack here?
 		return stack[a](table.unpack(stack, a + 1, a + num_args))
 	end, returnable = true},
 	--RETURN; returns values from stack's A to stack's B (or the stack's top if B is 0)
@@ -646,9 +648,6 @@ instructions = {
 			--making tables is scary here
 			upvalues = upvalues or table.new(proto.num_upvalues, 0)
 			stack.open_upvalues = stack.open_upvalues or table.new(proto.num_upvalues, 0)
-			--mark this stack as protected, since otherwise the upvalues will corrupt
-			stack.protected = true
-			upvalues.protecting = stack
 			
 			if opcode == 0 then --MOVE
 				--open an upvalue
@@ -769,14 +768,6 @@ local function l_run_instructions(stack, chunk)
 			end
 		else
 			--if a return was found, return everything
-			if luna_cache_stacks then
-				table.insert(free_stacks, stack)
-				
-				if upvalues then
-					upvalues.protecting.protected = nil
-				end
-			end
-			
 			return instructions[opcode].action(chunk, stack, reg_a, reg_b, reg_c, reg_bx, reg_sbx)
 		end
 	end
@@ -784,7 +775,9 @@ end
 
 --general function for running a chunk
 function l_run_chunk(chunk, upvalues, ...)
-	local stack = luna_cache_stacks and free_stacks[1] or {}
+	--if a stack table is cached, use it and free it from the cache
+	local stack = luna_cache_stacks and cached_stacks[#cached_stacks] or {}
+	cached_stacks[#cached_stacks] = nil
 	
 	stack.upvalues = upvalues
 	stack.top = 0
@@ -848,19 +841,16 @@ function l_error_handler(stack, chunk, success, ...)
 	l_close_upvalues(stack, 0)
 	
 	--the call operation always makes a stack, so go ahead and clear it for later usage
-	--clears stacks and returns everything back
-	--TODO: assumes we have table.clear
-	if #free_stacks > 50 then
-		free_stacks[#free_stacks] = nil
-	elseif luna_cache_stacks then
-		for i = #free_stacks, 1, -1 do
-			--pseudo-memory management system
-			if not free_stacks[i].protected then
-				--table.clear(free_stacks[i])
-				
-				break
-			end
-		end
+	--this can save MASSIVE amounts of memory overhead
+	if luna_cache_stacks then
+		table.insert(cached_stacks, stack)
+		
+		table.clear(stack)
+	end
+	
+	--cap the amount of cached stacks
+	if #cached_stacks > 128 then
+		cached_stacks[#cached_stacks] = nil
 	end
 	
 	return ...

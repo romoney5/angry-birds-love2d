@@ -14,6 +14,12 @@ pcall(require, "table.new")                                 --allocate a table
 has_ffi, ffi = pcall(require, "ffi")                        --luajit ffi
 has_utf8, utf8 = pcall(require, "utf8")						--utf8 library, now required for utf8 text
 
+table.clear = table.clear or function(t)
+	for i, v in pairs(t) do
+		t[i] = nil
+	end
+end
+
 local runLuaFile = gamelua.runLuaFile
 
 bit = bit or	runLuaFile(compsPath.."/libs/numberlua.lua")   --bit library since https://github.com/davidm/lua-bit-numberlua/blob/master/lmod/bit/numberlua.lua

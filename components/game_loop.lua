@@ -1,7 +1,5 @@
 --this massive function runs every frame
 
-table.clear = table.clear or function(t) for i, v in pairs(t) do t[i] = nil end end
-
 local pausedaudios = {}
 gamelua.zoomLevel = 0
 gamelua.wantedZoomLevel = 0
