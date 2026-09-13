@@ -20,9 +20,10 @@ table.new = table.new or function(array_size, hash_size)
 	return {}
 end
 
+--basic assert function
 local function l_assert(got, expected, message)
 	if got ~= expected then
-		error("run: "..message.." (expected "..tostring(expected)..", got "..tostring(got)..")", 2)
+		error("[Luna] "..message.." (expected "..tostring(expected)..", got "..tostring(got)..")", 2)
 	end
 end
 
@@ -281,23 +282,20 @@ local function l_get_constant(chunk, stack, register)
 	end
 end
 
+--closes all upvalues starting from stack index [start]
 local function l_close_upvalues(stack, start)
 	if not stack.open_upvalues then
 		return
 	end
 	
 	for i = start, stack.top do
-		local upvalues = stack.open_upvalues[i]
+		local upvalue = stack.open_upvalues[i]
 		
-		if upvalues then
+		if upvalue then
 			--i is the upvalue stack number
-			--v is the same
-			--ii is the upvalue number
-			for ii, v in ipairs(upvalues) do
-				if v == i then
-					upvalues[-ii] = {[i] = upvalues[-ii][i]}
-				end
-			end
+			upvalue[3] = upvalue[2][upvalue[1]]
+			upvalue[1] = 3
+			upvalue[2] = upvalue
 			
 			stack.open_upvalues[i] = nil
 		end
@@ -339,9 +337,9 @@ instructions = {
 	end, updates_top = "b"},
 	--GETUPVAL; retrieves an upvalue B into stack's A
 	[4] = {name = "GETUPVAL", action = function(chunk, stack, a, b)
-		local value = stack.upvalues[(b + 1)]
-		local origin = stack.upvalues[-(b + 1)]
-		stack[a] = origin[value]
+		local upvalue = stack.upvalues[b + 1]
+		
+		stack[a] = upvalue[2][upvalue[1]]
 	end, updates_top = "a"},
 	--GETGLOBAL; loads a constant found in Bx, gets it from the env, and puts it into stack's A
 	[5] = {name = "GETGLOBAL", action = function(chunk, stack, a, _, _, bx)
@@ -363,9 +361,8 @@ instructions = {
 	end, uses_constants = {bx = true}},
 	--SETUPVAL; sets an upvalue B's value to stack's A
 	[8] = {name = "SETUPVAL", action = function(chunk, stack, a, b)
-		local value = stack.upvalues[(b + 1)]
-		local origin = stack.upvalues[-(b + 1)]
-		origin[value] = stack[a]
+		local upvalue = stack.upvalues[b + 1]
+		upvalue[2][upvalue[1]] = stack[a]
 		--this shouldn't update the origin's top
 	end},
 	--SETTABLE; sets an index (constant B) of a table, found in stack's A, to constant C
@@ -568,12 +565,6 @@ instructions = {
 			num_returns = stack.top - a + 1
 		end
 		
-		--[[
-		if stack.open_upvalues then
-			l_close_upvalues(stack, a)
-		end
-		]]
-		
 		return table.unpack(stack, a, a - 1 + num_returns)
 	end, returnable = true},
 	--FORLOOP; jumps to the start of a loop and increments if the current index < the current limit
@@ -661,27 +652,33 @@ instructions = {
 			
 			if opcode == 0 then --MOVE
 				--open an upvalue
-				--upvalue_num is the index in the origin's stack
+				--upvalue_num is the index in the stack
 				--GETUPVAL uses that index
 				--i is the index in the upvalues table
 				local upvalue_num = reg_b
 				
-				--to save on memory the values are stored consecutively
-				upvalues[i] = upvalue_num
-				upvalues[-i] = stack
+				--open_upvalue functions similarly to upvalue,
+				--but deals with currently opened upvalues
+				--this is needed so that repeated upvalues share the same table
+				local open_upvalue = stack.open_upvalues[upvalue_num]
 				
-				stack.open_upvalues[upvalue_num] = upvalues
+				if not open_upvalue then
+					upvalues[i] = {upvalue_num, stack}
+				else
+					upvalues[i] = open_upvalue
+				end
+				
+				stack.open_upvalues[upvalue_num] = upvalues[i]
 			elseif opcode == 4 then --GETUPVAL
+				--open an upvalue from an existing upvalue
 				local upvalue_i = reg_b + 1
-				local upvalue_num = stack.upvalues[upvalue_i]
-				local upvalue_origin = stack.upvalues[-upvalue_i]
+				local upvalue = stack.upvalues[upvalue_i]
+				local upvalue_num = upvalue[1]
+				local upvalue_origin = upvalue[2]
 				
 				l_assert(upvalue_origin ~= nil, true, "no upvalue found")
 				
-				upvalues[i] = upvalue_num
-				upvalues[-i] = upvalue_origin
-				
-				upvalue_origin.open_upvalues[upvalue_num] = upvalues
+				upvalues[i] = upvalue
 			else
 				l_assert(instructions[opcode].name, "MOVE or GETUPVAL", "unexpected opcode "..opcode.." after closure instruction")
 			end
@@ -846,6 +843,9 @@ function l_error_handler(stack, chunk, success, ...)
 		--nor the caller of l_error_handler
 		error(out, 3)
 	end
+	
+	--close all upvalues right at the end
+	l_close_upvalues(stack, 0)
 	
 	--the call operation always makes a stack, so go ahead and clear it for later usage
 	--clears stacks and returns everything back
