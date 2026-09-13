@@ -216,7 +216,7 @@ end
 
 function gamelua.drawForegroundNative()
 	local theme = gamelua.blockTable.themes[currentTheme] or currentTheme
-	if not (theme and type(theme) == "table") then return end
+	if not (theme and type(theme) == "table" and theme.fgLayers) then return end
 	
 	local screenLeft = renderLeft or screen.left
 	local screenTop = renderTop or screen.top

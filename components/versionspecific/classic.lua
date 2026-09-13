@@ -44,6 +44,7 @@ end
 
 function gamelua.getCurrentTime()
 	local t = os.date("*t")
+	
 	return {year = t.year, month = t.month, day = t.day, hour = t.hour, minutes = t.min, seconds = t.sec}
 end
 
@@ -298,20 +299,12 @@ end
 --onCloudAssetLoadStart(a), onCloudAssetLoadSuccess(a), onCloudAssetLoadError(a),
 --onCloudMetadataLoadSuccess(), onCloudMetadataLoadError()
 
---i'm pretty sure 5.0.1's menu_flow.lua doesn't break on fusion due to tostring actually working properly
---vararg functions, etc.
-local _tostring = tostring
 
-function tostring(a)
-	return _tostring(a)
-end
-
-
-function native_initializeCloudServices()
+function gamelua.native_initializeCloudServices()
 	return
 end
 
-function native_getUnlockRequestChecksum(id, code)
+function gamelua.native_getUnlockRequestChecksum(id, code)
 	return
 end
 

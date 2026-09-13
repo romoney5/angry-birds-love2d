@@ -709,6 +709,11 @@ function gamelua.drawBoxNative(boxSprites, x1, y1, width, height, hAnchor, vAnch
 	local res = _G.res
 	local r, g, b, a = 1.0, 1.0, 1.0, 1.0
 	
+	--seasons 6.0.0 changes color to flip
+	if type(color) == "boolean" then
+		color = nil
+	end
+	
 	if color then
 		r = color.red or r
 		g = color.green or g

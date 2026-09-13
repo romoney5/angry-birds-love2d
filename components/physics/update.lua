@@ -54,7 +54,7 @@ function updatePhysics(dt)
 	end
 	]]
 
-	if waterUpdate then waterUpdate() end
+	if gamelua.waterUpdate then gamelua.waterUpdate() end
 
 	updateGameParticlesNative(dt2)
 	gamelua.setRenderState(-renderLeft - (cameraShakeX or 0), -renderTop - (cameraShakeY or 0), worldScale, worldScale, 0)
