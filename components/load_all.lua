@@ -28,6 +28,7 @@ luna_loadbytecode    = runLuaFile(compsPath.."/libs/luna.lua")    --run lua 5.1 
 loadbytecode = luna_loadbytecode
 json			= runLuaFile(compsPath.."/libs/json.lua")	--json support for modern seasons versions
 AES				= runLuaFile(compsPath.."/libs/aes.lua")	--aes-256-cbc decryption powered by none other than luajit ffi
+pvr				= runLuaFile(compsPath.."/libs/pvrtc.lua")	--pvrtc format
 fetch			= _G.require("components.libs.fetch")
 
 --debugging features
