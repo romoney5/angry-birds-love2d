@@ -57,7 +57,7 @@ function updatePhysics(dt)
 	if gamelua.waterUpdate then gamelua.waterUpdate() end
 
 	updateGameParticlesNative(dt2)
-	gamelua.setRenderState(-renderLeft - (cameraShakeX or 0), -renderTop - (cameraShakeY or 0), worldScale, worldScale, 0)
+	gamelua.setRenderState(-renderLeft, -renderTop, worldScale, worldScale, 0)
 	
 	for _, v in pairs(objects.world) do
 		local PHYSICS_TIMESTEP = 1/30

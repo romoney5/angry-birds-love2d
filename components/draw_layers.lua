@@ -113,7 +113,6 @@ function drawLayer(layer, yoffset)
 	local w, h = res.getSpriteBounds(sprite)
 	local wScale = renderScale
 	local autoScroll = -scrollFrequency * time / 16 --TODO: inaccurate with water
-	local shakeX, shakeY = cameraShakeX or 0, cameraShakeY or 0
 
 	if layer.water then
 		yoffset = -(objects.waterLevel or 0) * physicsToWorld / relativeScale
@@ -122,8 +121,8 @@ function drawLayer(layer, yoffset)
 	local xScale = layer.scaleWobbleX and math.sin(time) * layer.scaleWobbleX / wScale or 0
 	local yScale = layer.scaleWobbleY and math.sin(time) * layer.scaleWobbleY / wScale or 0
 	
-	local screenLeft = renderLeft - shakeX
-	local screenTop = renderTop - shakeY
+	local screenLeft = renderLeft
+	local screenTop = renderTop
 	
 	if w > 0 and wScale > .02 then --don't draw so many if the scale is too low
 		for x = -1, math.floor(gamelua.screenWidth / (w - px) / wScale) do
@@ -137,7 +136,7 @@ function drawLayer(layer, yoffset)
 				left = (left + autoScroll) % w
 			end
 			
-			gamelua.setRenderState(pivotX + left - shakeX / (relativeScale + xScale), top - shakeY / (relativeScale + yScale), wScale * (relativeScale + xScale), wScale * (relativeScale + yScale), 0, px, py)
+			gamelua.setRenderState(pivotX + left, top, wScale * (relativeScale + xScale), wScale * (relativeScale + yScale), 0, px, py)
 			
 			if not (x ~= 0 and isLooping == false) then
 				res.drawSprite(sprite, 0, 0)
@@ -154,7 +153,6 @@ function drawThemeSprite(v, layer)
 	local relativeSpeed = layer[3] or 1
 	local relativeScale = layer[4] or 1.5
 	local isLooping = layer[5]
-	local shakeX, shakeY = cameraShakeX or 0, cameraShakeY or 0
 	
 	local screenLeft = renderLeft
 	local screenTop = renderTop
@@ -168,7 +166,7 @@ function drawThemeSprite(v, layer)
 			local left = (-screenLeft * relativeSpeed / relativeScale) % w
 			local top = (-screenTop / ys)
 
-			gamelua.setRenderState(pivotX + left - shakeX, top - shakeY, wScale * xs, wScale * ys, v.angle, px, py)
+			gamelua.setRenderState(pivotX + left, top, wScale * xs, wScale * ys, v.angle, px, py)
 
 			if x == 0 or isLooping then
 				res.drawSprite(v.sprite, v.x * 16, v.y * 16)
@@ -205,7 +203,7 @@ function gamelua.drawBackgroundNative(highGFX)
 
 			for k, object in pairs(themeSpriteObjects) do
 				if object.layerNumber == layernum - 1 then
-					-- setRenderState(-screen.left - (cameraShakeX or 0), -screen.top - (cameraShakeY or 0), worldScale, worldScale, 0, 0, v.angle)
+					-- setRenderState(-screen.left, -screen.top, worldScale, worldScale, 0, 0, v.angle)
 					-- res.drawSprite(v.sprite, v.x, 0)
 					drawThemeSprite(object, theme.bgLayers[layernum] or layer)
 				end
@@ -236,7 +234,7 @@ function gamelua.drawForegroundNative()
 			
 			local scale = fgLayers[ground_num][4] or 1 --.5
 			local rect_x = 0
-			local rect_y = (-screenTop + startY - (cameraShakeY or 0) + (ground_h - ground_py) * scale) * s
+			local rect_y = (-screenTop + startY + (ground_h - ground_py) * scale) * s
 			rect_y = rect_y + (yoffsets[#fgLayers - 1] or 0) * s
 
 			gamelua.drawRect(theme.groundColor.r / 255, theme.groundColor.g / 255, theme.groundColor.b / 255, 1, rect_x, rect_y, gamelua.screenWidth, gamelua.screenHeight + screenTop * s + rect_y)
