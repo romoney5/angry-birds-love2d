@@ -4,6 +4,8 @@
 local support = love.graphics.getImageFormats()
 local headerSize = 52
 
+local assert = assert
+
 function convertImagePVR(data, filename)
 	assert(data)
 
@@ -14,6 +16,7 @@ function convertImagePVR(data, filename)
 	local imagedata
 	local rawdata
 	local metadatasize = 0
+	local bitrate = 0
 
 	if love.data.unpack("<i4", data, pos) == headerSize then --1.6.3
 		skip(4)
@@ -24,14 +27,18 @@ function convertImagePVR(data, filename)
 		mipmaps = love.data.unpack("<i4", data, pos) + 1
 		skip(4)
 		format = love.data.unpack("<i1", data, pos)
+		skip(1)
+		skip(3) --flags
+		skip(4) --surface size
+		bitrate = love.data.unpack("<i4", data, pos)
 
 		local headerSize = headerSize + metadatasize
 
 		if format == 16 and support.rgba4 then --r4 g4 b4 a4
 			local expectedSize = w * h * 2 + headerSize
-			assert(data:len() == expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize.." ("..metadatasize.."), got "..data:len())
+			assert(data:len() >= expectedSize, "wrong pvr size for \""..filename.."\"; expected "..expectedSize.." ("..metadatasize.."), got "..data:len())
 
-			rawdata = string.sub(data, headerSize + 1, headerSize + 1 + expectedSize - 1)
+			rawdata = string.sub(data, headerSize + 1, 1 + expectedSize - 1)
 			imagedata = love.image.newImageData(w, h, "rgba4", rawdata)
 		elseif format == 19 and support.rgb565 then --r5 g6 b5
 			local expectedSize = w * h * 2 + headerSize
@@ -87,7 +94,7 @@ function convertImagePVR(data, filename)
 		skip(4) --PVR
 		skip(4) --flags
 		format = data:sub(pos, pos + 3) --pixel format
-		local bitrate = data:sub(pos + 4, pos + 3 + 4)
+		bitrate = data:sub(pos + 4, pos + 3 + 4)
 		skip(8)
 		skip(4) --color space
 		skip(4) --channel type
