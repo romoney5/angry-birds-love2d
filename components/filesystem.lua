@@ -309,8 +309,8 @@ function gamelua.loadLuaFileToObject(filename, ctx, key, lenient)
 		lua()
 		
 		if queueCheatsEnabled and filename == "/"..datapath.."/"..gamelua.scriptPath.."/options.lua" then
-			cheatsEnabled = true
-			releaseBuild = false
+			gamelua.cheatsEnabled = true
+			gamelua.releaseBuild = false
 		end
 		
 		return true

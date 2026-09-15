@@ -533,6 +533,10 @@ function NativeCloudPayment.getAvailableProducts()
 	return products
 end
 
+function NativeCloudPayment.restorePurchases() --5.2.5 hd --?
+	return
+end
+
 function NativeCloudPayment.getProductDescriptions() --5.3.1
 	local descriptions = {}
 

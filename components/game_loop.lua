@@ -190,8 +190,8 @@ function love.update(dt)
 end
 
 function love.resize(width, height)
-	if resolutionChanged then
-		resolutionChanged(width, height)
+	if gamelua.resolutionChanged then
+		gamelua.resolutionChanged(width, height)
 	end
 end
 
