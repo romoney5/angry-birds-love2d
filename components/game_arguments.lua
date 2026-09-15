@@ -4,6 +4,8 @@ original_identity = love.filesystem.getIdentity()
 
 autoboot_path = "autoboot.lua"
 
+datapath_base = ""
+
 arguments = {
 	{display = "Delete Data", names = {"--deletedata", "-dd"}, args = 0, type = "bool", call = function()
 		print("Opening data deletion prompt...")
@@ -174,6 +176,7 @@ function setDataPathFromFile(file)
 		end
 
 		datapath = path
+		datapath_base = file
 			
 		openedDatapath = true
 

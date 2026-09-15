@@ -565,8 +565,7 @@ local function loadSheet(sheet, usecomposprites)
 			if success then
 				lsheet.zip = zip
 				--cut off the base path assuming this is running from an apk
-				local _, og_datapath = resolvePath(datapath)
-				og_datapath = table.concat(og_datapath, "/", 2)
+				local og_datapath = datapath:sub(datapath_base:len() + 1)
 
 				--then get the given sheet's base directory
 				local _, parentDir = resolvePath(sheet)

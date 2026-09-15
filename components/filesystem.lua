@@ -317,19 +317,9 @@ function gamelua.loadLuaFileToObject(filename, ctx, key, lenient)
 	elseif not lenient then
 		if love.filesystem.exists(filename) then
 			--error("Could not load Lua file: "..filename.."\n"..tostring(err))
-			print("Could not load Lua file: "..filename.."\n"..tostring(lua))
+			print("Could not load Lua file: "..filename.."\n"..tostring(lua or err))
 		else
-			print("Could not load Lua file: "..filename.."\n"..tostring(err))
-			if enableDebug then
-				openPopup("Warning",
-						"Could not load Lua file: "..filename.."\n"..tostring(err),
-						{
-							{sprite = "TUTORIAL_OK", callback = function()
-								return true
-							end},
-						}
-					, true)
-			end
+			print("Could not find Lua file: "..filename.."\n"..tostring(err))
 		end
 		
 		return false
