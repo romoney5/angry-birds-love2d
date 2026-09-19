@@ -148,6 +148,9 @@ end
 function gamelua.drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_scale)
 	local alpha = self.alpha or 1
 	local hs = hover_scale or 1
+	
+	local height = self:getFontLeading()
+	
 	res.useFont(self.font or "FONT_BASIC")
 	love.graphics.push()
 	gamelua.setRenderState(0, 0, 1, 1)
@@ -161,17 +164,16 @@ function gamelua.drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_sca
 
 		--scaling goes above everything else
 		love.graphics.scale((scale_x or 1) * self.scaleX * hs, (scale_y or 1) * self.scaleY * hs)
+		
+		if self.hanchor == "VCENTER" or self.vanchor == "VCENTER" then
+			love.graphics.translate(0, textFloor(-height * (#self.lines - 1) / 2))
+		end
 
 		for i, line in ipairs(self.lines) do
-			love.graphics.push()
-
-			love.graphics.translate(0, textFloor(-res.getFontLeading() * (#self.lines - 1) / 2))
 			res.drawString(line.group, line.text, 0, 0, line.hanchor, line.vanchor)
 
-			love.graphics.pop()
-
 			--go to the next line
-			love.graphics.translate(0, textFloor(res.getFontLeading()))
+			love.graphics.translate(0, textFloor(height))
 		end
 	else
 		love.graphics.scale((scale_x or 1) * self.scaleX * hs, (scale_y or 1) * self.scaleY * hs)
