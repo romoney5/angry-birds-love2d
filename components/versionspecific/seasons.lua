@@ -579,7 +579,7 @@ local statuses_new = {
 }
 
 function NativeCloudPayment.buyProduct(product)
-	iapBuyItem(product, function(product, reason)
+	gamelua.iapBuyItem(product, function(product, reason)
 		if reason == statuses_new.PAYMENT_SUCCEEDED then
 			NativeCloudPayment.onProductPurchased(product)
 		elseif reason == statuses_new.PAYMENT_CANCELLED then

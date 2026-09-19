@@ -1,16 +1,6 @@
 --placeholder stuff related to in-app purchases
 
-iap = {}
-
-iapEnabled = true
-
-function iap.init()
-	print("Initialize IAP")
-end
-
-function iap.update(dt)
-	return
-end
+gamelua.iapEnabled = true
 
 local statuses = {
 	PAYMENT_SUCCEEDED = 1,
@@ -28,16 +18,16 @@ local statuses_new = {
 	PAYMENT_RESTORED = 5,
 }
 
-function iapInitItemPurchase(callback) --1.7.0
-	if _G[callback] then
-		_G[callback](mightyEagleItemId, 1, 0) --status: 1=success, 2=failure (error code 2=canceled), 3=restored
+function gamelua.iapInitItemPurchase(callback) --1.7.0
+	if gamelua[callback] then
+		gamelua[callback](mightyEagleItemId, 1, 0) --status: 1=success, 2=failure (error code 2=canceled), 3=restored
 	else
 		print("Init purchase callback: "..tostring(callback).." not found")
 	end
 end
 
 --the core function for all iaps
-function iapBuyItem(id, callbackid, statuslist) --1.7.0
+function gamelua.iapBuyItem(id, callbackid, statuslist) --1.7.0
 	local callback = type(callbackid) == "function" and callbackid or _G[callbackid]
 	local statuslist = statuslist or statuses
 	
@@ -61,12 +51,12 @@ function iapBuyItem(id, callbackid, statuslist) --1.7.0
 	end
 end
 
-function iapGetItemCount()
+function gamelua.iapGetItemCount()
 	return 1
 end
 
 --TODO: er
-function iapGetItemAt(i)
+function gamelua.iapGetItemAt(i)
 	return { name = "might eagle", id = mightyEagleItemId, type = "iap", quantity = 1, description = "might eagle" }
 end
 
@@ -87,9 +77,9 @@ function Payment.iapHasPaymentProvider()
 end
 
 function Payment.iapBuyItem(id)
-	iapBuyItem(id, Payment.onPurchaseStatusChanged, statuses_new)
+	gamelua.iapBuyItem(id, Payment.onPurchaseStatusChanged, statuses_new)
 end
-Payment.iapRestoreItems = iapRestoreItems
+Payment.iapRestoreItems = gamelua.iapRestoreItems
 
 function Payment.getIapProducts()
 	return {}
@@ -104,7 +94,7 @@ function Payment.iapInitPaymentProviders()
 end
 
 function Payment.iapIsEnabled()--?
-	return iapEnabled
+	return gamelua.iapEnabled
 end
 
 function Payment.isPurchaseInProgress()--?
@@ -112,17 +102,18 @@ function Payment.isPurchaseInProgress()--?
 end
 
 function Payment.isProductAvailable(item)
-	return iapEnabled
+	return gamelua.iapEnabled
 end
 
+--mock payment functions to accept all items
 function replacePaymentFunctions()
-	if iap then
-		function iap.getItemPrice(item)
+	if gamelua.iap then
+		function gamelua.iap.getItemPrice(item)
 			return true, "$0.00"
 		end
 		
 		--remove everything from underscore, not reliable
-		function iap.getProductNameForItem(item)
+		function gamelua.iap.getProductNameForItem(item)
 			return item:sub(1, (item:find("_") or item:len() + 1) - 1)
 		end
 	end
@@ -194,7 +185,7 @@ function native.Payment.catalog()
 end
 
 function native.Payment.buy(item_id)
-	iapBuyItem(item_id, function(id, status)
+	gamelua.iapBuyItem(item_id, function(id, status)
 		if status == statuses.PAYMENT_SUCCEEDED then
 			native.Payment.onProductReceived(id, 0)
 		elseif status == statuses.PAYMENT_CANCELLED then
