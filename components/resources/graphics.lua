@@ -260,7 +260,7 @@ function gamelua.drawRect(r, g, b, a, x, y, w, h, inWorld)
 	--ab classic shop uses an alpha value higher than 1
 	--for whatever reason
 	if r > 1 or g > 1 or b > 1 or a > 1 then
-		r, g, b, a = r / 255, g / 255, b / 255, a / 255
+		r, g, b, a = r / 255, g / 255, b / 255, a / 255 / 2
 	end
 
 	love.graphics.setBlendMode("alpha", "alphamultiply")
