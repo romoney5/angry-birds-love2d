@@ -25,7 +25,7 @@ function gamelua.getDeviceIDHash()
 	return "0"
 end
 
-function postDownloadTracking()--?
+function gamelua.postDownloadTracking() --?
 	return
 end
 
@@ -171,7 +171,7 @@ end
 --hooks: onChannelLoadingFailed() onRemoteNotificationReceived(view?) onChannelShown()
 --notifyEventManager(?,?) onChannelClosed() onNewChannelContentUpdated(?) onServiceAvailabilityChanged()
 
-function setRovioShelfAllowed(allowed)
+function gamelua.setRovioShelfAllowed(allowed)
 	return
 end
 
@@ -196,7 +196,7 @@ end
 ]]
 
 
-function setGCPopupAllowed(allowed)
+function gamelua.setGCPopupAllowed(allowed)
 	return
 end
 
@@ -314,7 +314,7 @@ RovioAccount = {}
 
 RovioAccount.profile = {id = 0, isConnectedToSocialNetwork = true, isGuest = false}
 
-function loadTableFromFile(filename, tosave)
+function gamelua.loadTableFromFile(filename, tosave)
 	return
 end
 
@@ -730,6 +730,10 @@ function native.RovioShelf.update(dt)
 end
 
 function native.RovioShelf.render()
+end
+
+function native.RovioShelf.getTotalH() --?
+	return 0
 end
 
 native.RovioChannel = {}

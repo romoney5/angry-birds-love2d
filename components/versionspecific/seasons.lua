@@ -589,7 +589,7 @@ function NativeCloudPayment.buyProduct(product)
 end
 
 
-function native_reloadIngameSprites()--?
+function gamelua.native_reloadIngameSprites()--? --4.3.2, when exiting shop from the level failed screen
 	return
 end
 
@@ -1008,13 +1008,13 @@ function PortalObjectTeleporter:update(dt)
 				if self.portalDelay > 0.0 then
 					self:applyTeleportTransform()
 					body:setActive(false)
-					setVisible(self.object, false)
+					gamelua.setVisible(self.object, false)
 					self.active = true
 					
 					return false
 				else
 					self:applyTeleportTransform()
-					objectExitingThroughPortal(self.object.name)
+					gamelua.objectExitingThroughPortal(self.object.name)
 					return true
 				end
 			end
@@ -1027,7 +1027,7 @@ function PortalObjectTeleporter:update(dt)
 		
 		if self.portalDelay <= 0.0 then
 			self:restoreObject()
-			objectExitingThroughPortal(self.object.name)
+			gamelua.objectExitingThroughPortal(self.object.name)
 			
 			return true
 		end
@@ -1047,7 +1047,7 @@ end
 function PortalObjectTeleporter:restoreObject()
 	local body = self.object.body
 	body:setActive(true)
-	setVisible(self.object, true)
+	gamelua.setVisible(self.object, true)
 	self:playEffects(false)
 end
 

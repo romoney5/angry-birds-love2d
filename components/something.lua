@@ -443,7 +443,6 @@ function something:update(dt)
 	local screenWidth, screenHeight = gamelua.screenWidth, gamelua.screenHeight
 
 	time = time or love.timer.getTime()
-	cameraShakeX, cameraShakeY = 0, 0
 
 	renderLeft = renderLeft + dt * 120
 

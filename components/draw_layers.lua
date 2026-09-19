@@ -62,11 +62,11 @@ end
 local yoffsets = {}
 local layercolors = {}
 
-function setThemeForegroundOffsetY(layer, y)
+function gamelua.setThemeForegroundOffsetY(layer, y)
 	yoffsets[layer] = y
 end
 
-function setThemeRectColour(layer, r, g, b, a)
+function gamelua.setThemeRectColour(layer, r, g, b, a)
 	r, g, b, a = r / 255, g / 255, b / 255, a / 255
 	layercolors[layer] = {r * a, g * a, b * a, a}
 end

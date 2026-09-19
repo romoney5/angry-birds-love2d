@@ -373,7 +373,7 @@ function gamelua.setColliderType(object, collider) --3.0.1
 end
 
 function incrementPortalPingPongCount(object, enterPortal, newPortal)
-	birdTravellingThroughPortal(object.name)
+	gamelua.birdTravellingThroughPortal(object.name)
 	
 	if enterPortal ~= object.portalName then
 		object.pingPongCount = 0
@@ -424,6 +424,13 @@ function gamelua.setLinearDamping(object, damping)
 	local obj = objects.world[object]
 	if obj and obj.body then
 		obj.body:setLinearDamping(damping)
+	end
+end
+
+function gamelua.setAngularDamping(object, damping) --seasons 4.3.2
+	local obj = objects.world[object]
+	if obj and obj.body then
+		obj.body:setAngularDamping(damping)
 	end
 end
 
