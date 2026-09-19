@@ -338,6 +338,7 @@ function CUI.Textbox(state, x, y, w, h)
 	love.graphics.setLineStyle("rough")
 	love.graphics.rectangle("fill", x, y, w, h, 10, 10)
 	love.graphics.rectangle("line", x, y, w, h, 10, 10)
+	love.graphics.setColor(1, 1, 1, 1)
 
 	--TODO: doesn't play well with scrolling
 	--TODO: newlines also don't display properly
