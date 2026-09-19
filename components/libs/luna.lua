@@ -787,8 +787,21 @@ function l_run_chunk(chunk, upvalues, ...)
 	--program_counter is the next instruction to execute
 	stack.program_counter = 1
 	
-	l_place_varargs(stack, select(chunk.num_parameters + 1, ...))
+	--put parameters and varargs into place
+	local is_vararg = chunk.is_vararg
+	local VARARG_HASARG = 1 --"arg" support compiled in
+	local VARARG_ISVARARG = 2 --function uses varargs
+	local VARARG_NEEDSARG = 4 --function body does not use ...
+	
 	l_place_returns(stack, 0, chunk.num_parameters, ...)
+	
+	if bit.band(is_vararg, VARARG_ISVARARG) ~= 0 then
+		if bit.band(is_vararg, VARARG_HASARG) ~= 0 and bit.band(is_vararg, VARARG_NEEDSARG) ~= 0 then --needs "arg"
+			stack[chunk.num_parameters] = table.pack(...)
+		else
+			l_place_varargs(stack, select(chunk.num_parameters + 1, ...))
+		end
+	end
 	
 	return l_error_handler(stack, chunk, pcall(l_run_instructions, stack, chunk))
 end
