@@ -24,6 +24,8 @@ function gamelua.createThemeSprite(name, sprite, x, y, scaleX, scaleY, angle, la
 		themeSpriteObjects[name] = {sprite = sprite, x = x, y = y, scaleX = scaleX, scaleY = scaleY, angle = angle, speedX = layerNumber, layerNumber = angleVel,
 			horFlip = false}
 	end
+	
+	themeSpriteObjects[name].time = 0
 end
 
 createThemeSprite = gamelua.createThemeSprite --classic 6.3.0
@@ -52,7 +54,9 @@ function setThemeSprite(name, sprite, layer)
 end
 
 function gamelua.updateThemeSprite(dt)
-	return
+	for k, themesprite in pairs(themeSpriteObjects) do
+		themesprite.time = themesprite.time + dt
+	end
 end
 
 local yoffsets = {}
@@ -69,6 +73,7 @@ end
 
 function gamelua.setTheme(theme)
 	currentTheme = theme
+	table.clear(themeSpriteObjects)
 	yoffsets = {}
 	layercolors = {}
 end
@@ -151,7 +156,7 @@ function drawThemeSprite(v, layer)
 
 	local wScale = renderScale
 	local relativeSpeed = layer[3] or 1
-	local relativeScale = layer[4] or 1.5
+	local relativeScale = layer[4] or 1 --.5
 	local isLooping = layer[5]
 	
 	local screenLeft = renderLeft
@@ -159,17 +164,21 @@ function drawThemeSprite(v, layer)
 	
 	local xs = v.scaleX or v.scale.x
 	local ys = v.scaleY or v.scale.y
+	
+	local scrollFrequency = v.speedX or 0
+	local time = v.time
+	local autoScroll = scrollFrequency * time --TODO: inaccurate with water
 
 	if w > 0 and wScale > .02 then --don't draw so many if the scale is too low
 		for x = -1, math.floor(gamelua.screenWidth / w / wScale) do
-			local pivotX = w * x
-			local left = (-screenLeft * relativeSpeed / relativeScale) % w
-			local top = (-screenTop / ys)
+			local pivotX = w * x + (v.x + autoScroll) * 16
+			local left = (-screenLeft * relativeSpeed) % w
+			local top = (-screenTop / ys) + (v.y * 16)
 
 			gamelua.setRenderState(pivotX + left, top, wScale * xs, wScale * ys, v.angle, px, py)
 
 			if x == 0 or isLooping then
-				res.drawSprite(v.sprite, v.x * 16, v.y * 16)
+				res.drawSprite(v.sprite, 0, 0)
 			end
 		end
 	end
@@ -202,10 +211,10 @@ function gamelua.drawBackgroundNative(highGFX)
 			love.graphics.pop()
 
 			for k, object in pairs(themeSpriteObjects) do
-				if object.layerNumber == layernum - 1 then
+				if object.layerNumber + 1 == layernum then
 					-- setRenderState(-screen.left, -screen.top, worldScale, worldScale, 0, 0, v.angle)
 					-- res.drawSprite(v.sprite, v.x, 0)
-					drawThemeSprite(object, theme.bgLayers[layernum] or layer)
+					drawThemeSprite(object, layer)
 				end
 			end
 		end
