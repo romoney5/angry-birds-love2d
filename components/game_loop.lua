@@ -116,6 +116,7 @@ function love.update(dt)
 				res.drawString("", "Update time: "..(math.floor((t2 - t1) * 1000 * 10) / 10).." ms", 10, 10)
 				res.drawString("", "Memory diff: "..(math.floor((collectgarbage("count") - m1) * 100) / 100).." kb", 10, 50)
 				res.drawString("", "Current mem: "..(math.floor(collectgarbage("count") / 1024 * 100) / 100).." mb", 10, 90)
+				res.drawString("", "FPS: "..love.timer.getFPS(), 10, 130)
 			end
 		end
 
