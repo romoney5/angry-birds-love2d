@@ -548,7 +548,12 @@ function CUI.HandleScroll(state, dt)
 	--[[state.dest = math.max(state.dest, state.maxscroll)
 	state.dest = math.min(state.dest, 0)]]
 	
-	state.velocity_y = state.velocity_y + cursor.wheel * 500
+	local scroll_speed_limit = 1750
+	
+	if math.abs(state.velocity_y * sign(cursor.wheel)) < scroll_speed_limit and cursor.wheel ~= 0 then
+		state.velocity_y = math.min((state.velocity_y + cursor.wheel * 500) * sign(cursor.wheel), scroll_speed_limit) * sign(cursor.wheel)
+	end
+	
 	state.scroll = state.scroll + state.velocity_y * dt--ease.linear(dt * 16, state.scroll, state.dest)
 	
 	if not state.touch_scrolling and outOfBounds then

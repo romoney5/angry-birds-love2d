@@ -139,10 +139,8 @@ function updateMouse(dt)
 		prev_mouse_y = y
 	end
 	
-	if joystick then
-		--gamepad logic
-		updateGamepad(dt)
-	end
+	--gamepad logic
+	updateGamepad(dt)
 
 	love.mouse.setVisible((gamelua.deviceModel ~= "windows"
 		and gamelua.showCursor ~= false)

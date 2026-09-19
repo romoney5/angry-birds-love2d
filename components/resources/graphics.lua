@@ -136,7 +136,7 @@ function res.getSpritePivot(sheet, sprite)
 end
 
 function drawSprite(sheet, sprite, x, y, vanchor, hanchor, width, height)
-	if sprite == g_currentCursorName and (joystick and physicsEnabled) then return end
+	if joystick and sprite == gamelua.g_currentCursorName then return end
 
 	local image = type(sprite) == "string" and (cachedcs[sprite] or cachedimgs[sprite]) or sprite
 

@@ -145,6 +145,8 @@ function love.update(dt)
 		
 		gamelua.setRenderState(0, 0, 1, 1)
 		updatePopup()
+		
+		drawGamepad(dt)
 
 		cursor.wheelTriggered = nil
 		cursor.wheel = 0
