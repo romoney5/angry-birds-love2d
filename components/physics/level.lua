@@ -21,7 +21,7 @@ function gamelua.loadLevel(filename)
 	zOrderedObjects = {}
 	activeTeleporters = {}
 	
-	gamelua.loadLuaFileToObject(filename..".lua", this, gamelua.loadedObjects)
+	gamelua.loadLuaFileToObject(filename..".lua", nil, gamelua.loadedObjects)
 	
 	gamelua.setMaxTranslation(2)
 	setupColliders()
@@ -30,9 +30,37 @@ function gamelua.loadLevel(filename)
 	LevelParticlesManager.initialized = false
 end
 
+local customSerialize
+function customSerialize(t, inner)
+	local out = ""
+	inner = inner or 0
+
+	for k, v in pairs(t) do
+		local indent = ("\t"):rep(inner)
+		out = out..indent
+		
+		if type(v) == "table" then
+			out = out..(("%s = {\n%s%s}"):format(k, customSerialize(v, inner + 1), indent))
+		elseif type(v) == "string" then
+			out = out..(("%s = \"%s\""):format(k, v))
+		elseif type(v) == "number" then
+			out = out..(("%s = %s"):format(k, tostring(v)))
+		elseif type(v) == "boolean" then
+			out = out..(("%s = %s"):format(k, tostring(v)))
+		else
+			out = out..(("--%s = \"%s\""):format(k, tostring(v)))
+		end
+		
+		out = out..(("%s\n"):format(inner > 0 and "," or ""))
+	end
+	
+	return out
+end
+
 function gamelua.saveLevel(filename)
 	print("Saving level \""..filename..".lua\"...")
-	gamelua.saveLuaFile(filename..".lua","objects", nil, nil, true)
+	love.filesystem.createDirectory(filename:match(".*/") or "")
+	love.filesystem.write(filename..".lua", customSerialize(gamelua.objects))
 end
 
 function gamelua.setPhysicsSimulationScale(scale)

@@ -566,7 +566,10 @@ function gamelua.saveLuaFile(fileName, tableName, appData)
 		return
 	end
 	
-	local success, result = love.filesystem.write(fileName, ("%s = {\n%s}"):format(tableName, serializeTable(tableToSave)))
+	local out = serializeTable(tableToSave)
+	out = ("%s = {\n%s}"):format(tableName, out)
+	
+	local success, result = love.filesystem.write(fileName, out)
 	
 	if success then
 		print("\""..tableName.."\" was saved to "..fileName)

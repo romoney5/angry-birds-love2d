@@ -331,8 +331,8 @@ end
 
 local function getZOrder(name)
 	local data
-	if loadedObjects then
-		data = blockTable.blocks[loadedObjects.world[name].definition]
+	if gamelua.loadedObjects then
+		data = blockTable.blocks[gamelua.loadedObjects.world[name].definition]
 	else
 		data = objects.world[name]
 	end
