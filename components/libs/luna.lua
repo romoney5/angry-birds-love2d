@@ -11,7 +11,7 @@
 --https://www.lua.org/tests/ (lua 5.1 testing suite's calls.lua)
 --as you can see i'm not too familiar with lua's bytecode format
 
-local unpack = love.data.unpack
+local love_unpack = love.data.unpack
 
 local assert = assert
 
@@ -47,9 +47,9 @@ local function l_read_number(src, pos, size, unpack_endian)
 	local value
 
 	if size == 8 then
-		value = unpack(unpack_endian.."d", src, pos)
+		value = love_unpack(unpack_endian.."d", src, pos)
 	elseif size == 4 then
-		value = unpack(unpack_endian.."f", src, pos)
+		value = love_unpack(unpack_endian.."f", src, pos)
 	else
 		l_assert(size, 8, "unsupported number size")
 		--TODO: also support integral
@@ -86,7 +86,7 @@ function l_load_chunk(src, info, chunk, name)
 	local unpack_endian = info.endian == 1 and "<" or ">"
 
 	--pos 13
-	local debugname_length = unpack(unpack_endian.."i"..info.size_size, src, pos)
+	local debugname_length = love_unpack(unpack_endian.."i"..info.size_size, src, pos)
 	skip(info.size_size)
 
 	if debugname_length > 0 then
@@ -96,52 +96,51 @@ function l_load_chunk(src, info, chunk, name)
 		chunk.debugname = name
 	end
 	
-	chunk.line_defined = unpack(unpack_endian.."i"..info.size_int, src, pos)
+	chunk.line_defined = love_unpack(unpack_endian.."i"..info.size_int, src, pos)
 	skip(info.size_int)
 	
-	chunk.last_line_defined = unpack(unpack_endian.."i"..info.size_int, src, pos)
+	chunk.last_line_defined = love_unpack(unpack_endian.."i"..info.size_int, src, pos)
 	skip(info.size_int)
 	
-	chunk.num_upvalues = unpack(unpack_endian.."i"..info.size_byte, src, pos)
+	chunk.num_upvalues = love_unpack(unpack_endian.."i"..info.size_byte, src, pos)
 	skip(info.size_byte)
 	
-	chunk.num_parameters = unpack(unpack_endian.."i"..info.size_byte, src, pos)
+	chunk.num_parameters = love_unpack(unpack_endian.."i"..info.size_byte, src, pos)
 	skip(info.size_byte)
 	
-	chunk.is_vararg = unpack(unpack_endian.."i"..info.size_byte, src, pos)
+	chunk.is_vararg = love_unpack(unpack_endian.."i"..info.size_byte, src, pos)
 	skip(info.size_byte)
 	
-	chunk.max_stack_size = unpack(unpack_endian.."i"..info.size_byte, src, pos)
+	chunk.max_stack_size = love_unpack(unpack_endian.."i"..info.size_byte, src, pos)
 	skip(info.size_byte)
 	
 	
 	--load instructions
 	--cache them all consecutively so that instructions
 	--don't have to be decoded at runtime
-	local num_instructions = unpack(unpack_endian.."i"..info.size_int, src, pos)
+	local num_instructions = love_unpack(unpack_endian.."i"..info.size_int, src, pos)
 	skip(info.size_int)
 	
-	chunk.instructions_opcodes = ffi.new("int32_t[?]", num_instructions)--table.new(num_instructions, 0)
-	chunk.instructions_regs = ffi.new("int32_t[?]", num_instructions * 5)--table.new(num_instructions * 5, 0)
+	chunk.instructions = ffi.new("int32_t[?]", num_instructions * 6)--table.new(num_instructions * 6, 0)
 	
 	for i = 1, num_instructions do
-		local inst = unpack(unpack_endian.."i"..info.size_inst, src, pos)
+		local inst = love_unpack(unpack_endian.."i"..info.size_inst, src, pos)
 		local opcode, reg_a, reg_b, reg_c, reg_bx, reg_sbx = l_decode_inst(inst)
 		
-		chunk.instructions_opcodes[i - 1] = opcode
+		chunk.instructions[i * 6 - 6] = opcode
 		
-		chunk.instructions_regs[i * 5 - 5] = reg_a
-		chunk.instructions_regs[i * 5 - 4] = reg_b
-		chunk.instructions_regs[i * 5 - 3] = reg_c
-		chunk.instructions_regs[i * 5 - 2] = reg_bx
-		chunk.instructions_regs[i * 5 - 1] = reg_sbx
+		chunk.instructions[i * 6 - 5] = reg_a
+		chunk.instructions[i * 6 - 4] = reg_b
+		chunk.instructions[i * 6 - 3] = reg_c
+		chunk.instructions[i * 6 - 2] = reg_bx
+		chunk.instructions[i * 6 - 1] = reg_sbx
 		
 		skip(info.size_inst)
 	end
 	
 	
 	--load constants
-	local num_constants = unpack(unpack_endian.."i"..info.size_int, src, pos)
+	local num_constants = love_unpack(unpack_endian.."i"..info.size_int, src, pos)
 	skip(info.size_int)
 	
 	chunk.constants = table.new(num_constants, 0)
@@ -152,13 +151,13 @@ function l_load_chunk(src, info, chunk, name)
 	local LUA_TSTRING = 4
 	
 	for i = 1, num_constants do
-		local constant_type = unpack(unpack_endian.."i"..info.size_byte, src, pos)
+		local constant_type = love_unpack(unpack_endian.."i"..info.size_byte, src, pos)
 		skip(info.size_byte)
 		
 		if constant_type == LUA_TNIL then
 			chunk.constants[i] = nil
 		elseif constant_type == LUA_TBOOLEAN then
-			local value = unpack(unpack_endian.."i"..info.size_byte, src, pos)
+			local value = love_unpack(unpack_endian.."i"..info.size_byte, src, pos)
 			skip(info.size_byte)
 			
 			chunk.constants[i] = value ~= 0
@@ -167,7 +166,7 @@ function l_load_chunk(src, info, chunk, name)
 			
 			chunk.constants[i] = value
 		elseif constant_type == LUA_TSTRING then
-			local length = unpack(unpack_endian.."i"..info.size_size, src, pos)
+			local length = love_unpack(unpack_endian.."i"..info.size_size, src, pos)
 			skip(info.size_size)
 
 			local value = readString(src, pos, length - 1)
@@ -180,7 +179,7 @@ function l_load_chunk(src, info, chunk, name)
 	end
 	
 	--I am Proto! Your security is my.. motto!
-	local num_protos = unpack(unpack_endian.."i"..info.size_int, src, pos)
+	local num_protos = love_unpack(unpack_endian.."i"..info.size_int, src, pos)
 	skip(info.size_int)
 	
 	chunk.protos = table.new(num_protos, 0)
@@ -191,34 +190,34 @@ function l_load_chunk(src, info, chunk, name)
 		l_load_chunk(src, info, chunk.protos[i], name)
 	end
 	
-	--parse debug info (disabled as it is not used in luna)
-	local num_line_info = unpack(unpack_endian.."i"..info.size_int, src, pos)
+	--parse debug info (disabled as it is not used in luna, but child protos also have it so they must be handled)
+	local num_line_info = love_unpack(unpack_endian.."i"..info.size_int, src, pos)
 	skip(info.size_int)
 	
 	--chunk.line_info = table.new(num_line_info, 0)
 	
 	for i = 1, num_line_info do
-		--chunk.line_info[i] = unpack(unpack_endian.."i"..info.size_int, src, pos)
+		--chunk.line_info[i] = love_unpack(unpack_endian.."i"..info.size_int, src, pos)
 		skip(info.size_int)
 	end
 	
 	
-	local num_local_vars = unpack(unpack_endian.."i"..info.size_int, src, pos)
+	local num_local_vars = love_unpack(unpack_endian.."i"..info.size_int, src, pos)
 	skip(info.size_int)
 	
 	--chunk.local_vars = table.new(num_local_vars, 0)
 	
 	for i = 1, num_local_vars do
-		local length_name = unpack(unpack_endian.."i"..info.size_size, src, pos)
+		local length_name = love_unpack(unpack_endian.."i"..info.size_size, src, pos)
 		skip(info.size_size)
 
 		--local name = readString(src, pos, length_name - 1)
 		skip(length_name)
 		
-		--local start_pc = unpack(unpack_endian.."i"..info.size_int, src, pos)
+		--local start_pc = love_unpack(unpack_endian.."i"..info.size_int, src, pos)
 		skip(info.size_int)
 		
-		--local end_pc = unpack(unpack_endian.."i"..info.size_int, src, pos)
+		--local end_pc = love_unpack(unpack_endian.."i"..info.size_int, src, pos)
 		skip(info.size_int)
 		
 		--[[
@@ -231,13 +230,13 @@ function l_load_chunk(src, info, chunk, name)
 	end
 	
 	
-	local num_upvalue_names = unpack(unpack_endian.."i"..info.size_int, src, pos)
+	local num_upvalue_names = love_unpack(unpack_endian.."i"..info.size_int, src, pos)
 	skip(info.size_int)
 	
 	--chunk.upvalue_names = table.new(num_upvalue_names, 0)
 	
 	for i = 1, num_upvalue_names do
-		local length_name = unpack(unpack_endian.."i"..info.size_size, src, pos)
+		local length_name = love_unpack(unpack_endian.."i"..info.size_size, src, pos)
 		skip(info.size_size)
 
 		--local name = readString(src, pos, length_name - 1)
@@ -283,9 +282,9 @@ local function l_load_header(src, info)
 	info.size_byte = 1
 end
 
-local function l_get_constant(chunk, stack, register)
+local function l_get_constant(constants, stack, register)
 	if register > 255 then
-		return chunk.constants[register - 255]
+		return constants[register - 255]
 	else
 		return stack[register]
 	end
@@ -312,8 +311,7 @@ local function l_close_upvalues(stack, start)
 end
 
 --the list of opcode functions
-local instructions
-instructions = {
+local instructions = {
 	--MOVE; copies stack's B to stack's A
 	[0] = {name = "MOVE"},
 	--LOADK; loads a constant found in Bx into stack's A
@@ -423,26 +421,45 @@ function l_place_varargs(stack, ...)
 	end
 end
 
+local record = {}
+
+function l_print_record()
+	print("Most run opcodes:")
+
+	for i = 0, #instructions do
+		print(("%s (%s): %s"):format(instructions[i].name, tostring(i), tostring(record[i])))
+	end
+	
+	table.clear(record)
+	print("Cleared record")
+end
+
 --loops through and runs instructions in the chunk
 local function l_run_instructions(stack, chunk)
+	local constants = chunk.constants
+	local instructions = chunk.instructions
+
 	while true do
 		local program_counter = stack.program_counter
-		local opcode = chunk.instructions_opcodes[program_counter - 1]
-		local a, b, c, bx, sbx =
-			chunk.instructions_regs[program_counter * 5 - 5],
-			chunk.instructions_regs[program_counter * 5 - 4],
-			chunk.instructions_regs[program_counter * 5 - 3],
-			chunk.instructions_regs[program_counter * 5 - 2],
-			chunk.instructions_regs[program_counter * 5 - 1]
+		local opcode, a, b, c, bx, sbx =
+			instructions[program_counter * 6 - 6],
+			instructions[program_counter * 6 - 5],
+			instructions[program_counter * 6 - 4],
+			instructions[program_counter * 6 - 3],
+			instructions[program_counter * 6 - 2],
+			instructions[program_counter * 6 - 1]
 		
-		stack.program_counter = stack.program_counter + 1
+		program_counter = program_counter + 1
+		stack.program_counter = program_counter
+		
+		--record[opcode] = (record[opcode] or 0) + 1
 		
 		--call the opcode
 		if opcode == 0 then --MOVE; copies stack's B to stack's A
 			stack[a] = stack[b]
 			stack.top = a
 		elseif opcode == 1 then --LOADK; loads a constant found in Bx into stack's A
-			local constant = chunk.constants[bx + 1]
+			local constant = constants[bx + 1]
 			
 			stack[a] = constant
 			stack.top = a
@@ -450,7 +467,7 @@ local function l_run_instructions(stack, chunk)
 			stack[a] = b ~= 0
 			
 			if c ~= 0 then
-				stack.program_counter = stack.program_counter + 1
+				stack.program_counter = program_counter + 1
 			end
 			stack.top = a
 		elseif opcode == 3 then --LOADNIL; loads nil values from stack's A to stack's B
@@ -464,17 +481,17 @@ local function l_run_instructions(stack, chunk)
 			stack[a] = upvalue[2][upvalue[1]]
 			stack.top = a
 		elseif opcode == 5 then --GETGLOBAL; loads a constant found in Bx, gets it from the env, and puts it into stack's A
-			local constant = chunk.constants[bx + 1]
+			local constant = constants[bx + 1]
 			
 			stack[a] = chunk.env[constant]
 			stack.top = a
 		elseif opcode == 6 then --GETTABLE; gets an index (constant C) from a table found in stack's B, and puts it into stack's A
-			local value_2 = l_get_constant(chunk, stack, c)
+			local value_2 = l_get_constant(constants, stack, c)
 			
 			stack[a] = stack[b][value_2]
 			stack.top = a
 		elseif opcode == 7 then --SETGLOBAL; sets an env variable (constant Bx) to stack's A
-			local constant = chunk.constants[bx + 1]
+			local constant = constants[bx + 1]
 			
 			chunk.env[constant] = stack[a]
 		elseif opcode == 8 then --SETUPVAL; sets an upvalue B's value to stack's A
@@ -482,15 +499,15 @@ local function l_run_instructions(stack, chunk)
 			upvalue[2][upvalue[1]] = stack[a]
 			--this shouldn't update the origin's top
 		elseif opcode == 9 then --SETTABLE; sets an index (constant B) of a table, found in stack's A, to constant C
-			local value_1 = l_get_constant(chunk, stack, b)
-			local value_2 = l_get_constant(chunk, stack, c)
+			local value_1 = l_get_constant(constants, stack, b)
+			local value_2 = l_get_constant(constants, stack, c)
 			
 			stack[a][value_1] = value_2
 		elseif opcode == 10 then --NEWTABLE; creates a new table with array size B and hash size C, and puts it into stack's A
 			stack[a] = table.new(b, c)
 			stack.top = a
 		elseif opcode == 11 then --SELF; same as GETTABLE, but also sets stack's A + 1 to the table itself
-			local value_2 = l_get_constant(chunk, stack, c)
+			local value_2 = l_get_constant(constants, stack, c)
 			
 			--the order matters here for some reason?
 			stack[a + 1] = stack[b]
@@ -498,38 +515,38 @@ local function l_run_instructions(stack, chunk)
 			
 			stack.top = a + 1
 		elseif opcode == 12 then --ADD; performs addition on constants B and C, putting the result in stack's A
-			local value_1 = l_get_constant(chunk, stack, b)
-			local value_2 = l_get_constant(chunk, stack, c)
+			local value_1 = l_get_constant(constants, stack, b)
+			local value_2 = l_get_constant(constants, stack, c)
 			
 			stack[a] = value_1 + value_2
 			stack.top = a
 		elseif opcode == 13 then --SUB; performs subtraction on constants B and C, putting the result in stack's A
-			local value_1 = l_get_constant(chunk, stack, b)
-			local value_2 = l_get_constant(chunk, stack, c)
+			local value_1 = l_get_constant(constants, stack, b)
+			local value_2 = l_get_constant(constants, stack, c)
 			
 			stack[a] = value_1 - value_2
 			stack.top = a
 		elseif opcode == 14 then --MUL; performs multiplication on constants B and C, putting the result in stack's A
-			local value_1 = l_get_constant(chunk, stack, b)
-			local value_2 = l_get_constant(chunk, stack, c)
+			local value_1 = l_get_constant(constants, stack, b)
+			local value_2 = l_get_constant(constants, stack, c)
 			
 			stack[a] = value_1 * value_2
 			stack.top = a
 		elseif opcode == 15 then --DIV; performs division on constants B and C, putting the result in stack's A
-			local value_1 = l_get_constant(chunk, stack, b)
-			local value_2 = l_get_constant(chunk, stack, c)
+			local value_1 = l_get_constant(constants, stack, b)
+			local value_2 = l_get_constant(constants, stack, c)
 			
 			stack[a] = value_1 / value_2
 			stack.top = a
 		elseif opcode == 16 then --MOD; performs modulus on constants B and C, putting the result in stack's A
-			local value_1 = l_get_constant(chunk, stack, b)
-			local value_2 = l_get_constant(chunk, stack, c)
+			local value_1 = l_get_constant(constants, stack, b)
+			local value_2 = l_get_constant(constants, stack, c)
 			
 			stack[a] = value_1 % value_2
 			stack.top = a
 		elseif opcode == 17 then --POW; performs exponentiation on constants B and C, putting the result in stack's A
-			local value_1 = l_get_constant(chunk, stack, b)
-			local value_2 = l_get_constant(chunk, stack, c)
+			local value_1 = l_get_constant(constants, stack, b)
+			local value_2 = l_get_constant(constants, stack, c)
 			
 			stack[a] = value_1 ^ value_2
 			stack.top = a
@@ -550,40 +567,40 @@ local function l_run_instructions(stack, chunk)
 			end
 			stack.top = a
 		elseif opcode == 22 then --JMP; unconditionally jumps ahead sBx instructions (can be negative or positive)
-			stack.program_counter = stack.program_counter + sbx
+			stack.program_counter = program_counter + sbx
 		elseif opcode == 23 then --EQ; calculates if constants B and C are equal (or unequal if A is 1),
 		--skipping an instruction ahead if not
-			local value_1 = l_get_constant(chunk, stack, b)
-			local value_2 = l_get_constant(chunk, stack, c)
+			local value_1 = l_get_constant(constants, stack, b)
+			local value_2 = l_get_constant(constants, stack, c)
 			
 			local target = a == 1
 			
 			if (value_1 == value_2) ~= target then
-				stack.program_counter = stack.program_counter + 1
+				stack.program_counter = program_counter + 1
 			end
 		elseif opcode == 24 then --LT; calculates if constant B is less than constant C (or greater if A is 1),
 		--skipping an instruction ahead if not
-			local value_1 = l_get_constant(chunk, stack, b)
-			local value_2 = l_get_constant(chunk, stack, c)
+			local value_1 = l_get_constant(constants, stack, b)
+			local value_2 = l_get_constant(constants, stack, c)
 			
 			local target = a == 1
 			
 			if (value_1 < value_2) ~= target then
-				stack.program_counter = stack.program_counter + 1
+				stack.program_counter = program_counter + 1
 			end
 		elseif opcode == 25 then --LE; calculates if constant B is less than or equal to constant C (or greater than/equal if A is 1),
 		--skipping an instruction ahead if not
-			local value_1 = l_get_constant(chunk, stack, b)
-			local value_2 = l_get_constant(chunk, stack, c)
+			local value_1 = l_get_constant(constants, stack, b)
+			local value_2 = l_get_constant(constants, stack, c)
 			
 			local target = a == 1
 			
 			if (value_1 <= value_2) ~= target then
-				stack.program_counter = stack.program_counter + 1
+				stack.program_counter = program_counter + 1
 			end
 		elseif opcode == 26 then --TEST; converts stack's A into a boolean, skipping an instruction ahead if it is unequal to C's boolean
 			if (not not stack[a]) ~= (c ~= 0) then
-				stack.program_counter = stack.program_counter + 1
+				stack.program_counter = program_counter + 1
 			end
 		elseif opcode == 27 then --TESTSET; converts stack's B into a boolean, setting stack's A to stack's B if it is equal to C's boolean,
 		--otherwise skipping an instruction ahead
@@ -592,7 +609,7 @@ local function l_run_instructions(stack, chunk)
 				
 				stack.top = a
 			else
-				stack.program_counter = stack.program_counter + 1
+				stack.program_counter = program_counter + 1
 			end
 		elseif opcode == 28 then --CALL; calls a function found in stack's A, with no. arguments B - 1 and no. return values C - 1
 		--(both of them adapt to whatever was passed in/returned if their respective register is 0)
@@ -602,8 +619,6 @@ local function l_run_instructions(stack, chunk)
 			--if b is 0, the call parameters will default to the top of the stack
 			if b == 0 then
 				num_args = stack.top - a
-			else
-				stack.top = a + b
 			end
 			
 			--hack: override environment functions
@@ -614,7 +629,7 @@ local function l_run_instructions(stack, chunk)
 				l_place_returns(stack, a)
 			else
 				--if c is 0, l_place_returns will default to the amount of args
-				l_place_returns(stack, a, c > 0 and num_returns, stack[a](table.unpack(stack, a + 1, a + num_args)))
+				l_place_returns(stack, a, c > 0 and num_returns, stack[a](unpack(stack, a + 1, a + num_args)))
 			end
 		elseif opcode == 29 then --TAILCALL; similar to CALL but performs a tail call (not very effective here
 		--as it's very hard to emulate tail calls)
@@ -635,7 +650,7 @@ local function l_run_instructions(stack, chunk)
 								 -             
 			]]
 			
-			return stack[a](table.unpack(stack, a + 1, a + num_args))
+			return stack[a](unpack(stack, a + 1, a + num_args))
 		elseif opcode == 30 then --RETURN; returns values from stack's A to stack's B (or the stack's top if B is 0)
 			local num_returns = b - 1
 			
@@ -644,7 +659,7 @@ local function l_run_instructions(stack, chunk)
 				num_returns = stack.top - a + 1
 			end
 			
-			return table.unpack(stack, a, a - 1 + num_returns)
+			return unpack(stack, a, a - 1 + num_returns)
 		elseif opcode == 31 then --FORLOOP; jumps to the start of a loop and increments if the current index < the current limit
 			local value = stack[a] --the initial value
 			local limit = stack[a + 1]
@@ -655,34 +670,26 @@ local function l_run_instructions(stack, chunk)
 			
 			--jump back to FORPREP + 1 if..
 			if stack[a] * step <= limit * step then
-				stack.program_counter = stack.program_counter + sbx
+				stack.program_counter = program_counter + sbx
 				stack[a + 3] = stack[a]
 			end
 			
 			stack.top = a + 3
 		elseif opcode == 32 then --FORPREP; skips ahead to the FORLOOP instruction and initializes stack's A
-			local value = stack[a]
-			local limit = stack[a + 1]
 			local step = stack[a + 2]
-			local external_value = stack[a + 3]
 			
 			stack[a] = stack[a] - step
 			
 			--jump to the FORLOOP
-			stack.program_counter = stack.program_counter + sbx
+			stack.program_counter = program_counter + sbx
 		elseif opcode == 33 then --TFORLOOP; initializes a generic for loop by calling the iterator function
-			local value = stack[a] --the initial value
-			local limit = stack[a + 1]
-			local step = stack[a + 2]
-			local external_value = stack[a + 3] --the visible value (e.g. i)
-			
 			--jump back if..
 			l_place_returns(stack, a + 3, (a + 2 + c) - (a + 3) + 1, stack[a](stack[a + 1], stack[a + 2]))
 			
 			if stack[a + 3] ~= nil then
 				stack[a + 2] = stack[a + 3]
 			else
-				stack.program_counter = stack.program_counter + 1
+				stack.program_counter = program_counter + 1
 			end
 		elseif opcode == 34 then --SETLIST; sets an amount of values B (or up to stack's top if 0) of a table found in stack's A, starting from C
 			--let's assume no one is changing this in c
@@ -707,8 +714,8 @@ local function l_run_instructions(stack, chunk)
 			
 			--lua's upvalue system is hacky
 			for i = 1, proto.num_upvalues do
-				local opcode = chunk.instructions_opcodes[stack.program_counter - 1]
-				local reg_b = chunk.instructions_regs[stack.program_counter * 5 - 4]
+				local opcode = chunk.instructions[(program_counter + i - 1) * 6 - 6]
+				local reg_b = chunk.instructions[(program_counter + i - 1) * 6 - 4]
 				
 				--making tables is scary here
 				upvalues = upvalues or table.new(proto.num_upvalues, 0)
@@ -746,9 +753,9 @@ local function l_run_instructions(stack, chunk)
 				else
 					l_assert(instructions[opcode].name, "MOVE or GETUPVAL", "unexpected opcode "..opcode.." after closure instruction")
 				end
-				
-				stack.program_counter = stack.program_counter + 1
 			end
+			
+			stack.program_counter = program_counter + proto.num_upvalues
 			
 			--wrap the function
 			stack[a] = function(...)
@@ -815,13 +822,13 @@ function l_error_handler(stack, chunk, success, ...)
 		
 		for i = math.max(stack.program_counter - 16 - 32, 1), stack.program_counter - 1 do
 			local program_counter = i
-			local opcode = chunk.instructions_opcodes[program_counter - 1]
-			local reg_a, reg_b, reg_c, reg_bx, reg_sbx =
-				chunk.instructions_regs[program_counter * 5 - 5],
-				chunk.instructions_regs[program_counter * 5 - 4],
-				chunk.instructions_regs[program_counter * 5 - 3],
-				chunk.instructions_regs[program_counter * 5 - 2],
-				chunk.instructions_regs[program_counter * 5 - 1]
+			local opcode, reg_a, reg_b, reg_c, reg_bx, reg_sbx =
+				chunk.instructions[program_counter * 6 - 6],
+				chunk.instructions[program_counter * 6 - 5],
+				chunk.instructions[program_counter * 6 - 4],
+				chunk.instructions[program_counter * 6 - 3],
+				chunk.instructions[program_counter * 6 - 2],
+				chunk.instructions[program_counter * 6 - 1]
 			
 			if i == stack.program_counter - 1 then
 				out = out.."-> "
