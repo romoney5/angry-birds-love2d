@@ -18,9 +18,12 @@ local statuses_new = {
 	PAYMENT_RESTORED = 5,
 }
 
+local purchaseResultCallback
+
 function gamelua.iapInitItemPurchase(callback) --1.7.0
 	if gamelua[callback] then
-		gamelua[callback](mightyEagleItemId, 1, 0) --status: 1=success, 2=failure (error code 2=canceled), 3=restored
+		purchaseResultCallback = gamelua[callback]
+		gamelua[callback](nil, 1, 0) --status: 1=success, 2=failure (error code 2=canceled), 3=restored
 	else
 		print("Init purchase callback: "..tostring(callback).." not found")
 	end
@@ -51,17 +54,31 @@ function gamelua.iapBuyItem(id, callbackid, statuslist) --1.7.0
 	end
 end
 
+function gamelua.iapBuyItemNew(id) --seasons 3.2.0
+	gamelua.iapBuyItem(id, purchaseResultCallback, statuses)
+end
+
 function gamelua.iapGetItemCount()
 	return 1
 end
 
---TODO: er
 function gamelua.iapGetItemAt(i)
-	return { name = "might eagle", id = mightyEagleItemId, type = "iap", quantity = 1, description = "might eagle" }
+	return { name = "IAP Item", id = "iap_item", type = "iap", quantity = 1, description = "In-app Purchase item" }
 end
 
 function gamelua.iapRestoreItems(callback)
 	return
+end
+
+function gamelua.iapRestoreItemsNew() --seasons 3.2.0
+	local callback = purchaseResultCallback
+	local statuslist = statuses
+	
+	if callback then
+		callback(nil, statuslist.PAYMENT_CANCELLED, statuslist.PAYMENT_CANCELLED)
+	else
+		print("Purchase callback: "..tostring(callbackid).." not found")
+	end
 end
 
 
