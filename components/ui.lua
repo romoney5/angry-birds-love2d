@@ -101,7 +101,7 @@ end
 
 --formula gathered from discord (chrome text boxes)
 function controlKeyLoop(state, direction, callback)
-	local punctuations = "!@#$^*() .:\t\n"
+	local punctuations = "!@#$^*() .:\t\n\"'"
 	local hit_letter = false
 	
 	repeat
