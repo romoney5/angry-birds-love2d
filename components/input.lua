@@ -29,6 +29,9 @@ keyHold = gamelua.keyHold
 local key_mapping = {
 	lshift = "shift",
 	lctrl = "control",
+	lalt = "key_alt",
+	["-"] = "dash",
+	--surprisingly fusion does not have a keycode for =
 }
 
 function love.keypressed(key)

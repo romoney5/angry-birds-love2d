@@ -78,7 +78,7 @@ function love.update(dt)
 		if checkDebugOpen then checkDebugOpen() end
 
 		--toggle fullscreen with alt+enter
-		if keyHold["LALT"] and keyPressed["RETURN"] then
+		if keyHold["KEY_ALT"] and keyPressed["RETURN"] then
 			gamelua.setFullScreenMode(not gamelua.isInFullScreenMode())
 		end
 
