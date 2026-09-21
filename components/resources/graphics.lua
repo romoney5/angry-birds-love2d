@@ -250,12 +250,15 @@ function checkSprite(sprite)
 	return cachedcs[sprite] or cachedimgs[sprite]
 end
 
-function gamelua.drawRect(r, g, b, a, x, y, w, h, inWorld)
+function gamelua.drawRect(r, g, b, a, x, y, x2, y2, inWorld)
 	love.graphics.push("all")
 
 	if not inWorld then --if the rect is not supposed to be drawn in world space
 		gamelua.setRenderState(0, 0, 1, 1)
 	end
+	
+	local w = x2 - x
+	local h = y2 - y
 	
 	--ab classic shop uses an alpha value higher than 1
 	--for whatever reason
@@ -272,8 +275,6 @@ function gamelua.drawRect(r, g, b, a, x, y, w, h, inWorld)
 	love.graphics.translate(-drawxp, -drawyp)
 
 	love.graphics.setColor(r, g, b, a)
-	w = w - x
-	h = h - y
 	love.graphics.rectangle("fill", 0, 0, w, h)
 
 	love.graphics.pop()

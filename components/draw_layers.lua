@@ -104,7 +104,11 @@ end
 --[5] = looping
 --[6] = position
 function drawLayer(layer, yoffset)
+	if not layer then return end
+
 	local sprite = layer[2]
+	if not checkSprite(sprite) then return end
+	
 	local relativeSpeed = layer[3] or 1
 	local relativeScale = layer[4] or 1 --.5
 	local isLooping = layer[5]
@@ -117,28 +121,37 @@ function drawLayer(layer, yoffset)
 	local px, py = res.getSpritePivot(sprite)
 	local w, h = res.getSpriteBounds(sprite)
 	local wScale = renderScale
-	local autoScroll = -scrollFrequency * time / 16 --TODO: inaccurate with water
+	local autoScroll = -scrollFrequency * time * 16 / w * relativeScale --TODO: inaccurate with water
 
 	if layer.water then
 		yoffset = -(objects.waterLevel or 0) * physicsToWorld / relativeScale
 	end
 
-	local xScale = layer.scaleWobbleX and math.sin(time) * layer.scaleWobbleX / wScale or 0
-	local yScale = layer.scaleWobbleY and math.sin(time) * layer.scaleWobbleY / wScale or 0
+	local xScale = layer.scaleWobbleX and math.sin(time) * layer.scaleWobbleX / w or 0
+	local yScale = layer.scaleWobbleY and math.sin(time) * layer.scaleWobbleY / h or 0
 	
 	local screenLeft = renderLeft
 	local screenTop = renderTop
 	
-	if w > 0 and wScale > .02 then --don't draw so many if the scale is too low
-		for x = -1, math.floor(gamelua.screenWidth / (w - px) / wScale) do
+	local limit_start = -1
+	local limit = (gamelua.screenWidth / wScale) / w + 1
+	
+	local top = -(screenTop) / (relativeScale --[[* 1.3]]) + (yoffset or 0) + startY
+	
+	if layer.fillBelow then
+		gamelua.drawRect(layer.fillBelow.r / 255, layer.fillBelow.g / 255, layer.fillBelow.b / 255, layer.fillBelow.a / 255,
+			0, (top + h - py) * (wScale * (relativeScale + yScale)), gamelua.screenWidth, gamelua.screenHeight)
+	end
+	
+	if limit < gamelua.screenWidth / 2 then --don't draw so many if the scale is too low
+		for x = limit_start, limit do
 			local pivotX = w * x + startX
 			local left = -screenLeft * relativeSpeed / relativeScale
-			local top = -(screenTop - startY) / relativeScale + (yoffset or 0)
 			
 			if episode4BGCranes and sprite:find("CRANE") then
 				left = left + episode4BGCranes.startX / 16
 			elseif isLooping ~= false then
-				left = (left + autoScroll) % w
+				left = (left + autoScroll / relativeScale) % w
 			end
 			
 			gamelua.setRenderState(pivotX + left, top, wScale * (relativeScale + xScale), wScale * (relativeScale + yScale), 0, px, py)
@@ -148,6 +161,16 @@ function drawLayer(layer, yoffset)
 			end
 		end
 	end
+end
+
+--inaccurate, but no one uses this
+function gamelua.drawLayer(layer)
+	local theme = gamelua.blockTable.themes[currentTheme] or currentTheme
+	if not (theme and type(theme) == "table") then return end
+	
+	local layers = theme.bgLayers or theme.layers
+
+	drawLayer(layers[layer + 1])
 end
 
 function drawThemeSprite(v, layer)
