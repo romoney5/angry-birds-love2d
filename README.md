@@ -55,4 +55,8 @@ These projects are included within the engine:
 
 [lua-bit-numberlua](https://github.com/davidm/lua-bit-numberlua) is used as a replacement for LuaJIT's bit library if it's not present.
 
+[json.lua](https://github.com/rxi/json.lua) is used to parse JSON files from later game versions.
+
+[fetch-lua](https://github.com/elloramir/fetch-lua) is currently used to download cloud assets from later game versions.
+
 This project is maintained by romoney5 and Halo345. It is not affiliated with or endorsed by Rovio Entertainment Corporation.
