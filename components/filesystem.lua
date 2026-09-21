@@ -95,7 +95,7 @@ function trimDataPath(filename)
 	return (startsWith(filename, datapath) and filename:sub(datapath:len() + 1) or filename)
 end
 
---load either plain text lua, a precompiled chunk with fione,
+--load either plain text lua, a precompiled chunk with luna,
 --a 7-zipped file, an aes-256 encrypted file, or all of the above
 function decryptSrc(filename, src)
 	local dec_path = "/dec/"..trimDataPath(filename)
@@ -222,7 +222,7 @@ function makeChunk(filename, env)
 	
 	if kind == "lua" then --it's bytecode!
 		print("Loading compiled Lua \""..filename.."\"...")
-		local err, lua = pcall(loadbytecode, src, env, filename)
+		local err, lua = pcall(luna_loadbytecode, src, env, filename)
 		return true, lua, not err
 	elseif kind == "plain" then --that's just plain old lua.. boring..
 		print("Loading Lua \""..filename.."\"...")
@@ -237,26 +237,6 @@ function makeChunk(filename, env)
 		return false, lua, err
 	end
 end
-
---fione hacks start
---me when i _G.setfenv(1, gamelua)
---[[local _setfenv = setfenv
-
-function setfenv(a, b)
-	if a == 1 and b == gamelua then return end
-	
-	return _setfenv(a, b)
-end]]
-
---me when i _G.getfenv(1)
---local _getfenv = getfenv
-
---function getfenv(a)
-	--if a == 1 then return gamelua end
-	
-	--return _getfenv(a) --?
---end
---fione hacks end
 
 --very important in later codebases
 function gamelua.loadLuaFileToObject(filename, ctx, key, lenient)
@@ -281,7 +261,7 @@ function gamelua.loadLuaFileToObject(filename, ctx, key, lenient)
 	local compiled, lua, err = makeChunk(filename, env)
 
 	if lua and not err then
-		--fione needs the env on script loading so this should only work on plaintext luas
+		--luna needs the env on script loading so this should only work on plaintext luas
 		if not compiled then
 			setfenv(lua, env)
 		end

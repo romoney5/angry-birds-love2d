@@ -797,7 +797,7 @@ function l_run_chunk(chunk, upvalues, ...)
 	
 	if bit.band(is_vararg, VARARG_ISVARARG) ~= 0 then
 		if bit.band(is_vararg, VARARG_HASARG) ~= 0 and bit.band(is_vararg, VARARG_NEEDSARG) ~= 0 then --needs "arg"
-			stack[chunk.num_parameters] = table.pack(...)
+			stack[chunk.num_parameters] = {...}
 		else
 			l_place_varargs(stack, select(chunk.num_parameters + 1, ...))
 		end
@@ -807,7 +807,7 @@ function l_run_chunk(chunk, upvalues, ...)
 end
 
 --debug error handler, which prints a snapshot of previous instructions in the file
---unlike our previous implementation in fione this doesn't deal with executed instructions
+--unlike the previous error blame implementation this doesn't deal with executed instructions
 function l_error_handler(stack, chunk, success, ...)
 	if not success then
 		local message = ...

@@ -22,9 +22,7 @@ This has only been tested on Windows (64-bit and ARM64), Linux (64-bit), Android
 - `--run`/`+..."` runs a line of Lua code before starting the game. Examples: `--run "releaseBuild = true"` `+"autoScale = 240"`
 - `--deletedata`/`-dd` prompts to delete save data (settings.lua and highscores.lua).
 - `--cheats`/`-c` enables cheats. (Enabled `cheatsEnabled`, overrides options.lua)
-- `--blamelength`/`-bl` sets the length of bytecode tracebacks (a list of previously run instructions shown upon getting an error; very useful for debugging compiled Luas). Set to 0 by default for performance reasons.
 - `--nosave`/`-ns` disables saving any Lua files (e.g. settings and highscores will not save).
-- `--fione`/`-f` switches the Lua bytecode interpreter from Luna back to the legacy FiOne. Useful for testing.
 
 ## Keybinds
 Some debug keybinds have been added:
@@ -54,9 +52,6 @@ The libcrypto library, a part of [OpenSSL](https://github.com/openssl/openssl), 
 
 ## Acknowledgments
 These projects are included within the engine:
-
-[FiOne](https://github.com/Rerumu/FiOne) (with some edits) is included to run compiled Lua files.
-- Will be removed soon in favor of Luna (another Lua VM) due to licensing and memory issues.
 
 [lua-bit-numberlua](https://github.com/davidm/lua-bit-numberlua) is used as a replacement for LuaJIT's bit library if it's not present.
 

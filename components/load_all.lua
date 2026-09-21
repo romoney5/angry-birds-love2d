@@ -24,10 +24,10 @@ table.clear = table.clear or function(t)
 	end
 end
 
+table.unpack = unpack
+
 bit = bit or	runLua(compsPath.."/libs/numberlua.lua")   --bit library since https://github.com/davidm/lua-bit-numberlua/blob/master/lmod/bit/numberlua.lua
-fione_loadbytecode	= runLua(compsPath.."/libs/fione.lua")	--run lua 5.1 bytecode in a custom vm because normally it's not portable
-luna_loadbytecode    = runLua(compsPath.."/libs/luna.lua")  --run lua 5.1 bytecode in a custom vm because normally it's not portable
-loadbytecode = luna_loadbytecode
+luna_loadbytecode = runLua(compsPath.."/libs/luna.lua") --run lua 5.1 bytecode in a custom vm because normally it's not usable in luajit
 json			= runLua(compsPath.."/libs/json.lua")	--json support for modern seasons versions
 AES				= runLua(compsPath.."/libs/aes.lua")	--aes-256-cbc decryption powered by none other than luajit ffi
 pvr				= runLua(compsPath.."/libs/pvrtc.lua")	--pvrtc format
