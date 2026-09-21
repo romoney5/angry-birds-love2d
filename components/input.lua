@@ -9,6 +9,10 @@ gamelua.touchcount = 0
 gamelua.cursor = {x = 0, y = 0, wheel = 0, wheelTriggered = false, dx = 0, dy = 0}
 maxWorldScale = 0
 
+--pc 1.6.3.1 needs these
+gamelua.multitouchZoom = {zoomCoolingTime = 0}
+gamelua.multitouchSweep = {isSweepping = false}
+
 --key table accesses default to false
 local key_meta = {
 	__index = function(self, k)
