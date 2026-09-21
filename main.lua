@@ -240,8 +240,7 @@ function loadGameFiles()
 	loadLuaFileToObject(gamelua.scriptPath.."/cutscenes.lua", nil, "cutscenes", true)
 	
 	--mobile-specific options
-	if love._os == "Android" then
-		love.window.setFullscreen(true)
+	if mobileDevice then
 		autoScale = 720
 	end
 

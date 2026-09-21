@@ -421,6 +421,60 @@ local function drawFile(x, y)
 	love.graphics.line(x, y - 9, x + 9, y + 1)
 end
 
+local https
+
+function openDownloadPopup(url, callback)
+	openPopup("Downloader", "Download file\n\""..url.."\"\nfrom the internet?",
+	{
+		{sprite = "MENU_NO", callback = function()
+			return true
+		end},
+		{sprite = "TUTORIAL_OK", callback = function()
+			https = https or require("https")
+			
+			local code, body = https.request(url)
+			
+			if not body then
+				openPopup("Downloader", "Failed to download file. Try again later.")
+				
+				return true
+			end
+			
+			print(("Downloaded file (%d bytes)"):format(body:len()))
+			
+			callback(code, body)
+			
+			return true
+		end},
+	})
+end
+
+--add a link to download libcrypto.so on android for ease of use (wip)
+if mobileDevice then
+	table.insert(something.cmenu.items,
+		false
+	)
+	
+	table.insert(something.cmenu.items,
+		{text = "Download libcrypto...", callback = function(f)
+			local path = "downloaded_libs/libcrypto.so"
+			
+			if love.filesystem.exists(path) then
+				openPopup("Download libcrypto", "You already have this file.", nil)
+				return
+			end
+			
+			openDownloadPopup("https://github.com/christian-mv/android-and-linux-openssl-binaries/raw/refs/heads/master/android/openssl-1.1.1c/arm64/libcrypto.so",
+				function(code, body)
+					love.filesystem.createDirectory("downloaded_libs")
+					love.filesystem.write(path, body)
+				end
+			)
+		end}
+	)
+end
+
+
 function something:update(dt)
 	res.useFont(nil)
 

@@ -2,6 +2,8 @@ function love.conf(t)
 	t.modules.math = false
 	t.modules.video = false
 	t.modules.joystick = true
+	
+	t.accelerometerjoystick = false
 
 	t.window.title = "Loading..."
 
@@ -14,9 +16,13 @@ function love.conf(t)
 	t.window.resizable = true
 
 	t.window.usedpiscale = true
-	t.accelerometerjoystick = false
-	-- love.window.fullscreen = true
 	t.window.msaa = 8
+	
+	local system = love.system.getOS()
+	
+	if system == "Android" then
+		love.window.fullscreen = true
+	end
 
 	--love2d with vulkan on most platforms doesn't support many image formats such as etc1
 	if t.graphics then

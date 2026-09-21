@@ -1,6 +1,12 @@
 --magic
 
-local success, libcrypto = loadLibrary{"libcrypto"}
+local paths = {"libcrypto"}
+
+if love.system.getOS() == "Android" then
+	table.insert(paths, love.filesystem.getSaveDirectory().."/downloaded_libs/libcrypto.so")
+end
+
+local success, libcrypto = loadLibrary(paths)
 
 --doesn't have a dll for libcrypto
 if not success then
