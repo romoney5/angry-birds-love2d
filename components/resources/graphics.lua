@@ -2,7 +2,7 @@
 
 drawxp, drawyp = 0, 0
 drawangle = 0
-alpha = 1
+local drawalpha = 1
 
 pivotDebug = false
 
@@ -83,7 +83,7 @@ function res.drawCompoSprite(...)
 				
 				love.graphics.push("all")
 				local r, g, b, a = love.graphics.getColor()
-				love.graphics.setColor(r * alpha, g * alpha, b * alpha, a * alpha)
+				love.graphics.setColor(r * drawalpha, g * drawalpha, b * drawalpha, a * drawalpha)
 				
 				love.graphics.translate(x, y)
 				love.graphics.translate(-xpr, -ypr)
@@ -162,14 +162,10 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, width, height)
 		if vanchor == "TOP" or hanchor == "TOP" then ypr = 0 end
 		if vanchor == "BOTTOM" or hanchor == "BOTTOM" then ypr = image.height end
 		if vanchor == "VPIVOT" or hanchor == "VPIVOT" then ypr = drawyp end
-		
-		-- if vanchor == "HCENTER" or hanchor == "HCENTER" then xpr = image.width / 2 end
-		-- if vanchor == "VCENTER" or hanchor == "VCENTER" then ypr = image.height / 2 end
 
 		love.graphics.push("all")
 		local r, g, b, a = love.graphics.getColor()
-		love.graphics.setColor(r * alpha, g * alpha, b * alpha, a * alpha)
-		--if nopma then love.graphics.setBlendMode("alpha") end
+		love.graphics.setColor(r * drawalpha, g * drawalpha, b * drawalpha, a * drawalpha)
 		
 		love.graphics.translate(x, y)
 		love.graphics.translate(-xpr, -ypr)
@@ -180,9 +176,9 @@ function drawSprite(sheet, sprite, x, y, vanchor, hanchor, width, height)
 		love.graphics.scale(wm, hm)
 
 		love.graphics.draw(
-			image.spsh,			--spritesheet
-			image.quad,			--quad
-			0, 0)
+			image.spsh,		--spritesheet
+			image.quad,		--quad
+			0, 0)			--unused position
 		
 		if pivotDebug then
 			res.useFont(nil)
@@ -212,7 +208,7 @@ function gamelua.drawSpriteColoured(sprite, x, y, scaleX, scaleY, r, g, b, a, mu
 	a = a * 1.41
 	love.graphics.setColor(r * a, g * a, b * a, a)
 	--love.graphics.setColor(r, g, b, a)
-	--setRenderState(rx, ry, rsx * scaleX, rsy * scaleY, drawangle, drawxp, drawyp, alpha)
+	--setRenderState(rx, ry, rsx * scaleX, rsy * scaleY, drawangle, drawxp, drawyp, drawalpha)
 	local image = checkSprite(sprite)
 	
 	if image then
@@ -224,8 +220,12 @@ function gamelua.drawSpriteColoured(sprite, x, y, scaleX, scaleY, r, g, b, a, mu
 	love.graphics.pop()
 end
 
+--TODO: how would this even be possible?
+function gamelua.drawSpriteCut() --?
+	return
+end
+
 function gamelua.setAngleRAD(angle) --5.3.1 what is this?
-	--return
 	drawangle = angle * math.pi / 180
 end
 
@@ -243,7 +243,7 @@ function res.getCompoSpriteBounds(sheet, composprite) --not used in 1.6.3.1
 end
 
 function gamelua.setAlpha(a)
-	alpha = a
+	drawalpha = a
 end
 
 function checkSprite(sprite)

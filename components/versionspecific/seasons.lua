@@ -269,10 +269,15 @@ function gamelua.flashAnimationLoad(tag, animName)
 	anims[tag] = {
 		name = animName,
 		playing = false,
+		playing_mode = nil,
 		playAction = nil,
+		playClip = nil,
 		data = preloaded[animName],
 		replacements = {},
 		time = 0,
+		speed = 1,
+		shader = nil,
+		duration = 0,
 		x = 0,
 		y = 0,
 		rotation = 0,
@@ -284,17 +289,38 @@ end
 function gamelua.flashAnimationReplaceImage(tag, target, dest)
 	local anim = anims[tag]
 	anim.replacements[target] = dest
+	
+	--print("gamelua.flashAnimationReplaceImage:", tag, target, dest)
 end
 
 function gamelua.flashAnimationStart(tag, playAction, mode)
 	--flashAnimation1, start, once
-	print(tag, playAction, mode)
+	print("gamelua.flashAnimationStart:", tag, playAction, mode)
 	assert(anims[tag])
 	
 	anims[tag].playing = true
+	anims[tag].playing_mode = mode --"once" or "repeat"
 	anims[tag].playAction = playAction
 	
-	return 1 --TODO: replace this
+	--there's seemingly no other way to tell the clip name (aside from using the filename but eh)
+	for k, v in pairs(anims[tag].data.comps[1].data.actions[playAction].clips) do
+		anims[tag].playClip = v
+		
+		break
+	end
+	
+	--calculate the duration using a similarly sketchy method
+	local duration = 0
+	
+	for k, target in pairs(anims[tag].playClip.targets) do
+		for k2, property in pairs(target) do
+			duration = math.max(property.keyframes[#property.keyframes][1], duration)
+		end
+	end
+	
+	anims[tag].duration = duration
+	
+	return duration
 end
 
 function gamelua.flashAnimationStop(tag, a)
@@ -307,6 +333,7 @@ function gamelua.flashAnimationSetAnimationParameters(tag, x, y, rotation, sx, s
 	anim.x, anim.y = x, y
 	anim.rotation = rotation
 	anim.sx, anim.sy = sx, sy
+	--print("gamelua.flashAnimationSetAnimationParameters:", tag, x, y, rotation, sx, sy)
 end
 
 --gamelua.flashAnimationSetTranslation(r0_12.tag, x, y)
@@ -314,15 +341,26 @@ end
 function gamelua.updateFlashAnimation(dt)
 	for i, anim in pairs(anims) do
 		if anim.playing then
-			anim.time = anim.time + dt
+			anim.time = anim.time + dt * anim.speed
+			
+			if anim.playing_mode == "repeat" then
+				anim.time = anim.time % anim.duration
+			end
 		end
 	end
 end
 
-local function handleKeyframes(keys, time, easing)
-	if not keys then return end
+local function handleKeyframes(property, time, easing)
+	if not property then return end
 	
-	keys = keys.keyframes
+	local keys = property.keyframes
+	local last_key = keys[#keys] --used for end behavior (e.g. looping or not)
+	local after = property.after
+	
+	--loop the animation in REPEAT mode
+	if after == "REPEAT" then
+		time = time % last_key[1]
+	end
 
 	for i, key in ipairs(keys) do
 		local keytime = key[1]
@@ -334,65 +372,89 @@ local function handleKeyframes(keys, time, easing)
 			local target = key[2]
 			local dest = nextkey[2]
 			
-			if type(target) == "number" then
+			local target_type = type(target)
+			
+			--different keyframe types behave differently
+			--(i.e. you can't interpolate a string)
+			if target_type == "number" then
 				return ease.linear(t, target, dest)
+			elseif target_type == "string" then
+				return target
+			elseif target_type == "table" then
+				local final = {}
+				for i, v in ipairs(target) do
+					final[i] = ease.linear(t, target[i], dest[i])
+				end
+				
+				return final
+			elseif target_type == "nil" then
+				return
+			else
+				error("target_type is invalid, "..target_type)
 			end
-			
-			local final = {}
-			for i, v in ipairs(target) do
-				final[i] = ease.linear(t, target[i], dest[i])
-			end
-			
-			return final
 		end
 	end
 	
 	--fall back to the last one (TODO: "after": "REPEAT")
-	return keys[#keys][2]
+	return last_key[2]
 end
 
 local vector2_empty = {0, 0}
 local vector2_one = {1, 1}
 
-function gamelua.drawFlashAnimation(tag)
+--keyframe types: translation, scale, rotation, alpha, sprite
+local anim_draw
+function anim_draw(v, clip, anim)
+	--TODO: move logic to update
 	love.graphics.push()
-	local anim = anims[tag]
-	gamelua.setRenderState(anim.x, anim.y, anim.sx, anim.sy)
-	local data = anim.data
-	
-	local action = data.comps[1].data.actions[anim.playAction]
-	
-	if not action then return end
-	
-	local clip = action.clips[anim.name:lower().."_"..anim.playAction] --does it really lower?
-	
-	--keyframe types: translation, scale, rotation, alpha, sprite
-	local function draw(v)
-		--TODO: move logic to update
-		love.graphics.push()
-		if v.name and clip then
-			local target = clip.targets[v.name]
-			local translation = handleKeyframes(target.translation, anim.time, easing) or vector2_empty
-			local scale = handleKeyframes(target.scale, anim.time, easing) or vector2_one
-			local aalpha = handleKeyframes(target.alpha, anim.time, easing) or 1
-			alpha = aalpha
-			love.graphics.translate(translation[1], translation[2])
-			love.graphics.scale(scale[1], scale[2])
-			res.drawSprite(anim.replacements[v.name] or v.name, 0, 0)
-		end
+	if v.name then
+		local target = clip.targets[v.name]
+		local translation = handleKeyframes(target.translation, anim.time, easing) or vector2_empty
+		local scale = handleKeyframes(target.scale, anim.time, easing) or vector2_one
+		local alpha = handleKeyframes(target.alpha, anim.time, easing) or 1
+		local sprite = handleKeyframes(target.sprite, anim.time, easing) or anim.replacements[v.name] or v.name
+		local rotation = handleKeyframes(target.rotation, anim.time, easing) or 0
 		
-		if v.children then
-			for i, vv in ipairs(v.children) do
-				draw(vv)
-			end
-		end
-		love.graphics.pop()
+		gamelua.setAlpha(alpha)
+		love.graphics.translate(translation[1], translation[2])
+		love.graphics.scale(scale[1], scale[2])
+		love.graphics.rotate(rotation)
+		
+		--[[
+		gamelua.drawRect(1, 1, 1, 1, -5, -5, 5, 5, true)
+		res.drawString("", anim.replacements[v.name] or v.name, 0, 0)
+		]]
+		
+		res.drawSprite(sprite, 0, 0)
 	end
-	draw(data)
-	--res.drawSprite("RED", 100, 100)
-	--res.drawSprite("RED_BAND", 100, 100)
+	
+	if v.children then
+		for i, vv in ipairs(v.children) do
+			anim_draw(vv, clip, anim)
+		end
+	end
 	love.graphics.pop()
-	alpha = 1
+end
+
+function gamelua.drawFlashAnimation(tag)
+	love.graphics.push("all")
+	local anim = anims[tag]
+	--gamelua.setRenderState(anim.x, anim.y, anim.sx, anim.sy)
+	love.graphics.translate(anim.x, anim.y)
+	love.graphics.scale(anim.sx, anim.sy)
+	love.graphics.rotate(anim.rotation) --untested
+	
+	if anim.shader == "additiveBlending" then
+		love.graphics.setBlendMode("add", "premultiplied")
+	end
+	
+	local data = anim.data
+	local clip = anim.playClip
+	
+	anim_draw(data, clip, anim)
+	
+	love.graphics.pop()
+	gamelua.setAlpha(1)
 end
 
 function gamelua.flashAnimationClose(tag)
@@ -401,6 +463,19 @@ end
 
 function gamelua.flashAnimationPauseToLast(tag)
 	return
+end
+
+--5.1.0 flash anims
+function gamelua.flashAnimationSetShader(tag, shader)
+	anims[tag].shader = shader
+end
+
+function gamelua.flashAnimationSetSpeed(tag, speed)
+	anims[tag].speed = speed
+end
+
+function gamelua.flashAnimationSeek(tag, seek)
+	anims[tag].time = seek
 end
 
 
@@ -1172,18 +1247,6 @@ function RovioChannel.isChannelSupported()--?
 	return false
 end
 
-
-function gamelua.flashAnimationSetShader(tag, shader)
-	return
-end
-
-function gamelua.flashAnimationSetSpeed(tag, speed)
-	return
-end
-
-function gamelua.flashAnimationSeek(tag, seek)
-	return
-end
 
 
 --isn't actually necessary for the loading screen to work in 5.1.0
