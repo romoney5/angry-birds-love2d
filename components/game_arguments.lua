@@ -277,15 +277,15 @@ function handleStartArgs()
 		end
 	end
 	
-	--automatically boot to the last datapath on mobile systems that don't have an accessible file manager
-	if mobileDevice and love.filesystem.exists(autoboot_path) and not openedDatapath then
-		ranAutoboot = true
-		gamelua.loadLuaFile(autoboot_path)
-	end
-	
 	process(arg)
 
 	processArgsTable(love.restart)
+	
+	--automatically boot to the last datapath on mobile systems that don't have an accessible file manager
+	if mobileDevice and love.filesystem.exists(autoboot_path) and not openedDatapath and not ranAutoboot then
+		ranAutoboot = true
+		gamelua.runLuaFile(autoboot_path)
+	end
 end
 
 function handlePostStartArgs()
