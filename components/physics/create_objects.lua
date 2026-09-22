@@ -1,6 +1,17 @@
 --create box, circle, etc
 
-function gamelua.createJoint(joint)
+function gamelua.createJoint(joint, joint2)
+	--seasons 5.3.1 makes joint the name and joint2 the table
+	if joint2 ~= nil then
+		joint2.name = joint
+		joint = joint2
+		
+		joint.x1 = joint.x1 or 0
+		joint.y1 = joint.y1 or 0
+		joint.x2 = joint.x2 or 0
+		joint.y2 = joint.y2 or 0
+	end
+
 	local name, end1, end2, type, coordType, x1, y1, x2, y2, collideConnected, limit, motor, maxTorque, lowerLimit, upperLimit, motorSpeed, destroyTimer =
 		joint.name,joint.end1,joint.end2,joint.type,joint.coordType,joint.x1,joint.y1,joint.x2,joint.y2,joint.collideConnected,
 		joint.limit,joint.motor,joint.maxTorque,joint.lowerLimit,joint.upperLimit,joint.motorSpeed,joint.destroyTimer
@@ -22,7 +33,7 @@ function gamelua.createJoint(joint)
 		elseif coordType == 1 then
 			anchorAX, anchorAY = x1, y1
 			anchorBX, anchorBY = x2, y2
-		elseif coordType == 2 then
+		elseif coordType == 2 or coordType == nil then
 			anchorAX, anchorAY = obj1.body:getWorldPoint(x1, y1)
 			anchorBX, anchorBY = obj2.body:getWorldPoint(x2, y2)
 		end

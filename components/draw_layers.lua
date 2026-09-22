@@ -434,7 +434,7 @@ function drawSprites()
 end
 ]]
 function drawObject(v)
-	if v.visible == false then return end
+	if v.visible == false or not v.body then return end
 	
 	love.graphics.push("all")
 	
