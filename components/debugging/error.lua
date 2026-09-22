@@ -10,19 +10,7 @@ function love.errorhandler(msg)
 		return
 	end
 	
-	if mobileDevice then
-		pcall(function()
-			local identity = love.filesystem.getIdentity()
-			love.filesystem.setIdentity(original_identity)
-			
-			--clear autoboot if it exists
-			if love.filesystem.remove(autoboot_path) then
-				print("Removed "..autoboot_path)
-			end
-			
-			love.filesystem.setIdentity(identity)
-		end)
-	end
+	removeAutoboot()
 
 	msg = tostring(msg)
 

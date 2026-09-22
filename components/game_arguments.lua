@@ -1,10 +1,26 @@
 --handles arguments passed to love at the start of the game, as well as other post-start arguments
 
-original_identity = love.filesystem.getIdentity()
+local original_identity = love.filesystem.getIdentity()
 
-autoboot_path = "autoboot.lua"
+local autoboot_path = "autoboot.lua"
 
 datapath_base = ""
+
+function removeAutoboot()
+	if mobileDevice then
+		pcall(function()
+			local identity = love.filesystem.getIdentity()
+			love.filesystem.setIdentity(original_identity)
+			
+			--clear autoboot if it exists
+			if love.filesystem.remove(autoboot_path) then
+				print("Removed "..autoboot_path)
+			end
+			
+			love.filesystem.setIdentity(identity)
+		end)
+	end
+end
 
 arguments = {
 	{display = "Delete Data", names = {"--deletedata", "-dd"}, args = 0, type = "bool", call = function()
