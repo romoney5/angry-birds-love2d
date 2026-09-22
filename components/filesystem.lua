@@ -402,8 +402,15 @@ function gamelua.requireFile(filename)
 	alreadyloaded[filename] = true
 	
 	local env = _G --getfenv(2)
-
-	if not gamelua.loadLuaFileToObject(gamelua.scriptPath.."/"..filename, env) and not gamelua.loadLuaFileToObject(gamelua.commonScriptPath.."/"..filename, env) then
+	
+	local path_scripts = gamelua.scriptPath.."/"..filename
+	local path_scriptscommon = gamelua.commonScriptPath.."/"..filename
+	
+	if findCaseInsensitive(datapath.."/"..path_scripts) then
+		gamelua.loadLuaFileToObject(path_scripts, env)
+	elseif findCaseInsensitive(datapath.."/"..path_scriptscommon) then
+		gamelua.loadLuaFileToObject(path_scriptscommon, env)
+	else
 		print("Failed to require Lua file: "..filename)
 		return
 	end
