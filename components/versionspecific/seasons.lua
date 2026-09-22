@@ -407,7 +407,7 @@ local anim_draw
 function anim_draw(v, clip, anim)
 	--TODO: move logic to update
 	love.graphics.push()
-	if v.name then
+	if v.name and clip then
 		local target = clip.targets[v.name]
 		local translation = handleKeyframes(target.translation, anim.time, easing) or vector2_empty
 		local scale = handleKeyframes(target.scale, anim.time, easing) or vector2_one
