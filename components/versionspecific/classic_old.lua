@@ -89,6 +89,104 @@ function gamelua.wasKeyReleased(key)
 	return keyReleased[key]
 end
 
+
+--hatchery/scripts/UI/EggCanvas.lua
+function gamelua.initializePainter(path, areaX, areaY)
+	return
+end
+
+function gamelua.clearCanvas(r, g, b, a)
+	return
+end
+
+function gamelua.startAnalyzingCanvasColors()
+	return
+end
+
+function gamelua.stopAnalyzingCanvasColors()
+	return
+end
+
+--WorldView.lua
+function gamelua.initializeTileManager(width, height, tileSize)
+	return
+end
+
+function gamelua.createAnimation(id, frame)
+	return
+end
+
+function gamelua.createHatcheryMap(map, definitions)
+	return
+end
+
+function gamelua.convertFromTILEDCoordinates(x, y)
+	return x, y
+end
+
+function gamelua.checkForPersistentFile(path)
+	return false
+end
+
+function gamelua.getWorldCoordinatesForTileMapIndexes(indX, indY)
+	return indX, indY
+end
+
+function gamelua.setTileMapScale(scale)
+	return
+end
+
+function gamelua.updateHatcheryMap(dt)
+	return
+end
+
+function gamelua.getDominantCanvasColors()
+	return "WHITE", "WHITE"
+end
+
+function gamelua.drawHatcheryMap()
+	return
+end
+
+function gamelua.moveTileCameraPosition(deltaX, deltaY)
+	return
+end
+
+function gamelua.selectObjectVisibleAtPixel(x, y)
+	return -1
+end
+
+--hatcheryDynamicObject.lua
+local a = 0
+
+function gamelua.createNewTileObject(params)
+	a = a + 1
+	
+	return a
+end
+
+function gamelua.addAnimationToTileObject(id, animation)
+	return
+end
+
+function gamelua.addTileObjectToLocation(id, x, y, snapToGrid)
+	return
+end
+
+function gamelua.removeTileObject(id)
+	return
+end
+
+--UI/BirdSelector.lua
+function gamelua.drawCompoObjectLua(x, y, angle, scale, itms)
+	return
+end
+
+--hatchery.lua
+function gamelua.deinitializeTileManager()
+	return
+end
+
 --1.7.0
 
 function gamelua.initGameCenter()

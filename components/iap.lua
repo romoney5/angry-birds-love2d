@@ -31,7 +31,7 @@ end
 
 --the core function for all iaps
 function gamelua.iapBuyItem(id, callbackid, statuslist) --1.7.0
-	local callback = type(callbackid) == "function" and callbackid or _G[callbackid]
+	local callback = type(callbackid) == "function" and callbackid or gamelua[callbackid]
 	local statuslist = statuslist or statuses
 	
 	if callback then

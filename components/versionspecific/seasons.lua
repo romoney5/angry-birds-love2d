@@ -1329,5 +1329,14 @@ function WebView.new(x, y, height, width)
 		return
 	end
 
+	--hatchery
+	function view:loadLocalPage(url)
+		return
+	end
+	
+	function view:executeJavaScript(code)
+		return
+	end
+
 	return view
 end
