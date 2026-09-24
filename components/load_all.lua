@@ -30,7 +30,7 @@ bit = bit or	runLua(compsPath.."/libs/numberlua.lua")   --bit library since http
 luna_loadbytecode = runLua(compsPath.."/libs/luna.lua") --run lua 5.1 bytecode in a custom vm because normally it's not usable in luajit
 json			= runLua(compsPath.."/libs/json.lua")	--json support for modern seasons versions
 AES				= runLua(compsPath.."/libs/aes.lua")	--aes-256-cbc decryption powered by none other than luajit ffi
-pvr				= runLua(compsPath.."/libs/pvrtc.lua")	--pvrtc format
+has_pvr, pvr	= pcall(runLua, compsPath.."/libs/pvrtc.lua")	--pvrtc format
 fetch			= _G.require("components.libs.fetch")
 
 --debugging features
