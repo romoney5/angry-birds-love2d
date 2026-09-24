@@ -17,12 +17,14 @@ function love.conf(t)
 	t.window.usedpiscale = true
 	t.window.msaa = 8
 	
-	local system = love.system.getOS()
-	
-	if system == "Android" then
-		t.window.fullscreen = true
-	else
-		t.window.resizable = true
+	if love.system then
+		local system = love.system.getOS()
+		
+		if system == "Android" then
+			t.window.fullscreen = true
+		else
+			t.window.resizable = true
+		end
 	end
 
 	--love2d with vulkan on most platforms doesn't support many image formats such as etc1
