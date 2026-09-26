@@ -64,9 +64,9 @@ function res.createBitmapFont(font, silent)
 				height = data.height, maxascending = data.maxascending, maxdescending = data.maxdescending}
 
 			--for each character, also construct a quad
-			for _, char in pairs(data.chars) do
-				fonts[fontname].chars[_] = {quad = love.graphics.newQuad(char.x, char.y, char.width, char.height, spritesheet:getWidth(), spritesheet:getHeight()),
-					width = char.width, height = char.height, pivoty = char.pivotY}
+			for i, char in pairs(data.chars) do
+				fonts[fontname].chars[i] = {quad = love.graphics.newQuad(char.x, char.y, char.width, char.height, spritesheet:getWidth(), spritesheet:getHeight()),
+					width = char.width, height = char.height, baseline = char.baseline}
 			end
 		else
 			print("Font "..fontname.." is already loaded")
@@ -116,7 +116,7 @@ function res.drawString(group, text, x, y, aligny, alignx)
 					local char = font.chars[c]
 					if char then
 						local charX = (x + i + ax)
-						local charY = (y + ay - char.pivoty + (line * font.leading))
+						local charY = (y + ay - char.baseline + (line * font.leading))
 						
 						love.graphics.draw(font.spritesheet, char.quad, textFloor(charX), textFloor(charY), drawangle)
 						i = i + (char.width + font.tracking)

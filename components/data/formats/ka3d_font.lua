@@ -20,10 +20,10 @@ function readFont(fileData)
 		data.chars[char].y = readInt(fileData,pos+2)
 		data.chars[char].width = readInt(fileData,pos+4)
 		data.chars[char].height = readInt(fileData,pos+6)
-		data.chars[char].pivotY = readInt(fileData,pos+8)
+		data.chars[char].baseline = readInt(fileData,pos+8)
 
-		data.maxascending = math.max(data.maxascending, data.chars[char].pivotY)
-		data.maxdescending = math.max(data.maxdescending, -data.chars[char].pivotY + data.chars[char].height)
+		data.maxascending = math.max(data.maxascending, data.chars[char].baseline)
+		data.maxdescending = math.max(data.maxdescending, -data.chars[char].baseline + data.chars[char].height)
 
 		skip(10)
 	end
