@@ -1,21 +1,15 @@
 function love.conf(t)
-	t.modules.math = false
-	t.modules.video = false
-	t.modules.joystick = true
-	
-	t.accelerometerjoystick = false
+	t.accelerometerjoystick = false --TODO: remove this when love 12 releases (?)
 
 	t.window.title = "Loading..."
 
-	t.window.width = 1024--864
-	t.window.height = 600--480
-	t.window.minwidth = 2
-	t.window.minheight = 2
-	-- t.window.minwidth = 480--864
-	-- t.window.minheight = 320--480
-
 	t.window.usedpiscale = true
 	t.window.msaa = 8
+
+	t.window.width = 1280
+	t.window.height = 720
+	t.window.minwidth = 2
+	t.window.minheight = 2
 	
 	if love.system then
 		local system = love.system.getOS()
@@ -27,11 +21,11 @@ function love.conf(t)
 		end
 	end
 
-	--love2d with vulkan on most platforms doesn't support many image formats such as etc1
+	--love on vulkan lacks support for many image formats, such as etc1
 	if t.graphics then
 		t.graphics.excluderenderers = {"vulkan"}
 		-- t.graphics.lowpower = true
 	end
 	
-	--t.version = "11.5" --11.5 and 12.0 are supported --TODO: remove this when love 12 releases
+	--t.version = "11.5" --TODO: remove this when love 12 releases
 end
