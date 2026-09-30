@@ -13,6 +13,12 @@ maxWorldScale = 0
 gamelua.multitouchZoom = {zoomCoolingTime = 0}
 gamelua.multitouchSweep = {isSweepping = false}
 
+--zooming
+gamelua.zoomLevel = 0
+originalZoomLevel = 0
+targetZoomLevel = 0
+targetZoomLevel_time = 1
+
 --key table accesses default to false
 local key_meta = {
 	__index = function(self, k)
@@ -156,7 +162,7 @@ end
 
 local prevTouches = {}
 
-function updateTouch()
+function updateTouch(dt)
 	local mttouches = love.touch.getTouches()
 	table.clear(gamelua.touches)
 	
@@ -182,9 +188,13 @@ function updateTouch()
 	if touches and prevTouches and #touches == 2 and #prevTouches == 2 then
 		local dist = math.sqrt((touches[1].x - touches[2].x) ^ 2 + (touches[1].y - touches[2].y) ^ 2)
 		local prevdist = math.sqrt((prevTouches[1].x - prevTouches[2].x) ^ 2 + (prevTouches[1].y - prevTouches[2].y) ^ 2)
-		gamelua.zoomLevel = gamelua.zoomLevel + (dist - prevdist) / 16 / 28
-		gamelua.wantedZoomLevel = gamelua.zoomLevel
+		originalZoomLevel = gamelua.zoomLevel + (dist - prevdist) / 768
+		targetZoomLevel = originalZoomLevel
+		targetZoomLevel_time = 1
 	end
+
+	targetZoomLevel_time = math.min(targetZoomLevel_time + dt / .4, 1)
+	gamelua.zoomLevel = ease.outQuad(targetZoomLevel_time, originalZoomLevel, targetZoomLevel)
 	
 	table.clear(prevTouches)
 	
@@ -198,14 +208,9 @@ function love.wheelmoved(x, y)
 	-- cursor.wheelTriggered = -y ~= 0
 	cursor.wheel = y
 
-	-- zoomLevel = zoomLevel + y/16
-	gamelua.wantedZoomLevel = gamelua.wantedZoomLevel + y / 16
-
-	-- if zoomLevel > 1.5 then zoomLevel = 1.5 end
-	-- if wantedZoomLevel > 1.5 then wantedZoomLevel = 1.5 end
-	-- if wantedZoomLevel > maxWorldScale then wantedZoomLevel = maxWorldScale end
-	-- if wantedZoomLevel < maxWorldScale then wantedZoomLevel = maxWorldScale end
-	-- if zoomLevel < -1.1 then zoomLevel = -1.1 end
+	originalZoomLevel = gamelua.zoomLevel
+	targetZoomLevel = targetZoomLevel + y / 10
+	targetZoomLevel_time = 0
 end
 
 --do mouse clicks update touches

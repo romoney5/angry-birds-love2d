@@ -1,8 +1,6 @@
 --this massive function runs every frame
 
 local pausedaudios = {}
-gamelua.zoomLevel = 0
-gamelua.wantedZoomLevel = 0
 local hasfocus = true
 
 prevCursor = {x = 0, y = 0}
@@ -73,7 +71,7 @@ function love.update(dt)
 		--cursor delta for debug scrolling
 		updateMouse(dt)
 		--proper multitouch support, at last
-		updateTouch()
+		updateTouch(dt)
 
 		--toggle fullscreen with alt+enter
 		if keyHold["KEY_ALT"] and keyPressed["RETURN"] then
@@ -132,11 +130,6 @@ function love.update(dt)
 		gamelua.keyPressed, gamelua.keyReleased, gamelua.keyHold, cursor.wheel = kp, kr, kh, cw
 		
 		updatePhysics(dt)
-
-		gamelua.zoomLevel = lerp(gamelua.zoomLevel, gamelua.wantedZoomLevel, dt * 8)
-		if currentGameMode ~= updateGame and currentGameMode ~= updateEditor then
-			gamelua.wantedZoomLevel = 0
-		end
 
 		updateConsole(dt)
 		
