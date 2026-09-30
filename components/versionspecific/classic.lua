@@ -577,15 +577,15 @@ function gamelua.setObjectBodyDynamic(name)
 end
 
 function toggleZoom(a, b)--?
-	gamelua.wantedZoomLevel = a
+	targetZoomLevel = a
 end
 
 function toggleZoom_GameLua(a, b)--?
-	gamelua.wantedZoomLevel = a
+	targetZoomLevel = a
 end
 
 function toggleZoom2(a, b)--?
-	gamelua.wantedZoomLevel = a
+	targetZoomLevel = a
 end
 
 --used for the slingshot camera
