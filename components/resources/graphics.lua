@@ -20,10 +20,12 @@ end
 --quite literally used everywhere
 function gamelua.setRenderState(x, y, xs, ys, angle, xp, yp, alpha)
 	love.graphics.origin()
+	
 	if pivotDebug then
 		love.graphics.translate(gamelua.screenWidth - gamelua.screenWidth * .75, gamelua.screenHeight - gamelua.screenHeight * .75)
 		love.graphics.scale(1 / 2)
 	end
+	
 	love.graphics.scale(xs, ys)
 	love.graphics.scale(displayScale)
 	love.graphics.translate(x, y)
@@ -32,6 +34,10 @@ function gamelua.setRenderState(x, y, xs, ys, angle, xp, yp, alpha)
 	--drawxp and yp are exclusively used for rotation, they are useless when angle is 0
 	drawxp = xp or 0
 	drawyp = yp or 0
+	
+	if aspectRatio then
+		love.graphics.translate(aspectRatio_offset.x, aspectRatio_offset.y)
+	end
 
 	if alpha then
 		gamelua.setAlpha(alpha)
@@ -109,7 +115,10 @@ end
 function res.setClipRect(x1, y1, x2, y2)
 	if pivotDebug then return end
 	x1, y1, x2, y2 = math.max(x1 or 0, 0), math.max(y1 or 0, 0), math.max(x2 or 0, 0), math.max(y2 or 0, 0)
-	love.graphics.setScissor(x1 * displayScale, y1 * displayScale, x2 * displayScale, y2 * displayScale)
+	love.graphics.setScissor(x1 * displayScale + aspectRatio_offset.x,
+		y1 * displayScale + aspectRatio_offset.y,
+		x2 * displayScale + aspectRatio_offset.x,
+		y2 * displayScale + aspectRatio_offset.y)
 end
 
 function res.getClipRect(x1, y1, x2, y2)

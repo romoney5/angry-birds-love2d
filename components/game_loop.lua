@@ -5,6 +5,10 @@ local hasfocus = true
 
 prevCursor = {x = 0, y = 0}
 
+--aspectRatio = 4 / 3
+aspectRatio_offset = {x = 0, y = 0}
+--TODO: alignment options?
+
 function updateDisplayScale()
 	if autoScale > 0 then
 		local w, h = love.graphics.getDimensions()
@@ -16,8 +20,16 @@ function updateDisplayScale()
 	end
 	love.graphics.scale(displayScale)
 	
-	gamelua.screenWidth = math.floor(love.graphics.getWidth() / displayScale)
-	gamelua.screenHeight = math.floor(love.graphics.getHeight() / displayScale)
+	gamelua.screenWidth = math.ceil(love.graphics.getWidth() / displayScale)
+	gamelua.screenHeight = math.ceil(love.graphics.getHeight() / displayScale)
+	
+	aspectRatio_offset.x, aspectRatio_offset.y = 0, 0
+	if aspectRatio then
+		local width, height = gamelua.screenWidth, gamelua.screenHeight
+		gamelua.screenWidth = math.ceil(gamelua.screenHeight * aspectRatio)
+		aspectRatio_offset.x = (width - gamelua.screenWidth) / 2
+		aspectRatio_offset.y = 0
+	end
 
 	gamelua.g_updatedScreenWidth, gamelua.g_updatedScreenHeight = gamelua.screenWidth, gamelua.screenHeight --4.0.0
 	
@@ -46,6 +58,7 @@ function love.update(dt)
 		hasfocus = true
 		if love.graphics and love.graphics.isActive() then
 			love.graphics.origin()
+			love.graphics.setScissor()
 			love.graphics.clear(love.graphics.getBackgroundColor())
 		end
 		
@@ -182,8 +195,11 @@ function love.update(dt)
 end
 
 function love.resize(width, height)
+	--always use the scaled screen width and height
+	updateDisplayScale()
+	
 	if gamelua.resolutionChanged then
-		gamelua.resolutionChanged(width, height)
+		gamelua.resolutionChanged(gamelua.screenWidth, gamelua.screenHeight)
 	end
 end
 

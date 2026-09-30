@@ -137,10 +137,19 @@ end
 
 local prev_mouse_x, prev_mouse_y = 0, 0
 
+local function transformPosition(x, y)
+	x, y = x / displayScale, y / displayScale
+	
+	if aspectRatio then
+		x, y = x - aspectRatio_offset.x, y - aspectRatio_offset.y
+	end
+	
+	return x, y
+end
+
 function updateMouse(dt)
 	--regular cursor
-	local x, y = love.mouse.getPosition()
-	x, y = x / displayScale, y / displayScale
+	local x, y = transformPosition(love.mouse.getPosition())
 	
 	--only update the cursor if you are moving the mouse
 	--for compatibility with gamepads
@@ -170,9 +179,9 @@ function updateTouch(dt)
 	
 	if #mttouches > 0 then
 		for i, v in ipairs(mttouches) do
-			local x, y = love.touch.getPosition(v)
+			local x, y = transformPosition(love.touch.getPosition(v))
 			--pressure sensitivity for the two touchscreens that support it
-			gamelua.touches[i] = {x = x / displayScale, y = y / displayScale, p = love.touch.getPressure(v)}
+			gamelua.touches[i] = {x = x, y = y, p = love.touch.getPressure(v)}
 			
 			isTouching = true
 		end
