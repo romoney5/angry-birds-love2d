@@ -124,13 +124,44 @@ end
 --guess the deviceModel from a data path
 local function guessModel(dir)
 	if endsWith(dir, ".ipa") then
-		return "iphone"
+		--make a guess using available image profiles
+		--[[
+		hatchery: 1024x768
+		2.2.0: 480x320 480x320_retina
+		hd3.2.0: 1024x768 1024x768_retina
+		hd4.3.2: 1024x768
+		5.2.0: 480x320 1024x768 themes_ios
+		
+		shd5.2.5: 1024x768 2048x1536
+		]]
+		
+		local matches = {}
+		
+		for i, v in ipairs(love.filesystem.getDirectoryItems(datapath.."/"..gamelua.imagePath)) do
+			if v == "1024x768" then
+				matches.ipad = (matches.ipad or 0) + 1
+			elseif v == "1024x768_retina" then
+				matches.ipad = (matches.ipad or 0) + 2
+			elseif v == "480x320" or v == "480x320_retina" then
+				matches.iphone = (matches.iphone or 0) + 2
+			
+			elseif v == "2048x1536" then
+				matches.ipad = (matches.ipad or 0) + 2
+			end
+		end
+		
+		local highest_score, highest_model = 0, "iphone"
+		
+		for i, v in pairs(matches) do
+			if v > highest_score then
+				highest_score, highest_model = v, i
+			end
+		end
+		
+		return highest_model
 	elseif endsWith(dir, ".apk") then
 		return "android"
 	end
-
-	--TODO: look through any binary for a match
-	--since ipad/iphone can differ
 end
 
 function findDataPathFromFile(file)
@@ -189,11 +220,11 @@ function setDataPathFromFile(file)
 		openedDatapath = true
 
 		--make a guess
-		--TODO: make a better guess by looking at the binary
 		local model = guessModel(file)
 
 		if model then
 			gamelua.deviceModel = model
+			print("Guessed device model "..tostring(model))
 		end
 	else
 		datapath = file
