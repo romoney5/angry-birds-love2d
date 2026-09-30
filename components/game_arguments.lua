@@ -76,6 +76,7 @@ arguments = {
 	
 	{display = "Device Model", names = {"--model", "-m"}, args = 1, type = "string", call = function(arg1)
 		gamelua.deviceModel = arg1 or gamelua.deviceModel
+		setDeviceModel = true
 	end},
 	
 	{display = "Data Path", names = {"--datapath", "-dp"}, args = 1, type = "string", call = function(arg1)

@@ -153,7 +153,11 @@ function loadGameFiles()
 	gamelua.levelPath = config.levelPath or gamelua.levelPath
 	gamelua.scriptPath = config.scriptPath or gamelua.scriptPath
 	gamelua.showCursor = config.showCursor
-	--deviceModel = config.deviceModel or deviceModel
+	
+	--if the device model wasn't preset, use the config
+	if not setDeviceModel then
+		gamelua.deviceModel = config.deviceModel or gamelua.deviceModel
+	end
 
 	if not checkDirectory(datapath) or datapath == "" then
 		--notify the user that no data path is available
