@@ -446,7 +446,6 @@ function drawObject(v)
 	end
 
 	drawxp, drawyp = res.getSpritePivot(v.objectSprite)
-	drawangle = v.angle
 	
 	if v.colors then
 		love.graphics.setColor(v.colors)
@@ -456,22 +455,25 @@ function drawObject(v)
 		love.graphics.setShader(v.shader)
 	end
 	
-	local scale = v.scale or 1
+	local scaleX, scaleY
 	
-	if type(scale) == "table" then
-		love.graphics.scale(scale.x, scale.y)
-		
-		res.drawSprite(v.objectSprite, x / scale.x, y / scale.y)
+	if type(v.scale) == "table" then
+		scaleX, scaleY = v.scale.x, v.scale.y
 	else
-		if v.isBackground then scale = 2 end
+		scaleX, scaleY = v.scale or 1, v.scale or 1
+		
+		if v.isBackground then
+			scaleX = 2
+			scaleY = 2
+		end
 
-		love.graphics.scale(scale)
-		if v.flipx then love.graphics.scale(-1, 1) end
-
-		res.drawSprite(v.objectSprite, x / scale, y / scale)
+		if v.flipx then scaleX = -scaleX end
 	end
 
-	drawangle = 0
+	love.graphics.translate(x, y)
+	love.graphics.rotate(v.angle)
+	love.graphics.scale(scaleX, scaleY)
+	res.drawSprite(v.objectSprite, 0, 0)
 	
 	love.graphics.pop()
 end
