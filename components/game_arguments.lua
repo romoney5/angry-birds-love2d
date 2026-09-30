@@ -29,10 +29,10 @@ arguments = {
 		openPopup("Data",
 			"Delete save data?\nThis will reset all progress in the current data path!",
 			{
-				{sprite = "MENU_NO", callback = function()
+				{icon = "cross", callback = function()
 					return true
 				end},
-				{sprite = "TUTORIAL_OK", callback = function()
+				{icon = "check", callback = function()
 					local success1 = love.filesystem.remove("settings.lua")
 					local success2 = love.filesystem.remove("highscores.lua")
 					if success1 or success2 then
