@@ -1105,7 +1105,9 @@ function basicBeginContact(obj1, obj2, contact)
 			joystick:setVibration(math.min(linearForce / 15, 1), math.min(linearForce / 15, 1), .1)
 		end
 		
-		if currentScore == old_score and damage > 0 then
+		currentScore = gamelua.scoreTable.blocks.score
+		
+		if currentScore == old_score and linearForce > 0 then
 			local score = math.floor(linearForce) * 10.0
 			gamelua.scoreTable.blocks.score = currentScore + score
 		end
