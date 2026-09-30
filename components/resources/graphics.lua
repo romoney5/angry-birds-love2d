@@ -560,6 +560,7 @@ local function loadSheet(sheet, usecomposprites)
 		end
 	elseif not usecomposprites and info.sprites and info.filename then
 		local filename = table.concat(paths, "/", 1, #paths - 1).."/"..info.filename
+		local filename, _ = findCaseInsensitive(filename) or filename
 
 		local lsheet = loadedSheets[sheet]
 
