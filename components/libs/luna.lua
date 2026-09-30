@@ -438,9 +438,9 @@ end
 local function l_run_instructions(stack, chunk)
 	local constants = chunk.constants
 	local instructions = chunk.instructions
+	local program_counter = stack.program_counter
 
 	while true do
-		local program_counter = stack.program_counter
 		local opcode, a, b, c, bx, sbx =
 			instructions[program_counter * 6 - 6],
 			instructions[program_counter * 6 - 5],
@@ -467,7 +467,7 @@ local function l_run_instructions(stack, chunk)
 			stack[a] = b ~= 0
 			
 			if c ~= 0 then
-				stack.program_counter = program_counter + 1
+				program_counter = program_counter + 1
 			end
 			stack.top = a
 		elseif opcode == 3 then --LOADNIL; loads nil values from stack's A to stack's B
@@ -567,7 +567,7 @@ local function l_run_instructions(stack, chunk)
 			end
 			stack.top = a
 		elseif opcode == 22 then --JMP; unconditionally jumps ahead sBx instructions (can be negative or positive)
-			stack.program_counter = program_counter + sbx
+			program_counter = program_counter + sbx
 		elseif opcode == 23 then --EQ; calculates if constants B and C are equal (or unequal if A is 1),
 		--skipping an instruction ahead if not
 			local value_1 = l_get_constant(constants, stack, b)
@@ -576,7 +576,7 @@ local function l_run_instructions(stack, chunk)
 			local target = a == 1
 			
 			if (value_1 == value_2) ~= target then
-				stack.program_counter = program_counter + 1
+				program_counter = program_counter + 1
 			end
 		elseif opcode == 24 then --LT; calculates if constant B is less than constant C (or greater if A is 1),
 		--skipping an instruction ahead if not
@@ -586,7 +586,7 @@ local function l_run_instructions(stack, chunk)
 			local target = a == 1
 			
 			if (value_1 < value_2) ~= target then
-				stack.program_counter = program_counter + 1
+				program_counter = program_counter + 1
 			end
 		elseif opcode == 25 then --LE; calculates if constant B is less than or equal to constant C (or greater than/equal if A is 1),
 		--skipping an instruction ahead if not
@@ -596,11 +596,11 @@ local function l_run_instructions(stack, chunk)
 			local target = a == 1
 			
 			if (value_1 <= value_2) ~= target then
-				stack.program_counter = program_counter + 1
+				program_counter = program_counter + 1
 			end
 		elseif opcode == 26 then --TEST; converts stack's A into a boolean, skipping an instruction ahead if it is unequal to C's boolean
 			if (not not stack[a]) ~= (c ~= 0) then
-				stack.program_counter = program_counter + 1
+				program_counter = program_counter + 1
 			end
 		elseif opcode == 27 then --TESTSET; converts stack's B into a boolean, setting stack's A to stack's B if it is equal to C's boolean,
 		--otherwise skipping an instruction ahead
@@ -609,10 +609,11 @@ local function l_run_instructions(stack, chunk)
 				
 				stack.top = a
 			else
-				stack.program_counter = program_counter + 1
+				program_counter = program_counter + 1
 			end
 		elseif opcode == 28 then --CALL; calls a function found in stack's A, with no. arguments B - 1 and no. return values C - 1
 		--(both of them adapt to whatever was passed in/returned if their respective register is 0)
+		--this takes up the most total time out of any opcode
 			local num_args = b - 1
 			local num_returns = c - 1
 			
@@ -622,14 +623,16 @@ local function l_run_instructions(stack, chunk)
 			end
 			
 			--hack: override environment functions
-			if stack[a] == getfenv then
+			local fun = stack[a]
+			
+			if fun == getfenv then
 				l_place_returns(stack, a, nil, chunk.env)
-			elseif stack[a] == setfenv and stack[a + 1] == 1 then
+			elseif fun == setfenv and stack[a + 1] == 1 then
 				chunk.env = stack[a + 2]
 				l_place_returns(stack, a)
 			else
 				--if c is 0, l_place_returns will default to the amount of args
-				l_place_returns(stack, a, c > 0 and num_returns, stack[a](unpack(stack, a + 1, a + num_args)))
+				l_place_returns(stack, a, c > 0 and num_returns, fun(unpack(stack, a + 1, a + num_args)))
 			end
 		elseif opcode == 29 then --TAILCALL; similar to CALL but performs a tail call (not very effective here
 		--as it's very hard to emulate tail calls)
@@ -670,7 +673,7 @@ local function l_run_instructions(stack, chunk)
 			
 			--jump back to FORPREP + 1 if..
 			if stack[a] * step <= limit * step then
-				stack.program_counter = program_counter + sbx
+				program_counter = program_counter + sbx
 				stack[a + 3] = stack[a]
 			end
 			
@@ -681,7 +684,7 @@ local function l_run_instructions(stack, chunk)
 			stack[a] = stack[a] - step
 			
 			--jump to the FORLOOP
-			stack.program_counter = program_counter + sbx
+			program_counter = program_counter + sbx
 		elseif opcode == 33 then --TFORLOOP; initializes a generic for loop by calling the iterator function
 			--jump back if..
 			l_place_returns(stack, a + 3, (a + 2 + c) - (a + 3) + 1, stack[a](stack[a + 1], stack[a + 2]))
@@ -689,7 +692,7 @@ local function l_run_instructions(stack, chunk)
 			if stack[a + 3] ~= nil then
 				stack[a + 2] = stack[a + 3]
 			else
-				stack.program_counter = program_counter + 1
+				program_counter = program_counter + 1
 			end
 		elseif opcode == 34 then --SETLIST; sets an amount of values B (or up to stack's top if 0) of a table found in stack's A, starting from C
 			--let's assume no one is changing this in c
@@ -721,7 +724,7 @@ local function l_run_instructions(stack, chunk)
 				upvalues = upvalues or table.new(proto.num_upvalues, 0)
 				stack.open_upvalues = stack.open_upvalues or table.new(proto.num_upvalues, 0)
 				
-				if opcode == 0 then --mMOVE
+				if opcode == 0 then --MOVE
 					--open an upvalue
 					--upvalue_num is the index in the stack
 					--GETUPVAL uses that index
@@ -755,7 +758,7 @@ local function l_run_instructions(stack, chunk)
 				end
 			end
 			
-			stack.program_counter = program_counter + proto.num_upvalues
+			program_counter = program_counter + proto.num_upvalues
 			
 			--wrap the function
 			stack[a] = function(...)
@@ -782,6 +785,10 @@ local function l_run_instructions(stack, chunk)
 	end
 end
 
+local VARARG_HASARG = 1 --"arg" support compiled in
+local VARARG_ISVARARG = 2 --function uses varargs
+local VARARG_NEEDSARG = 4 --function body does not use ...
+
 --general function for running a chunk
 function l_run_chunk(chunk, upvalues, ...)
 	--if a stack table is cached, use it and free it from the cache
@@ -796,9 +803,6 @@ function l_run_chunk(chunk, upvalues, ...)
 	
 	--put parameters and varargs into place
 	local is_vararg = chunk.is_vararg
-	local VARARG_HASARG = 1 --"arg" support compiled in
-	local VARARG_ISVARARG = 2 --function uses varargs
-	local VARARG_NEEDSARG = 4 --function body does not use ...
 	
 	l_place_returns(stack, 0, chunk.num_parameters, ...)
 	
