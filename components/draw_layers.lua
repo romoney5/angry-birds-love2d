@@ -124,7 +124,7 @@ function drawLayer(layer, yoffset)
 	local autoScroll = -scrollFrequency * time * 16 / w * relativeScale --TODO: inaccurate with water
 
 	if layer.water then
-		yoffset = -(objects.waterLevel or 0) * physicsToWorld / relativeScale
+		yoffset = -(objects.waterLevel or (objects.water and objects.water.waterLevel) or 0) * physicsToWorld / relativeScale
 	end
 
 	local xScale = layer.scaleWobbleX and math.sin(time) * layer.scaleWobbleX / w or 0

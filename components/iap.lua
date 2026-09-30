@@ -145,6 +145,10 @@ function Payment.isReady()
 	return true
 end
 
+function Payment.iapRedeemCode() --?
+	return
+end
+
 --ab classic talkweb's opinion on iap
 
 native = native or {} --load orders

@@ -202,7 +202,7 @@ function gamelua.createDynamicHandler(name)
 	--5.2.5
 	function handler.isLoadgroupLoaded(...)--?
 		print("handler.isLoadgroupLoaded:", ...)
-		return true --trust
+		return false --trust
 	end
 
 	--5.3.1
@@ -624,12 +624,24 @@ function NativeCloudPayment.getProductDescriptions() --5.3.1
 	return descriptions
 end
 
+gamelua.rewardVideoReady = true
+
 function NativeCloudPayment.getProductDatas() --5.3.1
-	local datas = {}
+	local datas = {
+		--coinpack1 = {items = {{id = "coins", count = 10}}}
+	}
 
 	setmetatable(datas, {
 		__index = function(self, k)
-			return {items = {}}
+			print("NativeCloudPayment.getProductDatas(): index", k)
+			
+			local items = {}
+			
+			if k:find("coinpack") then
+				table.insert(items, {id = "coins", count = 10 ^ tonumber(k:sub(("coinpack"):len() + 1))})
+			end
+			
+			return {items = items}
 		end
 	})
 
@@ -906,6 +918,10 @@ end
 
 function gamelua.drawWorldParticlesWithId() --? --scripts_common/powerups/Powerup_Teleport.lua
 	return
+end
+
+function gamelua.addSecondsToTime(time, addition) --QuestManager.lua
+	return time
 end
 
 
