@@ -32,7 +32,7 @@ local debugPadding = 50
 --hack to stop touch console opening from closing right after releasing
 local openedUsingTouch = false
 
-function checkDebugOpen()
+local function checkDebugOpen()
 	local check = false
 	
 	local bottom_right = cursor.x >= gamelua.screenWidth * .95 and cursor.y >= gamelua.screenHeight * .95
@@ -84,7 +84,16 @@ function debugExecute(text)
 	end
 end
 
-function updateDebug(dt)
+local files_button = {label = "Files", callback = function(self)
+	debugOpen = false
+	sgm()
+end}
+
+function updateConsole(dt)
+	checkDebugOpen()
+	
+	if not debugOpen then return end
+
 	gamelua.setRenderState(0, 0, 1, 1)
 	res.useFont(nil)
 
@@ -106,12 +115,10 @@ function updateDebug(dt)
 
 	--scrolling
 
-	local round_padding = debugPadding / 4
+	local round_padding = debugPadding / 3
 	local input_h = debugPadding * 2 + 50 - round_padding * 2 + math.max(res.getStringHeight(textbox_state.value) - 50, 0)
 	
-	love.graphics.setColor(0, 0, 0, .5)
-	love.graphics.rectangle("fill", 0, 0, gamelua.screenWidth, gamelua.screenHeight)
-	love.graphics.setColor(1, 1, 1, 1)
+	gamelua.drawRect(CUI.AccentColor_BG[1], CUI.AccentColor_BG[2], CUI.AccentColor_BG[3], .6, 0, 0, gamelua.screenWidth, gamelua.screenHeight)
 	
 	--update the text box
 	CUI.Textbox(textbox_state, round_padding, round_padding, gamelua.screenWidth - round_padding * 2, input_h)
@@ -140,27 +147,14 @@ function updateDebug(dt)
 	
 	--draw the scroll bar
 	CUI.ScrollbarFromScrollState(output_scroll, --scroll state
-		gamelua.screenWidth - round_padding / 2, --x
-		(input_h + round_padding) + round_padding / 2, --y
-		gamelua.screenHeight - round_padding / 2 * 2 - (input_h + round_padding), --height
+		gamelua.screenWidth - round_padding, --x
+		(input_h + round_padding) + round_padding, --y
+		gamelua.screenHeight - round_padding * 2 - (input_h + round_padding), --height
 		output_scroll.contentHeight) --content height
 
 	--files link
-	local tlw, tlh = 35, 36
-	local x, y = gamelua.screenWidth - debugPadding - round_padding * 3 - tlw, debugPadding + round_padding * 2
-	x, y = math.floor(x), math.floor(y)
-	local w, h = 60 + tlw * 2, 20 + tlh * 2
-	local s = 1
-	
-	drawDebugButton(nil, x, y, w, h, s, function()
-		debugOpen = false
-		sgm()
-		return
-	end, true, "menu_confirm")
-	
-	love.graphics.translate(x, y)
-	love.graphics.scale(s)
-	res.drawString("", "Files", 0, 0, "HCENTER", "VCENTER")
+	local x, y = gamelua.screenWidth - debugPadding - round_padding * 3, round_padding + input_h / 2
+	CUI.Button(files_button, x, y, 150, 100)
 
 	gamelua.setRenderState(0, 0, 1, 1)
 end

@@ -39,11 +39,11 @@ function gamelua.iapBuyItem(id, callbackid, statuslist) --1.7.0
 			"In-app Purchase",
 			"Buy item \""..id.."\"?",
 			{
-				{sprite = "MENU_NO", callback = function()
+				{icon = "cross", callback = function()
 					callback(id, statuslist.PAYMENT_CANCELLED, statuslist.PAYMENT_CANCELLED)
 					return true
 				end},
-				{sprite = "TUTORIAL_OK", callback = function()
+				{icon = "check", callback = function()
 					callback(id, statuslist.PAYMENT_SUCCEEDED, 0)
 					return true
 				end},

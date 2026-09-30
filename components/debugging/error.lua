@@ -43,10 +43,11 @@ function love.errorhandler(msg)
 		end
 	end
 
-	time = 0
 	love.graphics.reset()
 	love.graphics.setBlendMode("alpha", "premultiplied")
 	love.graphics.setColor(1, 1, 1)
+	
+	love.graphics.setFont(default_font)
 
 	local trace = debug.traceback()
 
@@ -97,24 +98,19 @@ function love.errorhandler(msg)
 		local scale = displayScale
 		gamelua.setRenderState(0, 0, 1, 1)--scale, scale)
 
-		if res then
-			res.useFont(fontBasic or "FONT_BASIC")
-			-- res.useFont("FONT_MENU") --most newer games don't have letters in FONT_MENU
-			love.graphics.setColor(0, 0, 0, .2)
-			gamelua.clipText("", p, (gamelua.screenWidth - pos * 2))
-			
-			local text = gamelua.clippedText and table.concat(gamelua.clippedText.lines, "\n") or p
-			
-			res.drawString("", text, pos + 8, pos + 8)
-			love.graphics.setColor(1, 1, 1, 1)
-			res.drawString("", text, pos, pos)
-		else
-			love.graphics.print(p, pos, pos)
-		end
+		-- res.useFont("FONT_MENU") --most newer games don't have letters in FONT_MENU
+		love.graphics.setColor(0, 0, 0, .2)
+		gamelua.clipText("", p, (gamelua.screenWidth - pos * 2))
+		
+		local text = gamelua.clippedText and table.concat(gamelua.clippedText.lines, "\n") or p
+		
+		res.drawString("", text, pos + 8, pos + 8)
+		love.graphics.setColor(1, 1, 1, 1)
+		res.drawString("", text, pos, pos)
 	end
 
 	return function()
-		local dt = 1 / 100
+		local dt = love.timer.step()
 
 		love.event.pump()
 		table.clear(keyReleased)
@@ -142,13 +138,13 @@ function love.errorhandler(msg)
 		if keyReleased.LBUTTON and not debugOpen then
 			if not openPopups[1] then
 				openPopup("Angry Birds", "Exit the game?", {
-					-- {sprite = "BUTTON_RESTART", callback = function()
+					-- {icon = "BUTTON_RESTART", callback = function()
 					-- 	love.event.quit("restart")
 					-- end},
-					{sprite = "MENU_NO", callback = function()
+					{icon = "cross", callback = function()
 						return true
 					end},
-					{sprite = "TUTORIAL_OK", callback = function()
+					{icon = "check", callback = function()
 						love.event.quit()
 					end},
 				})
@@ -156,16 +152,10 @@ function love.errorhandler(msg)
 		end
 
 		draw(dt)
-		gamelua.setRenderState(0, 0, 1, 1)
-		updatePopup()
 		
 		prevCursor.x, prevCursor.y = cx, cy
-		if checkDebugOpen then checkDebugOpen() end
-		if debugOpen then
-			updateDebug(dt)
-		end
+		updateConsole(dt)
 
-		cursor.wheelTriggered = nil
 		gamelua.setRenderState(0, 0, 1, 1)
 		updatePopup()
 		
@@ -177,7 +167,7 @@ function love.errorhandler(msg)
 		love.graphics.present()
 
 		if love.timer then
-			love.timer.sleep(dt)
+			love.timer.sleep(0.001)
 		end
 	end
 end

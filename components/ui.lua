@@ -54,10 +54,54 @@ function ease.inOutCubic(t, a, b)
 	return ease.linear(c, a, b)
 end
 
+--from wikipedia
+function hsvToRgb(hue, sat, value)
+	local chroma = value * sat
+	local c = chroma
+	
+	hue = hue / 60
+	local x = chroma * (1 - math.abs((hue % 2) - 1))
+	
+	local m = value - chroma
+	
+	if hue < 1 then return c + m, x + m, 0 + m
+	elseif hue < 2 then return x + m, c + m, 0 + m
+	elseif hue < 3 then return 0 + m, c + m, x + m
+	elseif hue < 4 then return 0 + m, x + m, c + m
+	elseif hue < 5 then return x + m, 0 + m, c + m
+	elseif hue < 6 then return c + m, 0 + m, x + m
+	end
+end
+
+function rgbToHsv(red, green, blue)
+	local value_max = math.max(red, green, blue)
+	local value_min = math.min(red, green, blue)
+	
+	local value = value_max
+	
+	local chroma = value_max - value_min
+	
+	local hue
+	
+	if chroma == 0 then hue = 0
+	elseif value == red then hue = 60 * (((green - blue) / chroma % 6))
+	elseif value == green then hue = 60 * (((blue - red) / chroma + 2))
+	elseif value == blue then hue = 60 * (((red - green) / chroma + 4))
+	end
+	
+	local sat = 0
+	
+	if value ~= 0 then
+		sat = chroma / value
+	end
+	
+	return hue, sat, value
+end
+
 --console ui
 CUI = {}
 
-CUI.BGColor_Blue = {24 / 255, 50 / 255, 75 / 255}
+CUI.AccentColor_BG = {24 / 255, 50 / 255, 75 / 255}
 
 CUI.currentTextboxState = nil
 
@@ -101,7 +145,7 @@ end
 
 --formula gathered from discord (chrome text boxes)
 function controlKeyLoop(state, direction, callback)
-	local punctuations = "!@#$^*() .:\t\n\"'"
+	local punctuations = "!@#$^*()-=+ .:\t\n\"'"
 	local hit_letter = false
 	
 	repeat
@@ -175,7 +219,7 @@ function CUI.Textbox(state, x, y, w, h)
 		
 		local cx, cy = cursor.x - textx, cursor.y - y - (state.scroll and state.scroll.scroll or 0)
 		local lines = 0
-		local font = love.graphics.getFont()
+		local font = state.font or love.graphics.getFont()
 		local fontheight = font:getHeight() - .5
 		local len = 0
 		
@@ -338,6 +382,7 @@ function CUI.Textbox(state, x, y, w, h)
 	love.graphics.setLineStyle("rough")
 	love.graphics.rectangle("fill", x, y, w, h, 10, 10)
 	love.graphics.rectangle("line", x, y, w, h, 10, 10)
+	
 	love.graphics.setColor(1, 1, 1, 1)
 
 	--TODO: doesn't play well with scrolling
@@ -345,16 +390,20 @@ function CUI.Textbox(state, x, y, w, h)
 	res.setClipRect(x, y, w, h)
 	
 	love.graphics.push("all")
-	love.graphics.translate(0, scroll)
 	
 	--optional monospace font
 	if state.font then
 		love.graphics.setFont(state.font)
 	end
 	
+	love.graphics.translate(0, scroll)
+	
 	--draw the mutliline view if applicable
 	if state.multiline then
+		local alpha = .15
+		love.graphics.setColor(CUI.AccentColor_BG[1] * alpha, CUI.AccentColor_BG[2] * alpha, CUI.AccentColor_BG[3] * alpha, alpha)
 		love.graphics.rectangle("fill", x, y - scroll, lineswidth, h, 10, 10)
+		love.graphics.setColor(1, 1, 1, 1)
 	end
 	
 	local font = love.graphics.getFont()
@@ -621,31 +670,239 @@ function CUI.Checkbox(state, x, y, w, h, label)
 	--check box
 	state.value = state.value and true or false
 
-	drawDebugButton(sprite, x + w / 2, y + h / 2, w, h, 1, function() state.value = not state.value end, true, sound)
-	
-	love.graphics.push()
-	
-	love.graphics.translate(x + w / 2, y + h / 2)
-	love.graphics.scale(.4)
-	if state.value then
-		CUI.DrawIcon("check")
+	state.callback = state.callback or function(self)
+		self.value = not self.value
 	end
 	
-	love.graphics.pop()
+	state.icon = state.value and "check" or ""
+	
+	CUI.Button(state, x + w / 2, y + h / 2, w + .01, h)
 	
 	if label then
 		res.drawString("", label, x + w + 10, y + h / 2, "VCENTER")
 	end
 end
 
+local function getTransformedBounds(x1, y1, x2, y2)
+	local check_x1, check_y1 = love.graphics.transformPoint(x1, y1)
+	local check_x2, check_y2 = love.graphics.transformPoint(x2, y2)
+	local cursor_x, cursor_y = cursor.x, cursor.y--love.mouse.getPosition()
+	
+	cursor_x, cursor_y = cursor_x * displayScale, cursor_y * displayScale
+	
+	return check_x1, check_y1, check_x2, check_y2, cursor_x, cursor_y
+end
+
+function CUI.Button(state, x, y, w, h)
+	--generic button
+	love.graphics.push()
+
+	love.graphics.translate(x, y)
+	
+	state.button_scale = state.button_scale or 1
+	
+	local dt = love.timer.getDelta()
+	
+	local returns
+	
+	--check for hovering
+	local check_x1, check_y1, check_x2, check_y2, cursor_x, cursor_y =
+		getTransformedBounds(-w / 2, -h / 2, w / 2, h / 2)
+	
+	local hovering = cursor_x >= check_x1 and cursor_y >= check_y1
+		and cursor_x < check_x2 and cursor_y < check_y2
+	
+	local default_scale = 1
+	local hovering_scale = 1.08
+	local pressing_scale = .9
+	
+	if hovering then
+		if keyPressed.LBUTTON then
+			state.pressing = true
+		elseif not keyHold.LBUTTON then
+			if keyReleased.LBUTTON and state.pressing then --click
+				if state.callback then
+					returns = state:callback()
+				end
+			end
+			
+			state.pressing = false
+		end
+		
+		if state.pressing then
+			state.button_scale = math.max(state.button_scale - dt * 15, pressing_scale)
+		else
+			state.button_scale = math.min(state.button_scale + dt * 2, hovering_scale)
+		end
+	else
+		if not keyHold.LBUTTON then
+			state.pressing = false
+		end
+		
+		if state.pressing then
+			state.button_scale = math.min(state.button_scale + dt * 2, default_scale)
+		else
+			state.button_scale = math.max(state.button_scale - dt * 2, default_scale)
+		end
+	end
+	
+	love.graphics.scale(state.button_scale)
+	
+	love.graphics.push("all")
+	
+	local r, g, b = table.unpack(CUI.AccentColor_BG)
+	
+	--lighten the button upon being pressed like modern seasons
+	if --[[state.pressing and]] hovering_scale ~= 0 then
+		local factor = (default_scale - state.button_scale) / (default_scale - hovering_scale)
+		
+		if factor > 0 then
+			factor = factor * -.5
+		end
+		
+		factor = factor * -.5 + 1
+		
+		r, g, b = r * factor, g * factor, b * factor
+	end
+	
+	love.graphics.setColor(r, g, b)
+	
+	if w == h then
+		love.graphics.circle("fill", 0, 0, w / 2)
+		love.graphics.pop()
+		love.graphics.circle("line", 0, 0, w / 2)
+	else
+		love.graphics.rectangle("fill", -w / 2, -h / 2, w, h, 20)
+		love.graphics.pop()
+		love.graphics.rectangle("line", -w / 2, -h / 2, w, h, 20)
+	end
+	
+	love.graphics.scale(h / 100) --decrease icon size in smaller scales
+	
+	CUI.DrawIcon(state.icon)
+	
+	if state.label then
+		res.drawString("", state.label, 0, 0, "HCENTER", "VCENTER")
+	end
+	
+	love.graphics.pop()
+	
+	return returns
+end
+
+do
+	local size = 256
+	local bar_width = 48
+	local colorSquareImage = love.image.newImageData(size, size, "rgba8")
+	colorSquareImage:mapPixel(function(x, y, r, g, b, a)
+		local new_r, new_g, new_b = hsvToRgb(x / size * 360, 1 - (y / size), 1)
+		return new_r, new_g, new_b, 1
+	end)
+	colorSquareImage = love.graphics.newImage(colorSquareImage)
+
+	local colorBarImage = love.image.newImageData(bar_width, size, "rgba8")
+	colorBarImage:mapPixel(function(x, y, r, g, b, a)
+		local new_r, new_g, new_b = hsvToRgb(0, 0, 1 - (y / size))
+		return new_r, new_g, new_b, 1
+	end)
+	colorBarImage = love.graphics.newImage(colorBarImage)
+
+	local function drawDot(red, green, blue, dot_x, dot_y, x1, y1)
+		love.graphics.push()
+		love.graphics.origin()
+		love.graphics.translate(x1, y1)
+		
+		love.graphics.push("all")
+		love.graphics.setColor(red, green, blue)
+		love.graphics.circle("fill", dot_x, dot_y, 8)
+		love.graphics.pop()
+		love.graphics.circle("line", dot_x, dot_y, 8)
+		
+		love.graphics.pop()
+	end
+
+	function CUI.ColorSelect(state, x, y, w, h)
+		local bar_x = x + size + 16
+		
+		state.value = state.value or {}
+		
+		local hue, sat, value = 0, 1, 1
+		
+		if state.value.red then
+			hue, sat, value = rgbToHsv(state.value.red, state.value.green, state.value.blue)
+		end
+		
+		local square_x1, square_y1, square_x2, square_y2, cursor_x, cursor_y =
+			getTransformedBounds(x, y, x + size, y + size)
+		
+		local bar_x1, bar_y1, bar_x2, bar_y2, cursor_x, cursor_y =
+			getTransformedBounds(bar_x, y, bar_x + bar_width, y + size)
+		
+		state.colorsquare_selection = state.colorsquare_selection or {
+			x = hue / 360 * size,
+			y = -((sat - 1) * size)
+		}
+		state.colorbar_selection = state.colorbar_selection or {
+			y = -((value - 1) * size)
+		}
+		
+		state.selecting = state.selecting or nil
+		
+		if keyPressed.LBUTTON then
+			if cursor_x >= square_x1 and cursor_y >= square_y1
+			and cursor_x < square_x2 and cursor_y < square_y2 then
+				state.selecting = 1
+			elseif cursor_x >= bar_x1 and cursor_y >= bar_y1
+			and cursor_x < bar_x2 and cursor_y < bar_y2 then
+				state.selecting = 2
+			end
+		end
+		
+		if keyHold.LBUTTON then
+			if state.selecting == 1 then --color square
+				state.colorsquare_selection.x = math.min(math.max((cursor_x - square_x1), 0), size - 1)
+				state.colorsquare_selection.y = math.min(math.max((cursor_y - square_y1), 0), size - 1)
+			elseif state.selecting == 2 then --color bar
+				state.colorbar_selection.y = math.min(math.max((cursor_y - bar_y1), 0), size - 1)
+			end
+		else
+			state.selecting = nil
+		end
+		
+		--draw dot indicator
+		local hue, sat, value = state.colorsquare_selection.x / size * 360,
+			1 - (state.colorsquare_selection.y / size), 1 - (state.colorbar_selection.y / size)
+		
+		local red, green, blue = hsvToRgb(hue, sat, value)
+		local bar_red, bar_green, bar_blue = hsvToRgb(0, 0, value)
+		
+		love.graphics.push("all")
+		love.graphics.setColor(bar_red, bar_green, bar_blue)
+		love.graphics.draw(colorSquareImage, x, y)
+		love.graphics.pop()
+		love.graphics.draw(colorBarImage, bar_x, y)
+		
+		local dot_x, dot_y = state.colorsquare_selection.x, state.colorsquare_selection.y
+		
+		drawDot(red, green, blue, dot_x, dot_y, square_x1, square_y1)
+		drawDot(bar_red, bar_green, bar_blue, bar_width / 2, state.colorbar_selection.y, bar_x1, bar_y1)
+		
+		if state.selecting ~= nil then
+			state.value.red, state.value.green, state.value.blue = red, green, blue
+		end
+	end
+end
+
 function CUI.DrawIcon(icon)
 	if icon == "check" then
-		love.graphics.line(-40, 0, -15, 25, 35, -25)
+		--love.graphics.line(-40, 0, -15, 25, 35, -25)
+		love.graphics.polygon("fill", -10, 20, 15, -20, 19, -18, -5, 20)
+		love.graphics.polygon("fill", -23, 9, -20, 6, -5, 18, -10, 20)
 	elseif icon == "cross" then
-		love.graphics.line(-25, -25, 25, 25)
-		love.graphics.line(25, -25, -25, 25)
+		love.graphics.polygon("fill", -20, 20, 15, -20, 20, -20, -15, 20) --rightward line
+		love.graphics.polygon("fill", 20, 20, -15, -20, -20, -20, 15, 20) --leftward line
 	elseif icon == "left" then
-		love.graphics.line(10, 25, -15, 0, 10, -25)
+		love.graphics.polygon("fill", 10, 20, -20, 0, 10, -20)
 	end
 end
 
@@ -654,67 +911,6 @@ function CUI.DrawWrappedString(group, text, x, y, w, aligny, alignx)
 	local text = clippedText and table.concat(clippedText.lines, "\n") or text
 	
 	res.drawString(group, text, x, y, aligny, alignx)
-end
-
-function drawDebugButton(sprite, x, y, w, h, scale, call, enabled, sound) --TODO: use states, ox/oy are hacky
-	local image = checkSprite(sprite)
-	
-	love.graphics.push()
-	
-	local w,h = image and image.width or w or 100, image and image.height or h or 100
-
-	local s = 1
-	do
-		local w, h = love.graphics.transformPoint((w + x) / displayScale, (h + y) / displayScale)
-		local x, y = love.graphics.transformPoint(x / displayScale, y / displayScale)
-		w, h = w - x, h - y
-		
-		if enabled and checkBounds(x - w/2, y - h/2, w * scale, h * scale, cursor.x, cursor.y) then
-			if keyHold["LBUTTON"] then
-				s = .9
-			else
-				s = 1.1
-			end
-
-			if keyReleased["LBUTTON"] then
-				res.playAudio(sound or "menu_confirm", 1, false)
-				if call then
-					call()
-				end
-			end
-		end
-	end
-
-	love.graphics.translate(x, y)
-	love.graphics.scale(s * scale)
-	
-	if sprite == "MENU_QUIT_EN" then
-		local _, py = res.getSpritePivot("", "MENU_NO")
-		drawyp = py
-	end
-
-	if sprite then
-		if not image then
-			love.graphics.push("all")
-			love.graphics.setColor(table.unpack(CUI.BGColor_Blue))
-			love.graphics.circle("fill", 0, 0, w/2)
-			love.graphics.pop()
-			love.graphics.circle("line", 0, 0, w/2)
-			if sprite == "TUTORIAL_OK" then
-				CUI.DrawIcon("check")
-			elseif sprite == "MENU_NO" then
-				CUI.DrawIcon("cross")
-			elseif sprite == "BUTTON_ARROW_LEFT" then
-				CUI.DrawIcon("left")
-			end
-		else
-			res.drawSprite(sprite, 0, 0)
-		end
-	elseif sprite ~= false then
-		love.graphics.rectangle("line", -w / 2, -h / 2, w, h, 20)
-	end
-	
-	love.graphics.pop()
 end
 
 function drawDebugText(text, x, y, align, font, w)
@@ -726,8 +922,6 @@ function drawDebugText(text, x, y, align, font, w)
 	
 	align = align or "LEFT"
 	res.useFont(font)
-	love.graphics.setColor(0, 0, 0, .2)
-	res.drawString("", text, x + 8, y + 8, align, "VCENTER")
 	love.graphics.setColor(1, 1, 1, 1)
 	res.drawString("", text, x, y, align, "VCENTER")
 	
@@ -749,7 +943,7 @@ function openPopup(title, text, buttons, pause, extra, height)
 
 	--default button set
 	buttons = buttons or {
-		{sprite = "TUTORIAL_OK", callback = function()
+		{icon = "check", callback = function()
 			return true
 		end},
 	}
@@ -806,12 +1000,11 @@ function updatePopup()
 				scroll, disable = CUI.HandleScroll(popup.scroll, dt)
 			end
 
-			drawRect2(0, 0, 0, #openPopups > 1 and .6 or ease.outCubic(popup.anim / .25, 0, .6), 0, 0, screenWidth, screenHeight)
+			drawRect2(CUI.AccentColor_BG[1] / 2, CUI.AccentColor_BG[2] / 2, CUI.AccentColor_BG[3] / 2, #openPopups > 1 and .6 or ease.outCubic(popup.anim / .25, 0, .6), 0, 0, screenWidth, screenHeight)
 			love.graphics.translate(x + w / 2, y + h / 2 + scroll)
 			love.graphics.scale(ease.outCubic(popup.anim / .25, .8, 1))
 			love.graphics.translate(-(x + w / 2), -(y + h / 2))
-			drawRect2(10 / 255, 10 / 255, 10 / 255, .3, x + 10, y + 10, w, h, 16)
-			drawRect2(24 / 255, 50 / 255, 75 / 255, 1, x, y, w, h, 16)
+			drawRect2(CUI.AccentColor_BG[1], CUI.AccentColor_BG[2], CUI.AccentColor_BG[3], 1, x, y, w, h, 16)
 
 			drawDebugText(popup.title, ox, y, "HCENTER", nil, maxWidth)
 			local twidth, theight = drawDebugText(popup.text, x + 50, y + 75, "LEFT", nil, maxWidth - 50 - 50)
@@ -837,13 +1030,16 @@ function updatePopup()
 				close(len)
 			end
 
-			for i,v in ipairs(popup.buttons) do
-				drawDebugButton(v.sprite, ox + (i - (btns + 1) / 2) * sx, y + h, nil, nil, 1, function()
+			for i, button in ipairs(popup.buttons) do
+				--[[drawDebugButton(v.sprite, ox + (i - (btns + 1) / 2) * sx, y + h, nil, nil, 1, function()
 					local len = #openPopups
 					if v.callback and v.callback() then
 						close(len)
 					end
-				end, true, v.sound or "menu_confirm")
+				end, true, v.sound or "menu_confirm")]]
+				if CUI.Button(button, ox + (i - (btns + 1) / 2) * sx, y + h, 100, 100) then
+					close(len)
+				end
 			end
 
 			--i lost my number one status

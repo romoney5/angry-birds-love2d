@@ -104,8 +104,30 @@ local function loadIcon(datapath_base)
 	end
 end
 
+--make sure the user knows that it's actually loading something
+function drawLoadingScreen()
+	local width, height = love.graphics.getDimensions()
+	
+	love.graphics.push("all")
+	love.graphics.origin()
+	
+	love.graphics.setColor(unpack(CUI and CUI.AccentColor_BG or {25 / 255, 50 / 255, 75 / 255}))
+	love.graphics.rectangle("fill", 0, 0, width, height)
+	love.graphics.setColor(1, 1, 1, 1)
+	
+	local scale = height / 640
+	love.graphics.setBlendMode("alpha") --for some cool reason..
+	love.graphics.printf("Loading...", 0, height / 2, width / scale, "center", 0, scale, nil, 0, 0)
+	
+	love.graphics.pop()
+	
+	love.graphics.present()
+end
+
 --load everything!
 function loadGameFiles()
+	drawLoadingScreen()
+
 	--cache original image path
 	local og_imagePath = gamelua.imagePath
 	local og_fontPath = gamelua.fontPath
@@ -264,6 +286,8 @@ function love.load()
 	if love.setDeprecationOutput then
 		love.setDeprecationOutput(false)
 	end
+	
+	drawLoadingScreen()
 
 	love.filesystem.load(compsPath.."/load_all.lua")()
 	handleStartArgs()

@@ -74,8 +74,6 @@ function love.update(dt)
 		updateMouse(dt)
 		--proper multitouch support, at last
 		updateTouch()
-		
-		if checkDebugOpen then checkDebugOpen() end
 
 		--toggle fullscreen with alt+enter
 		if keyHold["KEY_ALT"] and keyPressed["RETURN"] then
@@ -140,9 +138,7 @@ function love.update(dt)
 			gamelua.wantedZoomLevel = 0
 		end
 
-		if debugOpen then
-			updateDebug(dt)
-		end
+		updateConsole(dt)
 		
 		gamelua.setRenderState(0, 0, 1, 1)
 		updatePopup()

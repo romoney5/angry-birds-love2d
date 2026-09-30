@@ -276,10 +276,10 @@ function gamelua.openRegistrationDialog(message, validationURL, registrationURL,
 		message,
 		"The game is not registered.\nRegister now?",
 		{
-			{sprite = "MENU_NO", callback = function()
+			{icon = "cross", callback = function()
 				return true
 			end},
-			{sprite = "TUTORIAL_OK", callback = function()
+			{icon = "check", callback = function()
 				returnedKey = true
 				registered = true
 				openPopup("Registration", "Full game registered.", nil, true)

@@ -10,6 +10,70 @@ end
 
 local android = love._os == "Android"
 
+local options = {}
+local function optionsMenu(f)
+	local buttons = {
+		{label = "Customization (beta)", callback = function(self)
+			return options.customization(f)
+		end},
+	}
+	
+	openPopup(
+		"Options",
+		"Notice: Any options here do not currently save.",
+		{
+			{icon = "cross", callback = function()
+				return true
+			end},
+		},
+		false,
+		function(x, y, w, h, p)
+			local opened
+			
+			local total_height = 0
+			
+			for i, button in ipairs(buttons) do
+				opened = opened or CUI.Button(button, x + w / 2, y + 50 + (i - 1) * 90, w, 75)
+				
+				total_height = i * 90
+			end
+			
+			p.h = total_height - 100
+			
+			return opened
+		end
+	)
+end
+
+function options.customization(f)
+	local colorselectState = {}
+	colorselectState.value = {red = CUI.AccentColor_BG[1],
+		green = CUI.AccentColor_BG[2], blue = CUI.AccentColor_BG[3]}
+	
+	local textboxState2 = {}
+	textboxState2.placeholder = "Destination"
+	
+	openPopup(
+		"Customization (beta)",
+		"Select your accent color.",
+		{
+			{icon = "check", callback = function()
+				return true
+			end},
+		}, false,
+		function(x,y,w,h,p)
+			CUI.ColorSelect(colorselectState, x, y, 150, 150)
+			--CUI.Textbox(textboxState2, x, y + 40, w, 30)
+			--CUI.Checkbox(checkboxState, x, y + 80, 50, 50, "Writeable")
+			
+			CUI.AccentColor_BG[1], CUI.AccentColor_BG[2], CUI.AccentColor_BG[3] =
+				colorselectState.value.red, colorselectState.value.green, colorselectState.value.blue
+			
+			p.h = 128
+		end, 20
+	)
+end
+
 something = {
 	loaded = false,
 	pgm = nil,
@@ -37,25 +101,28 @@ something = {
 
 		items = {
 			{text = "Open with...", callback = function(f)
+				local code_button = {label = "Code Editor", callback = function(self)
+					something.code.on = true
+					
+					something.code.data = love.filesystem.read(f.path) or ""
+					something.code.textboxState = nil
+					
+					return true
+				end}
+				
 				openPopup(
 					"Open With",
 					"Open \""..f.name.."\" with...",
 					{
-						{sprite = "MENU_NO", callback = function()
+						{icon = "cross", callback = function()
 							return true
 						end},
 					},
 					false,
 					function(x, y, w, h, p)
 						local opened
-						drawDebugButton("", x + 25, y + 25, 50, 50, 1, function()
-							something.code.on = true
-							
-							something.code.data = love.filesystem.read(f.path) or ""
-							something.code.textboxState = nil
-							
-							opened = true
-						end, true, "menu_confirm")
+						
+						opened = opened or CUI.Button(code_button, x + 150 / 2, y + 100 / 2 + 25, 150, 100)
 						
 						return opened
 					end
@@ -104,10 +171,10 @@ something = {
 					"Run File with Params",
 					"Choose extra parameters to launch \""..f.name.."\"...",
 					{
-						{sprite = "MENU_NO", callback = function()
+						{icon = "cross", callback = function()
 							return true
 						end},
-						{sprite = "TUTORIAL_OK", callback = function()
+						{icon = "check", callback = function()
 							local ogDatapath = datapath
 							local openedDatapath = openedDatapath
 							local success = setDataPathFromFile(path)
@@ -168,10 +235,10 @@ something = {
 					f.name,
 					"Rename \""..f.name.."\" to...",
 					{
-						{sprite = "MENU_NO", callback = function()
+						{icon = "cross", callback = function()
 							return true
 						end},
-						{sprite = "TUTORIAL_OK", callback = function()
+						{icon = "check", callback = function()
 							local name = textboxState.value
 							local realDir = love.filesystem.getRealDirectory(f.path)
 							
@@ -198,10 +265,10 @@ something = {
 			{text = "Delete", callback = function(f)
 				openPopup(f.name, "Permanently delete \""..f.name.."\"?",
 					{
-						{sprite = "MENU_NO", callback = function()
+						{icon = "cross", callback = function()
 							return true
 						end},
-						{sprite = "TUTORIAL_OK", callback = function()
+						{icon = "check", callback = function()
 							if not love.filesystem.getRealDirectory(f.path) then
 								openPopup(f.name, "Could not delete \""..f.name.."\":\ndoes not exist.")
 								return true
@@ -240,10 +307,10 @@ something = {
 					"New File",
 					"Create file in the save directory...",
 					{
-						{sprite = "MENU_NO", callback = function()
+						{icon = "cross", callback = function()
 							return true
 						end},
-						{sprite = "TUTORIAL_OK", callback = function()
+						{icon = "check", callback = function()
 							local name = textboxState.value
 							
 							local success, failure
@@ -299,10 +366,10 @@ something = {
 					"Mount",
 					"Mount a path as a temporary folder...",
 					{
-						{sprite = "MENU_NO", callback = function()
+						{icon = "cross", callback = function()
 							return true
 						end},
-						{sprite = "TUTORIAL_OK", callback = function()
+						{icon = "check", callback = function()
 							local name = textboxState.value
 							local dest = textboxState2.value
 							
@@ -338,6 +405,8 @@ something = {
 					end, 20
 				)
 			end},
+			false,
+			{text = "Options", callback = optionsMenu},
 		}
 	},
 
@@ -355,7 +424,7 @@ local function updateCode()
 	local w, h = screenWidth - padding, screenHeight - padding
 	local x, y = screenWidth*.5 - w*.5, screenHeight*.5 - h*.5
 	drawRect2(10 / 255, 10 / 255, 10 / 255, .3, x + 10, y + 10, w, h, 16)
-	drawRect2(24 / 255, 50 / 255, 75 / 255, 1, x, y, w, h, 16)
+	drawRect2(CUI.AccentColor_BG[1], CUI.AccentColor_BG[2], CUI.AccentColor_BG[3], 1, x, y, w, h, 16)
 	
 	local innerPadding = 60
 	
@@ -367,30 +436,33 @@ local function updateCode()
 	
 	CUI.Textbox(code.textboxState, x + innerPadding, y + innerPadding, w - innerPadding * 2, h - innerPadding * 2)
 	
-	drawDebugButton("BUTTON_ARROW_LEFT", padding / 3, padding / 3, nil, nil, 1, function()
+	code.back_button = code.back_button or {icon = "left", callback = function(self)
 		openPopup("Code", "Save changes?",
 			{
-				{sprite = "BUTTON_RESTART", callback = function()
+				{icon = "left", callback = function()
 					return true
 				end},
-				{sprite = "MENU_NO", callback = function()
+				{icon = "cross", callback = function()
 					code.on = false
 					return true
 				end},
-				{sprite = "TUTORIAL_OK", callback = function()
+				{icon = "check", callback = function()
 					code.on = false
 					return true
 				end},
 			})
-	end, true, "menu_back")
+	end}
+	
+	local radius = 100 / 2
+	CUI.Button(code.back_button, math.max(padding / 3, radius), math.max(padding / 3, radius), radius * 2, radius * 2)
 	
 	if keyReleased.F5 then
 		openPopup("Code", "Run file?",
 			{
-				{sprite = "MENU_NO", callback = function()
+				{icon = "cross", callback = function()
 					return true
 				end},
-				{sprite = "TUTORIAL_OK", callback = function()
+				{icon = "check", callback = function()
 					local success, ret = pcall(loadstring(code.textboxState.value))
 					
 					if not success then
@@ -413,7 +485,7 @@ end
 local function drawFile(x, y)
 	local w, h = 20, 30
 	love.graphics.rectangle("fill", x - w/2, y - h/2 + 5, w, h, 3)
-	love.graphics.setColor(24 / 255, 50 / 255, 75 / 255, 1)
+	love.graphics.setColor(CUI.AccentColor_BG[1], CUI.AccentColor_BG[2], CUI.AccentColor_BG[3], 1)
 	-- love.graphics.polygon("fill", x+3,y-6,x+3,y+h/3,x+w*.4,y+h/3)
 	love.graphics.rectangle("fill", x, y - 10, 15, 10)
 	love.graphics.setColor(1, 1, 1, 1)
@@ -426,11 +498,11 @@ local https
 function openDownloadPopup(url, callback)
 	openPopup("Downloader", "Download file\n\""..url.."\"\nfrom the internet?",
 	{
-		{sprite = "MENU_NO", callback = function()
+		{icon = "cross", callback = function()
 			return true
 		end},
-		{sprite = "TUTORIAL_OK", callback = function()
 			https = https or require("https")
+		{icon = "check", callback = function()
 			
 			local code, body = https.request(url)
 			
@@ -504,7 +576,7 @@ function something:update(dt)
 	gamelua.drawForegroundNative()
 	gamelua.setRenderState(0, 0, 1, 1)
 
-	drawRect2(0, 0, 0, .6, 0, 0, screenWidth, screenHeight)
+	drawRect2(CUI.AccentColor_BG[1], CUI.AccentColor_BG[2], CUI.AccentColor_BG[3], .6, 0, 0, screenWidth, screenHeight)
 	
 	if self.code.on then
 		updateCode()
@@ -514,8 +586,7 @@ function something:update(dt)
 	local padding = math.min(200, math.min(screenWidth, screenHeight) / 4)
 	local w, h = screenWidth - padding,screenHeight - padding
 	local x, y = screenWidth*.5 - w*.5,screenHeight*.5 - h*.5
-	drawRect2(10 / 255, 10 / 255, 10 / 255, .3, x + 10, y + 10, w, h, 16)
-	drawRect2(24 / 255, 50 / 255, 75 / 255, 1, x, y, w, h, 16)
+	drawRect2(CUI.AccentColor_BG[1], CUI.AccentColor_BG[2], CUI.AccentColor_BG[3], 1, x, y, w, h, 16)
 
 	res.setClipRect(x, y, w, h)
 
@@ -569,16 +640,17 @@ function something:update(dt)
 			end
 			
 			if v.info.type == "directory" or v.info.type == "up" then
-				drawFolder(fx,fy)
+				drawFolder(fx, fy)
 			else
-				drawFile(fx,fy)
+				drawFile(fx, fy)
 			end
 			
 			if selected then
+				local padding = 10
 				if keyHold.LBUTTON then
-					drawRect2(1, 1, 1, .1, x, fy - 12, w, 36)
+					drawRect2(1, 1, 1, .1, x + padding, fy - 12, w - padding * 2, 36, 5)
 				else
-					drawRect2(1, 1, 1, .2, x, fy - 12, w, 36)
+					drawRect2(1, 1, 1, .2, x + padding, fy - 12, w - padding * 2, 36, 5)
 				end
 			end
 
@@ -627,6 +699,7 @@ function something:update(dt)
 		
 		local scale = ease.outCubic(self.cmenu.anim / (1 / 4), .7, 1)
 		self.cmenu.w, self.cmenu.h = width, height
+		self.cmenu.x = math.min(self.cmenu.x, screenWidth - width * scale)
 		self.cmenu.y = math.min(self.cmenu.y, screenHeight - height * scale)
 		
 		love.graphics.push()
@@ -634,8 +707,8 @@ function something:update(dt)
 		love.graphics.scale(scale)
 		love.graphics.translate(-self.cmenu.x, -self.cmenu.y)
 		
-		drawRect2(10 / 255, 10 / 255, 10 / 255, 10 / 255, self.cmenu.x + 8, self.cmenu.y + 8, width, height, 5)
-		drawRect2(48 / 255, 60 / 255, 75 / 255, 1, self.cmenu.x, self.cmenu.y, width, height, 5)
+		local red, green, blue = table.unpack(CUI.AccentColor_BG)
+		drawRect2(red * .8, green * .8, blue * .8, 1, self.cmenu.x, self.cmenu.y, width, height, 5)
 
 		local itemy = 0
 		for i, v in ipairs(self.cmenu.items) do
@@ -644,10 +717,11 @@ function something:update(dt)
 				local selected = self.cmenu.hovering and checkBounds(0, iy, screenWidth, 36, cursor.x, cursor.y) and attach ~= nil
 				if selected then
 					--ix = ix + 12
+					local padding = 5
 					if keyHold.LBUTTON then
-						drawRect2(60 / 255 / 2, 80 / 255 / 2, 100 / 255 / 2, 1 / 2, self.cmenu.x, iy, width, 36, 5)
+						drawRect2(1, 1, 1, .1, self.cmenu.x + padding, iy, width - padding * 2, 36, 5)
 					else
-						drawRect2(60 / 255, 80 / 255, 100 / 255, 1, self.cmenu.x, iy, width, 36, 5)
+						drawRect2(1, 1, 1, .2, self.cmenu.x + padding, iy, width - padding * 2, 36, 5)
 					end
 					
 					if keyHold.LBUTTON then
@@ -672,9 +746,12 @@ function something:update(dt)
 
 	drawDebugText(self.path or "Files", screenWidth * .5, math.min(padding / 2, 100), "HCENTER", nil, w)
 	
-	drawDebugButton("BUTTON_ARROW_LEFT", padding / 3, padding / 3, nil, nil, 1, function()
+	self.back_button = self.back_button or {icon = "left", callback = function(_self)
 		self.on = false
-	end, true, "menu_back")
+	end}
+	
+	local radius = 100 / 2
+	CUI.Button(self.back_button, math.max(padding / 3, radius), math.max(padding / 3, radius), radius * 2, radius * 2)
 
 	local dance = math.abs(math.cos(self.time * (123 / 20))) * 100
 	
@@ -686,7 +763,8 @@ end
 
 function something:reload(path)
 	local items = love.filesystem.getDirectoryItems(path)
-	files = {}
+	local files = {}
+	
 	if path ~= "/" then
 		table.insert(files, {name = "..", info = {type = "up"}, folder = path})
 	end
