@@ -38,6 +38,194 @@ local function getObjectCount()
 	return total
 end
 
+local function updateTrajectory()
+	-- trajectory
+	local recordTrajectory = false
+	local flyingBird = gamelua.flyingBird
+	if flyingBird ~= nil then
+		if flyingBird.recordTrajectory ~= false then
+			recordTrajectory = true
+			local lx, ly = physicsToWorldTransform(flyingBird.x, flyingBird.y)
+			local bt = birdTrajectory[1] 
+			if #bt < 1 or math.sqrt((lx - bt[#bt].x) ^ 2 + (ly - bt[#bt].y) ^ 2) > 20 then
+				-- if getObjectDefinition(flyingBird.name).particlesTrail ~= nil then
+					-- addParticles(flyingBird.name, getObjectDefinition(flyingBird.name).particlesTrail, 1)
+				-- end
+				_G.table.insert(bt, { x = lx, y = ly })
+				gamelua.addToTrajectory(1, lx, ly)
+			end
+		end
+	end
+	
+	local otherBirds = gamelua.otherBirds
+	if otherBirds ~= nil then
+		for i = 1, 2 do
+			local obj = objects.world[otherBirds[i]]
+			if obj ~= nil then
+				if obj.recordTrajectory ~= false then
+					recordTrajectory = true
+					local lx, ly = physicsToWorldTransform(obj.x, obj.y)
+					local bt = birdTrajectory[i+1] 
+					if #bt < 1 or math.sqrt((lx - bt[#bt].x) ^ 2 + (ly - bt[#bt].y) ^ 2) > 20 then
+						-- if getObjectDefinition(obj.name).particlesTrail ~= nil then
+							-- addParticles(obj.name, getObjectDefinition(obj.name).particlesTrail, 1)
+						-- end
+						_G.table.insert(bt, { x = lx, y = ly })
+						gamelua.addToTrajectory(i+1, lx, ly)
+					end
+				end
+			end
+		end
+	end
+end
+
+function gamelua.waterUpdate()
+	local dt = 1 / 30
+	local waterLevel = objects.waterLevel or (gamelua.getWaterLevel and gamelua.getWaterLevel())
+	local waterMaxBuoyancyDepth = 5
+
+	if physicsEnabled and waterLevel ~= nil then
+		for k, v in _G.pairs(objects.world) do
+			local objDefinition = gamelua.blockTable.blocks[v.name]
+			if v.y > -waterLevel and not v.sleeping and v.mass and v.mass > 0 and not v.singTimer then
+				local trueYVel = v.yVel
+				local trueXVel = v.xVel
+				local isEggGrenade = v.isEggGrenade
+				local depth = v.y + waterLevel
+				if depth > waterMaxBuoyancyDepth then
+					depth = waterMaxBuoyancyDepth
+				end
+				local forceMultiplier = 0.8
+				if not v.hitWater then
+					v.hitWater = true
+				end
+				if v.controllable and v.yVel < 0 then
+					forceMultiplier = 1.2
+				end
+				local yForce = -objects.worldGravity * v.mass * (1.05 + depth * forceMultiplier / waterMaxBuoyancyDepth)
+				local xForce = 0
+				if not v.controllable and v.material and v.material == "rock" then
+					yForce = -objects.worldGravity * v.mass * (0.7 + depth * 0.2 / waterMaxBuoyancyDepth) * 0.75
+				elseif (v.density >= 3 or v.material ~= nil and v.material == "light" or v.material == "piglette") and (v.controllable == nil or v.controllable == false) then
+					yForce = -objects.worldGravity * v.mass * (0.7 + depth * 0.2 / waterMaxBuoyancyDepth)
+					if v.material == "piglette" and v.yVel == 0 and depth >= waterMaxBuoyancyDepth then
+						v.strength = 0
+					end
+				elseif v.sprite == "B_PONTOON_1" and v.yVel > -5 then
+					yForce = -10000
+					if depth < waterMaxBuoyancyDepth then
+						yForce = depth / waterMaxBuoyancyDepth * yForce * 0.5
+						if v.yVel < -5 then
+							v.yVel = -1
+						else
+							v.yVel = 0
+						end
+					end
+				end
+				if _G.math.sqrt(v.xVel ^ 2 + v.yVel ^ 2) > 5 then
+					local radius = v.radius or 1
+					local depth = v.y + waterLevel
+					local maxDepth = waterMaxBuoyancyDepth * 4
+					local depthMultiplier = 1
+					xForce = (0 < v.xVel and -1 or 1) * 0.5 * v.xVel * v.xVel * 0.48 * radius
+					yForce = yForce - depthMultiplier * 0.5 * (v.yVel * v.yVel) * 0.48 * radius
+					if not v.controllable and trueYVel < -20 then
+						yForce = 0
+					end
+				end
+				local forceX, forceY = 0, 0
+				if v.angle ~= nil and v.width ~= nil and v.height ~= nil and (v.width / v.height <= 0.65 or v.width / v.height >= 1.5) and not v.controllable then
+					local angle = v.angle % (2 * _G.math.pi)
+					if angle > 1.9375 * _G.math.pi or angle < 0.0625 * _G.math.pi or angle > 0.9375 * _G.math.pi and angle < 1.0625 * _G.math.pi then
+					elseif angle < _G.math.pi / 2 or angle > _G.math.pi and angle < 1.5 * _G.math.pi then
+						forceX = 0.07
+					else
+						forceX = -0.07
+					end
+				end
+				if isEggGrenade then
+					if v.yVel > 1 then
+						yForce = yForce * 3.5
+					end
+					xForce = 35
+				end
+				if not v.linearDamping or v.linearDamping == 0 then
+					if gamelua.timeSinceLevelStart > 2 then
+						local x, y = physicsToWorldTransform(v.x, v.y)
+						local particle = "waterSplash"
+						if _G.math.sqrt(v.xVel ^ 2 + v.yVel ^ 2) < 15 then
+							particle = "waterSplashUp"
+						end
+						_G.particles.addParticles(particle, 3, x, y, 10, 10, 0, false, false)
+						if gamelua.playWaterSplash then
+							gamelua.playWaterSplash(v.controllable)
+						elseif gamelua.sounds then
+							if v.controllable then
+								res.playAudio(gamelua.sounds.getAudioName("bird_dive"), nil, 5)
+							else
+								local splashVolume
+								if timeSinceLevelStart < 5 then
+									splashVolume = 0.2
+								end
+								res.playAudio("water_splash", splashVolume, 5)
+							end
+						end
+					end
+					v.linearDamping = 0.5
+				end
+				if objDefinition and objDefinition.killedByWater then
+					if v.strength > 0 then
+						v.strength = 0
+						v.linearDamping = 6
+						v.drowned = true
+					elseif not v.drowned then
+						v.linearDamping = 8
+						v.drowned = true
+					end
+				elseif not v.destroyed and not v.sleeping then
+					local vel = _G.math.sqrt(trueXVel ^ 2 + trueYVel ^ 2)
+					local af = true
+					if vel < 0.5 then
+						v.timeWithoutMoving = v.timeWithoutMoving and v.timeWithoutMoving + dt or dt
+						if 2 <= v.timeWithoutMoving then
+							v.timeWithoutMoving = 2
+							af = false
+						end
+					else
+						v.timeWithoutMoving = 0
+					end
+					if af then
+						gamelua.applyForceNative(v.name, xForce, yForce, v.x + forceX, v.y + forceY)
+					end
+				end
+				gamelua.setLinearDamping(v.name, v.linearDamping)
+			elseif v.material == "piglette" and v.yVel and v.yVel == 0 and v.y + waterLevel >= waterMaxBuoyancyDepth then
+				v.strength = 0
+			elseif v.linearDamping ~= nil and v.linearDamping ~= 0 and v.y < -waterLevel - 2 then
+				v.linearDamping = 0
+				gamelua.setLinearDamping(v.name, v.linearDamping)
+				if gamelua.timeSinceLevelStart > 2 and _G.math.sqrt(v.xVel ^ 2 + v.yVel ^ 2) > 5 then
+					local x, y = physicsToWorldTransform(v.x, v.y)
+					_G.particles.addParticles("waterSplashUp", 3, x, y, 10, 10, 0, false, false)
+					if gamelua.playWaterSplash then
+						gamelua.playWaterSplash(v.controllable)
+					elseif gamelua.sounds then
+						if v.controllable then
+							gamelua.sounds.playAudio(sounds.getAudioName("bird_dive"), nil, 5)
+						else
+							local splashVolume
+							if timeSinceLevelStart < 5 then
+								splashVolume = 0.2
+							end
+							sounds.playAudio("water_splash", splashVolume, 5)
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
 function updatePhysics(dt)
 	if physicsEnabled ~= true then                 
 		return
@@ -86,6 +274,9 @@ function updatePhysics(dt)
 	solvePhysics(true)
 
 	if gamelua.clearLuaForceFunctions then gamelua.clearLuaForceFunctions() end
+
+	--update the trajectory in the case of a newer version, on older versions the distance check prevents it from running twice
+	updateTrajectory()
 	
 	if gamelua.removeBlocks then
 		gamelua.removeBlocks()
