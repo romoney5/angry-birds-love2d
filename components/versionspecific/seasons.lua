@@ -1296,6 +1296,16 @@ function gamelua.postHighscore(leaderboardid, score, isLevelScore)
 	return
 end
 
+--6.3.1
+function gamelua.getPlayfabId()
+	return "???"
+end
+
+--6.6.2 ooma
+function gamelua.getFacebookUserName()
+	return "???"
+end
+
 
 --1.5.1
 
