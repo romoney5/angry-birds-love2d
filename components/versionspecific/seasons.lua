@@ -1259,7 +1259,13 @@ function native.TimeStamp.getSecondsToDate(year, month, day)
 end
 
 
-function RovioChannel.isChannelSupported()--?
+function RovioChannel.isChannelSupported(channel)
+	print("RovioChannel.isChannelSupported:", channel)
+
+	if channel == "channel.gvc.enabled" then --ruffle
+		return true
+	end
+
 	return false
 end
 
