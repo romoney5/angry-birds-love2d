@@ -3,18 +3,24 @@
 local textGroups = {}
 local locale = "en_EN"
 
-function res.getString(category, key) --return a string from localization
+--return a string from localization
+function res.getString(category, key)
 	local group = textGroups[category]
-	if group and group[locale] then
-		return group[locale][key] or key
-	else
-		return key
+	
+	if group then
+		local set = group[locale] or group.default
+		
+		if set and set[key] then
+			return set[key]
+		end
 	end
+	
+	return key
 end
 
 function res.createTextGroupSet(texts)
 	local path = datapath.."/"..texts
-	print("Loading text group set \""..texts.."\"...")
+	print("Loading localization file \""..texts.."\"...")
 	
 	if not love.filesystem.exists(path) then
 		print("Localization file \""..texts.."\" not found.")
@@ -44,4 +50,23 @@ end
 
 function gamelua.getCurrentLocale()
 	return locale
+end
+
+--seasons 6.1.1
+NativeLocalization = {}
+
+function NativeLocalization.loadTextGroup(fileName, groupName)
+	print("Loading localization file \""..fileName.."\"...")
+	
+	local newname, paths = findCaseInsensitive(datapath.."/"..fileName)
+	
+	if not newname then
+		print("Localization file \""..fileName.."\" not found.")
+		
+		return
+	end
+	
+	local jsondata = json.decode(decryptSrc(newname))
+	
+	textGroups[groupName] = jsondata.locales
 end
