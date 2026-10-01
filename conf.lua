@@ -4,7 +4,7 @@ function love.conf(t)
 	t.window.title = "Loading..."
 
 	t.window.usedpiscale = true
-	t.window.msaa = 8
+	t.window.msaa = 2
 
 	t.window.width = 1280
 	t.window.height = 720
