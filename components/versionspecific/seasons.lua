@@ -1291,8 +1291,6 @@ function NativeCloudAssets.isPackAccessible()--?
 	return false
 end
 
-gamelua.setThemeWithCrossFade = gamelua.setTheme
-
 --ipad, this might be in way earlier versions but ipad versions haven't really been checked until now
 function gamelua.postHighscore(leaderboardid, score, isLevelScore)
 	return

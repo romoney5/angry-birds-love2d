@@ -283,7 +283,7 @@ function gamelua.drawRect(r, g, b, a, x, y, x2, y2, inWorld)
 	love.graphics.rotate(drawangle)
 	love.graphics.translate(-drawxp, -drawyp)
 
-	love.graphics.setColor(r, g, b, a)
+	love.graphics.setColor(r, g, b, a * drawalpha)
 	love.graphics.rectangle("fill", 0, 0, w, h)
 
 	love.graphics.pop()

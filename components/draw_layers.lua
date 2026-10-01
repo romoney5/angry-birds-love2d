@@ -4,6 +4,8 @@ local drawSprites --old seasons versions define drawSprites
 local trajectory
 
 local currentTheme
+local crossfade_currentTheme
+local crossfade_time = 0
 
 renderLeft, renderTop, renderScale = 0, 0, 1
 
@@ -76,6 +78,15 @@ function gamelua.setTheme(theme)
 	table.clear(themeSpriteObjects)
 	yoffsets = {}
 	layercolors = {}
+end
+
+--seasons 5.1.0
+--one second
+function gamelua.setThemeWithCrossFade(theme)
+	crossfade_currentTheme = currentTheme
+	crossfade_time = 1 - (crossfade_time or 0)
+	
+	gamelua.setTheme(theme)
 end
 
 function gamelua.setTopLeft(left, top)
@@ -207,51 +218,82 @@ function drawThemeSprite(v, layer)
 	end
 end
 
+local function getTheme(theme)
+	theme = gamelua.blockTable.themes[theme] or theme
+
+	return type(theme) == "table" and theme
+end
+
 function gamelua.drawBackgroundNative(highGFX)
 	--seasons 5.1.0 made the theme variable into a table
-	local theme = gamelua.blockTable.themes[currentTheme] or currentTheme
-	if not (theme and type(theme) == "table") then return end
+	local theme = getTheme(currentTheme)
+	if not theme then return end
+	
+	love.graphics.push()
 
 	if theme.color then
 		gamelua.setBGColor(theme.color.r, theme.color.g, theme.color.b)
 	end
 
-	if highGFX ~= false then
-		for layernum, layer in ipairs(theme.bgLayers or theme.layers) do
-			--theme rect colors
-			love.graphics.push("all")
-			if layercolors[layernum - 1] then
-				local colors = layercolors[layernum - 1]
-				love.graphics.setColor(colors)
-				if layer.rect then
-					local a = colors[4] or layer.rect.a
-					gamelua.drawRect(layer.rect.r * a, layer.rect.g * a, layer.rect.b * a, a, 0, 0, screenWidth, screenHeight)
-				end
+	if highGFX == false then return end
+	
+	for layernum, layer in ipairs(theme.bgLayers or theme.layers) do
+		--theme rect colors
+		love.graphics.push("all")
+		if layercolors[layernum - 1] then
+			local colors = layercolors[layernum - 1]
+			love.graphics.setColor(colors)
+			if layer.rect then
+				local a = colors[4] or layer.rect.a
+				gamelua.drawRect(layer.rect.r * a, layer.rect.g * a, layer.rect.b * a, a, 0, 0, screenWidth, screenHeight)
 			end
+		end
 
-			drawLayer(layer)
+		drawLayer(layer)
 
-			love.graphics.pop()
+		love.graphics.pop()
 
-			for k, object in pairs(themeSpriteObjects) do
-				if object.layerNumber + 1 == layernum then
-					-- setRenderState(-screen.left, -screen.top, worldScale, worldScale, 0, 0, v.angle)
-					-- res.drawSprite(v.sprite, v.x, 0)
-					drawThemeSprite(object, layer)
-				end
+		for k, object in pairs(themeSpriteObjects) do
+			if object.layerNumber + 1 == layernum then
+				-- setRenderState(-screen.left, -screen.top, worldScale, worldScale, 0, 0, v.angle)
+				-- res.drawSprite(v.sprite, v.x, 0)
+				drawThemeSprite(object, layer)
 			end
 		end
 	end
+	
+	if crossfade_currentTheme then
+		local theme = getTheme(crossfade_currentTheme)
+		
+		if theme then
+			gamelua.setAlpha(crossfade_time)
+			for layernum, layer in ipairs(theme.bgLayers or theme.layers) do
+				drawLayer(layer)
+			end
+			gamelua.setAlpha(1)
+		end
+		
+		crossfade_time = math.max(crossfade_time - love.timer.getDelta(), 0)
+		
+		if crossfade_time <= 0 then
+			crossfade_time = nil
+			crossfade_currentTheme = nil
+		end
+	end
+	
+	love.graphics.pop()
 end
 
 function gamelua.drawForegroundNative()
-	local theme = gamelua.blockTable.themes[currentTheme] or currentTheme
-	if not (theme and type(theme) == "table" and theme.fgLayers) then return end
+	local theme = getTheme(currentTheme)
+	if not (theme and theme.fgLayers) then return end
 	
 	local screenLeft = renderLeft or screen.left
 	local screenTop = renderTop or screen.top
 
 	local s = renderScale or worldScale or 1
+	
+	love.graphics.push()
 	gamelua.setRenderState(0, 0, 1, 1)
 
 	--draw ground color
@@ -277,6 +319,8 @@ function gamelua.drawForegroundNative()
 	
 	--draw particles (moved here so that they can be drawn in title menus)
 	drawParticlesNative()
+	
+	love.graphics.pop()
 end
 
 local textureShader = love.graphics.newShader([[
@@ -302,6 +346,8 @@ function gamelua.drawGameNative()
 	local screenLeft, screenTop = getScreenTopLeft()
 	local scale = renderScale or worldScale
 	
+	love.graphics.push()
+	
 	gamelua.setRenderState(-screenLeft, -screenTop, scale, scale, 0, 0, 1)
 
 	--trajectories (thanks again halo)
@@ -318,6 +364,8 @@ function gamelua.drawGameNative()
 	end
 	
 	drawSprites()
+	
+	love.graphics.pop()
 end
 
 --TODO : unwind everything and make this look cleaner
