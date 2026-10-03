@@ -36,7 +36,6 @@ gamelua.blockTable = {
 	blocks = {},
 }
 gamelua.starTable = {}
-gamelua.particleTable = {particles = {}}
 
 gamelua._G = _G
 gamelua.print = print
@@ -273,6 +272,10 @@ function loadGameFiles()
 	if gamelua.createStartUpAssets then gamelua.createStartUpAssets() end
 	if gamelua.showSplashScreens then gamelua.showSplashScreens() end --kakao
 	if gamelua.updateValues then gamelua.updateValues() end
+	
+	--seasons 6.0.0
+	if gamelua.createThemeGraphicAssets then gamelua.createThemeGraphicAssets() end
+	gamelua.particleTable = gamelua.particleTable or {particles = {}}
 	
 	gamelua.toggleZoom_GameLua = toggleZoom2
 	

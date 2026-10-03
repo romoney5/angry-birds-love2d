@@ -1096,7 +1096,7 @@ function basicBeginContact(obj1, obj2, contact)
 
 		local old_score = currentScore
 		
-		if gamelua.blockCollision then gamelua.blockCollision(o1.name, o2.name, linearForce, linearForce or damageDone, 0, -contactNormalX) end
+		if gamelua.blockCollision then gamelua.blockCollision(o1.name, o2.name, linearForce, linearForce or damageDone, 0, -contactNormalX, x1, y1) end
 		if gamelua.onCollision then
 			gamelua.onCollision(o1.name, o2.name, contactNormalX, contactNormalY, 1, 1, {})
 		end
@@ -1198,7 +1198,7 @@ function basicBeginContact(obj1, obj2, contact)
 				m2 = math.floor((o2.strength + damage or -1) * 10) / 10})
 		end
 		
-		if gamelua.birdCollision then gamelua.birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage), 0, contactNormalX) end
+		if gamelua.birdCollision then gamelua.birdCollision(bird.name, block.name, effectiveDamage, math.floor(damage), 0, contactNormalX, x1, y1) end
 		if gamelua.onCollision then
 			--onCollision(o1.name, o2.name, effectiveDamage, math.floor(damage), contactNormalX, contactNormalY, nil, 1, {})
 			gamelua.onCollision(o1.name, o2.name, contactNormalX, contactNormalY, 1, 1, {})
@@ -1225,7 +1225,7 @@ function basicBeginContact(obj1, obj2, contact)
 		
 		local force = (collisionVelocity * mass) / 10.0
 		
-		if gamelua.birdCollision then gamelua.birdCollision(o1.name, o2.name, force, 0, 0, contactNormalX) end
+		if gamelua.birdCollision then gamelua.birdCollision(o1.name, o2.name, force, 0, 0, contactNormalX, x1, y1) end
 	end
 	
 	--use deadBlocks table in non-pc versions

@@ -70,10 +70,6 @@ function gamelua.getTimeDifference(time1, time2)
 	return gamelua.getStampTime(math.abs(time2 - time1))
 end
 
-function gamelua.setWorldGravity(x, y)
-	gravity.x, gravity.y = x, y
-end
-
 --i forgot which version this was found in
 
 flurry = {}

@@ -5,11 +5,11 @@ local isOffline = true
 NativePlatformScore = {}
 
 function NativePlatformScore.getPerformanceScore()
-    return 2 
+    return 2
 end
 
 function NativePlatformScore.getMemoryScore()
-    return 2 
+    return 2
 end
 
 --dynamic assets handler, this was also used for classic but seasons did it way earlier so it's here
@@ -182,6 +182,7 @@ function gamelua.createDynamicHandler(name)
 	end
 	
 	function handler.releaseInGame(a, theme)
+		print("handler.releaseInGame:", a, theme)
 		return
 	end
 	
@@ -190,7 +191,7 @@ function gamelua.createDynamicHandler(name)
 		--return graphics memory instead of lua memory
 		love.graphics.getStats(graphics_stats)
 		
-		return graphics_stats.texturememory * 1024
+		return graphics_stats.texturememory
 	end
 	
 	--5.1.0
@@ -219,6 +220,9 @@ function gamelua.createDynamicHandler(name)
 		
 		return
 	end
+	
+	--6.0.0
+	gamelua.releaseInGame = handler.releaseInGame
 	
 	
 	--classic 6.3.0

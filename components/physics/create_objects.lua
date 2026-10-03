@@ -279,6 +279,11 @@ function gamelua.createBox(name, sprite, xpos, ypos, w, h, density, friction, re
 	setupObject(obj)
 end
 
+--seasons 6.0.0
+function gamelua.createNonPhysical(name, sprite, xpos, ypos, w, h, z_order)
+	return gamelua.createBox(name, sprite, xpos, ypos, w, h, 0, 0, 0, false, false, z_order)
+end
+
 function gamelua.createCircle(name, sprite, xpos, ypos, w, density, friction, restitution, controllable, z_order)
 	objects.world[name] = {name = name, sprite = sprite, y = ypos, x = xpos, radius = w, height = w, density = density,
 		friction = friction, restitution = restitution, controllable = controllable, z_order = z_order, mass = 1, xVel = 0, yVel = 0, angle = 0}

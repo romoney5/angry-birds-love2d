@@ -5,13 +5,16 @@ physicsWorld = nil
 
 physicsSimulationScale = 0
 
-function gamelua.loadLevel(filename)
-	print("Loading level \""..filename..".lua\"...")
+worldgravity = {x = 0, y = 20}
 
+function gamelua.loadLevel(filename)
 	birdTrajectory = {{}, {}, {}}
 	gamelua.resetTrajectory()
 
-	if physicsWorld then physicsWorld:destroy() end --clear all the objects before continuing
+	--clear all the objects before continuing
+	if physicsWorld then
+		physicsWorld:destroy()
+	end
 
 	physicsWorld = love.physics.newWorld(worldgravity.x, worldgravity.y, true)
 	--physicsWorld:setCallbacks(nil,nil,physicsPreSolve,physicsPostSolve)
@@ -21,13 +24,31 @@ function gamelua.loadLevel(filename)
 	zOrderedObjects = {}
 	activeTeleporters = {}
 	
-	gamelua.loadLuaFileToObject(filename..".lua", nil, gamelua.loadedObjects)
+	--TODO: 6.0.0 and up uses json for levels
+	if love.filesystem.exists(datapath.."/"..filename..".lua") then
+		print("Loading level \""..filename..".lua\"...")
+		gamelua.loadLuaFileToObject(filename..".lua", nil, gamelua.loadedObjects)
+	elseif love.filesystem.exists(datapath.."/"..filename..".json") then
+		print("Loading level \""..filename..".json\"...")
+		gamelua.loadedObjects = gamelua.readJSONToLuaTable(filename..".json")
+	else
+		print("Failed to find level file "..tostring(filename))
+	end
 	
 	gamelua.setMaxTranslation(2)
 	setupColliders()
 	gamelua.clearParticles()
 	clearLuaAssetRender()
 	LevelParticlesManager.initialized = false
+end
+
+function gamelua.setWorldGravity(x, y)
+	worldgravity.x, worldgravity.y = x, y
+	physicsWorld:setGravity(worldgravity.x, worldgravity.y)
+end
+
+function gamelua.postLoadLevel(objects, bool) --seasons 6.0.0, gamelogic.lua
+	return
 end
 
 local customSerialize
