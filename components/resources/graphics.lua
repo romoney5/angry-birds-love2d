@@ -207,17 +207,30 @@ function gamelua.drawSpriteTinted(sprite, x, y, vanchor, hanchor, r, g, b, a)
 	love.graphics.pop()
 end
 
---TODO: the color blending is still inaccurate to seasons;
---it's supposed to make images brighter rather than increase the contrast
+--modified from https://love2d.org/forums/viewtopic.php?t=79617
+local modulative_shader = love.graphics.newShader[[
+extern vec4 color;
+
+vec4 effect(vec4 vcolor, Image tex, vec2 texcoord, vec2 pixcoord)
+{
+	vec4 outputcolor = Texel(tex, texcoord) * vcolor;
+	outputcolor.rgb = color.rgb;
+	outputcolor.rgb *= outputcolor.a;
+	return outputcolor;
+}
+]]
+
+local color_table = {}
+
 function gamelua.drawSpriteColoured(sprite, x, y, scaleX, scaleY, r, g, b, a, multiplicative)
 	love.graphics.push("all")
 	gamelua.setRenderState(0, 0)
 	love.graphics.setBlendMode(multiplicative == "multiplicative" and "multiply" or "add", "premultiplied")
-	--love.graphics.setBlendMode(multiplicative == "multiplicative" and "multiply" or "add")
-	a = a * 1.41
-	love.graphics.setColor(r * a, g * a, b * a, a)
-	--love.graphics.setColor(r, g, b, a)
-	--setRenderState(rx, ry, rsx * scaleX, rsy * scaleY, drawangle, drawxp, drawyp, drawalpha)
+	love.graphics.setShader(modulative_shader)
+	
+	color_table[1], color_table[2], color_table[3], color_table[4] = r * a, g * a, b * a, a
+	modulative_shader:send("color", color_table)
+	
 	local image = checkSprite(sprite)
 	
 	if image then
