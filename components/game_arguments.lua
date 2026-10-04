@@ -162,6 +162,14 @@ local function guessModel(dir)
 		return highest_model
 	elseif endsWith(dir, ".apk") then
 		return "android"
+	elseif endsWith(dir, ".bar") then
+		return "blackberry"
+	elseif endsWith(dir, ".iso") then
+		--psp
+		gamelua.isPSP = true
+		return "iphone"
+	elseif endsWith(dir, ".xap") then
+		return "wp8"
 	end
 end
 
