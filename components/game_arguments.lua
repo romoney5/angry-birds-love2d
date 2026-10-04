@@ -242,7 +242,7 @@ setDataPathFromFile("%s")]]):format(file))
 	end
 	
 	if file ~= "data" and file ~= "" then
-		love.filesystem.setIdentity(original_identity.."/DATA_"..file)
+		love.filesystem.setIdentity(original_identity.."/saves/"..file)
 	end
 
 	return true
