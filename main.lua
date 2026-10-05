@@ -1,8 +1,7 @@
 --main.lua: contains basic functions to load and set up the game
 --as well as some other functions just left here
 
---this was used for sublime text to display console logs instantly instead of at the end of the program,
---i don't use sublime at the moment so this isn't necessary
+--this is used for sublime text to display console logs instantly instead of at the end of the program
 --io.stdout:setvbuf('no')
 
 --fusion uses both _G and a special environment used in loaded scripts by default (gamelua)
@@ -28,7 +27,7 @@ gamelua.highscores = {}
 gamelua.screenWidth = love.graphics.getWidth()
 gamelua.screenHeight = love.graphics.getHeight()
 
-gamelua.nuked = {} --i believe this refers to discarded/invalid save files, niche debug feature
+gamelua.nuked = {} --this probably refers to discarded/invalid save files, niche debug feature
 
 gamelua.objects = {}
 gamelua.blockTable = {

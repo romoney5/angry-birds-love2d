@@ -469,7 +469,7 @@ function native.loadLuaScript(filename)
 end
 
 
---presumably used for rmf but i'm not sure because i had this in iap.lua for WHATEVER reason
+--presumably used for rmf
 function gamelua.setOffsetedViewport(x, y)
 	return
 end
