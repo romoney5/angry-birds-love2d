@@ -228,14 +228,14 @@ function gamelua.drawBackgroundNative(highGFX)
 	--seasons 5.1.0 made the theme variable into a table
 	local theme = getTheme(currentTheme)
 	if not theme then return end
-	
-	love.graphics.push()
 
 	if theme.color then
 		gamelua.setBGColor(theme.color.r, theme.color.g, theme.color.b)
 	end
 
 	if highGFX == false then return end
+	
+	love.graphics.push()
 	
 	for layernum, layer in ipairs(theme.bgLayers or theme.layers) do
 		--theme rect colors
