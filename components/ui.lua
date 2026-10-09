@@ -412,7 +412,7 @@ function CUI.Textbox(state, x, y, w, h)
 	--draw the placeholder if applicable
 	if state.value == "" then
 		love.graphics.setColor(1, 1, 1, .5)
-		res.drawString("", state.placeholder, textx + 5, y)
+		res.drawString("", state.placeholder, textx + 5, y, "TOP")
 	end
 
 	love.graphics.setColor(1, 1, 1, 1)
@@ -427,10 +427,10 @@ function CUI.Textbox(state, x, y, w, h)
 		--only draw the line if it is below the top
 		if final_y >= y - scroll - fontheight then
 			if state.multiline then
-				res.drawString("", lines + 1, x + 5, final_y) --line number
+				res.drawString("", lines + 1, x + 5, final_y, "TOP") --line number
 			end
 			
-			res.drawString("", line, textx + 5, final_y) --the actual line
+			res.drawString("", line, textx + 5, final_y, "TOP") --the actual line
 		end
 		
 		lines = lines + 1
@@ -444,7 +444,7 @@ function CUI.Textbox(state, x, y, w, h)
 		local clip = utf8.sub(state.value, 1, state.cursor)
 		res.drawString("", ((state.cursorBlink * 2) % 2 <= 1 and "|" or ""),
 			res.getStringWidth(clip:getLineAt(-1), nil, nil, nil, true) + textx + 5 - 5,
-			res.getStringHeight(clip) + y)
+			res.getStringHeight(clip) + y, "TOP")
 	end
 	
 	--draw selection box
@@ -906,13 +906,6 @@ function CUI.DrawIcon(icon)
 	end
 end
 
-function CUI.DrawWrappedString(group, text, x, y, w, aligny, alignx)
-	clipText(group, text, w)
-	local text = clippedText and table.concat(clippedText.lines, "\n") or text
-	
-	res.drawString(group, text, x, y, aligny, alignx)
-end
-
 function drawDebugText(text, x, y, align, font, w)
 	text = tostring(text)
 	if w then
@@ -923,7 +916,7 @@ function drawDebugText(text, x, y, align, font, w)
 	align = align or "LEFT"
 	res.useFont(font)
 	love.graphics.setColor(1, 1, 1, 1)
-	res.drawString("", text, x, y, align, "VCENTER")
+	res.drawString("", text, x, y, align, "TOP")
 	
 	if w then
 		return gamelua.clippedText and gamelua.clippedText.widestLine, res.getStringHeight(text)
@@ -1006,8 +999,14 @@ function updatePopup()
 			love.graphics.translate(-(x + w / 2), -(y + h / 2))
 			drawRect2(CUI.AccentColor_BG[1], CUI.AccentColor_BG[2], CUI.AccentColor_BG[3], 1, x, y, w, h, 16)
 
-			drawDebugText(popup.title, ox, y, "HCENTER", nil, maxWidth)
-			local twidth, theight = drawDebugText(popup.text, x + 50, y + 75, "LEFT", nil, maxWidth - 50 - 50)
+			love.graphics.push()
+			love.graphics.translate(ox, y + 10)
+			love.graphics.scale(1.25)
+			drawDebugText(popup.title, 0, 0, "HCENTER", nil, maxWidth)
+			love.graphics.pop()
+			
+			local twidth, theight = drawDebugText(popup.text, x + 50, y + 70, "LEFT", nil, maxWidth - 50 - 50)
+			theight = theight + 20
 			popup.w = math.max(twidth, 480) + 100
 			popup.h = theight
 			

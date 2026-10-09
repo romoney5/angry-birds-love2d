@@ -2,7 +2,7 @@
 
 local fonts = {}
 
-local drawfont = ""
+local usingBMFont = false
 
 --if the displayscale is not 1, text snapping to pixels is probably more important than non-crisp text
 --(the text would be blurry already)
@@ -14,11 +14,77 @@ local function textFloor(a)
 	return math.floor(a)
 end
 
+--generate (part of) a bmfont metadata for use in newFont
+--https://www.angelcode.com/products/bmfont/doc/file_format.html
+function generateBMFont(font, imagedata)
+	local out = ""
+	
+	--block 1, info
+	out = out..("info ") --identifier
+	out = out..("unicode=%s "):format(1) --is unicode
+	
+	--block 2, common
+	out = out..("\n")
+	out = out..("common ") --identifier
+	out = out..("lineHeight=%s "):format(font.height) --line height in pixels
+	out = out..("base=%s "):format(font.maxascending) --distance from line top to baseline (base)
+	out = out..("scaleW=%s "):format(imagedata:getWidth()) --texture width
+	out = out..("scaleH=%s "):format(imagedata:getHeight()) --texture height
+	out = out..("pages=%s "):format(1) --amount of pages
+	
+	--we don't need pages
+	
+	--block 4, characters
+	out = out..("\n")
+	out = out..("chars ") --identifier
+	
+	local amount = 0
+	
+	for i, char in pairs(font.chars) do
+		amount = amount + 1
+	end
+	
+	out = out..("count=%s "):format(amount) --chars amount
+	
+	for i, char in pairs(font.chars) do
+		out = out..("\n")
+		out = out..("char ") --identifier
+		out = out..("id=%s "):format(i) --char id
+		out = out..("x=%s "):format(char.x) --char x
+		out = out..("y=%s "):format(char.y) --char y
+		out = out..("width=%s "):format(char.width) --char width
+		out = out..("height=%s "):format(char.height) --char height
+		out = out..("xoffset=%s "):format(0) --char x offset
+		out = out..("yoffset=%s "):format(-char.baseline) --char y offset
+		out = out..("xadvance=%s "):format(char.width + font.tracking) --char x advance
+		out = out..("page=%s "):format(0) --char page number
+		out = out..("chnl=%s "):format(15) --char channels
+	end
+	
+	--we don't need kerning pairs
+	
+	local filedata = love.filesystem.newFileData(out, "font.bmfont")
+	
+	--re-encode the image data into rgba8 since love2d requires it for bmfonts
+	local new_imagedata = love.image.newImageData(imagedata:getWidth(), imagedata:getHeight(), "rgba8")
+	new_imagedata:paste(imagedata, 0, 0, 0, 0, imagedata:getWidth(), imagedata:getHeight())
+	
+	local newfont = love.graphics.newFont(filedata, new_imagedata)
+	
+	--set the line height manually
+	newfont:setLineHeight(font.leading)
+	
+	return newfont
+end
+
 function res.createBitmapFont(font, silent)
 	font = datapath.."/"..font
 	local fontname = font:match("([^/]+)$"):sub(1, -5)
 	
 	print("Loading font file \""..font.."\"...")
+	
+	--find it case-insensitively
+	font = findCaseInsensitive(font) or font
 
 	if love.filesystem.exists(font) then
 		if not fonts[fontname] then
@@ -51,23 +117,26 @@ function res.createBitmapFont(font, silent)
 				end
 			end
 			
+			if not filepath or not love.filesystem.exists(filepath) then
+				print("Failed to find font "..font)
+				
+				return
+			end
+			
+			local imagedata
+			
 			if endsWith(spritesheet, ".pvr") then
 				-- spritesheet = spritesheet..".png"
 				local data = love.filesystem.read(filepath)
 				local pvr, w, h = convertImagePVR(data, spritesheet)
-				spritesheet = love.graphics.newImage(pvr)
+				
+				imagedata = pvr
 			else
-				spritesheet = love.graphics.newImage(filepath)
+				imagedata = love.image.newImageData(filepath)
 			end
 			
-			fonts[fontname] = {leading = data.leading, tracking = data.tracking, spritesheet = spritesheet, chars = {},
-				height = data.height, maxascending = data.maxascending, maxdescending = data.maxdescending}
-
-			--for each character, also construct a quad
-			for i, char in pairs(data.chars) do
-				fonts[fontname].chars[i] = {quad = love.graphics.newQuad(char.x, char.y, char.width, char.height, spritesheet:getWidth(), spritesheet:getHeight()),
-					width = char.width, height = char.height, baseline = char.baseline}
-			end
+			--bmfont
+			fonts[fontname] = generateBMFont(data, imagedata)
 		else
 			print("Font "..fontname.." is already loaded")
 		end
@@ -76,72 +145,58 @@ function res.createBitmapFont(font, silent)
 	end
 end
 
-function res.useFont(font)
-	if fonts[font] or font == nil then
-		drawfont = font
+function res.releaseFont(font)
+	font = datapath.."/"..font
+	local fontname = font:match("([^/]+)$"):sub(1, -5)
+	
+	if fonts[fontname] then
+		fonts[fontname]:release()
+		fonts[fontname] = nil
 	end
 end
 
+function res.useFont(font)
+	if not fonts[font] then
+		love.graphics.setFont(default_font)
+		usingBMFont = false
+		
+		return
+	end
+
+	love.graphics.setFont(fonts[font])
+	usingBMFont = true
+end
+
 function res.drawString(group, text, x, y, aligny, alignx)
-	text = tostring(text) or ""
-	if group and group ~= "" then
+	text = tostring(text)
+	
+	if group then
 		text = res.getString(group, text)
 	end
 
-	local font = fonts[drawfont]
-	if font then
-		local ay = font.maxascending
-
-		if alignx=="VCENTER" or aligny=="VCENTER" then ay = ay - font.height / 2 end
-		if alignx=="BOTTOM" or aligny=="BOTTOM" then ay = ay - font.height end
-		if alignx=="BASELINE" or aligny=="BASELINE" then ay = ay - font.maxascending end
-		-- if alignx=="TOP" or aligny=="TOP" then ay = ay + font.leading end
-		-- text = (alignx or "")..(aligny or "")
-		
-		local line = 0
-		local height = love.graphics.getHeight()
-		
-		for l in text:gmatch("[^\n]+") do
-			local ax, i = 0, 0
-			
-			--don't calculate the widths and draw everything if it goes off screen
-			local _, miny = love.graphics.transformPoint(x + i + ax, (y + ay - font.leading + (line * font.leading)))
-			local _, maxy = love.graphics.transformPoint(x + i + ax, (y + ay + font.leading + (line * font.leading)))
-			
-			if not (miny > height or maxy < 0) then
-				if alignx=="HCENTER" or aligny=="HCENTER" then ax = -res.getStringWidth(l) / 2 end
-				if alignx=="RIGHT" or aligny=="RIGHT" then ax = -res.getStringWidth(l) end
-
-				for p, c in utf8.codes(l) do
-					local char = font.chars[c]
-					if char then
-						local charX = (x + i + ax)
-						local charY = (y + ay - char.baseline + (line * font.leading))
-						
-						love.graphics.draw(font.spritesheet, char.quad, textFloor(charX), textFloor(charY), drawangle)
-						i = i + (char.width + font.tracking)
-					end
-				end
-			end
-
-			line = line + 1
-		end
-	else
-		--temporarily revert blendmode
-		local bm, am = love.graphics.getBlendMode()
+	love.graphics.push("all")
+	
+	local font = love.graphics.getFont()
+	
+	--temporarily revert blendmode for normal fonts, otherwise they appear as white squares
+	if not usingBMFont then
 		love.graphics.setBlendMode("alpha")
-		local ay = 0
-		if alignx=="VCENTER" or aligny=="VCENTER" then ay = -res.getFontHeight() / 2 end
-		if alignx=="BOTTOM" or aligny=="BOTTOM" then ay = -res.getFontHeight() end
-		-- if alignx=="TOP" or aligny=="TOP" then ay=.75 end
-		if alignx == "HCENTER" or aligny == "HCENTER" then x = x - res.getStringWidth(text) / 2 end
-		if alignx == "RIGHT" or aligny == "RIGHT" then x = x - res.getStringWidth(text) end
-		love.graphics.print(text, x, y + ay)
-		love.graphics.setBlendMode(bm, am)
+		
+		--also reposition the text
+		y = y - font:getBaseline()
 	end
 	
-	-- local bm,am = love.graphics.getBlendMode() love.graphics.setBlendMode("alpha")
-	-- love.graphics.print(tostring(aligny)..tostring(alignx).." "..res.getFontHeight(), x, y) love.graphics.setBlendMode(bm,am)
+	local ay = 0
+	--if alignx=="BASELINE" or aligny=="BASELINE" then ay = 0 end
+	if alignx=="VCENTER" or aligny=="VCENTER" then ay = font:getBaseline() - font:getHeight() / 2 end
+	if alignx=="BOTTOM" or aligny=="BOTTOM" then ay = font:getBaseline() / 2 - font:getHeight() end
+	if alignx=="TOP" or aligny=="TOP" then ay = font:getBaseline() end
+	
+	if alignx == "HCENTER" or aligny == "HCENTER" then x = x - res.getStringWidth(text) / 2 end
+	if alignx == "RIGHT" or aligny == "RIGHT" then x = x - res.getStringWidth(text) end
+	
+	love.graphics.print(text, x, y + ay)
+	love.graphics.pop()
 end
 
 --draw 2.0.0 text
@@ -160,8 +215,6 @@ function gamelua.drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_sca
 
 	--spans multiple lines
 	if self.clipped then
-		local font = fonts[drawfont]
-
 		--scaling goes above everything else
 		love.graphics.scale((scale_x or 1) * self.scaleX * hs, (scale_y or 1) * self.scaleY * hs)
 		
@@ -179,133 +232,55 @@ function gamelua.drawUITextNative(self, x, y, scale_x, scale_y, angle, hover_sca
 		love.graphics.scale((scale_x or 1) * self.scaleX * hs, (scale_y or 1) * self.scaleY * hs)
 		res.drawString(self.group, self.text, 0, 0, self.hanchor, self.vanchor)
 	end
+	
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.pop()
 end
 
 function gamelua.clipText(group, text, size)
-	local font = fonts[drawfont]
-	--if not font then return end
+	local font = love.graphics.getFont()
 
-	gamelua.clippedText = {lines = {}, widestLine = 0}
-	
-	local clippedText = gamelua.clippedText
-	
-	local cline = ""
-	local clinewidth = 0
-	
-	if group and group ~= "" then
+	if group then
 		text = res.getString(group, text)
 	end
 
-	for word in text:gmatch("%S+%s*") do
-		local newline = word:find("\n")
-		if newline then
-			local preline = word:sub(1, newline - 1)
-			local postline = word:sub(newline + 1)
+	local widestLine, lines = font:getWrap(text, size)
 
-			local wordwidth = res.getStringWidth(preline)
-			
-			if clinewidth + wordwidth > size then
-				table.insert(clippedText.lines, cline)
-				clippedText.widestLine = math.max(clippedText.widestLine, clinewidth)
-				cline = preline
-				clinewidth = wordwidth
-			else
-				cline = cline..preline
-				clinewidth = clinewidth + wordwidth
-			end
-
-			table.insert(clippedText.lines, cline)
-			clippedText.widestLine = math.max(clippedText.widestLine, clinewidth)
-			cline = ""
-			clinewidth = 0
-
-			word = postline
-
-			while word:find("\n") do
-				table.insert(clippedText.lines, "")
-				word = word:sub(word:find("\n") + 1)
-			end
-		end
-
-		local wordwidth = res.getStringWidth(word)
-		if clinewidth + wordwidth > size then
-			table.insert(clippedText.lines, cline)
-			clippedText.widestLine = math.max(clippedText.widestLine, clinewidth)
-			cline = word
-			clinewidth = wordwidth
-		else
-			cline = cline..word
-			clinewidth = clinewidth + wordwidth
-		end
-	end
-
-	if cline ~= "" then
-		table.insert(clippedText.lines, cline)
-		clippedText.widestLine = math.max(clippedText.widestLine, clinewidth)
-	end
+	gamelua.clippedText = {widestLine = widestLine, lines = lines}
 end
 
-function res.getStringWidth(text, font, _, _, resetline)
-	text = text or ""
-	local font = fonts[font] or fonts[drawfont]
-	if font then
-		local highscore = 0
-		local i = 0
-		for p, c in utf8.codes(text) do
-			local char = font.chars[c]
-			if c == "\n" then
-				i = 0
-				if resetline then
-					highscore = 0
-				end
-			elseif char then
-				i = i + char.width + font.tracking
-				highscore = math.max(highscore, i)
-			end
-		end
-		return highscore - font.tracking
-	else
-		local font = love.graphics.getFont()
-		return font:getWidth(text) --does not account for line breaks
-	end
-	-- return 0
-	-- return screenWidth*.75
+function res.getStringWidth(text)
+	local font = love.graphics.getFont()
+	return font:getWidth(text)
 end
 
 --used by console
 function res.getStringHeight(text, font, start)
 	text = text or ""
-	local font = fonts[font or drawfont]
-	local increment = font and font.leading or (love.graphics.getFont():getHeight() - .5)
+	local increment = love.graphics.getFont():getHeight() - .5
 	local i = increment * (text:getLines() + (start and 0 or -1))
 	
 	return i
 end
 
 function res.getFontLeading()
-	local font = fonts[drawfont]
-	if font then return font.leading end
-	return 0
+	local font = love.graphics.getFont()
+	return font:getLineHeight()
 end
 
 function res.getFontMaxAscending()
-	local font = fonts[drawfont]
-	if font then return font.maxascending end
-	return 0
+	local font = love.graphics.getFont()
+	return font:getAscent()
 end
 
 function res.getFontMaxDescending()
-	local font = fonts[drawfont]
-	if font then return font.maxdescending end
-	return 0
+	local font = love.graphics.getFont()
+	return font:getDescent()
 end
 
 function res.getFontHeight()
-	local font = fonts[drawfont]
-	if font then return font.height end
-	return 24
+	local font = love.graphics.getFont()
+	return font:getHeight()
 end
 
 --global string functions

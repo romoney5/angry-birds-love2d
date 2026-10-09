@@ -134,7 +134,7 @@ function updateConsole(dt)
 		local height = res.getStringHeight(line, nil, true)
 		
 		if total_y < clip_y2 and total_y >= clip_y1 - height then
-			res.drawString("", line, debugPadding, total_y)
+			res.drawString("", line, debugPadding, total_y, "TOP")
 		end
 		log_y = log_y + height
 	end
@@ -142,7 +142,7 @@ function updateConsole(dt)
 
 	--update scrolling logic
 	output_scroll.height = gamelua.screenHeight
-	output_scroll.contentHeight = log_y
+	output_scroll.contentHeight = log_y + 20
 	CUI.HandleScroll(output_scroll, dt)
 	
 	--draw the scroll bar

@@ -84,11 +84,14 @@ function love.errorhandler(msg)
 
 	local fullErrorText = p
 
-	autoScale = 1000
 	res.useFont(nil)
+	
+	local output_scroll = {}
 
 	local function draw(dt)
 		if not love.graphics.isActive() then return end
+		
+		local round_padding = 10
 		
 		local pos = 40
 		love.graphics.clear(love.graphics.getBackgroundColor())
@@ -99,14 +102,23 @@ function love.errorhandler(msg)
 		gamelua.setRenderState(0, 0, 1, 1)--scale, scale)
 
 		-- res.useFont("FONT_MENU") --most newer games don't have letters in FONT_MENU
-		love.graphics.setColor(0, 0, 0, .2)
 		gamelua.clipText("", p, (gamelua.screenWidth - pos * 2))
 		
 		local text = gamelua.clippedText and table.concat(gamelua.clippedText.lines, "\n") or p
+
+		--update scrolling logic
+		output_scroll.height = gamelua.screenHeight
+		output_scroll.contentHeight = #gamelua.clippedText.lines * res.getFontHeight()
+		CUI.HandleScroll(output_scroll, dt)
 		
-		res.drawString("", text, pos + 8, pos + 8)
-		love.graphics.setColor(1, 1, 1, 1)
-		res.drawString("", text, pos, pos)
+		--draw the scroll bar
+		CUI.ScrollbarFromScrollState(output_scroll, --scroll state
+			gamelua.screenWidth - round_padding / 2, --x
+			round_padding + round_padding / 2, --y
+			gamelua.screenHeight - round_padding / 2 * 2 - round_padding, --height
+			output_scroll.contentHeight) --content height
+		
+		res.drawString("", text, pos, pos + (output_scroll.scroll or 0))
 	end
 
 	return function()

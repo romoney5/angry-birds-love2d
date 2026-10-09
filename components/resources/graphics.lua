@@ -718,10 +718,6 @@ end
 ResourceManager.native_createSpriteSheet = res.createSpriteSheet
 ResourceManager.native_releaseSpriteSheet = res.releaseSpriteSheet
 
-function res.releaseFont(font)
-	return
-end
-
 function getRokuImagePath(dat)
 	return ""
 end

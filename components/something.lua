@@ -654,7 +654,7 @@ function something:update(dt)
 				end
 			end
 
-			drawDebugText(v.name, fx + 30, fy, "LEFT", nil)
+			drawDebugText(v.name, fx + 30, fy - 12, "LEFT", nil)
 		end
 		
 		yoffset = yoffset + 36
@@ -735,7 +735,7 @@ function something:update(dt)
 					end
 				end
 
-				drawDebugText(v.text, ix, iy + 10)
+				drawDebugText(v.text, ix, iy)
 				itemy = itemy + 18
 			end
 			itemy = itemy + 18
@@ -744,7 +744,12 @@ function something:update(dt)
 		love.graphics.pop()
 	end
 
-	drawDebugText(self.path or "Files", screenWidth * .5, math.min(padding / 2, 100), "HCENTER", nil, w)
+	--draw the title
+	love.graphics.push()
+	love.graphics.translate(screenWidth * .5, math.min(padding / 2, 100))
+	love.graphics.scale(1.25)
+	drawDebugText(self.path or "Files", 0, 0, "HCENTER", nil, w)
+	love.graphics.pop()
 	
 	self.back_button = self.back_button or {icon = "left", callback = function(_self)
 		self.on = false
