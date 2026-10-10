@@ -262,11 +262,6 @@ function loadGameFiles()
 
 	loadLuaFileToObject(gamelua.scriptPath.."/episodes.lua", nil, "episodes", true)
 	loadLuaFileToObject(gamelua.scriptPath.."/cutscenes.lua", nil, "cutscenes", true)
-	
-	--mobile-specific options
-	if mobileDevice then
-		autoScale = 720
-	end
 
 	if gamelua.createStartUpAssets then gamelua.createStartUpAssets() end
 	if gamelua.showSplashScreens then gamelua.showSplashScreens() end --kakao
