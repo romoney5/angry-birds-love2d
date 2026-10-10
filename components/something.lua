@@ -501,8 +501,8 @@ function openDownloadPopup(url, callback)
 		{icon = "cross", callback = function()
 			return true
 		end},
-			https = https or require("https")
 		{icon = "check", callback = function()
+			https = https or require("https")
 			
 			local code, body = https.request(url)
 			
