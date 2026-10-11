@@ -4,7 +4,7 @@ if not jit then
 end
 
 --just load all the base files without dealing with dec/ caching etc.
-local function runLua(path)
+function runLua(path)
 	print(("Loading Lua \"%s\"..."):format(path))
 	return love.filesystem.load(path)()
 end
