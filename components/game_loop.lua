@@ -42,7 +42,15 @@ function love.update(dt)
 		--select the first gamepad
 		if love.joystick then
 			local joysticks = love.joystick.getJoysticks()
-			joystick = joysticks[1]
+			
+			--as long as it's not the "virtual keyboard" on android
+			for i, v in ipairs(joysticks) do
+				if v:getName() ~= "virtual_keyboard" then
+					joystick = v
+					
+					break
+				end
+			end
 		end
 
 		--on resuming the game, restore all audios
