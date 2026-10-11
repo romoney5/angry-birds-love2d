@@ -11,6 +11,7 @@ local success, libcrypto = loadLibrary(paths)
 --doesn't have a dll for libcrypto
 if not success then
 	print("libcrypto not found; encrypted files will not load.")
+	print(libcrypto)
 
 	return
 end

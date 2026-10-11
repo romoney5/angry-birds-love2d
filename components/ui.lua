@@ -721,6 +721,8 @@ function CUI.Button(state, x, y, w, h)
 			state.pressing = true
 		elseif not keyHold.LBUTTON then
 			if keyReleased.LBUTTON and state.pressing then --click
+				returns = true
+				
 				if state.callback then
 					returns = state:callback()
 				end

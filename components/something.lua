@@ -11,16 +11,88 @@ end
 local android = love._os == "Android"
 
 local options = {}
+
+local options_buttons = {
+	{label = "Customization (beta)", callback = function(self)
+		return options.customization(f)
+	end},
+}
+
+--add a link to download libcrypto.so on android for ease of use (wip)
+if mobileDevice then
+	table.insert(options_buttons,
+		{label = "Download libcrypto...", callback = function(self)
+			local links = {
+				{label = "arm64 (recommended)",
+					link = "https://github.com/christian-mv/android-and-linux-openssl-binaries/raw/refs/heads/master/android/openssl-1.1.1c/arm64/libcrypto.so"},
+				{label = "armv7",
+					link = "https://github.com/christian-mv/android-and-linux-openssl-binaries/raw/refs/heads/master/android/openssl-1.1.1c/armv7/libcrypto.so"},
+				{label = "x86",
+					link = "https://github.com/ph4r05/android-openssl/raw/refs/heads/master/jni/openssl/arch-x86/lib/libcrypto.so"},
+			}
+			
+			local path = "downloaded_libs/libcrypto.so"
+			
+			if love.filesystem.exists(path) then
+				openPopup("Download libcrypto", "You already have this file.", nil)
+				return
+			end
+			
+			openPopup(
+				"Download libcrypto",
+				"Select the version corresponding to your architecture (typically arm64).",
+				{
+					{icon = "cross", callback = function()
+						return true
+					end},
+				},
+				false,
+				function(x, y, w, h, p)
+					local opened
+					
+					local total_height = 0
+					
+					for i, button in ipairs(links) do
+						if CUI.Button(button, x + w / 2, y + 50 + (i - 1) * 90, w, 75) and not opened then
+							opened = true
+							
+							openDownloadPopup(button.link,
+								function(code, body)
+									love.filesystem.createDirectory("downloaded_libs")
+									love.filesystem.write(path, body)
+									
+									--reload aes
+									if not AES then
+										AES = runLua(compsPath.."/libs/aes.lua")
+										
+										if AES then
+											openPopup("Download libcrypto", "libcrypto is now ready to use.")
+										else
+											openPopup("Download libcrypto", "libcrypto downloaded, but failed to initialize. Please check the console for details.")
+										end
+									else
+										openPopup("Download libcrypto", "libcrypto is already initialized.")
+									end
+								end
+							)
+						end
+						
+						total_height = i * 90
+					end
+					
+					p.h = total_height - 100
+					
+					return opened
+				end
+			)
+		end}
+	)
+end
+
 local function optionsMenu(f)
-	local buttons = {
-		{label = "Customization (beta)", callback = function(self)
-			return options.customization(f)
-		end},
-	}
-	
 	openPopup(
 		"Options",
-		"Notice: Any options here do not currently save.",
+		"Notice: Customization does not save\nbetween sessions at the moment.",
 		{
 			{icon = "cross", callback = function()
 				return true
@@ -32,7 +104,7 @@ local function optionsMenu(f)
 			
 			local total_height = 0
 			
-			for i, button in ipairs(buttons) do
+			for i, button in ipairs(options_buttons) do
 				opened = opened or CUI.Button(button, x + w / 2, y + 50 + (i - 1) * 90, w, 75)
 				
 				total_height = i * 90
@@ -519,31 +591,6 @@ function openDownloadPopup(url, callback)
 			return true
 		end},
 	})
-end
-
---add a link to download libcrypto.so on android for ease of use (wip)
-if mobileDevice then
-	table.insert(something.cmenu.items,
-		false
-	)
-	
-	table.insert(something.cmenu.items,
-		{text = "Download libcrypto...", callback = function(f)
-			local path = "downloaded_libs/libcrypto.so"
-			
-			if love.filesystem.exists(path) then
-				openPopup("Download libcrypto", "You already have this file.", nil)
-				return
-			end
-			
-			openDownloadPopup("https://github.com/christian-mv/android-and-linux-openssl-binaries/raw/refs/heads/master/android/openssl-1.1.1c/arm64/libcrypto.so",
-				function(code, body)
-					love.filesystem.createDirectory("downloaded_libs")
-					love.filesystem.write(path, body)
-				end
-			)
-		end}
-	)
 end
 
 
