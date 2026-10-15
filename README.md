@@ -19,7 +19,7 @@ Now, you should be on a white screen; this means no game is loaded. You can eith
 Running on Linux is as easy as downloading LÖVE from Flathub or another source, navigating to the project folder (again, use the latest source code), and running `love .` in a terminal.
 
 ### Android
-It's not as simple to run on Android at the moment. First, install love-android.apk from the latest [LÖVE 12 (Android) nightly release](https://nightly.link/love2d/love-android/workflows/main/main). With a file manager that can access `Android/data`, navigate to `Android/data/org.love2d.android/files/games` and create a folder with whatever name you want. Here, you will extract the contents of the source code .zip file (main.lua must be in the root of the folder). Finally, you can open LOVE and launch the game from there.
+It's not as simple to run on Android at the moment. First, install love-android.apk from the latest [LÖVE 12 nightly release](https://nightly.link/love2d/love/workflows/main/main). As the GitHub Actions .apk is unsigned, you must resign it with your APK editor of choice before installing it. With a file manager that can access `Android/data`, navigate to `Android/data/org.love2d.android/files/games`. Here, you will extract the contents of the source code .zip file (`angry-birds-love2d-pc1.0.0` (or any other name) must be in the games folder, then main.lua). Finally, you can open LOVE and launch the game from there.
 
 Remember to download libcrypto.so through the file manager's long-click dropdown, or encrypted game files will not load.
 
