@@ -154,31 +154,23 @@ function decryptSrc(filename, src)
 	end
 	
 	if kind == "lzma" then --new versions use lzma rather than 7z
-		src = src:sub(1 + 9)
-		local dec_filename = temp_file()
+		--use a complete port of lzma decompression from c reference code
 		
-		--now use lzma with stdin and open it in binary mode on windows
-		local mode = love._os == "Windows" and "rb" or "r"
-		--xz utils' lzma works differently
-		local cmd = love._os == "Windows" and "lzma d -so" or "lzma -d -c"
-		local file = io.popen(cmd.." \""..love.filesystem.getSaveDirectory()..dec_filename.."\"", mode)
-		if file then
-			src = file:read("*a")
-			file:close()
-			
-			--did it do anything?
-			assert(src and src:len() > 0, "decryptSrc: LZMA could not decompress a file.\n"..
-				"Make sure you have lzma.exe; see the \"Dependencies\" section of the README for more information.")
-			
-			--reidentify it
-			kind = identifySrc(src)
-		else
-			print("decryptSrc: Could not run LZMA")
+		if not has_lzma then
+			error("There is no LZMA support present.\nEnsure that your copy of LOVE has LuaJIT enabled.")
 		end
+		
+		--strip the custom LZMA header
+		local data = src:sub(1 + 9)
+		
+		src = lzma.decode(data)
+		
+		--reidentify it
+		kind = identifySrc(src)
 	end
 	
 	if kind == "7z" then --looks like it's 7-zipped too
-		--use 7-zip using love2d itself, many times faster than using 7-zip from the command line
+		--extract the 7z using physfs' native support, many times faster than using 7-zip or lzma from the command line
 		local temp = "temp_file"
 		local filedata = love.filesystem.newFileData(src, temp)
 		local success = love.filesystem.mount(filedata, temp)

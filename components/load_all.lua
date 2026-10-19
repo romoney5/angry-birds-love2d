@@ -32,6 +32,7 @@ json			= runLua(compsPath.."/libs/json.lua")	--json support for modern seasons v
 AES				= runLua(compsPath.."/libs/aes.lua")	--aes-256-cbc decryption powered by none other than luajit ffi
 has_pvr, pvr	= pcall(runLua, compsPath.."/libs/pvrtc.lua")	--pvrtc format
 fetch			= _G.require("components.libs.fetch")
+has_lzma, lzma	= pcall(runLua, compsPath.."/libs/lzma.lua") --lzma; yes, it's hand-translated from the c reference code
 
 --debugging features
 runLua(compsPath.."/debugging/console.lua")				--debug console

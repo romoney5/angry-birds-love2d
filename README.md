@@ -56,9 +56,6 @@ These projects can be added to support more versions:
 The libcrypto library, a part of [OpenSSL](https://github.com/openssl/openssl), is used to decrypt encrypted Lua files.
 - On Windows, you must get libcrypto-3.dll to use it: https://slproweb.com/products/Win32OpenSSL.html
 
-[LZMA](https://www.7-zip.org/sdk.html) is used to extract Lua files compressed with LZMA.
-- On Windows, you must get lzma.exe (found in bin/x64/lzma.exe) to use it.
-
 ## Acknowledgments
 These projects are included within the engine:
 
@@ -67,5 +64,8 @@ These projects are included within the engine:
 [json.lua](https://github.com/rxi/json.lua) is used to parse JSON files from later game versions.
 
 [fetch-lua](https://github.com/elloramir/fetch-lua) is used to download cloud assets from later game versions.
+
+The [LZMA](https://www.7-zip.org/sdk.html) compression algorithm is used to extract Lua files compressed with LZMA.
+- This project includes a translation of LzmaDec.c from LZMA SDK's C reference code to LuaJIT.
 
 This project is maintained by romoney5 and Halo345. It is not affiliated with or endorsed by Rovio Entertainment Corporation.
