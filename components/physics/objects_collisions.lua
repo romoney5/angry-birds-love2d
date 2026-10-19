@@ -566,6 +566,15 @@ local ENUM_PARAMS = {
 	[19] = function(object, value, bool)
 		object.body:setActive(not bool)
 	end,
+	
+	[20] = function(object, _, bool)
+		gamelua.setSensor(object.name, bool)
+	end,
+	
+	[21] = function(object, index)
+		local SensorType = { "OBSERVATION", "ALARM", "GRAVITATION", "STREAM", "COLLECTIBLE" }
+		object.P_SENSOR_TYPE = SensorType[index]
+	end
 }
 
 function gamelua.setObjectParameter(object, parameter, value)
