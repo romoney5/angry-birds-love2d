@@ -403,7 +403,7 @@ AimStreamLinker = setmetatable({
 	stream = {}, 
 	particles = {},
 	spawnInterval = gamelua.simulationAimSpawnTime or 0.6,
-	dotSpeed = gamelua.simulationAimSpeed or 4.0,
+	dotSpeed = gamelua.simulationAimSpeed or 5.0,
 	timer = 0
 	}, AimStream)
 
@@ -454,11 +454,14 @@ function AimStream:stepForAiming(delta, birdObject)
 		w = w * ((math.pi / 2) / math.abs(w))
 	end
 	
-	gamelua.setAngularVelocity(birdObject.name, w / delta)
-	gamelua.setVelocity(birdObject.name, vx / delta, vy / delta)
+	birdObject.x = birdObject.x + vx
+	birdObject.y = birdObject.y + vy
+	birdObject.angle = birdObject.angle + w
 	
-	gamelua.setRotation(birdObject.name, birdObject.angle + w)
-	gamelua.setPosition(birdObject.name, birdObject.x + vx, birdObject.y + vy)
+	birdObject.body:setAngle(birdObject.angle)
+	birdObject.body:setPosition(birdObject.x, birdObject.y)
+	birdObject.body:setAngularVelocity(w / delta)
+	birdObject.body:setLinearVelocity(vx / delta, vy / delta)
 	
 	return birdObject.x, birdObject.y
 end
@@ -492,9 +495,10 @@ function AimStream:draw()
 				
 				local screen = gamelua.screen
 				local wScale = gamelua.worldScale
+				local worldX, worldY = gamelua.physicsToWorldTransform(x, y)
 				
 				gamelua.setRenderState(-screen.left / p.scale, -screen.top / p.scale, wScale * p.scale, wScale * p.scale, 0)
-				res.drawSprite(self.sprite, x / p.scale, y / p.scale)
+				res.drawSprite(self.sprite, worldX / p.scale, worldY / p.scale)
 			end
 		end
 	end
@@ -536,7 +540,7 @@ function AimStream:populateStream()
 		})
 	end
 	
-	self.timer = self.spawnInterval
+	self.timer = 0
 end
 
 function AimStream:clearBodyForces(object)
@@ -551,6 +555,7 @@ function AimStream:setStream(stream)
 		return
 	end
 	self.stream = stream
+	self:update(0)
 end
 
 function AimStream:setStreamSprite(sprite)
@@ -579,6 +584,10 @@ function gamelua.populateAimingAid()
 	AimStreamLinker:populateStream()
 end
 
+function gamelua.getAimingTime()
+	return AimStreamLinker.timer
+end
+
 function gamelua.enableAimingAid(enabled)
 	gamelua.g_aimingAidAttributes.enabled = enabled
 	AimStreamLinker:setSpawningEnabled(enabled)
@@ -598,6 +607,7 @@ function gamelua.updateBirdTrajectoryTable()
 			end
 		end
 		
+		local timeStepSpeed = (1 / 30) * gamelua.simulationTimeStepMultiplier
 		local newBodyX, newBodyY = AimStreamLinker:stepForAiming(1 / 30, birdie)
 		
 		if i % gamelua.simulationStorePointsSampler == 0 then
@@ -625,7 +635,7 @@ function gamelua.applySensorForceToObject(sensor, target)
 		force = math.min(math.max(force, sensor.gravitationMaxForce), sensor.gravitationMinForce)
 		force = force * target.mass * massMultiplier
 		
-		if sensor.sensorType == "gravitation" then
+		if sensor.sensorType == "gravitation" and dist < sensor.radius then
 			if target.controllable then
 				force = force * 2.0
 			end
@@ -636,6 +646,14 @@ function gamelua.applySensorForceToObject(sensor, target)
 			gamelua.applyForce(target.name, forceX, forceY, target.x, target.y)
 		end
 	end
+end
+
+function gamelua.setNormalTrailSprite()
+
+end
+
+function gamelua.setSpecialTrailSprite()
+
 end
 
 function gamelua.clearAimingAid(index)

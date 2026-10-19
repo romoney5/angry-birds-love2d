@@ -352,6 +352,10 @@ function gamelua.drawGameNative()
 	
 	love.graphics.push()
 	
+	if AimStreamLinker:isStreamReady() then
+		AimStreamLinker:draw()
+	end
+	
 	gamelua.setRenderState(-screenLeft, -screenTop, scale, scale, 0, 0, 1)
 
 	--trajectories (thanks again halo)
@@ -365,10 +369,6 @@ function gamelua.drawGameNative()
 				res.drawSprite(vv.s or trSprites[(i - 1) % 3], vv.x, vv.y)
 			end
 		end
-	end
-	
-	if AimStreamLinker:isStreamReady() then
-		AimStreamLinker:draw()
 	end
 	
 	drawSprites()
