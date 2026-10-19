@@ -555,7 +555,9 @@ function AimStream:setStream(stream)
 		return
 	end
 	self.stream = stream
-	self:populateStream()
+	if #self.particles == 0 then
+		self:populateStream()
+	end
 end
 
 function AimStream:setStreamSprite(sprite)
