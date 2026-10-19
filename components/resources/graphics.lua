@@ -555,7 +555,7 @@ function AimStream:setStream(stream)
 		return
 	end
 	self.stream = stream
-	self:update(0)
+	self:populateStream()
 end
 
 function AimStream:setStreamSprite(sprite)
