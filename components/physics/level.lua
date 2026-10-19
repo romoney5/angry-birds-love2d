@@ -5,7 +5,7 @@ physicsWorld = nil
 
 physicsSimulationScale = 0
 
-worldgravity = {x = 0, y = 20}
+worldgravity = {x = 0, y = 0} -- 20
 
 function gamelua.loadLevel(filename)
 	birdTrajectory = {{}, {}, {}}

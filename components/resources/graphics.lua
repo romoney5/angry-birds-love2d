@@ -397,6 +397,265 @@ function gamelua.drawSlingScopeNative(s_vx, s_vy, vertical_force)
 	love.graphics.pop()
 end
 
+local AimStream = {}
+AimStream.__index = AimStream
+AimStreamLinker = setmetatable({ 
+	stream = {}, 
+	particles = {},
+	spawnInterval = gamelua.simulationAimSpawnTime or 0.6,
+	dotSpeed = gamelua.simulationAimSpeed or 4.0,
+	timer = 0
+	}, AimStream)
+
+function AimStream:setSpawningEnabled(isEnabled)
+	self.isSpawningEnabled = isEnabled
+end
+
+function AimStream:clearParticlesFromStream()
+	self.stream = {} -- TODO : add expiration
+	self.particles = {}
+end
+
+function AimStream:stepForAiming(delta, birdObject)
+	if delta <= 0 then
+		return
+	end
+	
+	local gravityX, gravityY = physicsWorld:getGravity()
+	local invMass = 1.0 / birdObject.body:getMass()
+	local invInertia = 1.0 / birdObject.body:getInertia()
+	
+	local bodyVelX, bodyVelY = birdObject.body:getLinearVelocity()
+	local bodyW = birdObject.body:getAngularVelocity()
+	
+	local velocityX = bodyVelX + delta * (gravityX + birdObject.spaceForces.x * invMass)
+	local velocityY = bodyVelY + delta * (gravityY + birdObject.spaceForces.y * invMass)
+	local angVelocity = bodyW + (delta * birdObject.spaceForces.torque * invInertia)
+	
+	local linDamp = 1.0 - delta * birdObject.body:getLinearDamping()
+	local angDamp = 1.0 - delta * birdObject.body:getAngularDamping()
+	
+	velocityX = velocityX * linDamp
+	velocityY = velocityY * linDamp
+	angVelocity = angVelocity * angDamp
+	
+	local vx, vy = velocityX * delta, velocityY * delta
+	local velThreshold = vx * vx + vy * vy
+	
+	if velThreshold >= 4.0 then
+		local normalizedVel = 2.0 / math.sqrt(velThreshold)
+		vx = vx * normalizedVel
+		vy = vy * normalizedVel
+	end
+	
+	local w = angVelocity * delta
+	
+	if w * w >= (math.pi / 2) ^ 2 then
+		w = w * ((math.pi / 2) / math.abs(w))
+	end
+	
+	gamelua.setAngularVelocity(birdObject.name, w / delta)
+	gamelua.setVelocity(birdObject.name, vx / delta, vy / delta)
+	
+	gamelua.setRotation(birdObject.name, birdObject.angle + w)
+	gamelua.setPosition(birdObject.name, birdObject.x + vx, birdObject.y + vy)
+	
+	return birdObject.x, birdObject.y
+end
+
+local function catMullRomSpline(p0, p1, p2, p3, t)
+	local t2 = t * t
+	local t3 = t2 * t
+	
+	local a = 2.0 * p1
+	local b = p2 - p0
+	local c = 2 * p0 - 5 * p1 + 4 * p2 - p3
+	local d = -p0 + 3 * p1 - 3 * p2 + p3
+	
+	return 0.5 * (a + (b * t) + (c * t2) + (d * t3))
+end
+
+function AimStream:draw()
+	if not self.sprite then
+		print("NO AIMSTREAMSPRITE SET!")
+	else
+		local stm = self.stream
+		
+		for _, p in ipairs(self.particles) do
+			local i = math.floor(p.time) + 1
+			local t = p.time % 1
+			local p0, p1, p2, p3 = stm[i], stm[i+1], stm[i+2], stm[i+3]
+			
+			if p3 then
+				local x = catMullRomSpline(p0.x, p1.x, p2.x, p3.x, t)
+				local y = catMullRomSpline(p0.y, p1.y, p2.y, p3.y, t)
+				
+				local screen = gamelua.screen
+				local wScale = gamelua.worldScale
+				
+				gamelua.setRenderState(-screen.left / p.scale, -screen.top / p.scale, wScale * p.scale, wScale * p.scale, 0)
+				res.drawSprite(self.sprite, x / p.scale, y / p.scale)
+			end
+		end
+	end
+end
+
+function AimStream:update(dt)
+	local segments = #self.stream - 3
+	
+	for i = #self.particles, 1, -1 do
+		local p = self.particles[i]
+		p.time = p.time + dt * self.dotSpeed
+		p.scale = (1.0 - p.time / segments) + 0.2
+		if p.time >= segments then
+			table.remove(self.particles, i)
+		end
+	end
+	
+	self.timer = self.timer - dt
+	if self.isSpawningEnabled then
+		if self.timer < 0 then
+			table.insert(self.particles, {time = 0, scale = 1.2})
+			self.timer = self.spawnInterval
+		end
+	end
+end
+
+-- there's also an angle parameter? but since they're dots it goes unused.
+function AimStream:populateStream()
+	print("populating..")
+	self.particles = {}
+	local segments = #self.stream - 3
+	local steps = self.spawnInterval * self.dotSpeed
+
+	local size = math.floor(segments / steps)
+	for i = 0, size - 1 do
+		local t = i * steps
+		table.insert(self.particles, {
+			time = t, scale = (1.0 - t / segments) + 0.2,
+		})
+	end
+	
+	self.timer = self.spawnInterval
+end
+
+function AimStream:clearBodyForces(object)
+	object.spaceForces.x = 0
+	object.spaceForces.y = 0
+	object.spaceForces.torque = 0
+end
+
+function AimStream:setStream(stream)
+	if #stream < 4 then
+		print("Aiming stream requires at least 4 points on the trajectory.")
+		return
+	end
+	self.stream = stream
+end
+
+function AimStream:setStreamSprite(sprite)
+	self.sprite = sprite
+end
+
+function AimStream:isStreamReady()
+	return #self.stream > 3
+end
+
+function gamelua.setSelectedBirdDuringSimulation(bird)
+	local object = objects.world[bird]
+	
+	if object then
+		AimStreamLinker.streamBirdie = object
+	else
+		print("Body not found!")
+	end
+end
+
+function gamelua.setAimingAidSprite(sprite)
+	AimStreamLinker:setStreamSprite(sprite)
+end
+
+function gamelua.populateAimingAid()
+	AimStreamLinker:populateStream()
+end
+
+function gamelua.enableAimingAid(enabled)
+	gamelua.g_aimingAidAttributes.enabled = enabled
+	AimStreamLinker:setSpawningEnabled(enabled)
+end
+
+function gamelua.updateBirdTrajectoryTable()
+	if not AimStreamLinker.isSpawningEnabled then
+		return
+	end
+	
+	local birdie = objects.world["BirdSimulation"]
+	
+	for i = 0, gamelua.simulationIterations - 1 do
+		for k, v in pairs(objects.sensorList.gravitation) do
+			if v.active then
+				gamelua.applySensorForceToObject(v, birdie)
+			end
+		end
+		
+		local newBodyX, newBodyY = AimStreamLinker:stepForAiming(1 / 30, birdie)
+		
+		if i % gamelua.simulationStorePointsSampler == 0 then
+			table.insert(simulationTrajectory, {x = newBodyX, y = newBodyY})
+		end
+		
+		AimStreamLinker:clearBodyForces(birdie)
+	end
+	
+	AimStreamLinker:setStream(simulationTrajectory)
+end
+
+function gamelua.applySensorForceToObject(sensor, target)
+	local dx = sensor.x - target.x
+	local dy = sensor.y - target.y
+	local len = dx * dx + dy * dy
+	
+	local massMultiplier = gamelua.blockTable.blocks[sensor.definition].massMultiplier
+	local gravitationForce = gamelua.blockTable.blocks[sensor.definition].gravitationForce
+	
+	if len > 1.0 then
+		local dist = math.sqrt(len)
+		local force = gravitationForce / dist
+		
+		force = math.min(math.max(force, sensor.gravitationMaxForce), sensor.gravitationMinForce)
+		force = force * target.mass * massMultiplier
+		
+		if sensor.sensorType == "gravitation" then
+			if target.controllable then
+				force = force * 2.0
+			end
+			
+			local forceX = (dx / dist) * force
+			local forceY = (dy / dist) * force
+
+			gamelua.applyForce(target.name, forceX, forceY, target.x, target.y)
+		end
+	end
+end
+
+function gamelua.clearAimingAid(index)
+	AimStreamLinker:clearParticlesFromStream(index)
+	AimStreamLinker:setSpawningEnabled(false)
+end
+
+function gamelua.ClearSimulationTrajectory()
+	simulationTrajectory = {}
+end
+
+function gamelua.setPivotOffset(name, x, y)
+	objects.world[name].pivotOffsetX = x
+	objects.world[name].pivotOffsetY = y
+end
+
+function gamelua.setSpriteRotation(name, angle)
+	objects.world[name].spriteAngleOffset = angle
+end
+
 --4.0.0
 function gamelua.drawFullscreenRect(r, g, b, a)
 	love.graphics.push("all")

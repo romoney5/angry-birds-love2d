@@ -94,7 +94,13 @@ function gamelua.applyForce(object, x, y, xp, yp)
 	local obj = objects.world[object]
 	if obj.body then
 		local mass = obj.mass
-		obj.body:applyForce(x / 100, y / 100, xp, yp)
+		local fx, fy = x / 100, y / 100
+		
+		obj.spaceForces.x = obj.spaceForces.x + fx
+		obj.spaceForces.y = obj.spaceForces.y + fy
+		obj.spaceForces.torque = obj.spaceForces.torque + ((xp - obj.x) * fy - (yp - obj.y) * fx)
+		
+		obj.body:applyForce(fx, fy, xp, yp)
 	end
 end
 
@@ -154,6 +160,11 @@ function gamelua.setFilterCategory(object, c) -- TODO : find the right filter ca
 		local categories, mask, group = obj.fixture:getFilterData()
 		obj.fixture:setFilterData(c, mask, group)
 	end
+end
+
+gamelua.sensorMasks = {}
+function gamelua.setSensorGravityMask(name, mask)
+	gamelua.sensorMasks[name] = mask
 end
 
 function getTrajectory(name)
@@ -415,6 +426,16 @@ function gamelua.setSensor(object,sensor)
 		obj.sensor = sensor
 		obj.fixture:setSensor(sensor)
 	end
+end
+
+function gamelua.setDecorationObjects(object)
+
+end
+
+gamelua.gravityCategories = {}
+
+function gamelua.setObjectGravityCategory(name, category)
+	gamelua.gravityCategories[name] = category
 end
 
 --absw

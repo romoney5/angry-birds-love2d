@@ -254,7 +254,13 @@ function loadGameFiles()
 	if blocksExists then
 		loadLuaFileToObject(gamelua.scriptPath .. "/blocks.lua", nil, blockTable, true)
 	end
+	
+	if checkDirectory(datapath .. "/" .. gamelua.scriptPath .. "/worldAttributes.lua") then
+		loadLuaFileToObject(gamelua.scriptPath .. "/worldAttributes.lua", nil, gamelua, true)
+		print("PENIS")
+	end
 
+	gamelua.particleTable = gamelua.particleTable or {particles = {}}
 	loadLuaFileToObject(gamelua.scriptPath.."/particles.lua", nil, gamelua.particleTable, true)
 	loadLuaFileToObject(gamelua.scriptPath.."/starLimits.lua", nil, gamelua.starTable, true)
 
@@ -269,7 +275,6 @@ function loadGameFiles()
 	
 	--seasons 6.0.0
 	if gamelua.createThemeGraphicAssets then gamelua.createThemeGraphicAssets() end
-	gamelua.particleTable = gamelua.particleTable or {particles = {}}
 	
 	gamelua.toggleZoom_GameLua = toggleZoom2
 	

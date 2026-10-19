@@ -191,6 +191,7 @@ local function setupObject(obj)
 	addObjectToRenderQueue(obj.name)
 
 	--if not tonumber(obj.z_order) then obj.z_order = 0 end
+	obj.spaceForces = {x = 0, y = 0, torque = 0}
 
 	updateObjectMass(obj.name)
 
@@ -348,7 +349,7 @@ end
 local function getZOrder(name)
 	local data
 	if gamelua.loadedObjects then
-		data = blockTable.blocks[gamelua.loadedObjects.world[name].definition]
+		data = gamelua.blockTable.blocks[gamelua.loadedObjects.world[name].definition]
 	else
 		data = objects.world[name]
 	end

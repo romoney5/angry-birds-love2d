@@ -323,6 +323,10 @@ function gamelua.drawForegroundNative()
 	love.graphics.pop()
 end
 
+function gamelua.drawForeground()
+
+end
+
 local textureShader = love.graphics.newShader([[
 	uniform Image textureMask;
 	uniform vec2 textureDimensions;
@@ -361,6 +365,10 @@ function gamelua.drawGameNative()
 				res.drawSprite(vv.s or trSprites[(i - 1) % 3], vv.x, vv.y)
 			end
 		end
+	end
+	
+	if AimStreamLinker:isStreamReady() then
+		AimStreamLinker:draw()
 	end
 	
 	drawSprites()
@@ -495,6 +503,11 @@ function drawObject(v)
 
 	drawxp, drawyp = res.getSpritePivot(v.objectSprite)
 	
+	if v.pivotOffsetX then
+		drawxp = v.pivotOffsetX
+		drawyp = v.pivotOffsetY
+	end
+	
 	if v.colors then
 		love.graphics.setColor(v.colors)
 	end
@@ -519,7 +532,7 @@ function drawObject(v)
 	end
 
 	love.graphics.translate(x, y)
-	love.graphics.rotate(v.angle)
+	love.graphics.rotate(v.spriteAngleOffset or v.angle)
 	love.graphics.scale(scaleX, scaleY)
 	res.drawSprite(v.objectSprite, 0, 0)
 	

@@ -278,6 +278,10 @@ function updatePhysics(dt)
 	--update the trajectory in the case of a newer version, on older versions the distance check prevents it from running twice
 	updateTrajectory()
 	
+	if simulationTrajectory then
+		AimStreamLinker:update(dt)
+	end
+	
 	if gamelua.removeBlocks then
 		gamelua.removeBlocks()
 	end
