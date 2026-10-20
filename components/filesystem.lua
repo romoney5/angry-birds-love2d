@@ -130,27 +130,24 @@ function decryptSrc(filename, src)
 	local kind = identifySrc(src)
 	
 	if kind == "binary" then --it's probably encrypted..
-		--let's use libcrypto as a dll/so
-		if AES then
-			local iv = nil --iv is always nil
-			local key = AES.FindKey(src, AES.Keys.Assets, iv)
-
-			if key then
-				src = AES.Decrypt(src, key, iv)
-				--equivalent to openssl enc -aes-256-cbc -d -K <key> -iv 0 -in <file>
-
-				--make sure it worked..
-				assert(src, "decryptSrc: libcrypto failure")
-			else
-				print("decryptSrc: could not find valid key, skipping")
-			end
-			
-			--reidentify it
-			kind = identifySrc(src)
-		else
-			print("decryptSrc: Could not run libcrypto for "..tostring(filename))
-			return --just don't bother trying to run an encrypted file
+		--let's decrypt it by hand (see libs/lzma_aes.lua)
+		
+		if not has_lzma_aes then
+			error("There is no AES support present.\nEnsure that your copy of LOVE has LuaJIT enabled.")
 		end
+		
+		local iv = nil --iv is always nil
+		local key = AES.FindKey(src, AES.Keys.Assets, iv)
+
+		if key then
+			src = AES.Decrypt(src, key, iv)
+			--equivalent to openssl enc -aes-256-cbc -d -K <key> -iv 0 -in <file>
+		else
+			print("decryptSrc: could not find valid key, skipping")
+		end
+		
+		--reidentify it
+		kind = identifySrc(src)
 	end
 	
 	if kind == "lzma" then --new versions use lzma rather than 7z

@@ -50,12 +50,6 @@ Here are some variables that can be changed by the debug console:
 - `autoScale`: Defaults to 0, scales the display of the game depending on a target screen height. Has no effect at 0.
 - `displayScale`: Defaults to 1, scales the whole display of the game. Controlled by `autoScale` if it's not 0.
 
-## Dependencies
-These projects can be added to support more versions:
-
-The libcrypto library, a part of [OpenSSL](https://github.com/openssl/openssl), is used to decrypt encrypted Lua files.
-- On Windows, you must get libcrypto-3.dll to use it: https://slproweb.com/products/Win32OpenSSL.html
-
 ## Acknowledgments
 These projects are included within the engine:
 
@@ -67,5 +61,6 @@ These projects are included within the engine:
 
 The [LZMA](https://www.7-zip.org/sdk.html) compression algorithm is used to extract Lua files compressed with LZMA.
 - This project includes a translation of LzmaDec.c from LZMA SDK's C reference code to LuaJIT.
+- An implementation of AES-256-CBC decryption is also included, translated from the LZMA SDK.
 
 This project is maintained by romoney5 and Halo345. It is not affiliated with or endorsed by Rovio Entertainment Corporation.

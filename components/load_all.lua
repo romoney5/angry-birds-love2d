@@ -1,6 +1,6 @@
 --load components
 if not jit then
-	print("LuaJIT not found; disabling libcrypto")
+	print("LuaJIT not found, LZMA and AES support is disabled")
 end
 
 --just load all the base files without dealing with dec/ caching etc.
@@ -32,7 +32,8 @@ json			= runLua(compsPath.."/libs/json.lua")	--json support for modern seasons v
 AES				= runLua(compsPath.."/libs/aes.lua")	--aes-256-cbc decryption powered by none other than luajit ffi
 has_pvr, pvr	= pcall(runLua, compsPath.."/libs/pvrtc.lua")	--pvrtc format
 fetch			= _G.require("components.libs.fetch")
-has_lzma, lzma	= pcall(runLua, compsPath.."/libs/lzma.lua") --lzma; yes, it's hand-translated from the c reference code
+has_lzma, lzma	= pcall(runLua, compsPath.."/libs/lzma.lua") --lzma, hand-translated from the c reference code
+has_lzma_aes, lzma_aes = pcall(runLua, compsPath.."/libs/lzma_aes.lua") --aes, also hand-translated from lzma sdk's c reference code
 
 --debugging features
 runLua(compsPath.."/debugging/console.lua")				--debug console
