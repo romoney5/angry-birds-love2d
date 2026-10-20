@@ -167,6 +167,44 @@ function gamelua.setSensorGravityMask(name, mask)
 	gamelua.sensorMasks[name] = mask
 end
 
+function gamelua.applySensorForceToObject(sensor, target)
+	local dx = sensor.x - target.x
+	local dy = sensor.y - target.y
+	local len = dx * dx + dy * dy
+	
+	local massMultiplier = gamelua.blockTable.blocks[sensor.definition].massMultiplier
+	local gravitationForce = gamelua.blockTable.blocks[sensor.definition].gravitationForce
+	
+	if len > 1.0 then
+		local dist = math.sqrt(len)
+		local force = gravitationForce / dist
+		
+		force = math.min(math.max(force, sensor.gravitationMaxForce), sensor.gravitationMinForce)
+		force = force * target.mass * massMultiplier
+		
+		if sensor.sensorType == "gravitation" and dist < sensor.radius then
+			if target.controllable then
+				force = force * 2.0
+			end
+			
+			local forceX = (dx / dist) * force
+			local forceY = (dy / dist) * force
+
+			gamelua.applyForce(target.name, forceX, forceY, target.x, target.y)
+		end
+	end
+end
+
+function applyCustomForcesToObject(ObjectData)
+	for k, v in pairs(gamelua.objects.sensorList.gravitation) do
+		if not v.active then
+			gamelua.objects.sensorList.gravitation[k] = nil
+		else
+			gamelua.applySensorForceToObject(v, ObjectData)
+		end
+	end
+end
+
 function getTrajectory(name)
 	local trajectoryTable = {}
 	local body = objects.world[name].body
@@ -521,6 +559,7 @@ function gamelua.getIntersectingObjects(info)
 	return hits
 end
 
+local SensorType = { "OBSERVATION", "ALARM", "GRAVITATION", "STREAM", "COLLECTIBLE" }
 local ENUM_PARAMS = {
 	[1] = function(object, value, bool)
 		object.body:setActive(bool)
@@ -572,7 +611,6 @@ local ENUM_PARAMS = {
 	end,
 	
 	[21] = function(object, index)
-		local SensorType = { "OBSERVATION", "ALARM", "GRAVITATION", "STREAM", "COLLECTIBLE" }
 		object.P_SENSOR_TYPE = SensorType[index]
 	end
 }
@@ -972,13 +1010,36 @@ function portalEndContact(obj1, obj2, contact)
 	print(collider.name, " exits ", portal.name)
 end
 
+-- TODO : find what causes the birds not to spawn correctly in space.
+local function getSensorFromObject(object1, object2)
+	if object1.isSensor and not object2.isSensor then
+		return object1, object2
+	elseif object2.isSensor and not object1.isSensor then
+		return object2, object1
+	end
+	return nil, nil
+end
+
+local function hasInteractedWithSensor(sensor, object)
+	if not (sensor and object) then
+		return false
+	end
+	
+	return sensor.sensorType ~= nil--== "gravitation" or (sensor.sensorType == "pig" and object.levelGoal)
+end
+
 function physicsEndContact(obj1, obj2, contact)
 	local o1 = obj1:getUserData()
 	local o2 = obj2:getUserData()
 	
 	local goingThroughPortal = getColliderType(o1.name) == colliders.portal or getColliderType(o2.name) == colliders.portal
 	
-	if goingThroughPortal then
+	local sensor, object = getSensorFromObject(o1, o2)
+		
+	if hasInteractedWithSensor(sensor, object) then
+		gamelua.exitCollision(sensor.name, object.name)
+		object.insideGravity = false
+	elseif goingThroughPortal then
 		portalEndContact(obj1, obj2, contact)
 	end
 end
@@ -1008,7 +1069,16 @@ function physicsBeginContact(obj1, obj2, contact)
 	local isHoopTriggered = getColliderType(o1.name) == colliders.hoop or getColliderType(o2.name) == colliders.hoop
 	local goingThroughPortal = getColliderType(o1.name) == colliders.portal or getColliderType(o2.name) == colliders.portal
 	
-	if isHoopTriggered then
+	local sensor, object = getSensorFromObject(o1, o2)
+	
+	if sensor and object then
+		print(sensor.name, object.name, sensor.sensorType)
+	end
+		
+	if hasInteractedWithSensor(sensor, object) then
+		gamelua.enterCollision(sensor.name, object.name)
+		object.insideGravity = true
+	elseif isHoopTriggered then
 		hoopBeginContact(obj1, obj2, contact)
 	elseif goingThroughPortal then
 		portalBeginContact(obj1, obj2, contact)

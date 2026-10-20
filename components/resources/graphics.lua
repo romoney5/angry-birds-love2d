@@ -413,7 +413,7 @@ end
 
 function AimStream:clearParticlesFromStream()
 	self.stream = {} -- TODO : add expiration
-	self.particles = {}
+	--self.particles = {}
 end
 
 function AimStream:stepForAiming(delta, birdObject)
@@ -620,34 +620,6 @@ function gamelua.updateBirdTrajectoryTable()
 	end
 	
 	AimStreamLinker:setStream(simulationTrajectory)
-end
-
-function gamelua.applySensorForceToObject(sensor, target)
-	local dx = sensor.x - target.x
-	local dy = sensor.y - target.y
-	local len = dx * dx + dy * dy
-	
-	local massMultiplier = gamelua.blockTable.blocks[sensor.definition].massMultiplier
-	local gravitationForce = gamelua.blockTable.blocks[sensor.definition].gravitationForce
-	
-	if len > 1.0 then
-		local dist = math.sqrt(len)
-		local force = gravitationForce / dist
-		
-		force = math.min(math.max(force, sensor.gravitationMaxForce), sensor.gravitationMinForce)
-		force = force * target.mass * massMultiplier
-		
-		if sensor.sensorType == "gravitation" and dist < sensor.radius then
-			if target.controllable then
-				force = force * 2.0
-			end
-			
-			local forceX = (dx / dist) * force
-			local forceY = (dy / dist) * force
-
-			gamelua.applyForce(target.name, forceX, forceY, target.x, target.y)
-		end
-	end
 end
 
 function gamelua.setNormalTrailSprite()

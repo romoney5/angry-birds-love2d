@@ -330,6 +330,11 @@ function updatePhysics(dt)
 				end
 			end
 			
+			if gamelua.g_gravityFiltersCategories and 
+			gamelua.gravityCategories[obj.name] ~= gamelua.g_gravityFiltersCategories.BIRD_UNAFFECTED_BY_GRAVITY and obj.name ~= "BirdSimulation" then
+				applyCustomForcesToObject(obj)
+			end
+			
 			local bounceThreshold = 0.01
 			local bounceMax = 4.0
 			
@@ -347,8 +352,10 @@ function updatePhysics(dt)
 					local offset = (objIndex / getObjectCount()) * (math.pi / 2) -- rio uses an object index as an offset for every object
 					local frequency = (obj.bounce.amplitude * 100 + obj.bounce.frequencyMultiplier * 5) * obj.bounce.time + offset
 					
-					local scaleX = 1 + math.sin(frequency) * obj.bounce.amplitude
-					local scaleY = 1 - math.sin(frequency) * obj.bounce.amplitude 
+					local baseScale = gamelua.getObjectDefinition(obj.name).scale or 1.0
+					
+					local scaleX = baseScale + math.sin(frequency) * obj.bounce.amplitude
+					local scaleY = baseScale - math.sin(frequency) * obj.bounce.amplitude 
 
 					obj.scale = { x = scaleX, y = scaleY }
 				end
