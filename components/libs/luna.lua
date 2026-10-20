@@ -3,7 +3,7 @@
 
 --resources used:
 --https://ferib.dev/blog/lua-devirtualization-part-2-decompiling-lua/ (basics, i.e. introducing opcodes)
---https://usermanual.wiki/Pdf/A20No20Frill20s20Intro20To20Lua205120VM20Instructions.560214948 (opcode list and descriptions)
+--https://mcours.net/cours/pdf/info1/Introduction_toLua_jkrfufd.pdf (opcode list and descriptions)
 --lua 5.1's lundump.c/h (header/chunk structure)
 --https://www.luac.nl/ (opcode descriptions)
 --https://github.com/JustAPerson/lbi/blob/master/src/lbi.lua (assistance on implementations)
@@ -118,12 +118,12 @@ function l_load_chunk(src, info, chunk, name)
 	--load instructions
 	--cache them all consecutively so that instructions
 	--don't have to be decoded at runtime
-	local num_instructions = love_unpack(unpack_endian.."i"..info.size_int, src, pos)
+	chunk.num_instructions = love_unpack(unpack_endian.."i"..info.size_int, src, pos)
 	skip(info.size_int)
 	
-	chunk.instructions = ffi.new("int32_t[?]", num_instructions * 6)--table.new(num_instructions * 6, 0)
+	chunk.instructions = ffi and ffi.new("int32_t[?]", chunk.num_instructions * 6) or table.new(chunk.num_instructions * 6, 0)
 	
-	for i = 1, num_instructions do
+	for i = 1, chunk.num_instructions do
 		local inst = love_unpack(unpack_endian.."i"..info.size_inst, src, pos)
 		local opcode, reg_a, reg_b, reg_c, reg_bx, reg_sbx = l_decode_inst(inst)
 		
@@ -291,12 +291,12 @@ local function l_get_constant(constants, stack, register)
 end
 
 --closes all upvalues starting from stack index [start]
-local function l_close_upvalues(stack, start)
+local function l_close_upvalues(stack, start, stop)
 	if not stack.open_upvalues then
 		return
 	end
 	
-	for i = start, stack.top do
+	for i = start, stop do
 		local upvalue = stack.open_upvalues[i]
 		
 		if upvalue then
@@ -709,7 +709,7 @@ local function l_run_instructions(stack, chunk)
 				stack[a][(c - 1) * LFIELDS_PER_FLUSH + i] = stack[a + i]
 			end
 		elseif opcode == 35 then --CLOSE; closes all upvalues starting from A, making them local to the closure that used them
-			l_close_upvalues(stack, a)
+			l_close_upvalues(stack, a, chunk.max_stack_size)
 		elseif opcode == 36 then --CLOSURE; creates a closure using proto Bx + 1, initializing upvalues if necessary
 			local proto = chunk.protos[bx + 1]
 			
@@ -850,7 +850,7 @@ function l_error_handler(stack, chunk, success, ...)
 					out = out.."    \t; C= "..tostring(chunk.constants[reg_c - 255])
 				end
 				
-				if uses_constants.bx and chunk.constants[reg_bx] ~= nil then
+				if uses_constants.bx and chunk.constants[reg_bx + 1] ~= nil then
 					out = out.."    \t; Bx= "..tostring(chunk.constants[reg_bx + 1])
 				end
 			end
@@ -863,8 +863,8 @@ function l_error_handler(stack, chunk, success, ...)
 		error(out, 3)
 	end
 	
-	--close all upvalues right at the end
-	l_close_upvalues(stack, 0)
+	--close *all* upvalues right at the end
+	l_close_upvalues(stack, 0, chunk.max_stack_size)
 	
 	--the call operation always makes a stack, so go ahead and clear it for later usage
 	--this can save MASSIVE amounts of memory overhead
