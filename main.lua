@@ -257,7 +257,6 @@ function loadGameFiles()
 	
 	if checkDirectory(datapath .. "/" .. gamelua.scriptPath .. "/worldAttributes.lua") then
 		loadLuaFileToObject(gamelua.scriptPath .. "/worldAttributes.lua", nil, gamelua, true)
-		print("PENIS")
 	end
 
 	gamelua.particleTable = gamelua.particleTable or {particles = {}}
