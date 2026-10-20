@@ -610,7 +610,7 @@ function gamelua.updateBirdTrajectoryTable()
 		end
 		
 		local timeStepSpeed = (1 / 30) * gamelua.simulationTimeStepMultiplier
-		local newBodyX, newBodyY = AimStreamLinker:stepForAiming(1 / 30, birdie)
+		local newBodyX, newBodyY = AimStreamLinker:stepForAiming(timeStepSpeed, birdie)
 		
 		if i % gamelua.simulationStorePointsSampler == 0 then
 			table.insert(simulationTrajectory, {x = newBodyX, y = newBodyY})
