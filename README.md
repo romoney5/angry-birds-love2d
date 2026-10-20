@@ -1,29 +1,29 @@
 # Angry Birds LÖVE2D
 
-An accurate *work-in-progress* port of Angry Birds' proprietary engine (Ka3D/Fusion) to [LÖVE](https://love2d.org/) (the free 2D game framework that uses Lua). This is not a game version nor a decompilation, but an engine reimplementation/port. No games are bundled by default, but many versions (Classic, Seasons, and many of their platform releases) are supported.
+An accurate *work-in-progress* port of Angry Birds' proprietary engine (Ka3D/Fusion) to [LÖVE](https://love2d.org/) (the free 2D game framework that uses Lua). This is not a decompilation, but an engine reimplementation/port. No games are bundled by default, but many versions (Classic, Seasons, and many of their platform releases) are supported.
 
 > [!Note]
 > Angry Birds LÖVE2D is currently not feature-complete with the original engine, making it less suitable for modding. In its current state, it is more tailored to people curious about the engine and its inner workings. By all means, you're allowed to use it for modding, but please be wary of potential discrepancies.
 
 ## Installation
-First, make sure you have [LÖVE](https://love2d.org/) installed, as it is obviously required to run this project. The latest [LÖVE 12 nightly release](https://nightly.link/love2d/love/workflows/main/main) is recommended for its new features, but not required (unless something breaks by accident).
+First, make sure you have [LÖVE](https://love2d.org/) installed, as it is obviously required to run this project. The latest [LÖVE 12 nightly release](https://nightly.link/love2d/love/workflows/main/main) is recommended for its new features, but LÖVE 11.5 also works (unless something breaks by accident).
 
 ### Windows
 It is highly recommended to test from the source code instead of the last release, as it is severely outdated.
 
-Open the green Code dropdown, and download and extract the .zip file. On Windows, find and copy lovec.exe (or love.exe) to the unzipped folder (on a full installation this is located in C:\Program Files\LOVE\). Finally, drag and drop main.lua to the LÖVE executable (this only works on LOVE 12, you'll probably have to open a command prompt in earlier versions).
+First, download and extract the .zip file from the green Code dropdown. On Windows, find and copy lovec.exe or love.exe to the unzipped folder (on a full installation, the .exes are located in C:\Program Files\LOVE\). Finally, drag and drop main.lua to the LÖVE executable (this only works on LOVE 12, you may have to open a command prompt in earlier versions).
 
-Now, you should be on a white screen; this means no game is loaded. You can either add a game folder to `data/`, or open the file manager and right-click/long-press a folder or file to run it.
+Now, you should be on a debug console; this means no game is loaded. You can either add a game folder named `data/`, or open the file manager (Files button) and right-click/long-press a folder or file to run it.
 
 ### Linux
-Running on Linux is as easy as downloading LÖVE from Flathub or another source, navigating to the project folder (again, use the latest source code), and running `love .` in a terminal.
+Running on Linux is as easy as downloading LÖVE from Flathub or another source, navigating to the project folder (again, using the latest source code), and running `love .` in a terminal.
 
 ### Android
 It's not as simple to run on Android at the moment. First, install love-android.apk from the latest [LÖVE 12 nightly release](https://nightly.link/love2d/love/workflows/main/main). As the GitHub Actions .apk is unsigned, you must resign it with your APK editor of choice before installing it. With a file manager that can access `Android/data`, navigate to `Android/data/org.love2d.android/files/games`. Here, you will extract the contents of the source code .zip file (`angry-birds-love2d-pc1.0.0` (or any other name) must be in the games folder, then main.lua). Finally, you can open LOVE and launch the game from there.
 
-Remember to download libcrypto.so through the file manager's long-click dropdown, or encrypted game files will not load.
+This has been tested on Windows (64-bit and ARM64), Linux (64-bit), Android (64-bit), and iOS (using LOVE2D Studio). If you find that any platforms supported by LÖVE do not properly run AB-LÖVE2D or have bugs on supported game versions (e.g. Classic 3.0.1), feel free to report an issue about it.
 
-This has only been tested on Windows (64-bit and ARM64), Linux (64-bit), Android (64-bit), and iOS (using LOVE2D Studio). If you find that any platforms supported by LÖVE do not properly run AB-LÖVE2D on stable game versions (e.g. Classic 3.0.1), feel free to report an issue about it.
+LuaJIT support is required for various features, e.g., reading AES-encrypted, LZMA-compressed, and PVRTC files.
 
 ## Command line arguments
 - `--datapath`/`-dp` overrides the default path to `data/` and uses a new save data subfolder. Useful for instantly booting into mods or app files. Can also be used to boot from .zip/.ipa/.apk or other zipped files. Example: `--datapath apks/2.2.0.apk`
