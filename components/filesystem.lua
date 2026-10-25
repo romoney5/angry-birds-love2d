@@ -509,7 +509,8 @@ function serializeTable(t, indent)
 				final_value = "\""..final_value.."\""
 			end
 
-			if type(v) ~= "userdata" then
+			--userdata and functions cannot be serialized for obvious reasons
+			if type(v) ~= "userdata" and type(v) ~= "function" then
 				out = out..indent..(tonumber(i) and "" or key)..final_value..""..(indent == "" and "" or ",").."\n"
 			--else
 				--error("serializeTable(): tried serializing userdata "..tostring(i))
