@@ -148,6 +148,8 @@ local function transformPosition(x, y)
 end
 
 function updateMouse(dt)
+	prevCursor.x, prevCursor.y = cursor.x, cursor.y
+	
 	--regular cursor
 	local x, y = transformPosition(love.mouse.getPosition())
 	

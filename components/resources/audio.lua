@@ -1,5 +1,5 @@
 --resources: sounds
-audiochannels = nil
+local audiochannels
 cachedaudios = {}
 audios = {}
 
@@ -205,4 +205,34 @@ end
 
 function gamelua.setChannelCountLimit(channel, limit)
 	return
+end
+
+
+local pausedaudios
+
+function pauseAudio()
+	pausedaudios = love.audio.pause()
+end
+
+function resumeAudio()
+	if not pausedaudios then return end
+
+	love.audio.play(pausedaudios)
+	pausedaudios = nil
+end
+
+function updateAudio()
+	--clear stopped audios
+	if not audiochannels or pausedaudios then return end
+	
+	for i, channel in ipairs(audiochannels) do
+		for ii, sound in ipairs(channel) do
+			local source = sound.source
+			if not source:isPlaying() then
+				source:release()
+
+				table.remove(channel, ii)
+			end
+		end
+	end
 end

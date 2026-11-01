@@ -948,13 +948,12 @@ function openPopup(title, text, buttons, pause, extra, height)
 
 	--if it's important then run it immediately
 	if pause and #openPopups == 1 then
-		updatePopup()
+		updatePopups(love.timer.getDelta())
 	end
 end
 
-function updatePopup()
+function updatePopups(dt)
 	local popup = openPopups[1]
-	local dt = love.timer.getDelta()
 
 	if popup then
 		local function update()
@@ -1065,22 +1064,19 @@ function updatePopup()
 			end
 		end
 
+		--pause the whole game loop
 		if popup.pause then
 			while popup and popup.pause do
-				--[[local ]]dt = love.timer and love.timer.step() or 0
-				love.event.pump()
-				for name, a,b,c,d,e,f,g,h in love.event.poll() do
-					if name == "quit" then
-						if c or not love.quit or not love.quit() then
-							-- return a or 0, b
-							openPopups = {}
-							break
-						end
-					end
-					love.handlers[name](a,b,c,d,e,f,g,h)
+				table.clear(keyReleased)
+				table.clear(keyPressed)
+				
+				dt = love.timer and love.timer.step() or 0
+				local a, b = pollEvents()
+				
+				if a then
+					openPopups = {}
 				end
 
-				--dt = love.timer.getDelta()
 				update()
 				updateMouse(dt)
 				love.graphics.present()

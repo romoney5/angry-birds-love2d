@@ -34,7 +34,18 @@ function speedUpPre(dt2)
 end
 
 function speedUpPost()
-	if isSpeedingUp() or debugPaused then
-		drawRect2(.2, .2, .2, .5, 0, 0, gamelua.screenWidth, gamelua.screenHeight)
+	local width, height = gamelua.screenWidth, gamelua.screenHeight
+	
+	if isSpeedingUp() then
+		local time = love.timer.getTime()
+		local bar_height = height / 4
+		
+		drawRect2(.2, .2, .2, .5, 0, 0, width, height)
+		
+		--extra cosmetic bars
+		drawRect2(.2, .2, .2, .5, 0, ((time * height / 4) % (height + bar_height * 2)) - bar_height, width, bar_height)
+		drawRect2(.2, .2, .2, .5, 0, height - (((time * height / 7) % (height + bar_height * 2))), width, bar_height)
+	elseif debugPaused then
+		drawRect2(0, 0, 0, .5, 0, 0, width, height)
 	end
 end

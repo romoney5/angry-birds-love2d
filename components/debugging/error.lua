@@ -169,7 +169,7 @@ function love.errorhandler(msg)
 		updateConsole(dt)
 
 		gamelua.setRenderState(0, 0, 1, 1)
-		updatePopup()
+		updatePopups(dt)
 		
 		if debugOpen then
 			love.keyboard.setKeyRepeat(true)

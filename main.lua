@@ -150,7 +150,9 @@ function loadGameFiles()
 	gamelua.localizationPath = config.localizationPath or gamelua.localizationPath
 	gamelua.levelPath = config.levelPath or gamelua.levelPath
 	gamelua.scriptPath = config.scriptPath or gamelua.scriptPath
+	gamelua.shaderPath = config.shaderPath or gamelua.shaderPath
 	gamelua.showCursor = config.showCursor
+	baseTitle = config.name or baseTitle
 	
 	--if the device model wasn't preset, use the config
 	if not setDeviceModel then
@@ -340,13 +342,7 @@ end
 --classic and seasons lump drawing in with the update() function
 --until more documentation surfaces, this is also needed for the modal draw function in game_loop.lua
 do
-	love.run()
-
-	local dt = 0
-
-	-- Main loop time.
-	function loveRunLoop()
-		-- Process events.
+	function pollEvents()
 		if love.event then
 			love.event.pump()
 			for name, a, b, c, d, e, f, g, h in love.event.poll() do
@@ -358,6 +354,19 @@ do
 				love.handlers[name](a, b, c, d, e, f, g, h)
 			end
 		end
+	end
+	
+	love.run()
+	loveRunLoop = 0 --prevent it from being cleared
+
+	local dt = 0
+
+	-- Main loop time.
+	function loveRunLoop()
+		-- Process events.
+		local a, b = pollEvents()
+		
+		if a then return a, b end
 
 		-- Update dt, as we'll be passing it to update
 		if love.timer then dt = love.timer.step() end
