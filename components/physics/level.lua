@@ -24,11 +24,10 @@ function gamelua.loadLevel(filename)
 	zOrderedObjects = {}
 	activeTeleporters = {}
 	
-	--TODO: 6.0.0 and up uses json for levels
-	if love.filesystem.exists(datapath.."/"..filename..".lua") then
+	if findCaseInsensitive(datapath.."/"..filename..".lua") or findCaseInsensitive(filename..".lua") then
 		print("Loading level \""..filename..".lua\"...")
 		gamelua.loadLuaFileToObject(filename..".lua", nil, gamelua.loadedObjects)
-	elseif love.filesystem.exists(datapath.."/"..filename..".json") then
+	elseif findCaseInsensitive(datapath.."/"..filename..".json") or findCaseInsensitive(filename..".json") then
 		print("Loading level \""..filename..".json\"...")
 		gamelua.loadedObjects = gamelua.readJSONToLuaTable(filename..".json")
 	else

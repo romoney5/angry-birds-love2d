@@ -183,15 +183,15 @@ function loadGameFiles()
 	--load save data
 	if not disableSaving then
 		local names = {
-			"settings",
-			"highscores",
+			savePath.."settings",
+			savePath.."highscores",
 		}
 		
 		for i, v in ipairs(names) do
-			if not loadLuaFileToObject(names[i]..".lua", gamelua, nil, true) then
+			if not loadLuaFileToObject(names[i]..".lua", gamelua) then
 				names[i] = v.."_"..accountId
 				
-				loadLuaFileToObject(names[i]..".lua", gamelua, nil, true)
+				loadLuaFileToObject(names[i]..".lua", gamelua)
 			end
 		end
 	end
@@ -224,7 +224,7 @@ function loadGameFiles()
 		for i, file in ipairs(love.filesystem.getDirectoryItems(rootPath)) do
 			if file:match("blocks_") or extras[file] then
 				local temp = {}
-				loadLuaFileToObject(gamelua.scriptPath .. rootPathAppend .. "/" .. file, this, temp, true)
+				loadLuaFileToObject(gamelua.scriptPath .. rootPathAppend .. "/" .. file, gamelua, temp, true)
 				
 				for n, key in pairs(temp) do
 					if type(key) == "table" and key[1] and key[1].definition then
@@ -284,6 +284,21 @@ function loadGameFiles()
 	
 	handlePostStartArgs()
 end
+
+mounted_paths = {}
+--wip, to clear all mounts, do:
+--[[
+collectgarbage()
+
+if jit then
+	jit.flush()
+end
+
+--this must go after collectgarbage
+for i = #mounted_paths, 1, -1 do
+	love.filesystem.unmount(mounted_paths[i])
+end
+]]
 
 function love.load()
 	--love.filesystem.exists is no longer deprecated in love 12

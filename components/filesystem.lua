@@ -61,7 +61,7 @@ function findCaseInsensitive(dir)
 end
 
 --look recursively for any file and return its path
-local function findAnything(dir)
+function findAnything(dir)
 	for i, file in ipairs(love.filesystem.getDirectoryItems(dir)) do
 		local path = dir.."/"..file
 		local info = love.filesystem.getInfo(path)
@@ -98,7 +98,7 @@ end
 --load either plain text lua, a precompiled chunk with luna,
 --a 7-zipped file, an aes-256 encrypted file, or all of the above
 function decryptSrc(filename, src)
-	local dec_path = "/dec/"..trimDataPath(filename)
+	local dec_path = savePath.."dec/"..trimDataPath(filename)
 
 	--use already-decrypted assets if available, moved here for json support
 	local decinfo = ALLOW_LUA_CACHE and love.filesystem.getInfo(dec_path)
@@ -133,7 +133,7 @@ function decryptSrc(filename, src)
 		--let's decrypt it by hand (see libs/lzma_aes.lua)
 		
 		if not has_lzma_aes then
-			error("There is no AES support present.\nEnsure that your copy of LOVE has LuaJIT enabled.")
+			error("There is no AES support present.\nEnsure that your copy of LOVE has LuaJIT enabled and that you are running LOVE 12 or newer.")
 		end
 		
 		local iv = nil --iv is always nil
@@ -154,7 +154,7 @@ function decryptSrc(filename, src)
 		--use a complete port of lzma decompression from c reference code
 		
 		if not has_lzma then
-			error("There is no LZMA support present.\nEnsure that your copy of LOVE has LuaJIT enabled.")
+			error("There is no LZMA support present.\nEnsure that your copy of LOVE has LuaJIT enabled and that you are running LOVE 12 or newer.")
 		end
 		
 		--strip the custom LZMA header
@@ -180,7 +180,7 @@ function decryptSrc(filename, src)
 				src = love.filesystem.read(path)
 			end
 
-			love.filesystem.unmount(temp)
+			love.filesystem.unmount(filedata)
 		else
 			print("decryptSrc: Could not mount file")
 		end
@@ -410,6 +410,8 @@ requireFile = gamelua.requireFile
 --strips .. and separates directories into a table
 function resolvePath(path)
 	local resolved = {}
+	path = path:gsub("\\", "/")
+	
 	for part in path:gmatch("[^/]+") do
 		if part == ".." then
 			table.remove(resolved)
@@ -423,7 +425,7 @@ end
 local req = require
 function require(filename)
 	if filename:sub(1, 4) == "data" then
-		local newname, paths = resolvePath("/"..(filename:gsub("\\", "/")))
+		local newname, paths = resolvePath("/"..filename)
 		newname = table.concat(paths, "/", 2, #paths)
 		return req(datapath.."/"..newname)
 	end
@@ -440,7 +442,7 @@ function exportLua(filename)
 	if src then
 		--findCaseInsensitive
 		-- paths = resolvePath(newname)
-		local exportname = paths[#paths]..".dec"
+		local exportname = savePath..paths[#paths]..".dec"
 		love.filesystem.write(exportname, src)
 
 		print("Decrypted file \""..filename.."\" into \""..exportname.."\"")
@@ -474,7 +476,7 @@ function exportAllScripts(path)
 		print(math.floor(i / #files2 * 100).."% ("..i.."/"..#files2..") ("..v..")")
 	end
 	
-	print("Exported all encrypted files (look for the dec folder in the save directory)")
+	print("Exported all encrypted files (look for the dec folder in the save directory, or run openSaves())")
 end
 
 function gamelua.checkDirectory(directory)
@@ -535,10 +537,12 @@ function gamelua.saveLuaFile(fileName, tableName, appData)
 		return
 	end
 
+	fileName = savePath..fileName
+
 	local s1, m1 = love.filesystem.createDirectory(fileName:match(".*/") or "")
 	
 	if not s1 then
-		print("\""..tableName.."\" failed to save to "..fileName.." ("..(m1 or "Unknown error")..")")
+		print("\""..tableName.."\" failed to save to "..fileName.." (in love.filesystem.createDirectory, "..(m1 or "Unknown error")..")")
 		
 		return
 	end

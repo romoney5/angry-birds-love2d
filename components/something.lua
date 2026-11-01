@@ -10,6 +10,113 @@ end
 
 local android = love._os == "Android"
 
+--path accepts both a string and a file
+function something_runFile(path, name)
+	local success, newpath, mount_path = findDataPath(path)
+
+	if not success then
+		--here, newpath is the error
+		openPopup(name, newpath, nil)
+		return
+	end
+
+	if openedDatapath then
+		love.event.restart({runfilePath = {path, name}})
+		datapath = ogDatapath
+		return
+	end
+
+	local ogDatapath = datapath
+	local openedDatapath = openedDatapath
+	local success, reason = setDataPath(newpath, mount_path, path)
+
+	if not success then
+		openPopup(name, "Could not open \""..name.."\".\n"..tostring(reason), nil)
+		datapath = ogDatapath
+		return
+	end
+
+	--go!
+	close()
+	loadGameFiles()
+end
+
+function something_runFileParams(path, name)
+	local success, newpath, mount_path = findDataPath(path)
+
+	if not success then
+		--here, newpath is the error
+		openPopup(name, newpath, nil)
+		return
+	end
+
+	local states = {}
+	
+	openPopup(
+		"Run File Params",
+		"Choose extra parameters to launch \""..name.."\"...",
+		{
+			{icon = "cross", callback = function()
+				return true
+			end},
+			{icon = "check", callback = function()
+				local ogDatapath = datapath
+				local openedDatapath = openedDatapath
+				local success, reason = setDataPath(newpath, mount_path, path)
+
+				if openedDatapath then
+					--prevent cryptic "cycle detected" error
+					for i, v in ipairs(states) do
+						states[i] = {value = v.value}
+					end
+					
+					love.event.restart{runfilePath = {path, name}, arg = states}
+					datapath = ogDatapath
+					return true
+				end
+
+				if not success then
+					openPopup(name, "Failed to find a valid data path in \""..name.."\".", nil)
+					datapath = ogDatapath
+					return true
+				end
+
+				--go!
+				close()
+				processArgsTable{arg = states}
+				loadGameFiles()
+				return true
+			end},
+		}, false,
+		function(x,y,w,h,p)
+			local totaly = 0
+			for i, v in ipairs(arguments) do
+				states[i] = states[i] or {
+					layer = p
+				}
+				
+				if v.type == "bool" then
+					CUI.Checkbox(states[i], x, totaly + y, 50, 50, v.display)
+					totaly = totaly + 60
+				elseif v.type == "string" then
+					states[i].placeholder = v.display
+					CUI.Textbox(states[i], x, totaly + y, w, 30)
+					totaly = totaly + 40
+				elseif v.type == "number" then
+					states[i].placeholder = v.display
+					states[i].numeric = true
+					CUI.Textbox(states[i], x, totaly + y, w, 30)
+					totaly = totaly + 40
+				else
+					error("something_runFileParams: Unknown type for game argument", v.type)
+				end
+			end
+			
+			p.h = p.h + totaly * .75
+		end, 20
+	)
+end
+
 local options = {}
 
 local options_buttons = {
@@ -130,102 +237,10 @@ something = {
 				)
 			end},
 			{text = "Run File", callback = function(f)
-				local path = f.path
-				local success, reason = findDataPathFromFile(path)
-
-				if not success then
-					openPopup(f.name, reason, nil)
-					return
-				end
-
-				local ogDatapath = datapath
-				local openedDatapath = openedDatapath
-				local success = setDataPathFromFile(path)
-
-				if not success then
-					openPopup(f.name, "Could not open \""..f.name.."\".", nil)
-					datapath = ogDatapath
-					return
-				end
-
-				if openedDatapath then
-					love.event.restart({runfilePath = path})
-					datapath = ogDatapath
-					return
-				end
-
-				--go!
-				close()
-				loadGameFiles()
+				something_runFile(f.path, f.label)
 			end},
 			{text = "Run File Params", callback = function(f)
-				local path = f.path
-				local success, reason = findDataPathFromFile(path)
-
-				if not success then
-					openPopup(f.name, reason, nil)
-					return
-				end
-
-				local states = {}
-				openPopup(
-					"Run File with Params",
-					"Choose extra parameters to launch \""..f.name.."\"...",
-					{
-						{icon = "cross", callback = function()
-							return true
-						end},
-						{icon = "check", callback = function()
-							local ogDatapath = datapath
-							local openedDatapath = openedDatapath
-							local success = setDataPathFromFile(path)
-
-							if not success then
-								openPopup(f.name, "Could not find a valid data path in \""..f.name.."\".", nil)
-								datapath = ogDatapath
-								return true
-							end
-
-							if openedDatapath then
-								love.event.restart{runfilePath = path, arg = states}
-								datapath = ogDatapath
-								return true
-							end
-
-							--go!
-							close()
-							processArgsTable{arg = states}
-							loadGameFiles()
-							return true
-						end},
-					}, false,
-					function(x,y,w,h,p)
-						local totaly = 0
-						for i, v in ipairs(arguments) do
-							if v.type == "bool" then
-								states[i] = states[i] or {}
-								CUI.Checkbox(states[i], x, totaly + y, 50, 50, v.display)
-								totaly = totaly + 60
-							elseif v.type == "string" then
-								states[i] = states[i] or {}
-								states[i].placeholder = v.display
-								CUI.Textbox(states[i], x, totaly + y, w, 30, v.display)
-								totaly = totaly + 40
-							elseif v.type == "number" then
-								states[i] = states[i] or {}
-								states[i].placeholder = v.display
-								states[i].numeric = true
-								CUI.Textbox(states[i], x, totaly + y, w, 30, v.display)
-								totaly = totaly + 40
-							else
-								error("something: unknown type for game argument" + v.type)
-							end
-						end
-						
-						p.h = p.h + totaly * .75
-								--CUI.Textbox(textboxState, x, y, w, 30, "Device Model")
-					end, 20
-				)
+				something_runFileParams(f.path, f.label)
 			end},
 			false,
 			{text = "Rename", callback = function(f)
