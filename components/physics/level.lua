@@ -5,7 +5,7 @@ physicsWorld = nil
 
 physicsSimulationScale = 0
 
-worldgravity = {x = 0, y = 0} -- 20
+worldgravity = {x = 0, y = 20}
 
 function gamelua.loadLevel(filename)
 	birdTrajectory = {{}, {}, {}}
@@ -39,6 +39,11 @@ function gamelua.loadLevel(filename)
 	gamelua.clearParticles()
 	clearLuaAssetRender()
 	LevelParticlesManager.initialized = false
+	
+	--ultra hack for space
+	if gamelua.g_gravityFiltersNameMasks then
+		gamelua.setWorldGravity(0, 0)
+	end
 end
 
 function gamelua.setWorldGravity(x, y)
@@ -86,6 +91,7 @@ end
 function gamelua.setPhysicsSimulationScale(scale)
 	physicsSimulationScale = scale
 	physicsToWorld = scale
+	
 	love.physics.setMeter(physicsSimulationScale * 0.5)
 end
 
